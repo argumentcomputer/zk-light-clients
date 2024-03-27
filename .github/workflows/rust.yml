@@ -48,6 +48,10 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
+      - name: Set up git private repo access
+        run: |
+          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@nextest
@@ -73,6 +77,10 @@ jobs:
         package:
           - "aptos"
     steps:
+      - name: Set up git private repo access
+        run: |
+          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
