@@ -1,0 +1,11 @@
+[package]
+name = "aptos-lc"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aptos-lc-core = { path = "../core" }
+wp1-core = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
+aptos-programs = { path = "../aptos-programs" }

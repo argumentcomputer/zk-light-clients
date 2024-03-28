@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use test_strategy::Arbitrary;
 
 pub mod block_info;
 pub mod epoch_state;
 pub mod error;
 pub mod ledger_info;
 pub mod trusted_state;
-mod validator;
+pub(crate) mod validator;
 pub mod waypoint;
 
 pub type Round = u64;
 pub type Version = u64;
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Copy, Arbitrary)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct AccountAddress([u8; 32]);
 
 impl AccountAddress {

@@ -7,4 +7,6 @@ pub enum CryptoError {
     SignatureDeserializationError,
     #[error("Failed to deserialize a valid public key from received bytes")]
     PublicKeyDeserializationError,
+    #[error("Signature verification failed")]
+    SignatureVerificationFailed,
 }

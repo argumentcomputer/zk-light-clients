@@ -4,12 +4,11 @@ use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey};
 use crate::types::error::VerifyError;
 use crate::types::ledger_info::LedgerInfo;
 use crate::types::AccountAddress;
-use getset::CopyGetters;
+use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
-use test_strategy::Arbitrary;
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, CopyGetters, Serialize, Deserialize, Arbitrary)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, CopyGetters, Serialize, Deserialize)]
 pub struct ValidatorConsensusInfo {
     #[getset(get_copy)]
     address: AccountAddress,
@@ -18,7 +17,19 @@ pub struct ValidatorConsensusInfo {
     voting_power: u64,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Arbitrary)] // this derive is in the original code, but it's probably a bug, as Validator set comparisons should have set (not list) semantics
+impl ValidatorConsensusInfo {
+    pub fn new(address: AccountAddress, public_key: PublicKey, voting_power: u64) -> Self {
+        Self {
+            address,
+            public_key,
+            voting_power,
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, Getters, Serialize)]
+// this derive is in the original code, but it's probably a bug, as Validator set comparisons should have set (not list) semantics
+#[getset(get = "pub")]
 pub struct ValidatorVerifier {
     /// A vector of each validator's on-chain account address to its pubkeys and voting power.
     validator_infos: Vec<ValidatorConsensusInfo>,

@@ -3,9 +3,8 @@ use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
 use crate::types::validator::ValidatorVerifier;
 use anyhow::ensure;
 use serde::{Deserialize, Serialize};
-use test_strategy::Arbitrary;
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Arbitrary)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EpochState {
     pub epoch: u64,
     pub verifier: ValidatorVerifier,

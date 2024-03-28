@@ -60,10 +60,16 @@ jobs:
       - name: build benches
         run: cargo build --benches --release
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
-      # TODO all-features
-      - name: cargo test
+        # TODO all features
+      - name: Run cargo test on aptos-lc-core
         run: |
-          cargo nextest run --release --profile ci
+          cargo nextest run -p aptos-lc-core --release --profile ci
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}
+        env:
+          RUSTFLAGS: "--cfg tokio_unstable"
+      - name: Run cargo test on aptos-lc
+        run: |
+          cargo nextest run -p aptos-lc --release --profile ci
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
       - name: Doctests
         run: |

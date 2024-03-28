@@ -9,8 +9,8 @@ use crate::types::Version;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
-use test_strategy::Arbitrary;
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Arbitrary)]
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LedgerInfo {
     commit_info: BlockInfo,
     /// Hash of consensus specific data that is opaque to all parts of the system other than
@@ -59,7 +59,7 @@ impl CryptoHash for LedgerInfo {
     }
 }
 
-#[derive(Debug, Getters, PartialEq, Eq, Arbitrary, Serialize, Deserialize)]
+#[derive(Debug, Getters, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LedgerInfoWithV0 {
     #[getset(get = "pub")]
     ledger_info: LedgerInfo,
@@ -77,7 +77,7 @@ impl LedgerInfoWithV0 {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Arbitrary, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
 }

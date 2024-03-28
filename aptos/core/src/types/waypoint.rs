@@ -4,10 +4,9 @@ use crate::types::epoch_state::EpochState;
 use crate::types::ledger_info::LedgerInfo;
 use crate::types::Version;
 use getset::CopyGetters;
-use serde::Serialize;
-use test_strategy::Arbitrary;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, CopyGetters, PartialEq, Eq, Clone, Copy, Arbitrary)]
+#[derive(Debug, CopyGetters, PartialEq, Eq, Clone, Copy)]
 pub struct Waypoint {
     /// The version of the reconfiguration transaction that is being approved by this waypoint.
     #[getset(get_copy = "pub")]
@@ -24,6 +23,32 @@ impl Waypoint {
             version: ledger_info.version(),
             value: converter.hash(),
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for Waypoint {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(::serde::Deserialize)]
+        #[serde(rename = "Waypoint")]
+        struct Value(Version, HashValue);
+
+        let value = Value::deserialize(deserializer)?;
+        Ok(Waypoint {
+            version: value.0,
+            value: value.1,
+        })
+    }
+}
+
+impl Serialize for Waypoint {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_newtype_struct("Waypoint", &(self.version, self.value))
     }
 }
 

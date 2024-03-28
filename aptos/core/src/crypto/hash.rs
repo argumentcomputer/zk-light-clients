@@ -3,7 +3,7 @@ use anyhow::{anyhow, Result};
 use getset::CopyGetters;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use test_strategy::Arbitrary;
+
 use tiny_keccak::{Hasher, Sha3};
 pub const HASH_PREFIX: &[u8] = b"APTOS::";
 
@@ -41,9 +41,7 @@ pub fn create_literal_hash(word: &str) -> HashValue {
     HashValue::from_slice(&s).expect("Cannot fail")
 }
 
-#[derive(
-    Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone, Copy, Arbitrary, CopyGetters, Hash,
-)]
+#[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone, Copy, CopyGetters, Hash)]
 pub struct HashValue {
     #[getset(get_copy = "pub(crate)")]
     hash: [u8; 32],

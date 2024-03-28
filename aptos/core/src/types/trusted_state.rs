@@ -4,9 +4,9 @@ use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
 use crate::types::waypoint::Waypoint;
 use crate::types::Version;
 use anyhow::{bail, ensure, format_err};
-use test_strategy::Arbitrary;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Arbitrary)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TrustedState {
     /// The current trusted state is an epoch waypoint, which is a commitment to
     /// an epoch change ledger info. Most light clients will start here when

@@ -1,55 +1,53 @@
-// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::error::CryptoError;
-use anyhow::format_err;
-use blst::BLST_ERROR;
+use anyhow::Result;
+use bls12_381::hash_to_curve::{ExpandMsgXmd, HashToCurve};
+use bls12_381::{pairing, G1Affine, G1Projective, G2Affine, G2Projective};
 use getset::Getters;
-use proptest::arbitrary::{any, Arbitrary};
-use proptest::prelude::BoxedStrategy;
-use proptest::strategy::Strategy;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use test_strategy::Arbitrary;
 
 // Every u8 is used as a bucket of 8 bits. Total max buckets = 65536 / 8 = 8192.
 const BUCKET_SIZE: usize = 8;
+const DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
-pub const DST_BLS_SIG_IN_G2_WITH_POP: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, Copy)]
-pub struct PublicKey {
-    pub(crate) pubkey: blst::min_pk::PublicKey,
+pub fn hash(msg: &[u8]) -> G2Projective {
+    <G2Projective as HashToCurve<ExpandMsgXmd<sha2::Sha256>>>::hash_to_curve(msg, DST)
 }
 
-// for testing
-impl Arbitrary for PublicKey {
-    type Parameters = ();
-    type Strategy = BoxedStrategy<Self>;
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
+pub struct PublicKey {
+    pubkey: G1Affine,
+}
 
-    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-        let ikm = any::<[u8; 32]>();
-        ikm.prop_map(|ikm| PublicKey {
-            pubkey: blst::min_pk::SecretKey::key_gen_v3(&ikm[..], b"aptos test")
-                .unwrap()
-                .sk_to_pk(),
+impl PublicKey {
+    pub fn aggregate(pubkeys: Vec<&Self>) -> anyhow::Result<PublicKey> {
+        let aggregate = pubkeys
+            .into_iter()
+            .fold(G1Projective::identity(), |mut acc, pk| {
+                acc += pk.pubkey;
+                acc
+            });
+
+        Ok(PublicKey {
+            pubkey: aggregate.into(),
         })
-        .boxed()
     }
 }
 
 impl Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
         serializer.serialize_newtype_struct(
             "PublicKey",
-            serde_bytes::Bytes::new(self.pubkey.to_bytes().as_slice()),
+            serde_bytes::Bytes::new(self.pubkey.to_compressed().as_slice()),
         )
     }
 }
 
 impl<'de> Deserialize<'de> for PublicKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -69,70 +67,48 @@ impl<'de> Deserialize<'de> for PublicKey {
 impl TryFrom<&[u8]> for PublicKey {
     type Error = CryptoError;
 
-    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(bytes: &[u8]) -> std::result::Result<Self, Self::Error> {
         Ok(Self {
-            pubkey: blst::min_pk::PublicKey::from_bytes(bytes)
-                .map_err(|_| Self::Error::PublicKeyDeserializationError)?,
+            pubkey: G1Affine::from_compressed(<&[u8; 48]>::try_from(bytes).unwrap()).unwrap(),
         })
     }
 }
 
-impl PublicKey {
-    /// Aggregates the public keys of several signers into an aggregate public key, which can be later
-    /// used to verify a multisig aggregated from those signers.
-    ///
-    /// WARNING: This function assumes all public keys have had their proofs-of-possession verified
-    /// and have thus been group-checked.
-    pub fn aggregate(pubkeys: Vec<&Self>) -> anyhow::Result<PublicKey> {
-        let blst_pubkeys: Vec<_> = pubkeys.iter().map(|pk| &pk.pubkey).collect();
-
-        // CRYPTONOTE(Alin): We assume the PKs have had their PoPs verified and thus have also been subgroup-checked
-        let aggpk = blst::min_pk::AggregatePublicKey::aggregate(&blst_pubkeys[..], false)
-            .map_err(|e| format_err!("{:?}", e))?;
-
-        Ok(PublicKey {
-            pubkey: aggpk.to_public_key(),
-        })
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Signature {
-    pub(crate) sig: blst::min_pk::Signature,
+    pub(crate) sig: G2Affine,
 }
 
 impl Signature {
-    pub fn verify(&self, message: &[u8], public_key: &PublicKey) -> anyhow::Result<()> {
-        let result = self.sig.verify(
-            true,
-            message,
-            DST_BLS_SIG_IN_G2_WITH_POP,
-            &[],
-            &public_key.pubkey,
-            false,
-        );
-        if result == BLST_ERROR::BLST_SUCCESS {
+    pub fn verify(&self, msg: &[u8], pubkey: &PublicKey) -> Result<(), CryptoError> {
+        let msg: G2Projective = hash(msg);
+
+        let g1 = G1Affine::generator();
+        let lhs = pairing(&g1, &self.sig);
+        let rhs = pairing(&pubkey.pubkey, &msg.into());
+
+        if lhs == rhs {
             Ok(())
         } else {
-            Err(format_err!("{:?}", result))
+            Err(CryptoError::SignatureVerificationFailed)
         }
     }
 }
 
 impl Serialize for Signature {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_newtype_struct(
             "Signature",
-            serde_bytes::Bytes::new(self.sig.to_bytes().as_slice()),
+            serde_bytes::Bytes::new(self.sig.to_compressed().as_slice()),
         )
     }
 }
 
 impl<'de> Deserialize<'de> for Signature {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -158,13 +134,12 @@ impl TryFrom<&[u8]> for Signature {
     /// verifying the signature.
     fn try_from(bytes: &[u8]) -> std::result::Result<Signature, Self::Error> {
         Ok(Self {
-            sig: blst::min_pk::Signature::from_bytes(bytes)
-                .map_err(|_| Self::Error::SignatureDeserializationError)?,
+            sig: G2Affine::from_compressed(<&[u8; 96]>::try_from(bytes).unwrap()).unwrap(),
         })
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Arbitrary)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct BitVec {
     #[serde(with = "serde_bytes")]
     inner: Vec<u8>,
@@ -235,22 +210,8 @@ impl<'de> Deserialize<'de> for BitVec {
     }
 }
 
-impl Arbitrary for Signature {
-    type Parameters = ();
-    type Strategy = BoxedStrategy<Self>;
-
-    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-        let ikm = any::<[u8; 32]>();
-        ikm.prop_map(|ikm| {
-            let sk = blst::min_pk::SecretKey::key_gen_v3(&ikm[..], b"aptos test").unwrap();
-            let sig = sk.sign(b"test msg", DST_BLS_SIG_IN_G2_WITH_POP, &[]);
-            Signature { sig }
-        })
-        .boxed()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Getters, Serialize, Deserialize, Arbitrary)]
+// Example structure for an aggregate signature.
+#[derive(Debug, PartialEq, Eq, Getters, Serialize, Deserialize)]
 pub struct AggregateSignature {
     validator_bitmask: BitVec,
     #[getset(get = "pub")]
