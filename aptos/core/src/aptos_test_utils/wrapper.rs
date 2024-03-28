@@ -38,7 +38,7 @@ const BALANCE_MUILTIPLIER: u64 = 1_000_000_000;
 /// Structure containing a `SparseMerkleProof` for and account, along with the parameters to verify it.
 #[derive(Getters, Clone, Debug, Serialize, Deserialize)]
 #[getset(get = "pub")]
-pub(crate) struct SparseMerkleProofAssets {
+pub struct SparseMerkleProofAssets {
     /// Proof for the account inclusion
     state_proof: SparseMerkleProof,
     /// Accout leaf key
@@ -53,7 +53,7 @@ pub(crate) struct SparseMerkleProofAssets {
 #[derive(Getters)]
 #[getset(get = "pub")]
 #[allow(dead_code)]
-pub(crate) struct AptosWrapper {
+pub struct AptosWrapper {
     /// Admin account for the chain, in charge of creating new accounts, reconfiguration...
     core_resources_account: LocalAccount,
     /// Available accounts to interact with the chain

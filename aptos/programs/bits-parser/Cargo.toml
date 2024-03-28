@@ -1,0 +1,10 @@
+[package]
+name = "bits-parser"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }
+zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev", package = "wp1-zkvm" }

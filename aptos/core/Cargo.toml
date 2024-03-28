@@ -34,18 +34,15 @@ aptos-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-
 aptos-vm = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0", optional = true }
 aptos-vm-genesis = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0", optional = true }
 move-core-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0", optional = true }
+criterion = { version = "0.5", features = ["html_reports"], optional = true }
+pprof = { version = "0.13", optional = true }
+# Versions to fit aptos crate
+rand = { version = "0.7.3", optional = true }
+rand_core = { version = "0.5.1", optional = true }
 
 [dev-dependencies]
-
 cfg-if = "1.0.0"
 reqwest = { version = "0.11.23", features = ["blocking"] }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-pprof = { version = "0.13" }
-# Versions to fit aptos crate
-rand = "0.7.3"
-rand_core = "0.5.1"
 
 [features]
 default = []
@@ -60,6 +57,9 @@ aptos = [
     "dep:aptos-types",
     "dep:aptos-vm",
     "dep:aptos-vm-genesis",
-    "dep:move-core-types"
+    "dep:move-core-types",
+    "dep:rand",
+    "dep:rand_core"
 ]
-flamegraph = ["pprof/flamegraph", "pprof/criterion"]
+bench = ["dep:criterion", "dep:pprof"]
+flamegraph = ["bench", "pprof/flamegraph", "pprof/criterion"]

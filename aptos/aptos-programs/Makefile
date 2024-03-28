@@ -10,19 +10,16 @@ PROGRAMS := $(notdir $(wildcard $(PROGRAMS_DIR)/*))
 # Default target
 .PHONY: all clean $(PROGRAMS)
 
-all: $(PROGRAMS) move_artifacts clean_elf
+all: $(PROGRAMS) clean_elf
 
 # Build targets for each program
 $(PROGRAMS):
 	@echo "Building program $@"
 	@# Command to build each program
 	@cd $(PROGRAMS_DIR)/$@ && rustup run succinct cargo prove build
-
-# Move and rename artifacts after build, finally remove elf directory
-move_artifacts:
 	@echo "Moving artifacts..."
 	@mkdir -p $(ARTIFACTS_DIR)
-	@$(foreach prog,$(PROGRAMS),mv $(ELF_DIR)/$(BUILD_RESULT_NAME) $(ARTIFACTS_DIR)/$(prog)-program;)
+	@mv $(ELF_DIR)/$(BUILD_RESULT_NAME) $(ARTIFACTS_DIR)/$@-program
 
 # Clean elf directory
 clean_elf:
