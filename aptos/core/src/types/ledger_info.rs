@@ -96,7 +96,7 @@ impl Deref for LedgerInfoWithSignatures {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::crypto::hash::prefixed_sha3;
+    use crate::crypto::hash::{prefixed_sha3, HASH_LENGTH};
     use tiny_keccak::{Hasher, Sha3};
 
     #[test]
@@ -110,7 +110,7 @@ mod test {
             let mut digest = Sha3::v256();
             digest.update(&prefixed_sha3(b"LedgerInfo"));
             digest.update(&bcs::to_bytes(&ledger_info).unwrap());
-            let mut hasher_bytes = [0u8; 32];
+            let mut hasher_bytes = [0u8; HASH_LENGTH];
             digest.finalize(&mut hasher_bytes);
             hasher_bytes
         };

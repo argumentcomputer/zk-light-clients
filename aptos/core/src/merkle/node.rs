@@ -31,6 +31,15 @@ pub struct SparseMerkleInternalNode {
     right_child: HashValue,
 }
 
+impl SparseMerkleInternalNode {
+    pub fn new(left_child: HashValue, right_child: HashValue) -> Self {
+        Self {
+            left_child,
+            right_child,
+        }
+    }
+}
+
 impl CryptoHash for SparseMerkleInternalNode {
     fn hash(&self) -> HashValue {
         HashValue::new(hash_data(

@@ -1,23 +1,24 @@
-//! A simple program to be proven inside the zkVM.
-
 #![no_main]
+
+use aptos_lc_core::crypto::hash::HashValue;
+use aptos_lc_core::merkle::proof::SparseMerkleProof;
 zkvm::entrypoint!(main);
 
 pub fn main() {
-    // NOTE: values of n larger than 186 will overflow the u128 type,
-    // resulting in output that doesn't match fibonacci sequence.
-    // However, the resulting proof will still be valid!
-    let n = zkvm::io::read::<u32>();
+    let sparse_merkle_proof = zkvm::io::read::<SparseMerkleProof>();
+    let key = zkvm::io::read::<[u8; 32]>();
+    let leaf_value_hash = zkvm::io::read::<[u8; 32]>();
+    let expected_root_hash = zkvm::io::read::<[u8; 32]>();
 
-    let mut a: u128 = 0;
-    let mut b: u128 = 1;
-    let mut sum: u128;
-    for _ in 1..n {
-        sum = a + b;
-        a = b;
-        b = sum;
-    }
+    let reconstructed_root_hash = sparse_merkle_proof
+        .verify_by_hash(
+            HashValue::from_slice(expected_root_hash)
+                .expect("expected_root_hash: could not use input to create HashValue"),
+            HashValue::from_slice(key).expect("key: could not use input to create HashValue"),
+            HashValue::from_slice(leaf_value_hash)
+                .expect("leaf_value_hash: could not use input to create HashValue"),
+        )
+        .expect("verify_by_hash: could not verify proof");
 
-    zkvm::io::write(&a);
-    zkvm::io::write(&b);
+    zkvm::io::write(&reconstructed_root_hash);
 }

@@ -49,6 +49,13 @@ pub struct SparseMerkleProofAssets {
     root_hash: HashValue,
 }
 
+impl SparseMerkleProofAssets {
+    /// Verify the proof against the root hash
+    pub fn state_value_hash(&self) -> HashValue {
+        self.state_value.as_ref().unwrap().hash()
+    }
+}
+
 /// Wrapper atound aptos execution layer to get data out of it.
 #[derive(Getters)]
 #[getset(get = "pub")]
