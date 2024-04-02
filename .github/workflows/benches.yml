@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   benchmark:
-    name: Comparative PR benchmark comment
+    name: PR benchmark comment
     runs-on: ${{ matrix.runner_label }}
     strategy:
       matrix:
@@ -33,6 +33,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-criterion
 
       - name: Run merkle benchmark
         run: |
@@ -50,11 +51,20 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            `!${{ needs.setup.outputs.command }}` action succeeded! :rocket:
+            `!benchmark` action succeeded! :rocket:
 
             Benchmark output:
             ```
             ${{ steps.save_benchmark_output.outputs.benchmark_output }}
             ```
+
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: Comment on failing run
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            `!benchmark` action failed! :x:
 
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
