@@ -33,7 +33,10 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo install cargo-criterion
+      - name: Install deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y pkg-config libudev-dev
+          cargo install cargo-criterion
 
       - name: Run merkle benchmark
         run: |
