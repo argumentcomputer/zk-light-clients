@@ -2,7 +2,7 @@
 
 This is a light client for the Aptos blockchain. It is written in Rust and lives in the workspace defined in this
 directory.
-In this README we will go over a few specifities that need to be known before hoping in development.
+In this README we will go over a few details that need to be known before hopping into development.
 
 ## Layout
 
