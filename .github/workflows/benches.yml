@@ -1,0 +1,60 @@
+name: Benchmark pull requests
+on:
+  issue_comment:
+    types: [ created ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Comparative PR benchmark comment
+    runs-on: ${{ matrix.runner_label }}
+    strategy:
+      matrix:
+        include:
+          - runner_label: buildjet-16vcpu-ubuntu-2204
+            arch: x86
+    if:
+      github.event.issue.pull_request
+      && github.event.issue.state == 'open'
+      && (contains(github.event.comment.body, '!benchmark')
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Set up git private repo access
+        run: |
+          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com".insteadOf https://github.com
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run merkle benchmark
+        run: |
+          cargo criterion --features aptos --bench merkle > benchmark_output.txt
+        working-directory: ${{ github.workspace }}/aptos
+
+      - name: Save benchmark output
+        id: save_benchmark_output
+        run: |
+          echo "::set-output name=benchmark_output::$(cat benchmark_output.txt)"
+
+      - name: Comment on successful run
+        if: success()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            `!${{ needs.setup.outputs.command }}` action succeeded! :rocket:
+
+            Benchmark output:
+            ```
+            ${{ steps.save_benchmark_output.outputs.benchmark_output }}
+            ```
+
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

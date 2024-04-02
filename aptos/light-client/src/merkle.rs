@@ -1,7 +1,7 @@
 use crate::error::LightClientError;
 use aptos_lc_core::merkle::proof::SparseMerkleProof;
-use wp1_core::utils::BabyBearPoseidon2;
-use wp1_core::{SP1ProofWithIO, SP1Prover, SP1Stdin};
+use wp1_sdk::utils::BabyBearPoseidon2;
+use wp1_sdk::{SP1ProofWithIO, SP1Prover, SP1Stdin};
 
 #[allow(dead_code)]
 fn merkle_proving(
@@ -12,7 +12,7 @@ fn merkle_proving(
 ) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, [u8; 32]), LightClientError> {
     #[cfg(debug_assertions)]
     {
-        use wp1_core::utils;
+        use wp1_sdk::utils;
         utils::setup_logger();
     }
 
@@ -44,7 +44,7 @@ mod test {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use std::time::Instant;
-        use wp1_core::SP1Verifier;
+        use wp1_sdk::SP1Verifier;
 
         let mut aptos_wrapper = AptosWrapper::new(30000, 1);
         aptos_wrapper.generate_traffic();

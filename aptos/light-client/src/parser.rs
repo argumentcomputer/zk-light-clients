@@ -1,6 +1,6 @@
 use crate::error::LightClientError;
-use wp1_core::utils::BabyBearPoseidon2;
-use wp1_core::{SP1ProofWithIO, SP1Prover, SP1Stdin};
+use wp1_sdk::utils::BabyBearPoseidon2;
+use wp1_sdk::{SP1ProofWithIO, SP1Prover, SP1Stdin};
 
 #[derive(Debug, Clone)]
 pub struct ParsedBits {
@@ -17,7 +17,7 @@ fn parse_bits(
 ) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, ParsedBits), LightClientError> {
     #[cfg(debug_assertions)]
     {
-        use wp1_core::utils;
+        use wp1_sdk::utils;
         utils::setup_logger();
     }
 
@@ -59,7 +59,7 @@ mod test {
     fn test_bytes_parser() {
         use super::*;
         use std::time::Instant;
-        use wp1_core::SP1Verifier;
+        use wp1_sdk::SP1Verifier;
 
         pub fn bytes_to_bits_le(bytes: &[u8]) -> Vec<u8> {
             bytes

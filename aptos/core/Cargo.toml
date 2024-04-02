@@ -34,8 +34,6 @@ aptos-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-
 aptos-vm = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0", optional = true }
 aptos-vm-genesis = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0", optional = true }
 move-core-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0", optional = true }
-criterion = { version = "0.5", features = ["html_reports"], optional = true }
-pprof = { version = "0.13", optional = true }
 # Versions to fit aptos crate
 rand = { version = "0.7.3", optional = true }
 rand_core = { version = "0.5.1", optional = true }
@@ -61,5 +59,3 @@ aptos = [
     "dep:rand",
     "dep:rand_core"
 ]
-bench = ["dep:criterion", "dep:pprof"]
-flamegraph = ["bench", "pprof/flamegraph", "pprof/criterion"]
