@@ -352,8 +352,8 @@ fn test_aptos_wrapper() {
     state_proof_assets
         .state_proof()
         .verify(
-            state_proof_assets.root_hash().clone(),
-            state_proof_assets.key().clone(),
+            *state_proof_assets.root_hash(),
+            *state_proof_assets.key(),
             state_proof_assets.state_value.as_ref(),
         )
         .unwrap();
@@ -385,8 +385,8 @@ fn test_multiple_signers() {
     state_proof_assets
         .state_proof()
         .verify(
-            state_proof_assets.root_hash().clone(),
-            state_proof_assets.key().clone(),
+            *state_proof_assets.root_hash(),
+            *state_proof_assets.key(),
             state_proof_assets.state_value.as_ref(),
         )
         .unwrap();

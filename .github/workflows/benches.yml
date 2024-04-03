@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner_label: buildjet-16vcpu-ubuntu-2204
+          - runner_label: buildjet-32vcpu-ubuntu-2204
             arch: x86
     if: |
       github.event.issue.pull_request &&
@@ -38,15 +38,22 @@ jobs:
           sudo apt-get update && sudo apt-get install -y pkg-config libudev-dev
           cargo install cargo-criterion
 
-      - name: Run merkle benchmark
+      - name: Run all benchmarks
         run: |
-          cargo criterion --features aptos --bench merkle > benchmark_output.txt
+          for bench in $(find light-client/benches -name '*.rs'); do
+            bench_name=$(basename $bench .rs)
+            cargo criterion --features aptos --bench $bench_name > "${bench_name}_output.txt"
+          done
         working-directory: ${{ github.workspace }}/aptos
 
       - name: Save benchmark output
         id: save_benchmark_output
         run: |
-          echo "::set-output name=benchmark_output::$(cat benchmark_output.txt)"
+          for bench in $(find light-client/benches -name '*.rs'); do
+            bench_name=$(basename $bench .rs)
+            echo "::set-output name=${bench_name}_output::$(cat "${bench_name}_output.txt")"
+          done
+        working-directory: ${{ github.workspace }}/aptos
 
       - name: Comment on successful run
         if: success()
@@ -58,7 +65,7 @@ jobs:
 
             Benchmark output:
             ```
-            ${{ steps.save_benchmark_output.outputs.benchmark_output }}
+            ${{ steps.save_benchmark_output.outputs.*_output }}
             ```
 
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

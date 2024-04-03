@@ -41,7 +41,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
+          - buildjet-16vcpu-ubuntu-2204
         package:
           - "aptos"
       fail-fast: false
@@ -56,28 +56,32 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v2
+      - name: Install deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y pkg-config libudev-dev
       # make sure benches don't bit-rot
       - name: build benches
         run: cargo build --benches --release
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
-        # TODO all features
       - name: Run cargo test on aptos-lc-core
         run: |
-          cargo nextest run -p aptos-lc-core --release --profile ci
+          cargo nextest run -p aptos-lc-core --release --profile ci --all-features
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
         env:
           RUSTFLAGS: "--cfg tokio_unstable"
       - name: Run cargo test on aptos-lc
         run: |
-          cargo nextest run -p aptos-lc --release --profile ci
+          cargo nextest run -p aptos-lc --release --profile ci --all-features
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
+        env:
+          RUSTFLAGS: "--cfg tokio_unstable"
       - name: Doctests
         run: |
           cargo test --doc
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-16vcpu-ubuntu-2204
     strategy:
       matrix:
         package:
@@ -92,6 +96,9 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Install deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y pkg-config libudev-dev
       # See '.cargo/config' for list of enabled/disabled clippy lints
       - name: rustfmt
         run: cargo fmt --all --check

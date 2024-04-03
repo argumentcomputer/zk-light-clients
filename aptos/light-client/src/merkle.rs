@@ -70,7 +70,7 @@ mod test {
 
         let start = Instant::now();
         println!("Starting verification of Merkle inclusion proof...");
-        SP1Verifier::verify(&aptos_programs::MERKLE_PROGRAM, &proof).unwrap();
+        SP1Verifier::verify(aptos_programs::MERKLE_PROGRAM, &proof).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }
