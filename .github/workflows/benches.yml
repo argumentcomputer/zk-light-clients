@@ -23,10 +23,14 @@ jobs:
     env:
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
+      - uses: xt0rted/pull-request-comment-branch@v2
+        id: comment-branch
+
       - name: Checkout sources
         uses: actions/checkout@v4
+        if: success()
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ steps.comment-branch.outputs.head_sha }}
 
       - name: Set up git private repo access
         run: |
