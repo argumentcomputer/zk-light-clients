@@ -49,10 +49,12 @@ jobs:
       - name: Save benchmark output
         id: save_benchmark_output
         run: |
+          output=""
           for bench in $(find light-client/benches -name '*.rs'); do
             bench_name=$(basename $bench .rs)
-            echo "::set-output name=${bench_name}_output::$(cat "${bench_name}_output.txt")"
+            output+="${bench_name}: $(cat "${bench_name}_output.txt")\n"
           done
+          echo "::set-output name=all_outputs::${output}"
         working-directory: ${{ github.workspace }}/aptos
 
       - name: Comment on successful run
@@ -65,10 +67,11 @@ jobs:
 
             Benchmark output:
             ```
-            ${{ steps.save_benchmark_output.outputs.*_output }}
+            ${{ steps.save_benchmark_output.outputs.all_outputs }}
             ```
 
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
       - name: Comment on failing run
         if: failure()
         uses: peter-evans/create-or-update-comment@v4
