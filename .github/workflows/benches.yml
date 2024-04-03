@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up git private repo access
         run: |
@@ -71,7 +73,7 @@ jobs:
             ```
 
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            
+
       - name: Comment on failing run
         if: failure()
         uses: peter-evans/create-or-update-comment@v4
