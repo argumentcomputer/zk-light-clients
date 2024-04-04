@@ -46,24 +46,20 @@ jobs:
 
       - name: Run all benchmarks
         run: |
+          mkdir -p benchmark_outputs
           for bench in $(find light-client/benches -name '*.rs'); do
             bench_name=$(basename $bench .rs)
-            cargo criterion --features aptos --bench $bench_name &> "${bench_name}_output.txt"
+            cargo criterion --features aptos --bench $bench_name &> "benchmark_outputs/${bench_name}_output.txt"
           done
         working-directory: ${{ github.workspace }}/aptos
         env:
           RUST_LOG: "debug"
 
-      - name: Save benchmark output
-        id: save_benchmark_output
-        run: |
-          output=""
-          for bench in $(find light-client/benches -name '*.rs'); do
-            bench_name=$(basename $bench .rs)
-            output+="${bench_name}: $(cat "${bench_name}_output.txt")\n"
-          done
-          echo "::set-output name=all_outputs::${output}"
-        working-directory: ${{ github.workspace }}/aptos
+      - name: Upload benchmark outputs
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-outputs
+          path: ${{ github.workspace }}/aptos/benchmark_outputs
 
       - name: Comment on successful run
         if: success()
@@ -73,10 +69,7 @@ jobs:
           body: |
             `!benchmark` action succeeded! :rocket:
 
-            Benchmark output:
-            ```
-            ${{ steps.save_benchmark_output.outputs.all_outputs }}
-            ```
+            Benchmark outputs are available [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts).
 
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
