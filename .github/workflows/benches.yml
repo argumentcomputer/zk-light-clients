@@ -14,12 +14,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner_label: buildjet-32vcpu-ubuntu-2204
+          - runner_label: warp-ubuntu-latest-x64-32x
             arch: x86
+            comment: '!benchmark'
+          - runner_label: warp-ubuntu-latest-x64-32x
+            arch: x86
+            comment: '!benchmark --prod'
     if: |
       github.event.issue.pull_request &&
       github.event.issue.state == 'open' &&
-      contains(github.event.comment.body, '!benchmark')
+      contains(github.event.comment.body, matrix.comment)
     env:
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
@@ -45,14 +49,31 @@ jobs:
           cargo install cargo-criterion
 
       - name: Run all benchmarks
+        id: benchmarks-run
         run: |
-          for bench in $(find light-client/benches -name '*.rs'); do
-            bench_name=$(basename $bench .rs)
-            cargo criterion --features aptos --bench $bench_name
-          done
+          output=""
+          if [[ "${{ matrix.comment }}" == "!benchmark" ]]; then
+            for bench in $(find light-client/benches -name '*_base.rs'); do
+              bench_name=$(basename $bench .rs)
+              result=$(cargo criterion --features aptos --bench $bench_name)
+              output+="<details><summary>${bench_name}</summary>$(printf "$result")</details>"
+            done
+          elif [[ "${{ matrix.comment }}" == "!benchmark --prod" ]]; then
+            for bench in $(find light-client/benches -name '*_prod.rs'); do
+              bench_name=$(basename $bench .rs)
+              result=$(cargo criterion --features aptos --bench $bench_name)
+              output+="<details><summary>${bench_name}</summary>$(printf "$result")</details>"
+            done
+          fi
+          echo "BENCH_RES<<EOF" >> $GITHUB_OUTPUT
+          printf "$output" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
         working-directory: ${{ github.workspace }}/aptos
         env:
           RUST_LOG: "debug"
+          RUSTFLAGS: "-C target-cpu=native"
+
 
       - name: Comment on successful run
         if: success()
@@ -60,9 +81,11 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            `!benchmark` action succeeded! :rocket:
+            `${{ matrix.comment }}` action succeeded! :rocket:
 
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            ${{ steps.benchmarks-run.outputs.BENCH_RES }}
 
       - name: Comment on failing run
         if: failure()
@@ -70,6 +93,6 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            `!benchmark` action failed! :x:
+            `${{ matrix.comment }}` action failed! :x:
 
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -53,7 +53,6 @@ fn parse_bits(
 
 #[cfg(test)]
 mod test {
-
     #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_parser() {
