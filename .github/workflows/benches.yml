@@ -16,14 +16,10 @@ jobs:
         include:
           - runner_label: warp-ubuntu-latest-x64-32x
             arch: x86
-            comment: '!benchmark'
-          - runner_label: warp-ubuntu-latest-x64-32x
-            arch: x86
-            comment: '!benchmark --prod'
     if: |
       github.event.issue.pull_request &&
       github.event.issue.state == 'open' &&
-      contains(github.event.comment.body, matrix.comment)
+      contains(github.event.comment.body, "!benchmark")
     env:
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
@@ -52,23 +48,22 @@ jobs:
         id: benchmarks-run
         run: |
           output=""
-          if [[ "${{ matrix.comment }}" == "!benchmark" ]]; then
-            for bench in $(find light-client/benches -name '*_base.rs'); do
+          if echo '${{ github.event.comment.body }}' | grep -q '!benchmark --prod'; then
+            for bench in $(find light-client/benches -name '*_prod.rs'); do
               bench_name=$(basename $bench .rs)
               result=$(cargo criterion --features aptos --bench $bench_name)
               output+="<details><summary>${bench_name}</summary>$(printf "$result")</details>"
             done
-          elif [[ "${{ matrix.comment }}" == "!benchmark --prod" ]]; then
-            for bench in $(find light-client/benches -name '*_prod.rs'); do
+          elif echo '${{ github.event.comment.body }}' | grep -q '!benchmark'; then
+            for bench in $(find light-client/benches -name '*_base.rs'); do
               bench_name=$(basename $bench .rs)
               result=$(cargo criterion --features aptos --bench $bench_name)
               output+="<details><summary>${bench_name}</summary>$(printf "$result")</details>"
             done
           fi
           echo "BENCH_RES<<EOF" >> $GITHUB_OUTPUT
-          printf "$output" >> $GITHUB_OUTPUT
+          printf "$output\n" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
         working-directory: ${{ github.workspace }}/aptos
         env:
           RUST_LOG: "debug"
