@@ -58,6 +58,7 @@ jobs:
             for bench in $(find light-client/benches -name '*_base.rs'); do
               bench_name=$(basename $bench .rs)
               result=$(cargo criterion --features aptos --bench $bench_name)
+              echo "$result"
               output+="<details><summary>${bench_name}</summary>$(printf "$result")</details>"
             done
           fi
