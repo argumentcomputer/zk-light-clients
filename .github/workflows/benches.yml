@@ -67,7 +67,7 @@ jobs:
         working-directory: ${{ github.workspace }}/aptos
         env:
           RUST_LOG: "debug"
-          RUSTFLAGS: "-C target-cpu=native"
+          RUSTFLAGS: "--cfg tokio_unstable -C target-cpu=native"
 
 
       - name: Comment on successful run
