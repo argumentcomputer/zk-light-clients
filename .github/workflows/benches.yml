@@ -51,14 +51,14 @@ jobs:
           if echo '${{ github.event.comment.body }}' | grep -q '!benchmark --prod'; then
             for bench in $(find light-client/benches -name '*_prod.rs'); do
               bench_name=$(basename $bench .rs)
-              cargo criterion --features aptos --bench $bench_name | tee -a /tmp/&bench_name.txt 2>&1
+              cargo criterion --features aptos --bench $bench_name | tee -a /tmp/$bench_name.txt 2>&1
               result=$(cat /tmp/&bench_name.txt | grep -E 'INFO summary' | tr '│' '\│' )
               output+="<details><summary>${bench_name}</summary>$(echo "$result")</details>"
             done
           elif echo '${{ github.event.comment.body }}' | grep -q '!benchmark'; then
             for bench in $(find light-client/benches -name '*_base.rs'); do
               bench_name=$(basename $bench .rs)
-              cargo criterion --features aptos --bench $bench_name | tee -a /tmp/&bench_name.txt 2>&1
+              cargo criterion --features aptos --bench $bench_name | tee -a /tmp/$bench_name.txt 2>&1
               result=$(cat /tmp/&bench_name.txt | grep -E 'INFO summary' | tr '│' '\│' )
               output+="<details><summary>${bench_name}</summary>$(echo "$result")</details>"
             done
