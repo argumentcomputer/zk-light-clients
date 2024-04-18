@@ -20,5 +20,5 @@ pub fn main() {
         )
         .expect("verify_by_hash: could not verify proof");
 
-    zkvm::io::write(&reconstructed_root_hash);
+    zkvm::io::commit(&reconstructed_root_hash);
 }

@@ -50,8 +50,8 @@ jobs:
     steps:
       - name: Set up git private repo access
         run: |
-          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com/".insteadOf ssh://git@github.com
-          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com".insteadOf https://github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@nextest
@@ -81,7 +81,7 @@ jobs:
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
   clippy:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         package:
@@ -89,8 +89,8 @@ jobs:
     steps:
       - name: Set up git private repo access
         run: |
-          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com/".insteadOf ssh://git@github.com
-          git config --global url."https://${{ secrets.PRIVATE_PULL_TOKEN }}@github.com".insteadOf https://github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:

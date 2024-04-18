@@ -62,8 +62,8 @@ pub fn main() {
         .copied()
         .collect::<Vec<u8>>();
 
-    zkvm::io::write(&ledger_info_bits);
-    zkvm::io::write(&signature_bits);
-    zkvm::io::write(&validators_list_bits);
-    zkvm::io::write(&epoch_bits);
+    zkvm::io::commit(&ledger_info_bits);
+    zkvm::io::commit(&signature_bits);
+    zkvm::io::commit(&validators_list_bits);
+    zkvm::io::commit(&epoch_bits);
 }

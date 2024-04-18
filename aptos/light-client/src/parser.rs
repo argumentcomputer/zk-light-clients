@@ -1,6 +1,6 @@
 use crate::error::LightClientError;
 use wp1_sdk::utils::BabyBearPoseidon2;
-use wp1_sdk::{SP1ProofWithIO, SP1Prover, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 
 #[derive(Debug, Clone)]
 pub struct ParsedBits {
@@ -12,6 +12,7 @@ pub struct ParsedBits {
 
 #[allow(dead_code)]
 fn parse_bits(
+    client: &ProverClient,
     ledger_info_with_signatures: Vec<u8>,
     nbr_validators: usize,
 ) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, ParsedBits), LightClientError> {
@@ -26,19 +27,18 @@ fn parse_bits(
     stdin.write(&ledger_info_with_signatures);
     stdin.write(&nbr_validators);
 
-    let mut proof =
-        SP1Prover::prove(aptos_programs::BITS_PARSER_PROGRAM, stdin).map_err(|err| {
-            LightClientError::ProvingError {
-                program: "bits-parser".to_string(),
-                source: err.into(),
-            }
+    let mut proof = client
+        .prove(aptos_programs::BITS_PARSER_PROGRAM, stdin)
+        .map_err(|err| LightClientError::ProvingError {
+            program: "bits-parser".to_string(),
+            source: err.into(),
         })?;
 
     // Read output.
-    let ledger_info_bits = proof.stdout.read::<Vec<u8>>();
-    let signature_bits = proof.stdout.read::<Vec<u8>>();
-    let validators_list_bits = proof.stdout.read::<Vec<u8>>();
-    let epoch_bits = proof.stdout.read::<Vec<u8>>();
+    let ledger_info_bits = proof.public_values.read::<Vec<u8>>();
+    let signature_bits = proof.public_values.read::<Vec<u8>>();
+    let validators_list_bits = proof.public_values.read::<Vec<u8>>();
+    let epoch_bits = proof.public_values.read::<Vec<u8>>();
 
     Ok((
         proof,
@@ -58,7 +58,7 @@ mod test {
     fn test_bytes_parser() {
         use super::*;
         use std::time::Instant;
-        use wp1_sdk::SP1Verifier;
+        use wp1_sdk::ProverClient;
 
         pub fn bytes_to_bits_le(bytes: &[u8]) -> Vec<u8> {
             bytes
@@ -80,11 +80,12 @@ mod test {
             bytes_to_bits_le(&aptos_wrapper.get_latest_li_bytes().unwrap());
         let ledger_info_with_signatures = aptos_wrapper.get_latest_li().unwrap();
 
+        let client = ProverClient::new();
         // Parse bits
         let start = Instant::now();
         println!("Starting generation of bytes parser proof...");
         let (proof, parsed_bits) =
-            parse_bits(ledger_info_with_signatures_bits, NBR_VALIDATORS).unwrap();
+            parse_bits(&client, ledger_info_with_signatures_bits, NBR_VALIDATORS).unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         // Test extraction
@@ -120,7 +121,9 @@ mod test {
 
         let start = Instant::now();
         println!("Starting verification of bytes parser proof...");
-        SP1Verifier::verify(aptos_programs::BITS_PARSER_PROGRAM, &proof).unwrap();
+        client
+            .verify(aptos_programs::BITS_PARSER_PROGRAM, &proof)
+            .unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

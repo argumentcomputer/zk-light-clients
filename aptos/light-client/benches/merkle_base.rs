@@ -2,10 +2,10 @@ use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::merkle::proof::SparseMerkleProof;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use std::time::Duration;
-use wp1_sdk::utils::BabyBearPoseidon2;
-use wp1_sdk::{SP1ProofWithIO, SP1Prover, SP1Stdin, SP1Verifier};
+use wp1_sdk::utils::{setup_logger, BabyBearPoseidon2};
+use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 
-const NBR_LEAVES: [usize; 7] = [32, 128, 512, 2048, 8192, 32768, 131072];
+const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
 
 // To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
 // Then `cargo criterion --bench merkle`.
@@ -29,8 +29,8 @@ cfg_if::cfg_if! {
 
 criterion_main!(merkle);
 
-#[derive(Clone, Debug)]
 struct ProvingAssets {
+    client: ProverClient,
     sparse_merkle_proof: SparseMerkleProof,
     leaf_key: [u8; 32],
     leaf_value: [u8; 32],
@@ -55,7 +55,10 @@ impl ProvingAssets {
         let leaf_value: [u8; 32] =
             bcs::from_bytes(&bcs::to_bytes(&proof_assets.state_value_hash()).unwrap()).unwrap();
 
+        let client = ProverClient::new();
+
         Self {
+            client,
             sparse_merkle_proof,
             leaf_value,
             leaf_key,
@@ -71,7 +74,15 @@ impl ProvingAssets {
         stdin.write(&self.leaf_value);
         stdin.write(&self.expected_root);
 
-        SP1Prover::prove(aptos_programs::MERKLE_PROGRAM, stdin).unwrap()
+        self.client
+            .prove(aptos_programs::MERKLE_PROGRAM, stdin)
+            .unwrap()
+    }
+
+    fn verify(&self, proof: &SP1ProofWithIO<BabyBearPoseidon2>) {
+        self.client
+            .verify(aptos_programs::MERKLE_PROGRAM, proof)
+            .expect("Verification failed");
     }
 }
 
@@ -83,6 +94,8 @@ fn bench_merkle(c: &mut Criterion) {
         wp1_proving_group
             .sampling_mode(SamplingMode::Auto)
             .sample_size(10);
+
+        setup_logger();
 
         wp1_proving_group.bench_with_input(
             BenchmarkId::new(
@@ -108,9 +121,7 @@ fn bench_merkle(c: &mut Criterion) {
                 proving_assets.sparse_merkle_proof.siblings().len(),
             ),
             &proving_assets.sparse_merkle_proof.siblings().len(),
-            |b, _| {
-                b.iter(|| SP1Verifier::verify(aptos_programs::MERKLE_PROGRAM, black_box(&proof)))
-            },
+            |b, _| b.iter(|| proving_assets.verify(black_box(&proof))),
         );
 
         wp1_verifying_group.finish();

@@ -11,7 +11,7 @@ aptos-lc-core = { path = "../core" }
 aptos-programs = { path = "../aptos-programs" }
 
 # WP1 crates
-wp1-sdk = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "wwared/bls_fp_precompiles" }
+wp1-sdk = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
 
 #Others
 serde = { version = "1.0", features = ["derive", "rc"] }
