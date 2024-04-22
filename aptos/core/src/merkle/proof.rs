@@ -68,13 +68,7 @@ impl SparseMerkleProof {
                     .rev()
                     .skip(HASH_LENGTH * 8 - self.siblings.len()),
             )
-            .fold(leaf.hash(), |acc_hash, (sibling_hash, bit)| {
-                if bit {
-                    SparseMerkleInternalNode::new(*sibling_hash, acc_hash).hash()
-                } else {
-                    SparseMerkleInternalNode::new(acc_hash, *sibling_hash).hash()
-                }
-            });
+            .fold(leaf.hash(), accumulator_update);
 
         ensure!(
             reconstructed_root == expected_root_hash,
@@ -84,6 +78,14 @@ impl SparseMerkleProof {
         );
 
         Ok(reconstructed_root)
+    }
+}
+
+fn accumulator_update(acc_hash: HashValue, (sibling_hash, bit): (&HashValue, bool)) -> HashValue {
+    if bit {
+        SparseMerkleInternalNode::new(*sibling_hash, acc_hash).hash()
+    } else {
+        SparseMerkleInternalNode::new(acc_hash, *sibling_hash).hash()
     }
 }
 

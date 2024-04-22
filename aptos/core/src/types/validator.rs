@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::prefixed_sha3;
-use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey};
-use crate::types::error::VerifyError;
-use crate::types::ledger_info::LedgerInfo;
-use crate::types::AccountAddress;
+use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey, PUB_KEY_LEN};
+use crate::types::error::{TypesError, VerifyError};
+use crate::types::ledger_info::{LedgerInfo, LEB128_PUBKEY_LEN, VOTING_POWER_OFFSET_INCR};
+use crate::types::utils::{read_leb128, write_leb128};
+use crate::types::{AccountAddress, ACCOUNT_ADDRESS_SIZE};
+use anyhow::Result;
+use bytes::{Buf, BufMut, BytesMut};
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
@@ -18,12 +21,60 @@ pub struct ValidatorConsensusInfo {
 }
 
 impl ValidatorConsensusInfo {
-    pub fn new(address: AccountAddress, public_key: PublicKey, voting_power: u64) -> Self {
+    pub const fn new(address: AccountAddress, public_key: PublicKey, voting_power: u64) -> Self {
         Self {
             address,
             public_key,
             voting_power,
         }
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+        bytes.put_slice(&self.address.to_bytes());
+        bytes.put_slice(&self.public_key.to_bytes());
+        bytes.put_u64_le(self.voting_power);
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        let address =
+            AccountAddress::from_bytes(bytes.chunk().get(..ACCOUNT_ADDRESS_SIZE).ok_or_else(
+                || TypesError::DeserializationError {
+                    structure: String::from("ValidatorConsensusInfo"),
+                    source: "Not enough data for AccountAddress".into(),
+                },
+            )?)
+            .map_err(|e| TypesError::DeserializationError {
+                structure: String::from("ValidatorConsensusInfo"),
+                source: e.into(),
+            })?;
+        bytes.advance(ACCOUNT_ADDRESS_SIZE); // Advance the buffer by the size of AccountAddress
+
+        let (slice_len, bytes_read) =
+            read_leb128(bytes).map_err(|_| TypesError::DeserializationError {
+                structure: String::from("ValidatorConsensusInfo"),
+                source: "Failed to read length of public_key".into(),
+            })?;
+        bytes.advance(bytes_read);
+
+        let public_key =
+            PublicKey::from_bytes(bytes.chunk().get(..slice_len as usize).ok_or_else(|| {
+                TypesError::DeserializationError {
+                    structure: String::from("ValidatorConsensusInfo"),
+                    source: "Not enough data for PublicKey".into(),
+                }
+            })?)
+            .map_err(|e| TypesError::DeserializationError {
+                structure: String::from("ValidatorConsensusInfo"),
+                source: e.into(),
+            })?;
+        bytes.advance(slice_len as usize); // Advance the buffer by the size of PublicKey
+        let voting_power = bytes.get_u64_le();
+        Ok(Self {
+            address,
+            public_key,
+            voting_power,
+        })
     }
 }
 
@@ -33,16 +84,6 @@ impl ValidatorConsensusInfo {
 pub struct ValidatorVerifier {
     /// A vector of each validator's on-chain account address to its pubkeys and voting power.
     validator_infos: Vec<ValidatorConsensusInfo>,
-    // Recomputed on deserialization:
-    // // The minimum voting power required to achieve a quorum
-    // #[serde(skip)]
-    // quorum_voting_power: u128,
-    // // Total voting power of all validators (cached from address_to_validator_info)
-    // #[serde(skip)]
-    // total_voting_power: u128,
-    // // In-memory index of account address to its index in the vector, does not go through serde.
-    // #[serde(skip)]
-    // address_to_validator_index: HashMap<AccountAddress, usize>,
 }
 
 impl ValidatorVerifier {
@@ -53,6 +94,10 @@ impl ValidatorVerifier {
     /// Returns the number of authors to be validated.
     pub fn len(&self) -> usize {
         self.validator_infos.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.validator_infos.is_empty()
     }
 
     /// Ensure there are not more than the maximum expected voters (all possible signatures).
@@ -193,6 +238,49 @@ impl ValidatorVerifier {
             .map_err(|_| VerifyError::InvalidMultiSignature)?;
         Ok(())
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+        bytes.put_slice(&write_leb128(self.validator_infos.len() as u64));
+        for info in &self.validator_infos {
+            bytes.put_slice(&info.to_bytes());
+        }
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        let mut validator_infos = Vec::new();
+
+        let (slice_len, bytes_read) =
+            read_leb128(bytes).map_err(|_| TypesError::DeserializationError {
+                structure: String::from("ValidatorVerifier"),
+                source: "Failed to read length of validator_infos".into(),
+            })?;
+
+        bytes.advance(bytes_read);
+
+        // 32 bytes (address) + size byte + 48 bytes (public key) + 8 bytes (voting power)
+        const INFO_LEN: usize =
+            ACCOUNT_ADDRESS_SIZE + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR;
+        for _ in 0..slice_len {
+            let info_bytes =
+                bytes
+                    .chunk()
+                    .get(..INFO_LEN)
+                    .ok_or_else(|| TypesError::DeserializationError {
+                        structure: String::from("ValidatorVerifier"),
+                        source: "Not enough data for ValidatorConsensusInfo".into(),
+                    })?;
+            validator_infos.push(ValidatorConsensusInfo::from_bytes(info_bytes).map_err(|e| {
+                TypesError::DeserializationError {
+                    structure: String::from("ValidatorVerifier"),
+                    source: e.into(),
+                }
+            })?);
+            bytes.advance(INFO_LEN);
+        }
+        Ok(Self { validator_infos })
+    }
 }
 
 /// Reconstruct fields from the raw data upon deserialization.
@@ -211,5 +299,67 @@ impl<'de> Deserialize<'de> for ValidatorVerifier {
             RawValidatorVerifier::deserialize(deserializer)?;
 
         Ok(ValidatorVerifier::new(validator_infos))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_bytes_conversion_validator_consensus_info() {
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::types::ledger_info::LedgerInfoWithSignatures;
+        use crate::types::validator::ValidatorConsensusInfo;
+
+        let mut aptos_wrapper = AptosWrapper::new(2, 130);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+
+        // We can use our intern struct as we test that the conversion is correct with bcs in
+        // aptos_test_utils
+        let intern_li: LedgerInfoWithSignatures =
+            bcs::from_bytes(&aptos_wrapper.get_latest_li_bytes().unwrap()).unwrap();
+        let validator_consensus_info = intern_li
+            .ledger_info()
+            .next_epoch_state()
+            .unwrap()
+            .verifier
+            .validator_infos()[0]
+            .clone();
+
+        let bytes = bcs::to_bytes(&validator_consensus_info).unwrap();
+
+        let validator_from_bytes = ValidatorConsensusInfo::from_bytes(&bytes).unwrap();
+        let validator_to_bytes = validator_from_bytes.to_bytes();
+
+        assert_eq!(bytes, validator_to_bytes);
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_bytes_conversion_validator_verifier() {
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::types::ledger_info::{OFFSET_VALIDATOR_LIST, VALIDATORS_LIST_LEN};
+        use crate::types::validator::ValidatorVerifier;
+        use crate::NBR_VALIDATORS;
+
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+
+        let bytes = &aptos_wrapper
+            .get_latest_li_bytes()
+            .unwrap()
+            .iter()
+            .skip(OFFSET_VALIDATOR_LIST)
+            .take(VALIDATORS_LIST_LEN)
+            .copied()
+            .collect::<Vec<u8>>();
+        let validator_from_bytes = ValidatorVerifier::from_bytes(bytes).unwrap();
+        let validator_to_bytes = validator_from_bytes.to_bytes();
+
+        assert_eq!(bytes, &validator_to_bytes);
     }
 }

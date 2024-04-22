@@ -49,7 +49,7 @@ pub struct HashValue {
 }
 
 impl HashValue {
-    pub fn new(hash: [u8; HASH_LENGTH]) -> Self {
+    pub const fn new(hash: [u8; HASH_LENGTH]) -> Self {
         HashValue { hash }
     }
 

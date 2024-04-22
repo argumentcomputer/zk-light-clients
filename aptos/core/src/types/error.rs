@@ -38,3 +38,14 @@ pub enum VerifyError {
     #[error("Failed to verify aggreagated signature")]
     FailedToVerifyAggregatedSignature,
 }
+
+/// Errors possible during type conversions.
+#[derive(Debug, Error)]
+pub enum TypesError {
+    #[error("Failed to deserialize {structure}: {source}")]
+    DeserializationError {
+        structure: String,
+        #[source]
+        source: Box<dyn std::error::Error + Sync + Send>,
+    },
+}

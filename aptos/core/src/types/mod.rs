@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
+use crate::crypto::hash::HASH_LENGTH;
+use crate::types::error::TypesError;
+use anyhow::Result;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub mod block_info;
@@ -6,18 +9,34 @@ pub mod epoch_state;
 pub mod error;
 pub mod ledger_info;
 pub mod trusted_state;
-pub(crate) mod validator;
+pub mod utils;
+pub mod validator;
 pub mod waypoint;
 
 pub type Round = u64;
 pub type Version = u64;
 
+pub const ACCOUNT_ADDRESS_SIZE: usize = HASH_LENGTH;
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Copy)]
-pub struct AccountAddress([u8; 32]);
+pub struct AccountAddress([u8; ACCOUNT_ADDRESS_SIZE]);
 
 impl AccountAddress {
-    pub const fn new(address: [u8; 32]) -> Self {
+    pub const fn new(address: [u8; ACCOUNT_ADDRESS_SIZE]) -> Self {
         Self(address)
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        let address = <[u8; ACCOUNT_ADDRESS_SIZE]>::try_from(bytes).map_err(|e| {
+            TypesError::DeserializationError {
+                structure: String::from("AccountAddress"),
+                source: e.into(),
+            }
+        })?;
+        Ok(Self(address))
     }
 }
 
@@ -41,7 +60,7 @@ impl<'de> Deserialize<'de> for AccountAddress {
         // as the original type.
         #[derive(::serde::Deserialize)]
         #[serde(rename = "AccountAddress")]
-        struct Value([u8; 32]);
+        struct Value([u8; ACCOUNT_ADDRESS_SIZE]);
 
         let value = Value::deserialize(deserializer)?;
         Ok(AccountAddress::new(value.0))

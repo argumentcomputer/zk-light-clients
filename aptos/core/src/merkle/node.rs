@@ -12,7 +12,7 @@ pub struct SparseMerkleLeafNode {
 }
 
 impl SparseMerkleLeafNode {
-    pub fn new(key: HashValue, value_hash: HashValue) -> Self {
+    pub const fn new(key: HashValue, value_hash: HashValue) -> Self {
         Self { key, value_hash }
     }
 }
@@ -32,7 +32,7 @@ pub struct SparseMerkleInternalNode {
 }
 
 impl SparseMerkleInternalNode {
-    pub fn new(left_child: HashValue, right_child: HashValue) -> Self {
+    pub const fn new(left_child: HashValue, right_child: HashValue) -> Self {
         Self {
             left_child,
             right_child,

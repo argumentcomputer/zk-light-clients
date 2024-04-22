@@ -47,6 +47,7 @@ jobs:
       fail-fast: false
     env:
       RUSTFLAGS: -D warnings
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - name: Set up git private repo access
         run: |
@@ -86,6 +87,8 @@ jobs:
       matrix:
         package:
           - "aptos"
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - name: Set up git private repo access
         run: |

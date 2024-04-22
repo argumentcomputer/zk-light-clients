@@ -9,12 +9,13 @@ mod test {
     use crate::types::ledger_info::LedgerInfoWithSignatures;
     use crate::types::validator::{ValidatorConsensusInfo, ValidatorVerifier};
     use crate::types::AccountAddress;
+    use crate::NBR_VALIDATORS;
     use bls12_381::{G1Affine, G1Projective};
     use std::ops::Add;
 
     #[test]
     pub fn test_serde_ledger_info_w_sig() {
-        let mut aptos_wrapper = AptosWrapper::new(4, 1);
+        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
 
