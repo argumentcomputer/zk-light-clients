@@ -22,7 +22,7 @@ use getset::Getters;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
-const ENUM_VARIANT_LEN: usize = 1;
+pub const ENUM_VARIANT_LEN: usize = 1;
 const LEB128_VEC_SIZE_VALIDATOR_LIST: usize = 2; // For 130 validators
 const NEXT_BYTE_OFFSET: usize = 1;
 const EPOCH_OFFSET_INCR: usize = 8;
@@ -64,7 +64,7 @@ const BITVEC_SIZE: usize = (NBR_VALIDATORS + 7) / 8 + 1;
 pub const AGG_SIGNATURE_LEN: usize =
     LEB128_VEC_SIZE_BITVEC + BITVEC_SIZE + ENUM_VARIANT_LEN + SIG_LEN;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LedgerInfo {
     commit_info: BlockInfo,
     /// Hash of consensus specific data that is opaque to all parts of the system other than
@@ -111,20 +111,36 @@ impl LedgerInfo {
     }
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        println!("cycle-tracker-start: block_info_from_bytes");
         let commit_info =
-            BlockInfo::from_bytes(bytes.chunk()).map_err(|e| TypesError::DeserializationError {
+            BlockInfo::from_bytes(bytes.chunk().get(..bytes.len() - HASH_LENGTH).ok_or_else(
+                || TypesError::DeserializationError {
+                    structure: String::from("LedgerInfo"),
+                    source: "Not enough data for BlockInfo".into(),
+                },
+            )?)
+            .map_err(|e| TypesError::DeserializationError {
                 structure: String::from("LedgerInfo"),
                 source: e.into(),
             })?;
+        println!("cycle-tracker-end: block_info_from_bytes");
 
         bytes.advance(bytes.len() - HASH_LENGTH); // Advance the buffer to get the hash
 
+        println!("cycle-tracker-start: consensus_data_hash_from_slice");
         let consensus_data_hash =
-            HashValue::from_slice(bytes.chunk()).map_err(|e| TypesError::DeserializationError {
+            HashValue::from_slice(bytes.chunk().get(..HASH_LENGTH).ok_or_else(|| {
+                TypesError::DeserializationError {
+                    structure: String::from("LedgerInfo"),
+                    source: "Not enough data for consensus data hash".into(),
+                }
+            })?)
+            .map_err(|e| TypesError::DeserializationError {
                 structure: String::from("LedgerInfo"),
                 source: e.into(),
             })?;
-
+        println!("cycle-tracker-end: consensus_data_hash_from_slice");
+        bytes.advance(HASH_LENGTH);
         Ok(Self {
             commit_info,
             consensus_data_hash,
@@ -141,12 +157,13 @@ impl CryptoHash for LedgerInfo {
     }
 }
 
-#[derive(Debug, Getters, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Getters, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LedgerInfoWithV0 {
     #[getset(get = "pub")]
     ledger_info: LedgerInfo,
     /// Aggregated BLS signature of all the validators that signed the message. The bitmask in the
     /// aggregated signature can be used to find out the individual validators signing the message
+    #[getset(get = "pub")]
     signatures: AggregateSignature,
 }
 
@@ -157,11 +174,81 @@ impl LedgerInfoWithV0 {
     ) -> anyhow::Result<(), VerifyError> {
         validator.verify_multi_signatures(self.ledger_info(), &self.signatures)
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+        bytes.put_slice(&self.ledger_info.to_bytes());
+        bytes.put_slice(&self.signatures.to_bytes());
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        let mut buf = BytesMut::from(bytes);
+
+        println!("cycle-tracker-start: li_from_bytes");
+        let ledger_info =
+            LedgerInfo::from_bytes(buf.chunk().get(..LEDGER_INFO_LEN).ok_or_else(|| {
+                TypesError::DeserializationError {
+                    structure: String::from("LedgerInfoWithV0"),
+                    source: "Not enough data for LedgerInfo".into(),
+                }
+            })?)?;
+        buf.advance(LEDGER_INFO_LEN);
+        println!("cycle-tracker-end: li_from_bytes");
+        println!("cycle-tracker-start: agg_sig_from_bytes");
+        let signatures =
+            AggregateSignature::from_bytes(buf.chunk().get(..AGG_SIGNATURE_LEN).ok_or_else(
+                || TypesError::DeserializationError {
+                    structure: String::from("LedgerInfoWithV0"),
+                    source: "Not enough data for AggregateSignature".into(),
+                },
+            )?)?;
+        buf.advance(AGG_SIGNATURE_LEN);
+        println!("cycle-tracker-end: agg_sig_from_bytes");
+
+        Ok(Self {
+            ledger_info,
+            signatures,
+        })
+    }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
+}
+
+impl LedgerInfoWithSignatures {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+        match self {
+            LedgerInfoWithSignatures::V0(ledger_info_with_v0) => {
+                bytes.put_u8(0); // 0 indicates V0
+                bytes.extend_from_slice(&ledger_info_with_v0.to_bytes());
+            }
+        }
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        let mut buf = BytesMut::from(bytes);
+        match buf.get_u8() {
+            0 => {
+                let ledger_info_with_v0 = LedgerInfoWithV0::from_bytes(&buf)?;
+                Ok(LedgerInfoWithSignatures::V0(ledger_info_with_v0))
+            }
+            _ => Err(TypesError::DeserializationError {
+                structure: String::from("LedgerInfoWithSignatures"),
+                source: "Unknown variant".into(),
+            }),
+        }
+    }
+
+    pub const fn signatures(&self) -> &AggregateSignature {
+        match &self {
+            LedgerInfoWithSignatures::V0(ledger) => &ledger.signatures,
+        }
+    }
 }
 
 // This deref polymorphism anti-pattern is in the upstream code (!)
@@ -177,37 +264,36 @@ impl Deref for LedgerInfoWithSignatures {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::crypto::hash::{prefixed_sha3, HASH_LENGTH};
-    use tiny_keccak::{Hasher, Sha3};
 
+    #[cfg(feature = "aptos")]
     #[test]
-    fn test_hash() {
-        let ledger_info = LedgerInfo {
-            commit_info: BlockInfo::default(),
-            consensus_data_hash: HashValue::default(),
-        };
+    fn test_ledger_info_hash() {
+        use super::*;
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::crypto::hash::CryptoHash as LcCryptoHash;
+        use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
 
-        let expected = {
-            let mut digest = Sha3::v256();
-            digest.update(&prefixed_sha3(b"LedgerInfo"));
-            digest.update(&bcs::to_bytes(&ledger_info).unwrap());
-            let mut hasher_bytes = [0u8; HASH_LENGTH];
-            digest.finalize(&mut hasher_bytes);
-            hasher_bytes
-        };
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
-        let actual = ledger_info.hash();
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
 
-        assert_eq!(expected, actual.hash());
+        let aptos_li = aptos_wrapper.get_latest_li().unwrap().ledger_info().clone();
+        let intern_li_hash = LcCryptoHash::hash(
+            &LedgerInfo::from_bytes(&bcs::to_bytes(&aptos_li).unwrap()).unwrap(),
+        );
+        let aptos_li_hash = AptosCryptoHash::hash(&aptos_li);
+
+        assert_eq!(intern_li_hash.to_vec(), aptos_li_hash.to_vec());
     }
 
     #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_ledger_info() {
+        use super::*;
         use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();
@@ -225,5 +311,42 @@ mod test {
         let ledger_info_serialized = ledger_info_deserialized.to_bytes();
 
         assert_eq!(ledger_info_bytes, &ledger_info_serialized);
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_bytes_conversion_ledger_info_w_sig() {
+        use super::*;
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+
+        let latest_li = aptos_wrapper.get_latest_li().unwrap();
+        let latest_li_bytes = bcs::to_bytes(&latest_li).unwrap();
+        let intern_li_w_sig = LedgerInfoWithSignatures::from_bytes(&latest_li_bytes).unwrap();
+
+        // Test LedgerInfo
+        let ledger_info = bcs::to_bytes(latest_li.ledger_info()).unwrap();
+        let intern_li = LedgerInfo::from_bytes(&ledger_info).unwrap();
+        assert_eq!(&intern_li, intern_li_w_sig.ledger_info());
+        let intern_li_bytes = intern_li.to_bytes();
+        assert_eq!(intern_li_bytes.len(), LEDGER_INFO_LEN);
+        assert_eq!(ledger_info, intern_li_bytes);
+
+        // Test AggregateSignature
+        let sig = bcs::to_bytes(latest_li.signatures()).unwrap();
+        let intern_sig = AggregateSignature::from_bytes(&sig).unwrap();
+        assert_eq!(&intern_sig, intern_li_w_sig.signatures());
+        let intern_sig_bytes = intern_sig.to_bytes();
+        assert_eq!(AGG_SIGNATURE_LEN, intern_sig_bytes.len());
+        assert_eq!(sig, intern_sig_bytes);
+
+        // Test LedgerInfoWithSignatures
+        let intern_li_w_sig = LedgerInfoWithSignatures::from_bytes(&latest_li_bytes).unwrap();
+        let intern_li_w_sig_bytes = intern_li_w_sig.to_bytes();
+        assert_eq!(latest_li_bytes, intern_li_w_sig_bytes);
     }
 }

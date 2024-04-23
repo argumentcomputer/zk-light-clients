@@ -4,9 +4,11 @@ use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
 use crate::types::validator::ValidatorVerifier;
 use anyhow::ensure;
 use bytes::{Buf, BufMut, BytesMut};
+use getset::Getters;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Getters)]
+#[getset(get = "pub")]
 pub struct EpochState {
     pub epoch: u64,
     pub verifier: ValidatorVerifier,
@@ -41,26 +43,27 @@ impl EpochState {
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let epoch = bytes.get_u64_le();
+        println!("cycle-tracker-start: validator_verifier_from_bytes");
         let verifier = ValidatorVerifier::from_bytes(bytes.chunk()).map_err(|e| {
             TypesError::DeserializationError {
                 structure: String::from("EpochState"),
                 source: e.into(),
             }
         })?;
+        println!("cycle-tracker-end: validator_verifier_from_bytes");
         Ok(Self { epoch, verifier })
     }
 }
 #[cfg(test)]
 mod test {
-    use crate::NBR_VALIDATORS;
-
     #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_epoch_state() {
         use super::*;
         use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();

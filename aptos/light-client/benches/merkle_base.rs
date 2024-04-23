@@ -1,5 +1,6 @@
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::merkle::proof::SparseMerkleProof;
+use aptos_lc_core::NBR_VALIDATORS;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use std::time::Duration;
 use wp1_sdk::utils::{setup_logger, BabyBearPoseidon2};
@@ -39,7 +40,7 @@ struct ProvingAssets {
 
 impl ProvingAssets {
     pub fn from_nbr_leaves(nbr_leaves: usize) -> Self {
-        let mut aptos_wrapper = AptosWrapper::new(nbr_leaves, 1);
+        let mut aptos_wrapper = AptosWrapper::new(nbr_leaves, 1, NBR_VALIDATORS);
         aptos_wrapper.generate_traffic();
 
         let proof_assets = aptos_wrapper

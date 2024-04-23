@@ -8,7 +8,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug, PartialEq, Eq, CopyGetters, Getters, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, CopyGetters, Getters, Serialize, Deserialize)]
 pub struct BlockInfo {
     /// The epoch to which the block belongs.
     #[getset(get_copy = "pub")]
@@ -112,7 +112,7 @@ impl BlockInfo {
 
         let version = bytes.get_u64_le();
         let timestamp_usecs = bytes.get_u64_le();
-
+        println!("cycle-tracker-start: epoch_state_from_bytes");
         let next_epoch_state = match bytes.get_u8() {
             1 => Some(EpochState::from_bytes(bytes.chunk()).map_err(|e| {
                 TypesError::DeserializationError {
@@ -122,6 +122,7 @@ impl BlockInfo {
             })?),
             _ => None,
         };
+        println!("cycle-tracker-end: epoch_state_from_bytes");
 
         Ok(Self {
             epoch,
@@ -137,13 +138,15 @@ impl BlockInfo {
 
 #[cfg(test)]
 mod test {
+
     #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_block_info() {
         use super::*;
         use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, 130);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();

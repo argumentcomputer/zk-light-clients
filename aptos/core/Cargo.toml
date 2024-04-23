@@ -10,7 +10,7 @@ repository = "https://github.com/wormhole-foundation/example-zk-light-clients"
 anyhow = "1.0.79"
 #From https://github.com/aptos-labs/aptos-core/blob/aptos-node-v1.10.0/Cargo.toml#L467
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
-bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm", features = ["experimental"] }
+bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "bls12381-g1-decompress", features = ["experimental"] }
 bytes = { version = "1.5.0", features = ["serde"] }
 getset = "0.1.2"
 hex = "0.4.3"
@@ -38,6 +38,9 @@ move-core-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "ap
 # Versions to fit aptos crate
 rand = { version = "0.7.3", optional = true }
 rand_core = { version = "0.5.1", optional = true }
+
+# For introspection
+wp1-derive = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev", package = "wp1-derive" }
 
 [dev-dependencies]
 cfg-if = "1.0.0"

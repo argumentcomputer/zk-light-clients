@@ -7,7 +7,10 @@ mod test {
     use crate::merkle::proof::SparseMerkleProof;
     use crate::types::error::VerifyError;
     use crate::types::ledger_info::LedgerInfoWithSignatures;
+    use crate::types::trusted_state::TrustedStateChange::Epoch;
+    use crate::types::trusted_state::{EpochChangeProof, TrustedState};
     use crate::types::validator::{ValidatorConsensusInfo, ValidatorVerifier};
+    use crate::types::waypoint::Waypoint;
     use crate::types::AccountAddress;
     use crate::NBR_VALIDATORS;
     use bls12_381::{G1Affine, G1Projective};
@@ -15,7 +18,7 @@ mod test {
 
     #[test]
     pub fn test_serde_ledger_info_w_sig() {
-        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
 
@@ -32,7 +35,7 @@ mod test {
 
     #[test]
     pub fn test_serde_sparse_merkle_proof() {
-        let mut aptos_wrapper = AptosWrapper::new(4, 1);
+        let mut aptos_wrapper = AptosWrapper::new(4, 1, 1);
 
         aptos_wrapper.generate_traffic();
 
@@ -51,7 +54,7 @@ mod test {
 
     #[test]
     pub fn test_sig_verify() {
-        let mut aptos_wrapper = AptosWrapper::new(4, 10);
+        let mut aptos_wrapper = AptosWrapper::new(4, 10, 10);
 
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();
@@ -81,5 +84,125 @@ mod test {
         assert!(res.is_err());
 
         assert_eq!(res.err().unwrap(), VerifyError::InvalidMultiSignature);
+    }
+
+    #[test]
+    pub fn test_happy_path_ratchet() {
+        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, 95);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic();
+
+        let intern_trusted_state: TrustedState =
+            bcs::from_bytes(&bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap()).unwrap();
+
+        let state_proof = aptos_wrapper.new_state_proof(intern_trusted_state.version());
+
+        let intern_epoch_change_proof: EpochChangeProof =
+            bcs::from_bytes(&bcs::to_bytes(state_proof.epoch_changes()).unwrap()).unwrap();
+        let intern_li_w_sigs: LedgerInfoWithSignatures =
+            bcs::from_bytes(&bcs::to_bytes(state_proof.latest_ledger_info_w_sigs()).unwrap())
+                .unwrap();
+
+        let trusted_state_change = intern_trusted_state
+            .verify_and_ratchet_inner(&intern_epoch_change_proof)
+            .expect("Failed to ratchet");
+
+        match trusted_state_change {
+            Epoch {
+                new_state,
+                latest_epoch_change_li,
+            } => {
+                assert_eq!(
+                    latest_epoch_change_li, &intern_li_w_sigs,
+                    "expected li match after ratcheting"
+                );
+                match new_state {
+                    TrustedState::EpochState {
+                        epoch_state,
+                        waypoint,
+                    } => {
+                        assert_eq!(
+                            intern_li_w_sigs.ledger_info().next_epoch_state().unwrap(),
+                            &epoch_state,
+                            "expected epoch state match after ratcheting"
+                        );
+                        assert_eq!(
+                            waypoint,
+                            Waypoint::new_any(intern_li_w_sigs.ledger_info()),
+                            "expected waypoint match after ratcheting"
+                        );
+                    }
+                    _ => panic!("Expected epoch state"),
+                }
+            }
+            _ => panic!("Expected epoch change"),
+        }
+    }
+
+    #[test]
+    pub fn test_ratchet_missed_epoch() {
+        let mut aptos_wrapper = AptosWrapper::new(4, 3, 3);
+        let intern_trusted_state: TrustedState =
+            bcs::from_bytes(&bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap()).unwrap();
+
+        match &intern_trusted_state {
+            TrustedState::EpochState { epoch_state, .. } => {
+                assert_eq!(*epoch_state.epoch(), 1);
+            }
+            _ => panic!("Expected epoch state"),
+        }
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic();
+
+        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic();
+
+        let state_proof = aptos_wrapper.new_state_proof(intern_trusted_state.version());
+
+        let intern_epoch_change_proof: EpochChangeProof =
+            bcs::from_bytes(&bcs::to_bytes(state_proof.epoch_changes()).unwrap()).unwrap();
+        let intern_li_w_sigs: LedgerInfoWithSignatures =
+            bcs::from_bytes(&bcs::to_bytes(state_proof.latest_ledger_info_w_sigs()).unwrap())
+                .unwrap();
+
+        let trusted_state_change = intern_trusted_state
+            .verify_and_ratchet_inner(&intern_epoch_change_proof)
+            .expect("Failed to ratchet");
+
+        match trusted_state_change {
+            Epoch {
+                new_state,
+                latest_epoch_change_li,
+            } => {
+                assert_eq!(
+                    latest_epoch_change_li, &intern_li_w_sigs,
+                    "expected li match after ratcheting"
+                );
+                match new_state {
+                    TrustedState::EpochState {
+                        epoch_state,
+                        waypoint,
+                    } => {
+                        assert_eq!(*epoch_state.epoch(), 3);
+                        assert_eq!(
+                            intern_li_w_sigs.ledger_info().next_epoch_state().unwrap(),
+                            &epoch_state,
+                            "expected epoch state match after ratcheting"
+                        );
+                        assert_eq!(
+                            waypoint,
+                            Waypoint::new_any(intern_li_w_sigs.ledger_info()),
+                            "expected waypoint match after ratcheting"
+                        );
+                    }
+                    _ => panic!("Expected epoch state"),
+                }
+            }
+            _ => panic!("Expected epoch change"),
+        }
     }
 }

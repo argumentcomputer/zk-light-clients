@@ -2,8 +2,8 @@
 use aptos_crypto::hash::CryptoHash;
 use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
+use aptos_executor_test_helpers::gen_block_id;
 use aptos_executor_test_helpers::integration_test_impl::create_db_and_executor;
-use aptos_executor_test_helpers::{gen_block_id, gen_ledger_info_with_sigs};
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_sdk::transaction_builder::aptos_stdlib::version_set_version;
 use aptos_sdk::transaction_builder::TransactionFactory;
@@ -11,10 +11,13 @@ use aptos_sdk::types::{AccountKey, LocalAccount};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::access_path::AccessPath;
 use aptos_types::account_config::{aptos_test_root_address, AccountResource};
+use aptos_types::aggregate_signature::PartialSignatures;
+use aptos_types::block_info::BlockInfo;
 use aptos_types::block_metadata::BlockMetadata;
 use aptos_types::chain_id::ChainId;
 use aptos_types::ledger_info::LedgerInfoWithSignatures;
 use aptos_types::proof::SparseMerkleProof;
+use aptos_types::state_proof::StateProof;
 use aptos_types::state_store::state_key::StateKey;
 use aptos_types::state_store::state_value::StateValue;
 use aptos_types::test_helpers::transaction_test_helpers::{
@@ -25,6 +28,7 @@ use aptos_types::transaction::Transaction::UserTransaction;
 use aptos_types::transaction::{Transaction, WriteSetPayload};
 use aptos_types::trusted_state::{TrustedState, TrustedStateChange};
 use aptos_types::validator_signer::ValidatorSigner;
+use aptos_types::validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier};
 use aptos_vm::AptosVM;
 use aptos_vm_genesis::TestValidator;
 use getset::Getters;
@@ -67,8 +71,10 @@ pub struct AptosWrapper {
     accounts: Vec<LocalAccount>,
     /// Validators of the chain
     validators: Vec<TestValidator>,
-    /// Signer
+    /// Signer's account for validators
     signers: Vec<ValidatorSigner>,
+    /// Number of signers per block produced
+    signers_per_block: usize,
     /// Transaction factory to generate transactions
     txn_factory: TransactionFactory,
     /// Database for the chain
@@ -95,7 +101,7 @@ pub struct AptosWrapper {
 impl AptosWrapper {
     /// Create a new instance of the wrapper with n accounts. Will commit a first block to fund
     /// the accounts with some coins.
-    pub fn new(nbr_local_accounts: usize, nbr_validators: usize) -> Self {
+    pub fn new(nbr_local_accounts: usize, nbr_validators: usize, signers_per_block: usize) -> Self {
         // Create temporary location for the database
         let path = aptos_temppath::TempPath::new();
         path.create_as_dir().unwrap();
@@ -127,6 +133,7 @@ impl AptosWrapper {
             core_resources_account,
             accounts,
             validators,
+            signers_per_block,
             signers,
             txn_factory,
             db,
@@ -165,8 +172,12 @@ impl AptosWrapper {
         self.execute_block(block_id, block(block_txs));
     }
 
-    /// Execute a new block and updates necessary properties
-    fn execute_block(&mut self, block_id: HashValue, block: Vec<SignatureVerifiedTransaction>) {
+    fn prepare_ratcheting(
+        &mut self,
+        block_id: HashValue,
+        block: Vec<SignatureVerifiedTransaction>,
+        from_version: u64,
+    ) -> StateProof {
         let output = self
             .executor()
             .execute_block(
@@ -175,23 +186,71 @@ impl AptosWrapper {
                 TEST_BLOCK_EXECUTOR_ONCHAIN_CONFIG,
             )
             .unwrap();
-        // `LedgerInfoWithSignatures` for block
-        let li =
-            gen_ledger_info_with_sigs(*self.current_epoch(), &output, block_id, self.signers());
+
+        let ledger_info = aptos_types::ledger_info::LedgerInfo::new(
+            BlockInfo::new(
+                *self.current_epoch(),
+                0, /* round */
+                block_id,
+                output.root_hash(),
+                output.version(),
+                0, /* timestamp */
+                output.epoch_state().clone(),
+            ),
+            HashValue::zero(),
+        );
+
+        let partial_sig = PartialSignatures::new(
+            self.signers()
+                .get(..self.signers_per_block)
+                .unwrap()
+                .iter()
+                .map(|signer| (signer.author(), signer.sign(&ledger_info).unwrap()))
+                .collect(),
+        );
+
+        let validator_consensus_info = self
+            .signers()
+            .iter()
+            .map(|signer| ValidatorConsensusInfo::new(signer.author(), signer.public_key(), 1))
+            .collect();
+
+        let validator_verifier = ValidatorVerifier::new_with_quorum_voting_power(
+            validator_consensus_info,
+            self.signers_per_block as u128,
+        )
+        .expect("Incorrect quorum size.");
+
+        let li = LedgerInfoWithSignatures::new(
+            ledger_info,
+            validator_verifier
+                .aggregate_signatures(&partial_sig)
+                .unwrap(),
+        );
         self.latest_li = Some(li.clone());
 
         // Save block to persistent storage
         self.executor().commit_blocks(vec![block_id], li).unwrap();
 
-        // State proof for block1 from genesis
-        let trusted_state_version = self.trusted_state().version();
+        self.db().reader.get_state_proof(from_version).unwrap()
+    }
 
-        let state_proof = self
-            .db()
-            .reader
-            .get_state_proof(trusted_state_version)
-            .unwrap();
+    pub fn new_state_proof(&mut self, from_version: u64) -> StateProof {
+        let (block_id, block_meta) = self.gen_block_id_and_metadata();
+        let mut block_txs = vec![block_meta];
+        let new_version = *self.major_version() + 100;
+        let reconfig = self.core_resources_account().sign_with_transaction_builder(
+            self.txn_factory().payload(version_set_version(new_version)),
+        );
+        block_txs.push(UserTransaction(reconfig));
+        self.major_version = new_version;
 
+        self.prepare_ratcheting(block_id, block(block_txs), from_version)
+    }
+
+    /// Execute a new block and updates necessary properties
+    fn execute_block(&mut self, block_id: HashValue, block: Vec<SignatureVerifiedTransaction>) {
+        let state_proof = self.prepare_ratcheting(block_id, block, self.trusted_state.version());
         // Ratchet trusted state to latest version
         let trusted_state = match self.trusted_state().verify_and_ratchet(&state_proof) {
             Ok(TrustedStateChange::Epoch { new_state, .. }) => {
@@ -345,7 +404,7 @@ fn generate_local_accounts(n: usize) -> Vec<LocalAccount> {
 
 #[test]
 fn test_aptos_wrapper() {
-    let mut aptos_wrapper = AptosWrapper::new(4, 1);
+    let mut aptos_wrapper = AptosWrapper::new(4, 1, 1);
 
     // Get the state proof for the current version
     let state_proof_assets = aptos_wrapper.get_latest_proof_account(0).unwrap();
@@ -378,7 +437,7 @@ fn test_aptos_wrapper() {
 
 #[test]
 fn test_multiple_signers() {
-    let mut aptos_wrapper = AptosWrapper::new(4, 15);
+    let mut aptos_wrapper = AptosWrapper::new(4, 15, 15);
 
     // Get the state proof for the current version
     let state_proof_assets = aptos_wrapper.get_latest_proof_account(0).unwrap();

@@ -6,9 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Aptos crates
+# LC crates
 aptos-lc-core = { path = "../core" }
 aptos-programs = { path = "../aptos-programs" }
+
+# Aptos crate
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0", optional = true }
 
 # WP1 crates
 wp1-sdk = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
@@ -42,5 +45,10 @@ harness = false
 
 [[bench]]
 name = "sig_prod"
+required-features = ["aptos"]
+harness = false
+
+[[bench]]
+name = "ratchet_prod"
 required-features = ["aptos"]
 harness = false

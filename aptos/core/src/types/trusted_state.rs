@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
+use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::types::epoch_state::EpochState;
-use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
+use crate::types::error::TypesError;
+use crate::types::ledger_info::{
+    LedgerInfo, LedgerInfoWithSignatures, AGG_SIGNATURE_LEN, ENUM_VARIANT_LEN, LEDGER_INFO_LEN,
+};
+use crate::types::utils::{read_leb128, write_leb128};
 use crate::types::waypoint::Waypoint;
 use crate::types::Version;
 use anyhow::{bail, ensure, format_err};
+use bytes::{Buf, BufMut, BytesMut};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,13 +73,19 @@ impl TrustedState {
     }
 
     /// The main LC method
+    /// Expects to receive an `EpochChangeProof` containing one `LedgerInfoWithSignatures`
+    /// that represents an epoch transition from trusted_state.epoch -> trusted_state.epoch +1,
+    /// and verifies it.
     pub fn verify_and_ratchet_inner<'a>(
         &self,
-        latest_li: &'a LedgerInfoWithSignatures,
         epoch_change_proof: &'a EpochChangeProof,
     ) -> anyhow::Result<TrustedStateChange<'a>> {
         // Abort early if the response is stale.
         let curr_version = self.version();
+        let latest_li = epoch_change_proof
+            .ledger_info_with_sigs
+            .last()
+            .ok_or_else(|| format_err!("epoch_change_proof doesn't carry a LedgerInfo"))?;
         let target_version = latest_li.ledger_info().version();
         ensure!(
             target_version >= curr_version,
@@ -98,6 +110,7 @@ impl TrustedState {
             // use it as latest state, otherwise fallback to the epoch change ledger info.
             let new_epoch = new_epoch_state.epoch;
 
+            // With the current hardcoded latest_li from epoch_change_proof, we always fall on the first branch.
             let verified_ledger_info = if epoch_change_li == latest_li {
                 latest_li
             } else if latest_li.ledger_info().epoch() == new_epoch {
@@ -120,39 +133,77 @@ impl TrustedState {
                 latest_epoch_change_li: epoch_change_li,
             })
         } else {
-            let (curr_waypoint, curr_epoch_state) = match self {
-                Self::EpochWaypoint(_) => {
-                    bail!("EpochWaypoint can only verify an epoch change ledger info")
-                }
-                Self::EpochState {
-                    waypoint,
-                    epoch_state,
-                    ..
-                } => (waypoint, epoch_state),
-            };
+            Err(format_err!("Received proof is not for an epoch change"))
+        }
+    }
 
-            // The EpochChangeProof is empty, stale, or only gets us into our
-            // current epoch. We then try to verify that the latest ledger info
-            // is inside this epoch.
-            let new_waypoint = Waypoint::new_any(latest_li.ledger_info());
-            if new_waypoint.version() == curr_waypoint.version() {
-                ensure!(
-                    &new_waypoint == curr_waypoint,
-                    "LedgerInfo doesn't match verified state"
-                );
-                Ok(TrustedStateChange::NoChange)
-            } else {
-                // Verify the target ledger info, which should be inside the current epoch.
-                curr_epoch_state.verify(latest_li)?;
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
 
-                let new_state = Self::EpochState {
-                    waypoint: new_waypoint,
-                    epoch_state: curr_epoch_state.clone(),
-                };
-
-                Ok(TrustedStateChange::Version { new_state })
+        match self {
+            TrustedState::EpochWaypoint(waypoint) => {
+                bytes.put_u8(0); // 0 indicates EpochWaypoint
+                bytes.put_slice(&waypoint.to_bytes());
+            }
+            TrustedState::EpochState {
+                waypoint,
+                epoch_state,
+            } => {
+                bytes.put_u8(1); // 1 indicates EpochState
+                bytes.put_slice(&waypoint.to_bytes());
+                bytes.put_slice(&epoch_state.to_bytes());
             }
         }
+
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        let mut buf = BytesMut::from(bytes);
+
+        const WAYPOINT_BYTES_LEN: usize = 40;
+
+        match buf.get_u8() {
+            0 => {
+                println!("cycle-tracker-start: waypoint_from_bytes");
+                let waypoint = Waypoint::from_bytes(buf.chunk())?;
+                println!("cycle-tracker-end: waypoint_from_bytes");
+                Ok(TrustedState::EpochWaypoint(waypoint))
+            }
+            1 => {
+                println!("cycle-tracker-start: waypoint_from_bytes");
+                let waypoint =
+                    Waypoint::from_bytes(buf.chunk().get(..WAYPOINT_BYTES_LEN).ok_or_else(
+                        || TypesError::DeserializationError {
+                            structure: String::from("Waypoint"),
+                            source: "Not enough data for value".into(),
+                        },
+                    )?)?;
+
+                buf.advance(WAYPOINT_BYTES_LEN);
+                println!("cycle-tracker-end: waypoint_from_bytes");
+                println!("cycle-tracker-start: epoch_state_from_bytes");
+                let epoch_state = EpochState::from_bytes(buf.chunk())?;
+                println!("cycle-tracker-end: epoch_state_from_bytes");
+                Ok(TrustedState::EpochState {
+                    waypoint,
+                    epoch_state,
+                })
+            }
+            _ => Err(TypesError::DeserializationError {
+                structure: String::from("TrustedState"),
+                source: "Unknown variant".into(),
+            }),
+        }
+    }
+}
+
+impl CryptoHash for TrustedState {
+    fn hash(&self) -> HashValue {
+        HashValue::new(hash_data(
+            &prefixed_sha3(b"TrustedState"),
+            vec![&self.to_bytes()],
+        ))
     }
 }
 
@@ -173,6 +224,7 @@ pub enum TrustedStateChange<'a> {
 
 /// A vector of LedgerInfo with contiguous increasing epoch numbers to prove a sequence of
 /// epoch changes from the first LedgerInfo's epoch.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EpochChangeProof {
     pub ledger_info_with_sigs: Vec<LedgerInfoWithSignatures>,
     pub more: bool,
@@ -246,5 +298,148 @@ impl EpochChangeProof {
         }
 
         Ok(self.ledger_info_with_sigs.last().unwrap())
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+
+        // Write the length of the vector as LEB128
+        bytes.extend_from_slice(&write_leb128(self.ledger_info_with_sigs.len() as u64));
+
+        // Write each LedgerInfoWithSignatures to bytes
+        for ledger_info_with_sig in &self.ledger_info_with_sigs {
+            bytes.extend_from_slice(&ledger_info_with_sig.to_bytes());
+        }
+
+        // Write the `more` field
+        bytes.put_u8(self.more as u8);
+
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error> {
+        let mut buf = BytesMut::from(bytes);
+        println!("cycle-tracker-start: read_leb128_advance");
+        // Read the length of the vector from LEB128
+        let (len, bytes_read) = read_leb128(&buf)?;
+        buf.advance(bytes_read);
+        println!("cycle-tracker-end: read_leb128_advance");
+
+        // Read each LedgerInfoWithSignatures from bytes
+        let mut ledger_info_with_sigs = Vec::new();
+        for i in 0..len {
+            println!("cycle-tracker-start: li_w_signature_from_bytes");
+            let ledger_info_with_sig = LedgerInfoWithSignatures::from_bytes(
+                buf.chunk()
+                    .get(..ENUM_VARIANT_LEN + LEDGER_INFO_LEN + AGG_SIGNATURE_LEN)
+                    .ok_or_else(|| TypesError::DeserializationError {
+                        structure: String::from("EpochChangeProof"),
+                        source: format!(
+                            "Not enough data for LedgerInfoWithSignatures at index {i}"
+                        )
+                        .into(),
+                    })?,
+            )?;
+            println!("cycle-tracker-end: li_w_signature_from_bytes");
+            ledger_info_with_sigs.push(ledger_info_with_sig);
+            buf.advance(ENUM_VARIANT_LEN + LEDGER_INFO_LEN + AGG_SIGNATURE_LEN);
+        }
+
+        // Read the `more` field
+        let more = buf.get_u8() != 0;
+
+        Ok(EpochChangeProof {
+            ledger_info_with_sigs,
+            more,
+        })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[cfg(feature = "aptos")]
+    fn assess_equality(bytes: Vec<u8>) {
+        use crate::types::trusted_state::TrustedState;
+
+        let trusted_state_deserialized = TrustedState::from_bytes(&bytes).unwrap();
+        let trusted_state_serialized = trusted_state_deserialized.to_bytes();
+
+        assert_eq!(bytes, trusted_state_serialized);
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_bytes_conversion_trusted_state_epoch() {
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::NBR_VALIDATORS;
+
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+
+        // New epoch TrustedState
+        let trusted_state = aptos_wrapper.trusted_state().clone();
+
+        let bytes = bcs::to_bytes(&trusted_state).unwrap();
+
+        assess_equality(bytes);
+
+        // No new epoch
+        aptos_wrapper.generate_traffic();
+
+        let trusted_state = aptos_wrapper.trusted_state().clone();
+
+        let bytes = bcs::to_bytes(&trusted_state).unwrap();
+
+        assess_equality(bytes);
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_bytes_conversion_epoch_change_proof() {
+        use super::*;
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::NBR_VALIDATORS;
+
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+
+        // New epoch TrustedState
+        let state_proof = aptos_wrapper.new_state_proof(*aptos_wrapper.current_version());
+
+        let bytes = bcs::to_bytes(state_proof.epoch_changes()).unwrap();
+
+        let intern_epoch_change_proof = EpochChangeProof::from_bytes(&bytes).unwrap();
+
+        assert_eq!(bytes, intern_epoch_change_proof.to_bytes());
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_trusted_state_hash() {
+        use super::*;
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+        use crate::crypto::hash::CryptoHash as LcCryptoHash;
+        use crate::NBR_VALIDATORS;
+        use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
+
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+
+        let aptos_trusted_state = aptos_wrapper.trusted_state().clone();
+        let intern_trusted_state_hash = LcCryptoHash::hash(
+            &TrustedState::from_bytes(&bcs::to_bytes(&aptos_trusted_state).unwrap()).unwrap(),
+        );
+        let aptos_trusted_state_hash = AptosCryptoHash::hash(&aptos_trusted_state);
+
+        assert_eq!(
+            intern_trusted_state_hash.to_vec(),
+            aptos_trusted_state_hash.to_vec()
+        );
     }
 }

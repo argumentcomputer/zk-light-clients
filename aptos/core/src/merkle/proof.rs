@@ -149,7 +149,7 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_crypto::hash::CryptoHash;
 
-        let mut aptos_wrapper = AptosWrapper::new(40, 1);
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
         aptos_wrapper.generate_traffic();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();

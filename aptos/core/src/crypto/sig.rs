@@ -20,15 +20,36 @@ pub fn hash(msg: &[u8]) -> G2Projective {
     <G2Projective as HashToCurve<ExpandMsgXmd<sha2::Sha256>>>::hash_to_curve(msg, DST)
 }
 
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct PublicKey {
-    pubkey: G1Affine,
+    compressed_pubkey: [u8; PUB_KEY_LEN],
+    pubkey: Option<G1Affine>,
+}
+
+impl Default for PublicKey {
+    fn default() -> Self {
+        Self {
+            compressed_pubkey: [0u8; PUB_KEY_LEN],
+            pubkey: None,
+        }
+    }
 }
 
 impl PublicKey {
-    pub fn aggregate(pubkeys: Vec<&Self>) -> anyhow::Result<PublicKey> {
-        fn aggregate_step(mut acc: G1Projective, pk: &PublicKey) -> G1Projective {
-            acc += pk.pubkey;
+    fn pubkey(&mut self) -> G1Affine {
+        match self.pubkey {
+            Some(pubkey) => pubkey,
+            None => {
+                let pubkey = G1Affine::from_compressed(&self.compressed_pubkey).unwrap();
+                self.pubkey = Some(pubkey);
+                pubkey
+            }
+        }
+    }
+
+    pub fn aggregate(pubkeys: Vec<&mut Self>) -> anyhow::Result<PublicKey> {
+        fn aggregate_step(mut acc: G1Projective, pk: &mut PublicKey) -> G1Projective {
+            acc += pk.pubkey();
             acc
         }
 
@@ -37,13 +58,16 @@ impl PublicKey {
             .fold(G1Projective::identity(), aggregate_step);
 
         Ok(PublicKey {
-            pubkey: aggregate.into(),
+            compressed_pubkey: [0u8; PUB_KEY_LEN],
+            pubkey: Some(aggregate.into()),
         })
     }
 
+    // TODO what if the compressed pubkey is not a real one?
+    // Should be alright as we get all pubkeys from external source, apart from agg one (but we don't need it as bytes)
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
-        let pub_key_bytes = self.pubkey.to_compressed().to_vec();
+        let pub_key_bytes = self.compressed_pubkey.to_vec();
 
         bytes.put_slice(&write_leb128(pub_key_bytes.len() as u64));
         bytes.put_slice(&pub_key_bytes);
@@ -65,15 +89,9 @@ impl PublicKey {
             }
         })?;
 
-        if G1Affine::from_compressed(bytes_fixed).is_none().into() {
-            return Err(TypesError::DeserializationError {
-                structure: String::from("PublicKey"),
-                source: "G1Affine::from_compressed returned None".into(),
-            });
-        }
-
         Ok(Self {
-            pubkey: G1Affine::from_compressed(bytes_fixed).unwrap(),
+            compressed_pubkey: *bytes_fixed,
+            pubkey: None,
         })
     }
 }
@@ -85,7 +103,7 @@ impl Serialize for PublicKey {
     {
         serializer.serialize_newtype_struct(
             "PublicKey",
-            serde_bytes::Bytes::new(self.pubkey.to_compressed().as_slice()),
+            serde_bytes::Bytes::new(&self.compressed_pubkey),
         )
     }
 }
@@ -113,8 +131,8 @@ impl TryFrom<&[u8]> for PublicKey {
 
     fn try_from(bytes: &[u8]) -> std::result::Result<Self, Self::Error> {
         Ok(Self {
-            pubkey: G1Affine::from_compressed(<&[u8; PUB_KEY_LEN]>::try_from(bytes).unwrap())
-                .unwrap(),
+            compressed_pubkey: <[u8; PUB_KEY_LEN]>::try_from(bytes).unwrap(),
+            pubkey: None,
         })
     }
 }
@@ -125,13 +143,13 @@ pub struct Signature {
 }
 
 impl Signature {
-    pub fn verify(&self, msg: &[u8], pubkey: &PublicKey) -> Result<(), CryptoError> {
+    pub fn verify(&self, msg: &[u8], pubkey: &mut PublicKey) -> Result<(), CryptoError> {
         let msg: G2Projective = hash(msg);
 
         let g1 = G1Affine::generator();
 
         let lhs = pairing(&g1, &self.sig);
-        let rhs = pairing(&pubkey.pubkey, &msg.into());
+        let rhs = pairing(&pubkey.pubkey(), &msg.into());
 
         if lhs == rhs {
             Ok(())
@@ -150,6 +168,7 @@ impl Signature {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        println!("cycle-tracker-start: sig_from_bytes");
         if bytes.len() != SIG_LEN {
             return Err(TypesError::DeserializationError {
                 structure: String::from("Signature"),
@@ -163,15 +182,18 @@ impl Signature {
                 source: e.into(),
             })?;
 
-        if G2Affine::from_compressed(bytes_fixed).is_none().into() {
+        let decompressed = G2Affine::from_compressed(bytes_fixed);
+
+        if decompressed.is_none().into() {
             return Err(TypesError::DeserializationError {
                 structure: String::from("PublicKey"),
                 source: "G2Affine::from_compressed returned None".into(),
             });
         }
+        println!("cycle-tracker-end: sig_from_bytes");
 
         Ok(Self {
-            sig: G2Affine::from_compressed(bytes_fixed).unwrap(),
+            sig: decompressed.unwrap(),
         })
     }
 }
@@ -220,7 +242,7 @@ impl TryFrom<&[u8]> for Signature {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct BitVec {
     #[serde(with = "serde_bytes")]
     inner: Vec<u8>,
@@ -306,7 +328,7 @@ impl<'de> Deserialize<'de> for BitVec {
 }
 
 // Example structure for an aggregate signature.
-#[derive(Debug, PartialEq, Eq, Getters, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Getters, Serialize, Deserialize)]
 pub struct AggregateSignature {
     validator_bitmask: BitVec,
     #[getset(get = "pub")]
@@ -333,6 +355,7 @@ impl AggregateSignature {
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let bitvec_len = bytes.get_u8() as usize;
 
+        println!("cycle-tracker-start: bitvec_from_bytes");
         let validator_bitmask =
             BitVec::from_bytes(bytes.chunk().get(..bitvec_len).ok_or_else(|| {
                 TypesError::DeserializationError {
@@ -340,6 +363,7 @@ impl AggregateSignature {
                     source: "Not enough data for BitVec".into(),
                 }
             })?);
+        println!("cycle-tracker-end: bitvec_from_bytes");
 
         bytes.advance(bitvec_len);
 
@@ -381,7 +405,7 @@ mod test {
         use crate::types::ledger_info::{AGG_SIGNATURE_LEN, OFFSET_SIGNATURE};
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();

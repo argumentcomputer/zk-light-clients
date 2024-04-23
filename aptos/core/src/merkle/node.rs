@@ -48,3 +48,65 @@ impl CryptoHash for SparseMerkleInternalNode {
         ))
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_sparse_merkle_leaf_node_hash() {
+        use crate::crypto::hash::CryptoHash as LcCryptoHash;
+        use crate::crypto::hash::HashValue as LcHashValue;
+        use crate::merkle::node::SparseMerkleLeafNode as LcSparseMerkleLeafNode;
+
+        use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
+        use aptos_crypto::HashValue as AptosHashValue;
+        use aptos_types::proof::SparseMerkleLeafNode as AptosSparseMerkleLeafNode;
+
+        let key_slice = [10; 32];
+        let value_hash_slice = [15; 32];
+
+        let key_lc = LcHashValue::from_slice(key_slice).unwrap();
+        let value_hash_lc = LcHashValue::from_slice(value_hash_slice).unwrap();
+
+        let lc_hash = LcCryptoHash::hash(&LcSparseMerkleLeafNode::new(key_lc, value_hash_lc));
+
+        let key_aptos = AptosHashValue::new(key_slice);
+        let value_hash_aptos = AptosHashValue::new(value_hash_slice);
+
+        let aptos_hash =
+            AptosCryptoHash::hash(&AptosSparseMerkleLeafNode::new(key_aptos, value_hash_aptos));
+
+        assert_eq!(lc_hash.to_vec(), aptos_hash.to_vec());
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_sparse_merkle_internal_node_hash() {
+        use crate::crypto::hash::CryptoHash as LcCryptoHash;
+        use crate::crypto::hash::HashValue as LcHashValue;
+        use crate::merkle::node::SparseMerkleInternalNode as LcSparseMerkleInternalNode;
+
+        use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
+        use aptos_crypto::HashValue as AptosHashValue;
+        use aptos_types::proof::SparseMerkleInternalNode as AptosSparseMerkleInternalNode;
+
+        let key_slice = [10; 32];
+        let value_hash_slice = [15; 32];
+
+        let key_lc = LcHashValue::from_slice(key_slice).unwrap();
+        let value_hash_lc = LcHashValue::from_slice(value_hash_slice).unwrap();
+
+        let lc_hash = LcCryptoHash::hash(&LcSparseMerkleInternalNode::new(key_lc, value_hash_lc));
+
+        let key_aptos = AptosHashValue::new(key_slice);
+        let value_hash_aptos = AptosHashValue::new(value_hash_slice);
+
+        let aptos_hash = AptosCryptoHash::hash(&AptosSparseMerkleInternalNode::new(
+            key_aptos,
+            value_hash_aptos,
+        ));
+
+        assert_eq!(lc_hash.to_vec(), aptos_hash.to_vec());
+    }
+}

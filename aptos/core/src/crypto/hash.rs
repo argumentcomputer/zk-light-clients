@@ -35,13 +35,6 @@ pub fn hash_data(tag: &[u8], data: Vec<&[u8]>) -> [u8; HASH_LENGTH] {
     output
 }
 
-pub fn create_literal_hash(word: &str) -> HashValue {
-    let mut s = word.as_bytes().to_vec();
-    assert!(s.len() <= HASH_LENGTH);
-    s.resize(HASH_LENGTH, 0);
-    HashValue::from_slice(&s).expect("Cannot fail")
-}
-
 #[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone, Copy, CopyGetters, Hash)]
 pub struct HashValue {
     #[getset(get_copy = "pub(crate)")]

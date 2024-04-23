@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
-use crate::crypto::hash::prefixed_sha3;
+use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey, PUB_KEY_LEN};
 use crate::types::error::{TypesError, VerifyError};
 use crate::types::ledger_info::{LedgerInfo, LEB128_PUBKEY_LEN, VOTING_POWER_OFFSET_INCR};
@@ -16,7 +16,8 @@ pub struct ValidatorConsensusInfo {
     #[getset(get_copy)]
     address: AccountAddress,
     #[getset(get_copy)]
-    public_key: PublicKey, // bls12-381
+    public_key: PublicKey,
+    // bls12-381
     voting_power: u64,
 }
 
@@ -209,6 +210,7 @@ impl ValidatorVerifier {
             authors.push(validator.address());
             pub_keys.push(validator.public_key());
         }
+
         // Verify the quorum voting power of the authors
         self.check_voting_power(authors.iter(), true)?;
         if self.quorum_voting_power() == 0 {
@@ -223,9 +225,9 @@ impl ValidatorVerifier {
             .sig()
             .as_ref()
             .ok_or(VerifyError::EmptySignature)?;
-        let pk_refs = pub_keys.iter().collect::<Vec<&PublicKey>>();
+        let pk_refs = pub_keys.iter_mut().collect::<Vec<_>>();
         // Verify the optimistically aggregated signature.
-        let aggregated_key =
+        let mut aggregated_key =
             PublicKey::aggregate(pk_refs).map_err(|_| VerifyError::FailedToAggregatePubKey)?;
 
         // see aptos_crypto::unit_tests::cryptohasher
@@ -234,7 +236,7 @@ impl ValidatorVerifier {
             .map_err(|_| VerifyError::InvalidMultiSignature)?;
 
         multi_sig
-            .verify(&bytes, &aggregated_key)
+            .verify(&bytes, &mut aggregated_key)
             .map_err(|_| VerifyError::InvalidMultiSignature)?;
         Ok(())
     }
@@ -250,7 +252,7 @@ impl ValidatorVerifier {
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let mut validator_infos = Vec::new();
-
+        println!("cycle-tracker-start: read_leb_advance");
         let (slice_len, bytes_read) =
             read_leb128(bytes).map_err(|_| TypesError::DeserializationError {
                 structure: String::from("ValidatorVerifier"),
@@ -258,8 +260,10 @@ impl ValidatorVerifier {
             })?;
 
         bytes.advance(bytes_read);
+        println!("cycle-tracker-end: read_leb_advance");
 
         // 32 bytes (address) + size byte + 48 bytes (public key) + 8 bytes (voting power)
+        println!("cycle-tracker-start: all_validator_infos_{}", slice_len);
         const INFO_LEN: usize =
             ACCOUNT_ADDRESS_SIZE + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR;
         for _ in 0..slice_len {
@@ -279,7 +283,18 @@ impl ValidatorVerifier {
             })?);
             bytes.advance(INFO_LEN);
         }
+        println!("cycle-tracker-end: all_validator_infos_{}", slice_len);
+
         Ok(Self { validator_infos })
+    }
+}
+
+impl CryptoHash for ValidatorVerifier {
+    fn hash(&self) -> HashValue {
+        HashValue::new(hash_data(
+            &prefixed_sha3(b"ValidatorVerifier"),
+            vec![&self.to_bytes()],
+        ))
     }
 }
 
@@ -304,14 +319,16 @@ impl<'de> Deserialize<'de> for ValidatorVerifier {
 
 #[cfg(test)]
 mod test {
+
     #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_validator_consensus_info() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::types::ledger_info::LedgerInfoWithSignatures;
         use crate::types::validator::ValidatorConsensusInfo;
+        use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, 130);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();
@@ -344,7 +361,7 @@ mod test {
         use crate::types::validator::ValidatorVerifier;
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();
