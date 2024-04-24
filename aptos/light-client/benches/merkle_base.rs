@@ -40,7 +40,7 @@ struct ProvingAssets {
 
 impl ProvingAssets {
     fn from_nbr_leaves(nbr_leaves: usize) -> Self {
-        let mut aptos_wrapper = AptosWrapper::new(nbr_leaves, 1, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(nbr_leaves, NBR_VALIDATORS, NBR_VALIDATORS);
         aptos_wrapper.generate_traffic();
 
         let proof_assets = aptos_wrapper

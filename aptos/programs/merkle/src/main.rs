@@ -5,11 +5,19 @@ use aptos_lc_core::merkle::proof::SparseMerkleProof;
 wp1_zkvm::entrypoint!(main);
 
 pub fn main() {
+    wp1_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-start: read_inputs");
+    }
     let sparse_merkle_proof = wp1_zkvm::io::read::<SparseMerkleProof>();
     let key = wp1_zkvm::io::read::<[u8; 32]>();
     let leaf_value_hash = wp1_zkvm::io::read::<[u8; 32]>();
     let expected_root_hash = wp1_zkvm::io::read::<[u8; 32]>();
-
+    wp1_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-end: read_inputs");
+    }
+    wp1_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-start: verify_merkle_proof");
+    }
     let reconstructed_root_hash = sparse_merkle_proof
         .verify_by_hash(
             HashValue::from_slice(expected_root_hash)
@@ -19,6 +27,8 @@ pub fn main() {
                 .expect("leaf_value_hash: could not use input to create HashValue"),
         )
         .expect("verify_by_hash: could not verify proof");
-
+    wp1_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-end: verify_merkle_proof");
+    }
     wp1_zkvm::io::commit(&reconstructed_root_hash);
 }

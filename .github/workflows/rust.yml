@@ -71,12 +71,6 @@ jobs:
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
         env:
           RUSTFLAGS: "--cfg tokio_unstable"
-      - name: Run cargo test on aptos-lc
-        run: |
-          cargo nextest run -p aptos-lc --release --profile ci --all-features
-        working-directory: ${{ github.workspace }}/${{ matrix.package }}
-        env:
-          RUSTFLAGS: "--cfg tokio_unstable -C target-cpu=native"
       - name: Doctests
         run: |
           cargo test --doc

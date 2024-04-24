@@ -45,14 +45,18 @@ impl ProvingAssets {
         }
     }
 
-    fn execute(&self) {
+    fn prove(&self) {
         let mut stdin = SP1Stdin::new();
 
         setup_logger();
 
         stdin.write(&self.ledger_info_with_signature);
 
-        ProverClient::execute(aptos_programs::SIGNATURE_VERIFICATION_PROGRAM, &stdin).unwrap();
+        let client = ProverClient::new();
+
+        client
+            .prove(aptos_programs::SIGNATURE_VERIFICATION_PROGRAM, stdin)
+            .unwrap();
     }
 }
 
@@ -63,6 +67,6 @@ fn bench_sig(c: &mut Criterion) {
     let proving_assets = ProvingAssets::new();
 
     group.bench_function("SignatureVerificationProve", |b| {
-        b.iter(|| black_box(proving_assets.clone()).execute())
+        b.iter(|| black_box(proving_assets.clone()).prove())
     });
 }

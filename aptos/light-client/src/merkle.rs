@@ -11,11 +11,8 @@ fn merkle_proving(
     leaf_hash: [u8; 32],
     expected_root_hash: [u8; 32],
 ) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, [u8; 32]), LightClientError> {
-    #[cfg(debug_assertions)]
-    {
-        use wp1_sdk::utils;
-        utils::setup_logger();
-    }
+    use wp1_sdk::utils;
+    utils::setup_logger();
 
     let mut stdin = SP1Stdin::new();
 

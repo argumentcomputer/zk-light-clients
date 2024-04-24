@@ -22,7 +22,7 @@ aptos-vm = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-nod
 aptos-vm-genesis = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.10.0" }
 # From https://github.com/aptos-labs/aptos-core/blob/aptos-node-v1.10.0/Cargo.toml#L467
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
-bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "bls12381-g1-decompress" }
+bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm" }
 bytes = "1.5.0"
 cfg-if = "1.0.0"
 criterion = "0.5"

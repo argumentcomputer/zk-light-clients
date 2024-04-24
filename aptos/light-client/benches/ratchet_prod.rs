@@ -50,7 +50,6 @@ impl ProvingAssets {
         let trusted_state_version = *aptos_wrapper.current_version();
 
         aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
 
         let state_proof = aptos_wrapper.new_state_proof(trusted_state_version);
 
