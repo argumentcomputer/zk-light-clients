@@ -90,7 +90,7 @@ impl fmt::LowerHex for HashValue {
 
 pub struct HashValueBitIterator<'a> {
     /// The reference to the bytes that represent the `HashValue`.
-    hash_bytes: &'a [u8],
+    hash_bytes: &'a [u8; HASH_LENGTH],
     pos: std::ops::Range<usize>,
     // invariant hash_bytes.len() == HashValue::LENGTH;
     // invariant pos.end == hash_bytes.len() * 8;
@@ -107,7 +107,6 @@ impl<'a> HashValueBitIterator<'a> {
 
     /// Returns the `index`-th bit in the bytes.
     fn get_bit(&self, index: usize) -> bool {
-        debug_assert_eq!(self.hash_bytes.len(), HASH_LENGTH); // invariant
         debug_assert!(index < HASH_LENGTH * 8); // assumed precondition
         let pos = index / 8;
         let bit = 7 - index % 8;
