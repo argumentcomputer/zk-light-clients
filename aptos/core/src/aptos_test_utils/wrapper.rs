@@ -169,19 +169,19 @@ impl AptosWrapper {
             block_txs.push(UserTransaction(fund_tx));
         }
 
-        self.execute_block(block_id, block(block_txs));
+        self.execute_block(block_id, &block(block_txs));
     }
 
     fn prepare_ratcheting(
         &mut self,
         block_id: HashValue,
-        block: Vec<SignatureVerifiedTransaction>,
+        block: &[SignatureVerifiedTransaction],
         from_version: u64,
     ) -> StateProof {
         let output = self
             .executor()
             .execute_block(
-                (block_id, block.clone()).into(),
+                (block_id, block.to_owned()).into(),
                 self.executor().committed_block_id(),
                 TEST_BLOCK_EXECUTOR_ONCHAIN_CONFIG,
             )
@@ -245,11 +245,11 @@ impl AptosWrapper {
         block_txs.push(UserTransaction(reconfig));
         self.major_version = new_version;
 
-        self.prepare_ratcheting(block_id, block(block_txs), from_version)
+        self.prepare_ratcheting(block_id, &block(block_txs), from_version)
     }
 
     /// Execute a new block and updates necessary properties
-    fn execute_block(&mut self, block_id: HashValue, block: Vec<SignatureVerifiedTransaction>) {
+    fn execute_block(&mut self, block_id: HashValue, block: &[SignatureVerifiedTransaction]) {
         let state_proof = self.prepare_ratcheting(block_id, block, self.trusted_state.version());
         // Ratchet trusted state to latest version
         let trusted_state = match self.trusted_state().verify_and_ratchet(&state_proof) {
@@ -273,8 +273,7 @@ impl AptosWrapper {
                 new_state
             }
             Err(err) => {
-                dbg!(err);
-                panic!("ended with error")
+                panic!("ended with error: {:?}", err)
             }
             _ => {
                 panic!("unexpected state change")
@@ -324,7 +323,7 @@ impl AptosWrapper {
                 .sign_with_transaction_builder(self.txn_factory().transfer(receiver.address(), 10));
             block_txs.push(UserTransaction(transfer_tx));
         }
-        self.execute_block(block_id, block(block_txs));
+        self.execute_block(block_id, &block(block_txs));
     }
 
     pub fn commit_new_epoch(&mut self) {
@@ -336,7 +335,7 @@ impl AptosWrapper {
         );
         block_txs.push(UserTransaction(reconfig));
         self.major_version = new_version;
-        self.execute_block(block_id, block(block_txs));
+        self.execute_block(block_id, &block(block_txs));
     }
 
     /// Get latest `LedgerInfoWithSignatures` generated while executing a block

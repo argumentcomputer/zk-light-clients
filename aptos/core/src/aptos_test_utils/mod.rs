@@ -17,7 +17,7 @@ mod test {
     use std::ops::Add;
 
     #[test]
-    pub fn test_serde_ledger_info_w_sig() {
+    fn test_serde_ledger_info_w_sig() {
         let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, NBR_VALIDATORS);
 
         aptos_wrapper.generate_traffic();
@@ -34,7 +34,7 @@ mod test {
     }
 
     #[test]
-    pub fn test_serde_sparse_merkle_proof() {
+    fn test_serde_sparse_merkle_proof() {
         let mut aptos_wrapper = AptosWrapper::new(4, 1, 1);
 
         aptos_wrapper.generate_traffic();
@@ -53,7 +53,7 @@ mod test {
     }
 
     #[test]
-    pub fn test_sig_verify() {
+    fn test_sig_verify() {
         let mut aptos_wrapper = AptosWrapper::new(4, 10, 10);
 
         aptos_wrapper.generate_traffic();
@@ -87,7 +87,7 @@ mod test {
     }
 
     #[test]
-    pub fn test_happy_path_ratchet() {
+    fn test_happy_path_ratchet() {
         let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, 95);
 
         aptos_wrapper.generate_traffic();
@@ -143,7 +143,7 @@ mod test {
     }
 
     #[test]
-    pub fn test_ratchet_missed_epoch() {
+    fn test_ratchet_missed_epoch() {
         let mut aptos_wrapper = AptosWrapper::new(4, 3, 3);
         let intern_trusted_state: TrustedState =
             bcs::from_bytes(&bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap()).unwrap();

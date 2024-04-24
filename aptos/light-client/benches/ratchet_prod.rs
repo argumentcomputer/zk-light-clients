@@ -39,7 +39,7 @@ struct ProvingAssets {
 const AVERAGE_SIGNERS_NBR: usize = 95;
 
 impl ProvingAssets {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
 
         let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
@@ -59,7 +59,7 @@ impl ProvingAssets {
         Self {
             trusted_state,
             validator_verifier_hash,
-            epoch_change_proof: epoch_change_proof.to_vec(),
+            epoch_change_proof: epoch_change_proof.clone(),
         }
     }
 

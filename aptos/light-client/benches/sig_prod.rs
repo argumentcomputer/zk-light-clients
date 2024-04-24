@@ -33,7 +33,7 @@ struct ProvingAssets {
 }
 
 impl ProvingAssets {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
         aptos_wrapper.generate_traffic();
         aptos_wrapper.commit_new_epoch();

@@ -358,10 +358,10 @@ impl EpochChangeProof {
 #[cfg(test)]
 mod test {
     #[cfg(feature = "aptos")]
-    fn assess_equality(bytes: Vec<u8>) {
+    fn assess_equality(bytes: &[u8]) {
         use crate::types::trusted_state::TrustedState;
 
-        let trusted_state_deserialized = TrustedState::from_bytes(&bytes).unwrap();
+        let trusted_state_deserialized = TrustedState::from_bytes(bytes).unwrap();
         let trusted_state_serialized = trusted_state_deserialized.to_bytes();
 
         assert_eq!(bytes, trusted_state_serialized);
@@ -383,7 +383,7 @@ mod test {
 
         let bytes = bcs::to_bytes(&trusted_state).unwrap();
 
-        assess_equality(bytes);
+        assess_equality(&bytes);
 
         // No new epoch
         aptos_wrapper.generate_traffic();
@@ -392,7 +392,7 @@ mod test {
 
         let bytes = bcs::to_bytes(&trusted_state).unwrap();
 
-        assess_equality(bytes);
+        assess_equality(&bytes);
     }
 
     #[cfg(feature = "aptos")]
