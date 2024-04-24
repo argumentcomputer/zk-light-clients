@@ -39,9 +39,11 @@ impl Default for PublicKey {
 }
 
 impl PublicKey {
+    // All public key data we receive are in a message signed by validators of a (prior) epoch.
+    // We assume those signers check against rogue key attacks before signing those keys.
     fn pubkey(&mut self) -> G1Affine {
         self.pubkey.unwrap_or_else(|| {
-            let pubkey = G1Affine::from_compressed(&self.compressed_pubkey).unwrap();
+            let pubkey = G1Affine::from_compressed_unchecked(&self.compressed_pubkey).unwrap();
             self.pubkey = Some(pubkey);
             pubkey
         })
