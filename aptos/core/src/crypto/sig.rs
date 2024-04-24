@@ -3,7 +3,9 @@ use crate::types::error::TypesError;
 use crate::types::utils::{read_leb128, write_leb128};
 use anyhow::Result;
 use bls12_381::hash_to_curve::{ExpandMsgXmd, HashToCurve};
-use bls12_381::{pairing, G1Affine, G1Projective, G2Affine, G2Projective};
+use bls12_381::{
+    multi_miller_loop, G1Affine, G1Projective, G2Affine, G2Prepared, G2Projective, Gt,
+};
 use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::de::Error;
@@ -142,14 +144,17 @@ pub struct Signature {
 
 impl Signature {
     pub fn verify(&self, msg: &[u8], pubkey: &mut PublicKey) -> Result<(), CryptoError> {
-        let msg: G2Projective = hash(msg);
+        let mut ml_terms = Vec::<(G1Affine, G2Prepared)>::new();
 
+        let msg = G2Prepared::from(G2Affine::from(hash(msg)));
         let g1 = G1Affine::generator();
 
-        let lhs = pairing(&g1, &self.sig);
-        let rhs = pairing(&pubkey.pubkey(), &msg.into());
+        ml_terms.push((-g1, G2Prepared::from(self.sig)));
+        ml_terms.push((pubkey.pubkey(), msg));
 
-        if lhs == rhs {
+        let ml_terms = ml_terms.iter().map(|(a, b)| (a, b)).collect::<Vec<_>>();
+
+        if multi_miller_loop(&ml_terms).final_exponentiation() == Gt::identity() {
             Ok(())
         } else {
             Err(CryptoError::SignatureVerificationFailed)
