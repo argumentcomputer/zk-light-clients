@@ -13,13 +13,13 @@ cfg_if::cfg_if! {
   if #[cfg(feature = "flamegraph")] {
     criterion_group! {
           name = sig;
-          config = Criterion::default().warm_up_time(Duration::from_millis(3000)).sampling_mode(SamplingMode::Flat).sample_size(10).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
+          config = Criterion::default().sample_size(10).warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
           targets = bench_sig
     }
   } else {
     criterion_group! {
           name = sig;
-          config = Criterion::default().sampling_mode(SamplingMode::Flat).sample_size(10).warm_up_time(Duration::from_millis(3000));
+          config = Criterion::default().sample_size(10).warm_up_time(Duration::from_millis(3000));
           targets = bench_sig
     }
   }
@@ -57,9 +57,12 @@ impl ProvingAssets {
 }
 
 fn bench_sig(c: &mut Criterion) {
+    let mut group = c.benchmark_group("sig-prod");
+    group.sampling_mode(SamplingMode::Flat);
+
     let proving_assets = ProvingAssets::new();
 
-    c.bench_function("SignatureVerificationProve", |b| {
+    group.bench_function("SignatureVerificationProve", |b| {
         b.iter(|| black_box(proving_assets.clone()).execute())
     });
 }

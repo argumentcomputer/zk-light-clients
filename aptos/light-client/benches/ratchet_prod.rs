@@ -2,7 +2,7 @@ use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::NBR_VALIDATORS;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, SamplingMode};
 use std::time::Duration;
 use wp1_sdk::utils::setup_logger;
 use wp1_sdk::{ProverClient, SP1Stdin};
@@ -15,13 +15,13 @@ cfg_if::cfg_if! {
   if #[cfg(feature = "flamegraph")] {
     criterion_group! {
           name = ratchet;
-          config = Criterion::default().sampling_mode(SamplingMode::Flat).sample_size(10).warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
+          config = Criterion::default().sample_size(10).warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
           targets = bench_ratchet
     }
   } else {
     criterion_group! {
           name = ratchet;
-          config = Criterion::default().sampling_mode(SamplingMode::Flat).sample_size(10).warm_up_time(Duration::from_millis(3000));
+          config = Criterion::default().sample_size(10).warm_up_time(Duration::from_millis(3000));
           targets = bench_ratchet
     }
   }
@@ -81,9 +81,12 @@ impl ProvingAssets {
 }
 
 fn bench_ratchet(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ratchet-prod");
+    group.sampling_mode(SamplingMode::Flat);
+
     let proving_assets = ProvingAssets::new();
 
-    c.bench_function("RatchetExecute", |b| {
+    group.bench_function("RatchetExecute", |b| {
         b.iter(|| black_box(proving_assets.clone()).prove())
     });
 }
