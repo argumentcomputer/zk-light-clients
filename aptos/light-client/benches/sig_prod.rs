@@ -1,6 +1,6 @@
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::NBR_VALIDATORS;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, SamplingMode};
 use std::time::Duration;
 use wp1_sdk::utils::setup_logger;
 use wp1_sdk::{ProverClient, SP1Stdin};
@@ -13,13 +13,13 @@ cfg_if::cfg_if! {
   if #[cfg(feature = "flamegraph")] {
     criterion_group! {
           name = sig;
-          config = Criterion::default().warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
+          config = Criterion::default().warm_up_time(Duration::from_millis(3000)).sampling_mode(SamplingMode::Flat).sample_size(10).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
           targets = bench_sig
     }
   } else {
     criterion_group! {
           name = sig;
-          config = Criterion::default().warm_up_time(Duration::from_millis(3000));
+          config = Criterion::default().sampling_mode(SamplingMode::Flat).sample_size(10).warm_up_time(Duration::from_millis(3000));
           targets = bench_sig
     }
   }

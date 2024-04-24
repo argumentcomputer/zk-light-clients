@@ -74,7 +74,7 @@ fn bench_bytes(c: &mut Criterion) {
 
     let mut wp1_proving_group = c.benchmark_group("WP1-Proving");
     wp1_proving_group
-        .sampling_mode(SamplingMode::Auto)
+        .sampling_mode(SamplingMode::Flat)
         .sample_size(10);
 
     setup_logger();
