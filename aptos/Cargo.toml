@@ -25,7 +25,8 @@ bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594
 bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm" }
 bytes = "1.5.0"
 cfg-if = "1.0.0"
-criterion = "0.5"
+# To work around the sample size >= 10 limit until we fix issue #48
+criterion = { git = "https://github.com/huitseeker/criterion.rs", branch = "remove-sample-limit", version = "0.5" }
 getset = "0.1.2"
 hex = "0.4.3"
 itertools = "0.12.1"

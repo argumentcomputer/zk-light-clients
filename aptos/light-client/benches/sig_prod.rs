@@ -13,13 +13,13 @@ cfg_if::cfg_if! {
   if #[cfg(feature = "flamegraph")] {
     criterion_group! {
           name = sig;
-          config = Criterion::default().sample_size(10).warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
+          config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
           targets = bench_sig
     }
   } else {
     criterion_group! {
           name = sig;
-          config = Criterion::default().sample_size(10).warm_up_time(Duration::from_millis(3000));
+          config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000));
           targets = bench_sig
     }
   }
