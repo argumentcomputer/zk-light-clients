@@ -16,6 +16,7 @@ const DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 pub const PUB_KEY_LEN: usize = 48;
 pub const SIG_LEN: usize = 96;
 
+#[must_use]
 pub fn hash(msg: &[u8]) -> G2Projective {
     <G2Projective as HashToCurve<ExpandMsgXmd<sha2::Sha256>>>::hash_to_curve(msg, DST)
 }
@@ -37,17 +38,14 @@ impl Default for PublicKey {
 
 impl PublicKey {
     fn pubkey(&mut self) -> G1Affine {
-        match self.pubkey {
-            Some(pubkey) => pubkey,
-            None => {
-                let pubkey = G1Affine::from_compressed(&self.compressed_pubkey).unwrap();
-                self.pubkey = Some(pubkey);
-                pubkey
-            }
-        }
+        self.pubkey.unwrap_or_else(|| {
+            let pubkey = G1Affine::from_compressed(&self.compressed_pubkey).unwrap();
+            self.pubkey = Some(pubkey);
+            pubkey
+        })
     }
 
-    pub fn aggregate(pubkeys: Vec<&mut Self>) -> anyhow::Result<PublicKey> {
+    pub fn aggregate(pubkeys: Vec<&mut Self>) -> Result<PublicKey> {
         fn aggregate_step(mut acc: G1Projective, pk: &mut PublicKey) -> G1Projective {
             acc += pk.pubkey();
             acc
@@ -99,7 +97,7 @@ impl PublicKey {
 impl Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         serializer.serialize_newtype_struct(
             "PublicKey",
@@ -370,9 +368,9 @@ impl AggregateSignature {
         let sig = match bytes.get_u8() {
             1 => {
                 let (slice_len, bytes_read) =
-                    read_leb128(bytes).map_err(|_| TypesError::DeserializationError {
+                    read_leb128(bytes).map_err(|e| TypesError::DeserializationError {
                         structure: String::from("AggregateSignature"),
-                        source: "Failed to read length of signature".into(),
+                        source: format!("Failed to read length of public_key: {e}").into(),
                     })?;
                 bytes.advance(bytes_read);
 

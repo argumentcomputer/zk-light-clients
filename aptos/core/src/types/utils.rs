@@ -21,7 +21,7 @@ pub fn read_leb128(input: &[u8]) -> Result<(u64, usize)> {
     let mut position: usize = 0;
 
     for byte in input {
-        let value = *byte as u64;
+        let value = u64::from(*byte);
         let digit = value & 0x7F;
         if shift < 64 && digit << shift >> shift == digit {
             result |= digit << shift;

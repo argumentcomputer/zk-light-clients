@@ -5,7 +5,7 @@ use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 #[allow(dead_code)]
 fn sig_verification(
     client: &ProverClient,
-    ledger_info_w_sig: Vec<u8>,
+    ledger_info_w_sig: &[u8],
 ) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, bool), LightClientError> {
     #[cfg(debug_assertions)]
     {

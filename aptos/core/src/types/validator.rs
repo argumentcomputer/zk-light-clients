@@ -52,9 +52,9 @@ impl ValidatorConsensusInfo {
         bytes.advance(ACCOUNT_ADDRESS_SIZE); // Advance the buffer by the size of AccountAddress
 
         let (slice_len, bytes_read) =
-            read_leb128(bytes).map_err(|_| TypesError::DeserializationError {
+            read_leb128(bytes).map_err(|e| TypesError::DeserializationError {
                 structure: String::from("ValidatorConsensusInfo"),
-                source: "Failed to read length of public_key".into(),
+                source: format!("Failed to read length of public_key: {e}").into(),
             })?;
         bytes.advance(bytes_read);
 
@@ -120,7 +120,7 @@ impl ValidatorVerifier {
     /// Returns sum of voting power from Map of validator account addresses, validator consensus info
     fn s_voting_power(address_to_validator_info: &[ValidatorConsensusInfo]) -> u128 {
         address_to_validator_info.iter().fold(0, |sum, x| {
-            sum.checked_add(x.voting_power as u128)
+            sum.checked_add(u128::from(x.voting_power))
                 .expect("sum of all voting power is greater than u64::max")
         })
     }
@@ -161,7 +161,7 @@ impl ValidatorVerifier {
         let mut aggregated_voting_power = 0;
         for account_address in authors {
             match self.get_voting_power(account_address) {
-                Some(voting_power) => aggregated_voting_power += voting_power as u128,
+                Some(voting_power) => aggregated_voting_power += u128::from(voting_power),
                 None => return Err(VerifyError::UnknownAuthor),
             }
         }

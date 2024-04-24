@@ -5,8 +5,8 @@ use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 #[allow(dead_code)]
 fn verify_and_ratchet(
     client: &ProverClient,
-    current_trusted_state: Vec<u8>,
-    epoch_change_proof: Vec<u8>,
+    current_trusted_state: &[u8],
+    epoch_change_proof: &[u8],
 ) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, bool), LightClientError> {
     #[cfg(debug_assertions)]
     {

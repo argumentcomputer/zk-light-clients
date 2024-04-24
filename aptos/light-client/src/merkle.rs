@@ -6,7 +6,7 @@ use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 #[allow(dead_code)]
 fn merkle_proving(
     client: &ProverClient,
-    sparse_merkle_proof: SparseMerkleProof,
+    sparse_merkle_proof: &SparseMerkleProof,
     leaf_key: [u8; 32],
     leaf_hash: [u8; 32],
     expected_root_hash: [u8; 32],
@@ -68,7 +68,7 @@ mod test {
             proof_assets.state_proof().siblings().len()
         );
         let (proof, res) =
-            merkle_proving(&client, intern_proof, key, element_hash, root_hash).unwrap();
+            merkle_proving(&client, &intern_proof, key, element_hash, root_hash).unwrap();
         assert_eq!(res, root_hash);
         println!("Proving took {:?}", start.elapsed());
 

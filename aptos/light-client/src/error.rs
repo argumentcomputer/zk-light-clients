@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum LightClientError {
+pub(crate) enum LightClientError {
     #[error("[{program}] Failed to prove: {source}")]
     ProvingError {
         program: String,

@@ -53,7 +53,7 @@ impl Waypoint {
 }
 
 impl<'de> Deserialize<'de> for Waypoint {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -70,7 +70,7 @@ impl<'de> Deserialize<'de> for Waypoint {
 }
 
 impl Serialize for Waypoint {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -90,7 +90,7 @@ struct Ledger2WaypointConverter {
 }
 
 impl Ledger2WaypointConverter {
-    pub fn new(ledger_info: &LedgerInfo) -> Self {
+    pub(crate) fn new(ledger_info: &LedgerInfo) -> Self {
         Self {
             epoch: ledger_info.epoch(),
             root_hash: ledger_info.transaction_accumulator_hash(),

@@ -312,7 +312,7 @@ impl EpochChangeProof {
         }
 
         // Write the `more` field
-        bytes.put_u8(self.more as u8);
+        bytes.put_u8(u8::from(self.more));
 
         bytes.to_vec()
     }
