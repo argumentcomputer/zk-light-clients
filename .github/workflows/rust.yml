@@ -77,7 +77,7 @@ jobs:
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-16vcpu-ubuntu-2204
     strategy:
       matrix:
         package:
