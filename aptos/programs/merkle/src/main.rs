@@ -2,13 +2,13 @@
 
 use aptos_lc_core::crypto::hash::HashValue;
 use aptos_lc_core::merkle::proof::SparseMerkleProof;
-zkvm::entrypoint!(main);
+wp1_zkvm::entrypoint!(main);
 
 pub fn main() {
-    let sparse_merkle_proof = zkvm::io::read::<SparseMerkleProof>();
-    let key = zkvm::io::read::<[u8; 32]>();
-    let leaf_value_hash = zkvm::io::read::<[u8; 32]>();
-    let expected_root_hash = zkvm::io::read::<[u8; 32]>();
+    let sparse_merkle_proof = wp1_zkvm::io::read::<SparseMerkleProof>();
+    let key = wp1_zkvm::io::read::<[u8; 32]>();
+    let leaf_value_hash = wp1_zkvm::io::read::<[u8; 32]>();
+    let expected_root_hash = wp1_zkvm::io::read::<[u8; 32]>();
 
     let reconstructed_root_hash = sparse_merkle_proof
         .verify_by_hash(
@@ -20,5 +20,5 @@ pub fn main() {
         )
         .expect("verify_by_hash: could not verify proof");
 
-    zkvm::io::commit(&reconstructed_root_hash);
+    wp1_zkvm::io::commit(&reconstructed_root_hash);
 }

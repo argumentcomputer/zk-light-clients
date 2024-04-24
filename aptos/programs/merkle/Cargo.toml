@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }
-zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev", package = "wp1-zkvm" }
+wp1-zkvm = { workspace = true }
