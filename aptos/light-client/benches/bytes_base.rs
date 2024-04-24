@@ -7,22 +7,10 @@ use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 
 // To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
 // Then `cargo criterion --bench bytes`.
-// For flamegraphs, run `cargo criterion --bench bytes --features flamegraph -- --profile-time <secs>`.
-// The results are located in `target/criterion/profile/<name-of-benchmark>`.
-cfg_if::cfg_if! {
-  if #[cfg(feature = "flamegraph")] {
-    criterion_group! {
-          name = bytes;
-          config = Criterion::default().warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
-          targets = bench_bytes
-    }
-  } else {
-    criterion_group! {
-          name = bytes;
-          config = Criterion::default().warm_up_time(Duration::from_millis(3000));
-          targets = bench_bytes
-    }
-  }
+criterion_group! {
+        name = bytes;
+        config = Criterion::default().warm_up_time(Duration::from_millis(3000));
+        targets = bench_bytes
 }
 
 criterion_main!(bytes);

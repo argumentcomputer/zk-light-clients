@@ -7,22 +7,10 @@ use wp1_sdk::{ProverClient, SP1Stdin};
 
 // To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
 // Then `cargo criterion --bench sig`.
-// For flamegraphs, run `cargo criterion --bench sig --features flamegraph -- --profile-time <secs>`.
-// The results are located in `target/criterion/profile/<name-of-benchmark>`.
-cfg_if::cfg_if! {
-  if #[cfg(feature = "flamegraph")] {
-    criterion_group! {
-          name = sig;
-          config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000)).with_profiler(pprof::criterion::PProfProfiler::new(100, pprof::criterion::Output::Flamegraph(None)));
-          targets = bench_sig
-    }
-  } else {
-    criterion_group! {
-          name = sig;
-          config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000));
-          targets = bench_sig
-    }
-  }
+criterion_group! {
+        name = sig;
+        config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000));
+        targets = bench_sig
 }
 
 criterion_main!(sig);

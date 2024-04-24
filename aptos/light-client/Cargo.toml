@@ -25,12 +25,10 @@ aptos-programs = { path = "../aptos-programs", features = ["bench"] }
 bcs = { workspace = true }
 cfg-if = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
-pprof = { workspace = true }
 
 [features]
 default = []
 aptos = ["aptos-lc-core/aptos"]
-flamegraph = ["pprof/flamegraph", "pprof/criterion"]
 
 [[bench]]
 name = "merkle_base"
