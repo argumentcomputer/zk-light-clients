@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{CryptoHash, HashValue, HASH_LENGTH};
 use crate::merkle::node::{SparseMerkleInternalNode, SparseMerkleLeafNode};
+use crate::types::error::TypesError;
+use crate::types::utils::{read_leb128, write_leb128};
 use anyhow::ensure;
+use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 
@@ -79,6 +82,70 @@ impl SparseMerkleProof {
 
         Ok(reconstructed_root)
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+        match &self.leaf {
+            Some(node) => {
+                bytes.put_u8(1);
+                bytes.put_slice(&node.to_bytes());
+            }
+            None => {
+                bytes.put_u8(0);
+            }
+        }
+        bytes.put_slice(&write_leb128(self.siblings.len() as u64));
+        for sibling in &self.siblings {
+            bytes.put_slice(sibling.to_vec().as_slice());
+        }
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        let mut buf = bytes;
+        let leaf = match buf.get_u8() {
+            1 => {
+                let node = SparseMerkleLeafNode::from_bytes(
+                    buf.chunk().get(..2 * HASH_LENGTH).ok_or_else(|| {
+                        TypesError::DeserializationError {
+                            structure: String::from("SparseMerkleProof"),
+                            source: "Not enough data for leaf".into(),
+                        }
+                    })?,
+                )
+                .map_err(|e| TypesError::DeserializationError {
+                    structure: String::from("SparseMerkleProof"),
+                    source: e.into(),
+                })?;
+                buf.advance(2 * HASH_LENGTH);
+                Some(node)
+            }
+            _ => None,
+        };
+        let (num_siblings, len) =
+            read_leb128(buf.chunk()).map_err(|e| TypesError::DeserializationError {
+                structure: String::from("SparseMerkleProof"),
+                source: e.into(),
+            })?;
+        buf.advance(len);
+        let mut siblings = Vec::new();
+        for _ in 0..num_siblings {
+            let sibling =
+                HashValue::from_slice(buf.chunk().get(..HASH_LENGTH).ok_or_else(|| {
+                    TypesError::DeserializationError {
+                        structure: String::from("SparseMerkleProof"),
+                        source: "Not enough data for sibling".into(),
+                    }
+                })?)
+                .map_err(|e| TypesError::DeserializationError {
+                    structure: String::from("SparseMerkleProof"),
+                    source: e.into(),
+                })?;
+            buf.advance(HASH_LENGTH);
+            siblings.push(sibling);
+        }
+        Ok(Self { leaf, siblings })
+    }
 }
 
 fn accumulator_update(acc_hash: HashValue, (sibling_hash, bit): (&HashValue, bool)) -> HashValue {
@@ -154,18 +221,42 @@ mod test {
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
 
-        let intern_proof: SparseMerkleProof =
-            bcs::from_bytes(&bcs::to_bytes(proof_assets.state_proof()).unwrap()).unwrap();
-        let key: HashValue = bcs::from_bytes(&bcs::to_bytes(proof_assets.key()).unwrap()).unwrap();
-        let root_hash: HashValue =
-            bcs::from_bytes(&bcs::to_bytes(proof_assets.root_hash()).unwrap()).unwrap();
-        let element_hash: HashValue = bcs::from_bytes(
-            &bcs::to_bytes(&proof_assets.state_value().clone().unwrap().hash()).unwrap(),
-        )
-        .unwrap();
+        let intern_proof =
+            SparseMerkleProof::from_bytes(&bcs::to_bytes(proof_assets.state_proof()).unwrap())
+                .unwrap();
+        let key = HashValue::from_slice(proof_assets.key().to_vec()).unwrap();
+        let root_hash = HashValue::from_slice(proof_assets.root_hash().to_vec()).unwrap();
+        let element_hash =
+            HashValue::from_slice(proof_assets.state_value().clone().unwrap().hash().to_vec())
+                .unwrap();
 
         intern_proof
             .verify_by_hash(root_hash, key, element_hash)
             .unwrap();
+
+        assert_eq!(
+            bcs::to_bytes(&root_hash).unwrap(),
+            bcs::to_bytes(&proof_assets.root_hash()).unwrap()
+        );
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_bytes_conversion_sparse_merkle_proof() {
+        use crate::aptos_test_utils::wrapper::AptosWrapper;
+
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
+        aptos_wrapper.generate_traffic();
+
+        let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
+
+        let aptos_proof = proof_assets.state_proof();
+        let aptos_proof_bytes = bcs::to_bytes(aptos_proof).unwrap();
+
+        let lc_sparse_proof = SparseMerkleProof::from_bytes(&aptos_proof_bytes).unwrap();
+
+        let lc_sparse_proof_bytes = lc_sparse_proof.to_bytes();
+
+        assert_eq!(aptos_proof_bytes, lc_sparse_proof_bytes);
     }
 }

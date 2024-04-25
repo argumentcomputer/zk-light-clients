@@ -8,7 +8,7 @@ use wp1_sdk::utils::setup_logger;
 use wp1_sdk::{ProverClient, SP1Stdin};
 
 // To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
-// Then `cargo criterion --bench ratchet`.
+// Then `cargo criterion --bench ratchet_prod`.
 criterion_group! {
         name = ratchet;
         config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000));

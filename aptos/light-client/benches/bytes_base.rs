@@ -6,7 +6,7 @@ use wp1_sdk::utils::{setup_logger, BabyBearPoseidon2};
 use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 
 // To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
-// Then `cargo criterion --bench bytes`.
+// Then `cargo criterion --bench bytes_base`.
 criterion_group! {
         name = bytes;
         config = Criterion::default().warm_up_time(Duration::from_millis(3000));

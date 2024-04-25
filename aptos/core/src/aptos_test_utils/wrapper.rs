@@ -49,7 +49,7 @@ pub struct SparseMerkleProofAssets {
     key: HashValue,
     /// Account state value
     state_value: Option<StateValue>,
-    /// Root hash of the tree including the accout
+    /// Root hash of the tree including the account
     root_hash: HashValue,
 }
 
@@ -83,8 +83,6 @@ pub struct AptosWrapper {
     executor: BlockExecutor<AptosVM>,
     /// Current trusted state for the chain
     trusted_state: TrustedState,
-    /// Latest `LedgerInfoWithSignature` generated while executing a block
-    latest_li: Option<LedgerInfoWithSignatures>,
     /// Current epoch
     current_epoch: u64,
     /// Current round for the epoch
@@ -95,6 +93,16 @@ pub struct AptosWrapper {
     current_block: usize,
     /// Mock major version of the chain
     major_version: u64,
+}
+
+/// Enum that represent arguments to execute a block. Either the
+/// `StateProof` is generated, and we can use it, otherwise generate
+/// it from the block id and the block transactions.
+pub enum ExecuteBlockArgs {
+    /// Use the provided `StateProof`
+    StateProof(Box<StateProof>),
+    /// Generate the `StateProof` from the block id and transactions
+    Block(HashValue, Vec<SignatureVerifiedTransaction>),
 }
 
 #[allow(dead_code)]
@@ -139,7 +147,6 @@ impl AptosWrapper {
             db,
             executor,
             trusted_state: TrustedState::from_epoch_waypoint(waypoint),
-            latest_li: None,
             current_epoch: 1,
             current_round: 1,
             current_version: 1,
@@ -169,7 +176,7 @@ impl AptosWrapper {
             block_txs.push(UserTransaction(fund_tx));
         }
 
-        self.execute_block(block_id, &block(block_txs));
+        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)));
     }
 
     fn prepare_ratcheting(
@@ -227,7 +234,6 @@ impl AptosWrapper {
                 .aggregate_signatures(&partial_sig)
                 .unwrap(),
         );
-        self.latest_li = Some(li.clone());
 
         // Save block to persistent storage
         self.executor().commit_blocks(vec![block_id], li).unwrap();
@@ -248,9 +254,16 @@ impl AptosWrapper {
         self.prepare_ratcheting(block_id, &block(block_txs), from_version)
     }
 
-    /// Execute a new block and updates necessary properties
-    fn execute_block(&mut self, block_id: HashValue, block: &[SignatureVerifiedTransaction]) {
-        let state_proof = self.prepare_ratcheting(block_id, block, self.trusted_state.version());
+    /// Execute a new block and updates necessary properties.
+    /// The `StateProof` for the ratcheting can either be passed from an external source
+    /// or generated internally.
+    pub fn execute_block(&mut self, execution_arguments: ExecuteBlockArgs) {
+        let state_proof = match execution_arguments {
+            ExecuteBlockArgs::StateProof(state_proof) => *state_proof,
+            ExecuteBlockArgs::Block(block_id, block) => {
+                self.prepare_ratcheting(block_id, &block, self.trusted_state.version())
+            }
+        };
         // Ratchet trusted state to latest version
         let trusted_state = match self.trusted_state().verify_and_ratchet(&state_proof) {
             Ok(TrustedStateChange::Epoch { new_state, .. }) => {
@@ -323,7 +336,7 @@ impl AptosWrapper {
                 .sign_with_transaction_builder(self.txn_factory().transfer(receiver.address(), 10));
             block_txs.push(UserTransaction(transfer_tx));
         }
-        self.execute_block(block_id, &block(block_txs));
+        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)));
     }
 
     pub fn commit_new_epoch(&mut self) {
@@ -335,12 +348,15 @@ impl AptosWrapper {
         );
         block_txs.push(UserTransaction(reconfig));
         self.major_version = new_version;
-        self.execute_block(block_id, &block(block_txs));
+        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)));
     }
 
     /// Get latest `LedgerInfoWithSignatures` generated while executing a block
     pub fn get_latest_li(&self) -> Option<LedgerInfoWithSignatures> {
-        self.latest_li.clone()
+        self.db()
+            .reader
+            .get_latest_ledger_info_option()
+            .expect("DB error while getting latest LedgerInfoWithSignatures")
     }
     /// Same as `get_latest_li` but with returned payload as bytes, serialized with bcs
     pub fn get_latest_li_bytes(&self) -> Option<Vec<u8>> {
@@ -375,6 +391,7 @@ impl AptosWrapper {
             .next()
             .unwrap()
             .unwrap();
+
         Some(SparseMerkleProofAssets {
             state_proof,
             key: account_0_resource_path.hash(),

@@ -54,6 +54,7 @@ impl EpochState {
         Ok(Self { epoch, verifier })
     }
 }
+
 #[cfg(test)]
 mod test {
     #[cfg(feature = "aptos")]

@@ -111,7 +111,6 @@ impl LedgerInfo {
     }
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
-        println!("cycle-tracker-start: block_info_from_bytes");
         let commit_info =
             BlockInfo::from_bytes(bytes.chunk().get(..bytes.len() - HASH_LENGTH).ok_or_else(
                 || TypesError::DeserializationError {
@@ -123,11 +122,9 @@ impl LedgerInfo {
                 structure: String::from("LedgerInfo"),
                 source: e.into(),
             })?;
-        println!("cycle-tracker-end: block_info_from_bytes");
 
         bytes.advance(bytes.len() - HASH_LENGTH); // Advance the buffer to get the hash
 
-        println!("cycle-tracker-start: consensus_data_hash_from_slice");
         let consensus_data_hash =
             HashValue::from_slice(bytes.chunk().get(..HASH_LENGTH).ok_or_else(|| {
                 TypesError::DeserializationError {
@@ -139,7 +136,6 @@ impl LedgerInfo {
                 structure: String::from("LedgerInfo"),
                 source: e.into(),
             })?;
-        println!("cycle-tracker-end: consensus_data_hash_from_slice");
         bytes.advance(HASH_LENGTH);
         Ok(Self {
             commit_info,
@@ -185,7 +181,6 @@ impl LedgerInfoWithV0 {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
 
-        println!("cycle-tracker-start: li_from_bytes");
         let ledger_info =
             LedgerInfo::from_bytes(buf.chunk().get(..LEDGER_INFO_LEN).ok_or_else(|| {
                 TypesError::DeserializationError {
@@ -194,8 +189,7 @@ impl LedgerInfoWithV0 {
                 }
             })?)?;
         buf.advance(LEDGER_INFO_LEN);
-        println!("cycle-tracker-end: li_from_bytes");
-        println!("cycle-tracker-start: agg_sig_from_bytes");
+
         let signatures =
             AggregateSignature::from_bytes(buf.chunk().get(..AGG_SIGNATURE_LEN).ok_or_else(
                 || TypesError::DeserializationError {
@@ -204,7 +198,6 @@ impl LedgerInfoWithV0 {
                 },
             )?)?;
         buf.advance(AGG_SIGNATURE_LEN);
-        println!("cycle-tracker-end: agg_sig_from_bytes");
 
         Ok(Self {
             ledger_info,

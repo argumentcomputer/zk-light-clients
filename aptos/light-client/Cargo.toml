@@ -49,3 +49,8 @@ harness = false
 name = "ratchet_prod"
 required-features = ["aptos"]
 harness = false
+
+[[bench]]
+name = "e2e_prod"
+required-features = ["aptos"]
+harness = false

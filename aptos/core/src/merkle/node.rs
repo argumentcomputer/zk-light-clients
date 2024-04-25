@@ -1,5 +1,7 @@
+use bytes::{Buf, BufMut, BytesMut};
 // SPDX-License-Identifier: Apache-2.0, MIT
-use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
+use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
+use crate::types::error::TypesError;
 use getset::CopyGetters;
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +16,40 @@ pub struct SparseMerkleLeafNode {
 impl SparseMerkleLeafNode {
     pub const fn new(key: HashValue, value_hash: HashValue) -> Self {
         Self { key, value_hash }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+        bytes.put_slice(self.key.to_vec().as_slice());
+        bytes.put_slice(self.value_hash.to_vec().as_slice());
+        bytes.to_vec()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        let mut buf = bytes;
+        let key = HashValue::from_slice(buf.chunk().get(..HASH_LENGTH).ok_or_else(|| {
+            TypesError::DeserializationError {
+                structure: String::from("SparseMerkleLeafNode"),
+                source: "Not enough data for key".into(),
+            }
+        })?)
+        .map_err(|e| TypesError::DeserializationError {
+            structure: String::from("SparseMerkleLeafNode"),
+            source: e.into(),
+        })?;
+        buf.advance(HASH_LENGTH);
+        let value_hash =
+            HashValue::from_slice(buf.chunk().get(..HASH_LENGTH).ok_or_else(|| {
+                TypesError::DeserializationError {
+                    structure: String::from("SparseMerkleLeafNode"),
+                    source: "Not enough data for value_hash".into(),
+                }
+            })?)
+            .map_err(|e| TypesError::DeserializationError {
+                structure: String::from("SparseMerkleLeafNode"),
+                source: e.into(),
+            })?;
+        Ok(Self { key, value_hash })
     }
 }
 
@@ -51,7 +87,6 @@ impl CryptoHash for SparseMerkleInternalNode {
 
 #[cfg(test)]
 mod test {
-
     #[cfg(feature = "aptos")]
     #[test]
     fn test_sparse_merkle_leaf_node_hash() {
@@ -108,5 +143,38 @@ mod test {
         ));
 
         assert_eq!(lc_hash.to_vec(), aptos_hash.to_vec());
+    }
+
+    #[cfg(feature = "aptos")]
+    #[test]
+    fn test_bytes_conversion_sparse_merkle_leaf_node() {
+        use crate::crypto::hash::HashValue;
+        use crate::merkle::node::SparseMerkleLeafNode;
+        use aptos_crypto::HashValue as AptosHashValue;
+        use aptos_types::proof::SparseMerkleLeafNode as AptosSparseMerkleLeafNode;
+
+        let key_slice = [10; 32];
+        let value_hash_slice = [15; 32];
+
+        let lc_node = SparseMerkleLeafNode::new(
+            HashValue::from_slice(key_slice).unwrap(),
+            HashValue::from_slice(value_hash_slice).unwrap(),
+        );
+        let lc_bytes = lc_node.to_bytes();
+
+        let aptos_node = AptosSparseMerkleLeafNode::new(
+            AptosHashValue::from_slice(key_slice).unwrap(),
+            AptosHashValue::from_slice(value_hash_slice).unwrap(),
+        );
+        let aptos_bytes = bcs::to_bytes(&aptos_node).unwrap();
+
+        assert_eq!(lc_bytes, aptos_bytes);
+
+        let lc_node_deserialized = SparseMerkleLeafNode::from_bytes(&aptos_bytes).unwrap();
+        let aptos_node_deserialized: AptosSparseMerkleLeafNode =
+            bcs::from_bytes(&lc_bytes).unwrap();
+
+        assert_eq!(lc_node, lc_node_deserialized);
+        assert_eq!(aptos_node, aptos_node_deserialized);
     }
 }

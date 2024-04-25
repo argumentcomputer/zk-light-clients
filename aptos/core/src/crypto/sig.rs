@@ -360,7 +360,6 @@ impl AggregateSignature {
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let bitvec_len = bytes.get_u8() as usize;
 
-        println!("cycle-tracker-start: bitvec_from_bytes");
         let validator_bitmask =
             BitVec::from_bytes(bytes.chunk().get(..bitvec_len).ok_or_else(|| {
                 TypesError::DeserializationError {
@@ -368,7 +367,6 @@ impl AggregateSignature {
                     source: "Not enough data for BitVec".into(),
                 }
             })?);
-        println!("cycle-tracker-end: bitvec_from_bytes");
 
         bytes.advance(bitvec_len);
 

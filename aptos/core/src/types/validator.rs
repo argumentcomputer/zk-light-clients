@@ -16,8 +16,7 @@ pub struct ValidatorConsensusInfo {
     #[getset(get_copy)]
     address: AccountAddress,
     #[getset(get_copy)]
-    public_key: PublicKey,
-    // bls12-381
+    public_key: PublicKey, // bls12-381
     voting_power: u64,
 }
 
@@ -319,7 +318,6 @@ impl<'de> Deserialize<'de> for ValidatorVerifier {
 
 #[cfg(test)]
 mod test {
-
     #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_validator_consensus_info() {

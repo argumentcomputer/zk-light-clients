@@ -1,12 +1,11 @@
 use crate::error::LightClientError;
-use aptos_lc_core::merkle::proof::SparseMerkleProof;
 use wp1_sdk::utils::BabyBearPoseidon2;
 use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 
 #[allow(dead_code)]
 fn merkle_proving(
     client: &ProverClient,
-    sparse_merkle_proof: &SparseMerkleProof,
+    sparse_merkle_proof: &[u8],
     leaf_key: [u8; 32],
     leaf_hash: [u8; 32],
     expected_root_hash: [u8; 32],
@@ -44,18 +43,15 @@ mod test {
         use std::time::Instant;
         use wp1_sdk::ProverClient;
 
-        let mut aptos_wrapper = AptosWrapper::new(30000, 1, 1);
+        let mut aptos_wrapper = AptosWrapper::new(500, 1, 1);
         aptos_wrapper.generate_traffic();
 
-        let proof_assets = aptos_wrapper.get_latest_proof_account(25000).unwrap();
+        let proof_assets = aptos_wrapper.get_latest_proof_account(400).unwrap();
 
-        let intern_proof: SparseMerkleProof =
-            bcs::from_bytes(&bcs::to_bytes(proof_assets.state_proof()).unwrap()).unwrap();
-        let key: [u8; 32] = bcs::from_bytes(&bcs::to_bytes(proof_assets.key()).unwrap()).unwrap();
-        let root_hash: [u8; 32] =
-            bcs::from_bytes(&bcs::to_bytes(proof_assets.root_hash()).unwrap()).unwrap();
-        let element_hash: [u8; 32] =
-            bcs::from_bytes(&bcs::to_bytes(&proof_assets.state_value_hash()).unwrap()).unwrap();
+        let intern_proof = bcs::to_bytes(proof_assets.state_proof()).unwrap();
+        let key: [u8; 32] = *proof_assets.key().as_ref();
+        let root_hash: [u8; 32] = *proof_assets.root_hash().as_ref();
+        let element_hash: [u8; 32] = *proof_assets.state_value_hash().as_ref();
 
         let client = ProverClient::new();
 

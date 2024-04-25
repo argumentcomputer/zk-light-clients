@@ -9,7 +9,7 @@ use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
 
 // To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
-// Then `cargo criterion --bench merkle`.
+// Then `cargo criterion --bench merkle_base`.
 criterion_group! {
         name = merkle;
         config = Criterion::default().warm_up_time(Duration::from_millis(3000));

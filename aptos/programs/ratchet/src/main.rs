@@ -33,7 +33,7 @@ pub fn main() {
     wp1_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: deserialize_epoch_change_proof");
     }
-    // Check if the received validator set for the current epoch is the one we produced a proof for previously?
+    // Check if the received validator set for the current epoch is the one we produced a proof for
     wp1_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: hash_comparison");
     }

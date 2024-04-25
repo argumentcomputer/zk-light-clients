@@ -138,7 +138,6 @@ impl BlockInfo {
 
 #[cfg(test)]
 mod test {
-
     #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_block_info() {

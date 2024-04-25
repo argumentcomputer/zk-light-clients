@@ -26,6 +26,10 @@ The benchmarks for our various programs are located in the `light-client` crate 
 
 Currently, the following benchmarks are available:
 
+- `e2e_prod`: Benchmark that will run a proof generation for the programs contained
+  in `programs/ratchet/src/main.rs` and `programs/merkle/src/main.rs`. The goal here
+  is to test the complete flow for our light client and get cycle count and proving
+  time for it.
 - `ratchet_prod`: Benchmark that will run a proof generation for the program contained
   in `programs/ratchet/src/main.rs`. This program will execute a hash for the received
   `ValidatorVerifier` to ensure that the signature is from the previous validator set,
@@ -42,8 +46,9 @@ Currently, the following benchmarks are available:
   in `programs/merkle/src/main.rs`. It is meant to assess the cost of verifying
   a Merkle proof for a given leaf and a given root.
 
-The benchmark that is the closest to a production scenario is `ratchet_prod`. The other benchmarks are more
-specific and are meant to assess the cost of specific operations.
+The benchmark that is the closest to a production scenario is `e2e_prod`. Most of
+the other benchmarks are more specific and are meant to assess the cost
+of specific operations.
 
 ### Requirements
 
