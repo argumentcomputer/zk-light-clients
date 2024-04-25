@@ -106,18 +106,8 @@ impl TrustedState {
                     )
                 })?;
 
-            // If the latest ledger info is in the same epoch as the new verifier, verify it and
-            // use it as latest state, otherwise fallback to the epoch change ledger info.
-            let new_epoch = new_epoch_state.epoch;
-
-            // With the current hardcoded latest_li from epoch_change_proof, we always fall on the first branch.
             let verified_ledger_info = if epoch_change_li == latest_li {
                 latest_li
-            } else if latest_li.ledger_info().epoch() == new_epoch {
-                new_epoch_state.verify(latest_li)?;
-                latest_li
-            } else if latest_li.ledger_info().epoch() > new_epoch && epoch_change_proof.more {
-                epoch_change_li
             } else {
                 bail!("Inconsistent epoch change proof and latest ledger info");
             };
