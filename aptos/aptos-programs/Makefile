@@ -1,6 +1,6 @@
 # Directory definitions
 PROGRAMS_DIR := ../programs
-ELF_DIR := ../elf
+ELF_DIR := elf
 ARTIFACTS_DIR := artifacts
 BUILD_RESULT_NAME := riscv32im-succinct-zkvm-elf
 
@@ -19,12 +19,12 @@ $(PROGRAMS):
 	@cd $(PROGRAMS_DIR)/$@ && rustup run succinct cargo prove build
 	@echo "Moving artifacts..."
 	@mkdir -p $(ARTIFACTS_DIR)
-	@mv $(ELF_DIR)/$(BUILD_RESULT_NAME) $(ARTIFACTS_DIR)/$@-program
+	@mv $(PROGRAMS_DIR)/$@/$(ELF_DIR)/$(BUILD_RESULT_NAME) $(ARTIFACTS_DIR)/$@-program
 
-# Clean elf directory
+# Clean elf directories
 clean_elf:
-	@echo "Cleaning ELF directory..."
-	@rm -rf $(ELF_DIR)
+	@echo "Cleaning ELF directories..."
+	@rm -rf $(PROGRAMS_DIR)/*/$(ELF_DIR)
 
 # Clean up the artifacts directory
 clean:
