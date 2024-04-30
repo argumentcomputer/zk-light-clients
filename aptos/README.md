@@ -16,9 +16,19 @@ The workspace is divided into the following:
 
 ## Development
 
-When developing, you might have to update the programs implementation. The current implementation of the workspace does
-not allow for automatic generation of the assets once an update was done. Instead, you will have to manually execute
-the Makefile in the `aptos-programs` directory to generate the assets. This should be automated in the future.
+When developing, you might have to update the programs' implementation. The
+programs implementations are located in `./programs/*` and the compiled binaries
+are located in `./aptos-programs/artifacts`. Currently, artifacts binaries are
+generated in two ways:
+
+- Automated: There is a build script located at `./aptos-programs/build.rs` that
+  will compile all the programs and place them in the `./aptos-programs/artifacts`
+  folder.
+- Manual: You can also compile the programs manually using `make` by running the following
+  command in the `./aptos-programs` folder:
+  ```shell
+    make
+    ```
 
 ## Benchmarks
 

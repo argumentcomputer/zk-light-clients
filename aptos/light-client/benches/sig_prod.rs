@@ -43,7 +43,7 @@ impl ProvingAssets {
         let client = ProverClient::new();
 
         client
-            .prove(aptos_programs::SIGNATURE_VERIFICATION_PROGRAM, stdin)
+            .prove(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM, stdin)
             .unwrap();
     }
 }

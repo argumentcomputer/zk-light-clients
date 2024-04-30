@@ -60,7 +60,16 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update || true
+          
           sudo apt-get install -y pkg-config libudev-dev
+          
+          git clone https://github.com/wormhole-foundation/wp1.git
+          cd wp1/cli
+          cargo install --locked --path .
+
+          cd ~
+          cargo prove install-toolchain          
+
       # make sure benches don't bit-rot
       - name: build benches
         run: cargo build --benches --release

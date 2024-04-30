@@ -1,3 +1,4 @@
+[workspace]
 [package]
 version = "0.1.0"
 name = "merkle-program"
@@ -5,4 +6,4 @@ edition = "2021"
 
 [dependencies]
 aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }
-wp1-zkvm = { workspace = true }
+wp1-zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }

@@ -10,7 +10,7 @@ wp1_zkvm::entrypoint!(main);
 pub fn main() {
     let ledger_info_with_sig_bytes = wp1_zkvm::io::read::<Vec<u8>>();
 
-    // Extract bytes from the ledger info for given offsets and length
+    // Extract bytes from the ledger info for given offsets and length.
     let ledger_info_bytes = extract_bytes(
         &ledger_info_with_sig_bytes,
         OFFSET_LEDGER_INFO,

@@ -15,7 +15,7 @@ fn sig_verification(
     stdin.write(&ledger_info_w_sig);
 
     let mut proof = client
-        .prove(aptos_programs::SIGNATURE_VERIFICATION_PROGRAM, stdin)
+        .prove(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM, stdin)
         .map_err(|err| LightClientError::ProvingError {
             program: "signature-verification".to_string(),
             source: err.into(),
@@ -57,7 +57,10 @@ mod test {
         let start = Instant::now();
         println!("Starting verification of signature verification proof...");
         client
-            .verify(aptos_programs::SIGNATURE_VERIFICATION_PROGRAM, &proof)
+            .verify(
+                aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
+                &proof,
+            )
             .unwrap();
         println!("Verification took {:?}", start.elapsed());
     }

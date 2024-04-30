@@ -37,12 +37,12 @@ harness = false
 
 [[bench]]
 name = "bytes_base"
-required-features = ["aptos"]
+required-features = ["aptos", "aptos-programs/bench"]
 harness = false
 
 [[bench]]
 name = "sig_prod"
-required-features = ["aptos"]
+required-features = ["aptos", "aptos-programs/bench"]
 harness = false
 
 [[bench]]

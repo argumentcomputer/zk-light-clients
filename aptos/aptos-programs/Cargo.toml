@@ -3,5 +3,9 @@ name = "aptos-programs"
 version = "0.1.0"
 edition = "2021"
 
+[build-dependencies]
+glob = { workspace = true }
+wp1-helper = { workspace = true }
+
 [features]
 bench = []
