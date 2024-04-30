@@ -33,11 +33,64 @@ fn merkle_proving(
     Ok((proof, expected_root_hash))
 }
 
+#[cfg(feature = "aptos")]
 #[cfg(test)]
 mod test {
-    #[cfg(feature = "aptos")]
+    use crate::error::LightClientError;
+    use wp1_sdk::{ProverClient, SP1Stdin};
+
+    fn merkle_execute(
+        sparse_merkle_proof: &[u8],
+        leaf_key: [u8; 32],
+        leaf_hash: [u8; 32],
+        expected_root_hash: [u8; 32],
+    ) -> Result<(), LightClientError> {
+        use wp1_sdk::utils;
+        utils::setup_logger();
+
+        let mut stdin = SP1Stdin::new();
+
+        stdin.write(&sparse_merkle_proof);
+        stdin.write(&leaf_key);
+        stdin.write(&leaf_hash);
+        stdin.write(&expected_root_hash);
+
+        ProverClient::execute(aptos_programs::MERKLE_PROGRAM, &stdin).map_err(|err| {
+            LightClientError::ProvingError {
+                program: "merkle".to_string(),
+                source: err.into(),
+            }
+        })?;
+
+        Ok(())
+    }
+
     #[test]
-    fn test_merkle() {
+    fn test_merkle_execute() {
+        use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
+        use std::time::Instant;
+
+        let mut aptos_wrapper = AptosWrapper::new(500, 1, 1);
+        aptos_wrapper.generate_traffic();
+
+        let proof_assets = aptos_wrapper.get_latest_proof_account(400).unwrap();
+
+        let intern_proof = bcs::to_bytes(proof_assets.state_proof()).unwrap();
+        let key: [u8; 32] = *proof_assets.key().as_ref();
+        let root_hash: [u8; 32] = *proof_assets.root_hash().as_ref();
+        let element_hash: [u8; 32] = *proof_assets.state_value_hash().as_ref();
+
+        println!(
+            "Starting execution of Merkle inclusion with {} siblings...",
+            proof_assets.state_proof().siblings().len()
+        );
+        let start = Instant::now();
+        merkle_execute(&intern_proof, key, element_hash, root_hash).unwrap();
+        println!("Execution took {:?}", start.elapsed());
+    }
+
+    #[test]
+    fn test_merkle_prove() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use std::time::Instant;

@@ -28,10 +28,54 @@ fn sig_verification(
 }
 
 #[cfg(test)]
+#[cfg(feature = "aptos")]
 mod test {
-    #[cfg(feature = "aptos")]
+    use crate::error::LightClientError;
+    use wp1_sdk::{ProverClient, SP1Stdin};
+
+    fn sig_execute(ledger_info_w_sig: &[u8]) -> Result<(), LightClientError> {
+        use wp1_sdk::utils;
+        utils::setup_logger();
+
+        let mut stdin = SP1Stdin::new();
+
+        stdin.write(&ledger_info_w_sig);
+
+        ProverClient::execute(
+            aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
+            &stdin,
+        )
+        .map_err(|err| LightClientError::ProvingError {
+            program: "signature-verification".to_string(),
+            source: err.into(),
+        })?;
+
+        Ok(())
+    }
+
     #[test]
-    fn test_ratchet() {
+    fn test_sig_execute() {
+        use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
+        use aptos_lc_core::NBR_VALIDATORS;
+        use std::time::Instant;
+
+        const AVERAGE_SIGNERS_NBR: usize = 95;
+
+        let mut aptos_wrapper = AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
+
+        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch();
+
+        let ledger_info_with_signature = aptos_wrapper.get_latest_li_bytes().unwrap();
+
+        println!("Starting execution of signature verification...");
+        let start = Instant::now();
+        sig_execute(&ledger_info_with_signature).unwrap();
+        println!("Execution took {:?}", start.elapsed());
+    }
+
+    #[test]
+    fn test_sig_prove() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_lc_core::NBR_VALIDATORS;
