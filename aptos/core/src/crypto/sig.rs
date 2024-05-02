@@ -3,9 +3,7 @@ use crate::types::error::TypesError;
 use crate::types::utils::{read_leb128, write_leb128};
 use anyhow::Result;
 use bls12_381::hash_to_curve::{ExpandMsgXmd, HashToCurve};
-use bls12_381::{
-    multi_miller_loop, G1Affine, G1Projective, G2Affine, G2Prepared, G2Projective, Gt,
-};
+use bls12_381::{multi_miller_loop, G1Affine, G2Affine, G2Prepared, G2Projective, Gt};
 use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::de::Error;
@@ -50,18 +48,17 @@ impl PublicKey {
     }
 
     pub fn aggregate(pubkeys: Vec<&mut Self>) -> Result<PublicKey> {
-        fn aggregate_step(mut acc: G1Projective, pk: &mut PublicKey) -> G1Projective {
-            acc += pk.pubkey();
-            acc
+        fn aggregate_step(acc: G1Affine, pk: &mut PublicKey) -> G1Affine {
+            acc.add_affine(&pk.pubkey())
         }
 
         let aggregate = pubkeys
             .into_iter()
-            .fold(G1Projective::identity(), aggregate_step);
+            .fold(G1Affine::identity(), aggregate_step);
 
         Ok(PublicKey {
             compressed_pubkey: [0u8; PUB_KEY_LEN],
-            pubkey: Some(aggregate.into()),
+            pubkey: Some(aggregate),
         })
     }
 
