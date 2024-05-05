@@ -3,25 +3,21 @@ use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::merkle::proof::SparseMerkleProof;
 use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, TrustedStateChange};
 use aptos_lc_core::NBR_VALIDATORS;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::time::Duration;
+use serde::Serialize;
+use std::time::Instant;
 use wp1_sdk::utils::{setup_logger, BabyBearPoseidon2};
 use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
-
-// To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
-// Then `cargo criterion --bench e2e_prod`.
-criterion_group! {
-        name = e2e;
-        config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000));
-        targets = bench_e2e
-}
-
-criterion_main!(e2e);
 
 const AVERAGE_SIGNERS_NBR: usize = 95;
 const NBR_ACCOUNTS: usize = 25000;
 
-fn bench_e2e(c: &mut Criterion) {
+#[derive(Serialize)]
+struct Timings {
+    ratchet_proving_time: u128,
+    merkle_proving_time: u128,
+}
+
+fn main() {
     // Initialize assets needed for the test.
     let mut aptos_wrapper = AptosWrapper::new(NBR_ACCOUNTS, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
 
@@ -43,26 +39,17 @@ fn bench_e2e(c: &mut Criterion) {
     // Instantiate prover client.
     let prover_client = ProverClient::new();
 
-    // Bench ratcheting program.
-    c.bench_function("RatchetProving", |b| {
-        b.iter(|| {
-            prove_ratchet(
-                &prover_client,
-                black_box(&trusted_state),
-                black_box(epoch_change_proof),
-                black_box(&validator_verifier_hash),
-            )
-        })
-    });
-
     // Out of circuit ratcheting for ensuring proper one in circuit, and also
     // for later merkle verification.
+    let start_ratchet_proving = Instant::now();
     let mut public_values = prove_ratchet(
         &prover_client,
         &trusted_state,
         epoch_change_proof,
         &validator_verifier_hash,
     );
+    let ratchet_proving_time = start_ratchet_proving.elapsed();
+
     let validator_verifier_hash: [u8; 32] = public_values.public_values.read();
 
     let expected_hash = verify_and_ratchet_with_hash(&trusted_state, epoch_change_proof);
@@ -86,19 +73,7 @@ fn bench_e2e(c: &mut Criterion) {
     let aptos_expected_root = proof_assets.root_hash().to_vec();
     let leaf_value = proof_assets.state_value_hash().to_vec();
 
-    // Assert hash is the same as the one from the out of circuit ratchet.
-    c.bench_function("MerkleProving", |b| {
-        b.iter(|| {
-            prove_merkle(
-                &prover_client,
-                &sparse_merkle_proof.to_bytes(),
-                &leaf_key,
-                &leaf_value,
-                aptos_expected_root.as_ref(),
-            )
-        })
-    });
-
+    let start_merkle_proving = Instant::now();
     let mut public_values = prove_merkle(
         &prover_client,
         &sparse_merkle_proof.to_bytes(),
@@ -106,6 +81,8 @@ fn bench_e2e(c: &mut Criterion) {
         &leaf_value,
         aptos_expected_root.as_ref(),
     );
+    let merkle_proving_time = start_merkle_proving.elapsed();
+
     let merkle_root_slice: [u8; 32] = public_values.public_values.read();
 
     assert_eq!(
@@ -113,6 +90,15 @@ fn bench_e2e(c: &mut Criterion) {
         aptos_expected_root,
         "Merkle root hash mismatch"
     );
+
+    // Output timings.
+    let timings = Timings {
+        ratchet_proving_time: ratchet_proving_time.as_millis(),
+        merkle_proving_time: merkle_proving_time.as_millis(),
+    };
+
+    let json_output = serde_json::to_string(&timings).unwrap();
+    println!("{}", json_output);
 }
 
 fn prove_ratchet(

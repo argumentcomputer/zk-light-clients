@@ -10,9 +10,6 @@ edition = "2021"
 aptos-lc-core = { path = "../core" }
 aptos-programs = { path = "../aptos-programs" }
 
-# Aptos crate
-aptos-crypto = { workspace = true, optional = true }
-
 # WP1 crates
 wp1-sdk = { workspace = true }
 
@@ -24,33 +21,13 @@ thiserror = { workspace = true }
 aptos-programs = { path = "../aptos-programs", features = ["bench"] }
 bcs = { workspace = true }
 cfg-if = { workspace = true }
-criterion = { workspace = true, features = ["html_reports"] }
 
 [features]
 default = []
 aptos = ["aptos-lc-core/aptos"]
 
 [[bench]]
-name = "merkle_base"
-required-features = ["aptos"]
+name = "execute"
+required-features = []
 harness = false
 
-[[bench]]
-name = "bytes_base"
-required-features = ["aptos", "aptos-programs/bench"]
-harness = false
-
-[[bench]]
-name = "sig_prod"
-required-features = ["aptos", "aptos-programs/bench"]
-harness = false
-
-[[bench]]
-name = "ratchet_prod"
-required-features = ["aptos"]
-harness = false
-
-[[bench]]
-name = "e2e_prod"
-required-features = ["aptos"]
-harness = false

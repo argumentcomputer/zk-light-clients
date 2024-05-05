@@ -34,29 +34,36 @@ generated in two ways:
 
 The benchmarks for our various programs are located in the `light-client` crate folder.
 
-Currently, the following benchmarks are available:
+They are organized in the following way:
 
-- `e2e_prod`: Benchmark that will run a proof generation for the programs contained
+- Each benchmark is located in the `benches` folder, and has a standalone binary
+  crate dedicated to the execution of its related program.
+- The different benchmarks available from their respective crates can be
+  invoked from our single entrypoint `executive.rs` file.
+
+The following benchmarks are available:
+
+- `e2e`: Benchmark that will run a proof generation for the programs contained
   in `programs/ratchet/src/main.rs` and `programs/merkle/src/main.rs`. The goal here
   is to test the complete flow for our light client and get cycle count and proving
   time for it.
-- `ratchet_prod`: Benchmark that will run a proof generation for the program contained
+- `ratchet`: Benchmark that will run a proof generation for the program contained
   in `programs/ratchet/src/main.rs`. This program will execute a hash for the received
   `ValidatorVerifier` to ensure that the signature is from the previous validator set,
   execute a `TrustedState::verify_and_ratchet_inner` and finally generate the
   hash for the verified `ValidatorVerifier`.
-- `sig_prod`: Benchmark that will run a proof generation for the program contained
+- `sig: Benchmark that will run a proof generation for the program contained
   in `programs/signature-verification/src/main.rs`. This program mainly executes
   an aggregated signature verification for an aggregated signature and a set
   of public keys.
-- `bytes_base`: Benchmark that will run a proof generation for the program contained
+- `bytes`: Benchmark that will run a proof generation for the program contained
   in `programs/bytes/src/main.rs`. It is meant to assess the cost of serializing
   and deserializing data structures of interest to us.
-- `merkle_base`: Benchmark that will run a proof generation for the program contained
+- `merkle`: Benchmark that will run a proof generation for the program contained
   in `programs/merkle/src/main.rs`. It is meant to assess the cost of verifying
   a Merkle proof for a given leaf and a given root.
 
-The benchmark that is the closest to a production scenario is `e2e_prod`. Most of
+The benchmark that is the closest to a production scenario is `e2e`. Most of
 the other benchmarks are more specific and are meant to assess the cost
 of specific operations.
 
@@ -109,7 +116,7 @@ fill in the one that is of interest to you:
 
 ```shell
 $ make benchmark
-Enter benchmark name: ratchet_prod
+Enter benchmark name: e2e
 
   ...
   
@@ -139,7 +146,7 @@ such:
 Then, move to the `light-client` folder and run the following command:
 
 ```shell
-cargo +nightly criterion --bench <benchmark_name>
+cargo +nightly bench --features aptos --bench execute -- <benchmark_name>
 ```
 
 ### Interpreting the results

@@ -1,22 +1,13 @@
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::merkle::proof::SparseMerkleProof;
 use aptos_lc_core::NBR_VALIDATORS;
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
-use std::time::Duration;
-use wp1_sdk::utils::{setup_logger, BabyBearPoseidon2};
+use serde::Serialize;
+use std::hint::black_box;
+use std::time::Instant;
+use wp1_sdk::utils::BabyBearPoseidon2;
 use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 
 const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
-
-// To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
-// Then `cargo criterion --bench merkle_base`.
-criterion_group! {
-        name = merkle;
-        config = Criterion::default().warm_up_time(Duration::from_millis(3000));
-        targets = bench_merkle
-}
-
-criterion_main!(merkle);
 
 struct ProvingAssets {
     client: ProverClient,
@@ -75,44 +66,32 @@ impl ProvingAssets {
     }
 }
 
-fn bench_merkle(c: &mut Criterion) {
+#[derive(Serialize)]
+struct Timings {
+    nbr_leaves: usize,
+    proving_time: u128,
+    verifying_time: u128,
+}
+
+fn main() {
     for nbr_leaves in NBR_LEAVES {
         let proving_assets = ProvingAssets::from_nbr_leaves(nbr_leaves);
 
-        let mut wp1_proving_group = c.benchmark_group("WP1-Proving");
-        wp1_proving_group
-            .sampling_mode(SamplingMode::Flat)
-            .sample_size(1);
-
-        setup_logger();
-
-        wp1_proving_group.bench_with_input(
-            BenchmarkId::new(
-                "NbrSiblings",
-                proving_assets.sparse_merkle_proof.siblings().len(),
-            ),
-            &proving_assets.sparse_merkle_proof.siblings().len(),
-            |b, _| b.iter(|| proving_assets.prove()),
-        );
-
-        wp1_proving_group.finish();
-
+        let start_proving = Instant::now();
         let proof = proving_assets.prove();
+        let proving_time = start_proving.elapsed();
 
-        let mut wp1_verifying_group = c.benchmark_group("WP1-Verifying");
-        wp1_verifying_group
-            .sampling_mode(SamplingMode::Auto)
-            .sample_size(10);
+        let start_verifying = Instant::now();
+        proving_assets.verify(black_box(&proof));
+        let verifying_time = start_verifying.elapsed();
 
-        wp1_verifying_group.bench_with_input(
-            BenchmarkId::new(
-                "NbrSiblings",
-                proving_assets.sparse_merkle_proof.siblings().len(),
-            ),
-            &proving_assets.sparse_merkle_proof.siblings().len(),
-            |b, _| b.iter(|| proving_assets.verify(black_box(&proof))),
-        );
+        let timings = Timings {
+            nbr_leaves,
+            proving_time: proving_time.as_millis(),
+            verifying_time: verifying_time.as_millis(),
+        };
 
-        wp1_verifying_group.finish();
+        let json_output = serde_json::to_string(&timings).unwrap();
+        println!("{}", json_output);
     }
 }

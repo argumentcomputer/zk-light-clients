@@ -2,23 +2,14 @@ use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::NBR_VALIDATORS;
-use criterion::{black_box, criterion_group, criterion_main, Criterion, SamplingMode};
-use std::time::Duration;
-use wp1_sdk::utils::setup_logger;
-use wp1_sdk::{ProverClient, SP1Stdin};
+use serde::Serialize;
+use std::hint::black_box;
+use std::time::Instant;
+use wp1_sdk::utils::{setup_logger, BabyBearPoseidon2};
+use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
 
-// To run these benchmarks, first download `criterion` with `cargo install cargo-criterion`.
-// Then `cargo criterion --bench ratchet_prod`.
-criterion_group! {
-        name = ratchet;
-        config = Criterion::default().sample_size(1).warm_up_time(Duration::from_millis(3000));
-        targets = bench_ratchet
-}
-
-criterion_main!(ratchet);
-
-#[derive(Clone, Debug)]
 struct ProvingAssets {
+    client: ProverClient,
     trusted_state: Vec<u8>,
     validator_verifier_hash: Vec<u8>,
     epoch_change_proof: Vec<u8>,
@@ -43,14 +34,17 @@ impl ProvingAssets {
 
         let epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
+        let client = ProverClient::new();
+
         Self {
+            client,
             trusted_state,
             validator_verifier_hash,
             epoch_change_proof: epoch_change_proof.clone(),
         }
     }
 
-    fn prove(&self) {
+    fn prove(&self) -> SP1ProofWithIO<BabyBearPoseidon2> {
         let mut stdin = SP1Stdin::new();
 
         setup_logger();
@@ -61,19 +55,41 @@ impl ProvingAssets {
 
         let client = ProverClient::new();
 
-        client
+        self.client
             .prove(aptos_programs::RATCHET_PROGRAM, stdin)
-            .unwrap();
+            .unwrap()
+    }
+
+    fn verify(&self, proof: &SP1ProofWithIO<BabyBearPoseidon2>) {
+        self.client
+            .verify(aptos_programs::RATCHET_PROGRAM, proof)
+            .expect("Verification failed");
     }
 }
 
-fn bench_ratchet(c: &mut Criterion) {
-    let mut group = c.benchmark_group("ratchet-prod");
-    group.sampling_mode(SamplingMode::Flat);
+#[derive(Serialize)]
+struct Timings {
+    proving_time: u128,
+    verifying_time: u128,
+}
 
+fn main() {
     let proving_assets = ProvingAssets::new();
 
-    group.bench_function("RatchetExecute", |b| {
-        b.iter(|| black_box(proving_assets.clone()).prove())
-    });
+    let start_proving = Instant::now();
+    let proof = proving_assets.prove();
+    let proving_time = start_proving.elapsed();
+
+    let start_verifying = Instant::now();
+    proving_assets.verify(black_box(&proof));
+    let verifying_time = start_verifying.elapsed();
+
+    // Print results in JSON format.
+    let timings = Timings {
+        proving_time: proving_time.as_millis(),
+        verifying_time: verifying_time.as_millis(),
+    };
+
+    let json_output = serde_json::to_string(&timings).unwrap();
+    println!("{}", json_output);
 }
