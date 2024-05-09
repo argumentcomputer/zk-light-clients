@@ -1,11 +1,11 @@
 use crate::error::LightClientError;
-use wp1_sdk::{ProverClient, SP1PublicValues, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
 
 #[allow(dead_code)]
 fn sig_verification(
     client: &ProverClient,
     ledger_info_w_sig: &[u8],
-) -> Result<(SP1PublicValues, bool), LightClientError> {
+) -> Result<(SP1CoreProof, bool), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -26,7 +26,7 @@ fn sig_verification(
     // Read output.
     let success = proof.public_values.read::<bool>();
 
-    Ok((proof.public_values, success))
+    Ok((proof, success))
 }
 
 #[cfg(test)]
