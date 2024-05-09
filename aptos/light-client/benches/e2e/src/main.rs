@@ -6,8 +6,8 @@ use aptos_lc_core::types::validator::ValidatorVerifier;
 use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::time::Instant;
-use wp1_sdk::utils::{setup_logger, BabyBearPoseidon2};
-use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
+use wp1_sdk::utils::setup_logger;
+use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
 
 const AVERAGE_SIGNERS_NBR: usize = 95;
 const NBR_ACCOUNTS: usize = 25000;
@@ -129,7 +129,7 @@ fn prove_ratchet(
     trusted_state: &[u8],
     epoch_change_proof: &[u8],
     trusted_state_hash: &[u8],
-) -> SP1ProofWithIO<BabyBearPoseidon2> {
+) -> SP1CoreProof {
     let mut stdin = SP1Stdin::new();
 
     setup_logger();
@@ -139,7 +139,7 @@ fn prove_ratchet(
     stdin.write(&trusted_state_hash);
 
     client
-        .prove(aptos_programs::RATCHET_PROGRAM, stdin)
+        .prove(aptos_programs::RATCHET_PROGRAM, &stdin)
         .unwrap()
 }
 
@@ -148,7 +148,7 @@ fn prove_merkle(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> SP1ProofWithIO<BabyBearPoseidon2> {
+) -> SP1CoreProof {
     let mut stdin = SP1Stdin::new();
 
     setup_logger();
@@ -168,7 +168,9 @@ fn prove_merkle(
     stdin.write(validator_verifier_assets.validator_verifier());
     stdin.write(validator_verifier_assets.validator_hash());
 
-    client.prove(aptos_programs::MERKLE_PROGRAM, stdin).unwrap()
+    client
+        .prove(aptos_programs::MERKLE_PROGRAM, &stdin)
+        .unwrap()
 }
 
 fn verify_and_ratchet_with_hash(

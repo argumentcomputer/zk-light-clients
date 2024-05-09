@@ -4,8 +4,7 @@ use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::hint::black_box;
 use std::time::Instant;
-use wp1_sdk::utils::BabyBearPoseidon2;
-use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
 
 const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
 
@@ -46,7 +45,7 @@ impl ProvingAssets {
         }
     }
 
-    fn prove(&self) -> SP1ProofWithIO<BabyBearPoseidon2> {
+    fn prove(&self) -> SP1CoreProof {
         let mut stdin = SP1Stdin::new();
 
         stdin.write(&self.sparse_merkle_proof);
@@ -55,11 +54,11 @@ impl ProvingAssets {
         stdin.write(&self.expected_root);
 
         self.client
-            .prove(aptos_programs::MERKLE_PROGRAM, stdin)
+            .prove(aptos_programs::MERKLE_PROGRAM, &stdin)
             .unwrap()
     }
 
-    fn verify(&self, proof: &SP1ProofWithIO<BabyBearPoseidon2>) {
+    fn verify(&self, proof: &SP1CoreProof) {
         self.client
             .verify(aptos_programs::MERKLE_PROGRAM, proof)
             .expect("Verification failed");
