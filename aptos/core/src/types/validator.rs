@@ -9,7 +9,6 @@ use anyhow::Result;
 use bytes::{Buf, BufMut, BytesMut};
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::collections::HashMap;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, CopyGetters, Serialize, Deserialize)]
 pub struct ValidatorConsensusInfo {
@@ -139,17 +138,13 @@ impl ValidatorVerifier {
 
     /// Returns the voting power for this address.
     pub fn get_voting_power(&self, author: &AccountAddress) -> Option<u64> {
-        // TODO : make this more efficient
-        let address_to_validator_index = self
-            .validator_infos
-            .iter()
-            .enumerate()
-            .map(|(index, info)| (info.address, index))
-            .collect::<HashMap<_, _>>();
-
-        address_to_validator_index
-            .get(author)
-            .map(|index| self.validator_infos[*index].voting_power)
+        self.validator_infos.iter().find_map(|info| {
+            if &info.address == author {
+                Some(info.voting_power)
+            } else {
+                None
+            }
+        })
     }
 
     /// Sum voting power for valid accounts, exiting early for unknown authors
