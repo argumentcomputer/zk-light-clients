@@ -1,12 +1,16 @@
 use bytes::{Buf, BufMut, BytesMut};
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
+use crate::serde_error;
 use crate::types::epoch_state::EpochState;
 use crate::types::error::TypesError;
-use crate::types::ledger_info::LedgerInfo;
+use crate::types::ledger_info::{LedgerInfo, U64_SIZE};
 use crate::types::Version;
 use getset::CopyGetters;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+/// Length in bytes of the serialized `Waypoint`.
+pub const WAYPOINT_SIZE: usize = U64_SIZE + HASH_LENGTH;
 
 #[derive(Debug, CopyGetters, PartialEq, Eq, Clone, Copy)]
 pub struct Waypoint {
@@ -30,16 +34,22 @@ impl Waypoint {
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let version = bytes.get_u64_le();
 
-        let value = HashValue::from_slice(bytes.chunk().get(..HASH_LENGTH).ok_or_else(|| {
-            TypesError::DeserializationError {
-                structure: String::from("Waypoint"),
-                source: "Not enough data for value".into(),
-            }
-        })?)
-        .map_err(|e| TypesError::DeserializationError {
-            structure: String::from("Waypoint"),
-            source: e.into(),
-        })?;
+        let value = HashValue::from_slice(
+            bytes
+                .chunk()
+                .get(..HASH_LENGTH)
+                .ok_or_else(|| serde_error!("Waypoint", "Not enough data for value"))?,
+        )
+        .map_err(|e| serde_error!("Waypoint", e))?;
+
+        bytes.advance(HASH_LENGTH);
+
+        if bytes.remaining() != 0 {
+            return Err(serde_error!(
+                "TransactionInfo",
+                "Unexpected data after completing deserialization"
+            ));
+        }
 
         Ok(Self { version, value })
     }

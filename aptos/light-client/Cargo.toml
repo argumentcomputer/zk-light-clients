@@ -14,6 +14,7 @@ aptos-programs = { path = "../aptos-programs" }
 wp1-sdk = { workspace = true }
 
 #Others
+getset = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 thiserror = { workspace = true }
 

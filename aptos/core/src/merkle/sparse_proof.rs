@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{CryptoHash, HashValue, HASH_LENGTH};
-use crate::merkle::node::{SparseMerkleInternalNode, SparseMerkleLeafNode};
+use crate::merkle::node::{MerkleInternalNode, SparseMerkleInternalHasher, SparseMerkleLeafNode};
+use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::{read_leb128, write_leb128};
-use anyhow::ensure;
+use anyhow::{ensure, Result};
 use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::{Deserialize, Serialize};
@@ -33,7 +34,7 @@ impl SparseMerkleProof {
         expected_root_hash: HashValue,
         element_key: HashValue,
         element_hash: HashValue,
-    ) -> anyhow::Result<HashValue> {
+    ) -> Result<HashValue> {
         ensure!(
             self.siblings.len() <= HASH_LENGTH * 8,
             "Sparse Merkle Tree proof has more than {} ({}) siblings.",
@@ -55,11 +56,8 @@ impl SparseMerkleProof {
 
         ensure!(
             element_hash == leaf.value_hash(),
-            "Value hashes do not match for key {:x}. Value hash in proof: {:x}. \
-                     Expected value hash: {:x}. ",
-            element_key,
-            leaf.value_hash(),
-            element_hash
+            "Value hashes do not match for key {:x}.",
+            element_key
         );
 
         let reconstructed_root = self
@@ -103,56 +101,53 @@ impl SparseMerkleProof {
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = bytes;
+
         let leaf = match buf.get_u8() {
             1 => {
                 let node = SparseMerkleLeafNode::from_bytes(
                     buf.chunk().get(..2 * HASH_LENGTH).ok_or_else(|| {
-                        TypesError::DeserializationError {
-                            structure: String::from("SparseMerkleProof"),
-                            source: "Not enough data for leaf".into(),
-                        }
+                        serde_error!("SparseMerkleProof", "Not enough data for leaf")
                     })?,
                 )
-                .map_err(|e| TypesError::DeserializationError {
-                    structure: String::from("SparseMerkleProof"),
-                    source: e.into(),
-                })?;
+                .map_err(|e| serde_error!("SparseMerkleProof", e))?;
                 buf.advance(2 * HASH_LENGTH);
+
                 Some(node)
             }
             _ => None,
         };
+
         let (num_siblings, len) =
-            read_leb128(buf.chunk()).map_err(|e| TypesError::DeserializationError {
-                structure: String::from("SparseMerkleProof"),
-                source: e.into(),
-            })?;
+            read_leb128(buf.chunk()).map_err(|e| serde_error!("SparseMerkleProof", e))?;
         buf.advance(len);
+
         let mut siblings = Vec::new();
         for _ in 0..num_siblings {
             let sibling =
                 HashValue::from_slice(buf.chunk().get(..HASH_LENGTH).ok_or_else(|| {
-                    TypesError::DeserializationError {
-                        structure: String::from("SparseMerkleProof"),
-                        source: "Not enough data for sibling".into(),
-                    }
+                    serde_error!("SparseMerkleProof", "Not enough data for sibling")
                 })?)
-                .map_err(|e| TypesError::DeserializationError {
-                    structure: String::from("SparseMerkleProof"),
-                    source: e.into(),
-                })?;
+                .map_err(|e| serde_error!("SparseMerkleProof", e))?;
             buf.advance(HASH_LENGTH);
             siblings.push(sibling);
         }
+
+        if buf.remaining() != 0 {
+            return Err(serde_error!(
+                "SparseMerkleProof",
+                "Unexpected data after completing deserialization"
+            ));
+        }
+
         Ok(Self { leaf, siblings })
     }
 }
 
 fn accumulator_update(acc_hash: HashValue, (sibling_hash, bit): (&HashValue, bool)) -> HashValue {
     if bit {
-        SparseMerkleInternalNode::new(*sibling_hash, acc_hash).hash()
+        MerkleInternalNode::<SparseMerkleInternalHasher>::new(*sibling_hash, acc_hash).hash()
     } else {
-        SparseMerkleInternalNode::new(acc_hash, *sibling_hash).hash()
+        MerkleInternalNode::<SparseMerkleInternalHasher>::new(acc_hash, *sibling_hash).hash()
     }
 }
 
@@ -160,8 +155,10 @@ fn accumulator_update(acc_hash: HashValue, (sibling_hash, bit): (&HashValue, boo
 mod test {
     use crate::crypto::hash::CryptoHash;
     use crate::crypto::hash::{hash_data, HashValue, HASH_LENGTH};
-    use crate::merkle::node::{SparseMerkleInternalNode, SparseMerkleLeafNode};
-    use crate::merkle::proof::SparseMerkleProof;
+    use crate::merkle::node::{
+        MerkleInternalNode, SparseMerkleInternalHasher, SparseMerkleLeafNode,
+    };
+    use crate::merkle::sparse_proof::SparseMerkleProof;
 
     #[test]
     fn test_verify_proof_simple() {
@@ -199,9 +196,11 @@ mod test {
             .zip(key.iter_bits().rev().skip(HASH_LENGTH * 8 - siblings.len()))
             .fold(leaf_node.hash(), |acc_hash, (sibling_hash, bit)| {
                 if bit {
-                    SparseMerkleInternalNode::new(*sibling_hash, acc_hash).hash()
+                    MerkleInternalNode::<SparseMerkleInternalHasher>::new(*sibling_hash, acc_hash)
+                        .hash()
                 } else {
-                    SparseMerkleInternalNode::new(acc_hash, *sibling_hash).hash()
+                    MerkleInternalNode::<SparseMerkleInternalHasher>::new(acc_hash, *sibling_hash)
+                        .hash()
                 }
             });
 

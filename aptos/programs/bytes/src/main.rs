@@ -2,7 +2,7 @@
 
 use aptos_lc_core::crypto::sig::AggregateSignature;
 use aptos_lc_core::types::ledger_info::{
-    LedgerInfo, AGG_SIGNATURE_LEN, LEDGER_INFO_LEN, OFFSET_LEDGER_INFO, OFFSET_SIGNATURE,
+    LedgerInfo, AGG_SIGNATURE_LEN, LEDGER_INFO_NEW_EPOCH_LEN, OFFSET_LEDGER_INFO, OFFSET_SIGNATURE,
 };
 use std::hint::black_box;
 wp1_zkvm::entrypoint!(main);
@@ -14,7 +14,7 @@ pub fn main() {
     let ledger_info_bytes = extract_bytes(
         &ledger_info_with_sig_bytes,
         OFFSET_LEDGER_INFO,
-        LEDGER_INFO_LEN,
+        LEDGER_INFO_NEW_EPOCH_LEN,
     );
     let signature_bytes = extract_bytes(
         &ledger_info_with_sig_bytes,

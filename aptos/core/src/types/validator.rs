@@ -2,13 +2,20 @@
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey, PUB_KEY_LEN};
 use crate::types::error::{TypesError, VerifyError};
-use crate::types::ledger_info::{LedgerInfo, LEB128_PUBKEY_LEN, VOTING_POWER_OFFSET_INCR};
+use crate::types::ledger_info::{
+    LedgerInfo, LEB128_PUBKEY_LEN, LEB128_VEC_SIZE_VALIDATOR_LIST, VOTING_POWER_OFFSET_INCR,
+};
 use crate::types::utils::{read_leb128, write_leb128};
 use crate::types::{AccountAddress, ACCOUNT_ADDRESS_SIZE};
+use crate::{serde_error, NBR_VALIDATORS};
 use anyhow::Result;
 use bytes::{Buf, BufMut, BytesMut};
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Deserializer, Serialize};
+
+/// SIze in bytes for a `ValidatorConsensusInfo`
+pub const VALIDATOR_CONSENSUS_INFO_SIZE: usize =
+    ACCOUNT_ADDRESS_SIZE + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, CopyGetters, Serialize, Deserialize)]
 pub struct ValidatorConsensusInfo {
@@ -36,39 +43,40 @@ impl ValidatorConsensusInfo {
     }
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
-        let address =
-            AccountAddress::from_bytes(bytes.chunk().get(..ACCOUNT_ADDRESS_SIZE).ok_or_else(
-                || TypesError::DeserializationError {
-                    structure: String::from("ValidatorConsensusInfo"),
-                    source: "Not enough data for AccountAddress".into(),
-                },
-            )?)
-            .map_err(|e| TypesError::DeserializationError {
-                structure: String::from("ValidatorConsensusInfo"),
-                source: e.into(),
-            })?;
+        let address = AccountAddress::from_bytes(
+            bytes.chunk().get(..ACCOUNT_ADDRESS_SIZE).ok_or_else(|| {
+                serde_error!(
+                    "ValidatorConsensusInfo",
+                    "Not enough data for AccountAddress"
+                )
+            })?,
+        )
+        .map_err(|e| serde_error!("ValidatorConsensusInfo", e))?;
         bytes.advance(ACCOUNT_ADDRESS_SIZE); // Advance the buffer by the size of AccountAddress
 
-        let (slice_len, bytes_read) =
-            read_leb128(bytes).map_err(|e| TypesError::DeserializationError {
-                structure: String::from("ValidatorConsensusInfo"),
-                source: format!("Failed to read length of public_key: {e}").into(),
-            })?;
+        let (slice_len, bytes_read) = read_leb128(bytes).map_err(|e| {
+            serde_error!(
+                "ValidatorConsensusInfo",
+                format!("Failed to read length of public_key: {e}")
+            )
+        })?;
         bytes.advance(bytes_read);
 
         let public_key =
             PublicKey::from_bytes(bytes.chunk().get(..slice_len as usize).ok_or_else(|| {
-                TypesError::DeserializationError {
-                    structure: String::from("ValidatorConsensusInfo"),
-                    source: "Not enough data for PublicKey".into(),
-                }
+                serde_error!("ValidatorConsensusInfo", "Not enough data for PublicKey")
             })?)
-            .map_err(|e| TypesError::DeserializationError {
-                structure: String::from("ValidatorConsensusInfo"),
-                source: e.into(),
-            })?;
+            .map_err(|e| serde_error!("ValidatorConsensusInfo", e))?;
         bytes.advance(slice_len as usize); // Advance the buffer by the size of PublicKey
         let voting_power = bytes.get_u64_le();
+
+        if bytes.remaining() != 0 {
+            return Err(serde_error!(
+                "LedgerInfo",
+                "Unexpected data after completing deserialization"
+            ));
+        }
+
         Ok(Self {
             address,
             public_key,
@@ -76,6 +84,10 @@ impl ValidatorConsensusInfo {
         })
     }
 }
+
+/// Length in bytes for a `ValidatorVerifier`
+pub const VALIDATOR_VERIFIER_SIZE: usize =
+    LEB128_VEC_SIZE_VALIDATOR_LIST + (VALIDATOR_CONSENSUS_INFO_SIZE) * NBR_VALIDATORS;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Getters, Serialize)]
 // this derive is in the original code, but it's probably a bug, as Validator set comparisons should have set (not list) semantics
@@ -246,38 +258,39 @@ impl ValidatorVerifier {
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let mut validator_infos = Vec::new();
-        println!("cycle-tracker-start: read_leb_advance");
-        let (slice_len, bytes_read) =
-            read_leb128(bytes).map_err(|_| TypesError::DeserializationError {
-                structure: String::from("ValidatorVerifier"),
-                source: "Failed to read length of validator_infos".into(),
-            })?;
+
+        let (slice_len, bytes_read) = read_leb128(bytes).map_err(|_| {
+            serde_error!(
+                "ValidatorVerifier",
+                "Failed to read length of validator_infos"
+            )
+        })?;
 
         bytes.advance(bytes_read);
-        println!("cycle-tracker-end: read_leb_advance");
 
-        // 32 bytes (address) + size byte + 48 bytes (public key) + 8 bytes (voting power)
-        println!("cycle-tracker-start: all_validator_infos_{}", slice_len);
-        const INFO_LEN: usize =
-            ACCOUNT_ADDRESS_SIZE + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR;
         for _ in 0..slice_len {
-            let info_bytes =
-                bytes
-                    .chunk()
-                    .get(..INFO_LEN)
-                    .ok_or_else(|| TypesError::DeserializationError {
-                        structure: String::from("ValidatorVerifier"),
-                        source: "Not enough data for ValidatorConsensusInfo".into(),
-                    })?;
-            validator_infos.push(ValidatorConsensusInfo::from_bytes(info_bytes).map_err(|e| {
-                TypesError::DeserializationError {
-                    structure: String::from("ValidatorVerifier"),
-                    source: e.into(),
-                }
-            })?);
-            bytes.advance(INFO_LEN);
+            let info_bytes = bytes
+                .chunk()
+                .get(..VALIDATOR_CONSENSUS_INFO_SIZE)
+                .ok_or_else(|| {
+                    serde_error!(
+                        "ValidatorVerifier",
+                        "Not enough data for ValidatorConsensusInfo"
+                    )
+                })?;
+            validator_infos.push(
+                ValidatorConsensusInfo::from_bytes(info_bytes)
+                    .map_err(|e| serde_error!("ValidatorVerifier", e))?,
+            );
+            bytes.advance(VALIDATOR_CONSENSUS_INFO_SIZE);
         }
-        println!("cycle-tracker-end: all_validator_infos_{}", slice_len);
+
+        if bytes.remaining() != 0 {
+            return Err(serde_error!(
+                "ValidatorVerifier",
+                "Unexpected data after completing deserialization"
+            ));
+        }
 
         Ok(Self { validator_infos })
     }
@@ -311,9 +324,10 @@ impl<'de> Deserialize<'de> for ValidatorVerifier {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "aptos"))]
 mod test {
-    #[cfg(feature = "aptos")]
+    use crate::types::validator::VALIDATOR_VERIFIER_SIZE;
+
     #[test]
     fn test_bytes_conversion_validator_consensus_info() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
@@ -346,11 +360,10 @@ mod test {
         assert_eq!(bytes, validator_to_bytes);
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_validator_verifier() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
-        use crate::types::ledger_info::{OFFSET_VALIDATOR_LIST, VALIDATORS_LIST_LEN};
+        use crate::types::ledger_info::OFFSET_VALIDATOR_LIST;
         use crate::types::validator::ValidatorVerifier;
         use crate::NBR_VALIDATORS;
 
@@ -364,7 +377,7 @@ mod test {
             .unwrap()
             .iter()
             .skip(OFFSET_VALIDATOR_LIST)
-            .take(VALIDATORS_LIST_LEN)
+            .take(VALIDATOR_VERIFIER_SIZE)
             .copied()
             .collect::<Vec<u8>>();
         let validator_from_bytes = ValidatorVerifier::from_bytes(bytes).unwrap();

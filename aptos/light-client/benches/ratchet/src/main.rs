@@ -53,8 +53,6 @@ impl ProvingAssets {
         stdin.write(&self.epoch_change_proof);
         stdin.write(&self.validator_verifier_hash);
 
-        let client = ProverClient::new();
-
         self.client
             .prove(aptos_programs::RATCHET_PROGRAM, stdin)
             .unwrap()

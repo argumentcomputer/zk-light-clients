@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
+use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
-use crate::types::validator::ValidatorVerifier;
+use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures, U64_SIZE};
+use crate::types::validator::{ValidatorVerifier, VALIDATOR_VERIFIER_SIZE};
 use anyhow::ensure;
 use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::{Deserialize, Serialize};
+
+/// Length in bytes of the serialized `EpochState`.
+pub const EPOCH_STATE_SIZE: usize = U64_SIZE + VALIDATOR_VERIFIER_SIZE;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Getters)]
 #[getset(get = "pub")]
@@ -43,21 +47,28 @@ impl EpochState {
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let epoch = bytes.get_u64_le();
-        println!("cycle-tracker-start: validator_verifier_from_bytes");
-        let verifier = ValidatorVerifier::from_bytes(bytes.chunk()).map_err(|e| {
-            TypesError::DeserializationError {
-                structure: String::from("EpochState"),
-                source: e.into(),
-            }
-        })?;
-        println!("cycle-tracker-end: validator_verifier_from_bytes");
+        let verifier = ValidatorVerifier::from_bytes(
+            bytes
+                .chunk()
+                .get(..VALIDATOR_VERIFIER_SIZE)
+                .ok_or_else(|| serde_error!("EpochState", "Not enough data for verifier"))?,
+        )
+        .map_err(|e| serde_error!("EpochState", e))?;
+        bytes.advance(VALIDATOR_VERIFIER_SIZE);
+
+        if bytes.remaining() != 0 {
+            return Err(serde_error!(
+                "EpochState",
+                "Unexpected data after completing deserialization"
+            ));
+        }
+
         Ok(Self { epoch, verifier })
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "aptos"))]
 mod test {
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_epoch_state() {
         use super::*;

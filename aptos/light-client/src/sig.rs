@@ -29,8 +29,7 @@ fn sig_verification(
     Ok((proof, success))
 }
 
-#[cfg(test)]
-#[cfg(feature = "aptos")]
+#[cfg(all(test, feature = "aptos"))]
 mod test {
     use crate::error::LightClientError;
     use wp1_sdk::{ProverClient, SP1Stdin};

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
-use aptos_crypto::hash::CryptoHash;
+use aptos_crypto::hash::{CryptoHash, TransactionAccumulatorHasher};
 use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_executor_test_helpers::gen_block_id;
@@ -16,7 +16,7 @@ use aptos_types::block_info::BlockInfo;
 use aptos_types::block_metadata::BlockMetadata;
 use aptos_types::chain_id::ChainId;
 use aptos_types::ledger_info::LedgerInfoWithSignatures;
-use aptos_types::proof::SparseMerkleProof;
+use aptos_types::proof::{AccumulatorProof, SparseMerkleProof};
 use aptos_types::state_proof::StateProof;
 use aptos_types::state_store::state_key::StateKey;
 use aptos_types::state_store::state_value::StateValue;
@@ -25,7 +25,7 @@ use aptos_types::test_helpers::transaction_test_helpers::{
 };
 use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
 use aptos_types::transaction::Transaction::UserTransaction;
-use aptos_types::transaction::{Transaction, WriteSetPayload};
+use aptos_types::transaction::{Transaction, TransactionInfo, WriteSetPayload};
 use aptos_types::trusted_state::{TrustedState, TrustedStateChange};
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_types::validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier};
@@ -51,6 +51,12 @@ pub struct SparseMerkleProofAssets {
     state_value: Option<StateValue>,
     /// Root hash of the tree including the account
     root_hash: HashValue,
+    /// Proof for the transaction inclusion
+    transaction_proof: AccumulatorProof<TransactionAccumulatorHasher>,
+    /// Hashed representation of the transaction
+    transaction: TransactionInfo,
+    /// Transaction version
+    transaction_version: u64,
 }
 
 impl SparseMerkleProofAssets {
@@ -383,28 +389,27 @@ impl AptosWrapper {
             )
             .unwrap();
 
-        let txn_info = self
+        // Get the transaction with proof for the current version
+        let txn_w_proof = self
             .db()
             .reader
-            .get_transaction_info_iterator(*self.current_version(), 1)
-            .unwrap()
-            .next()
-            .unwrap()
+            .get_transaction_by_version(*self.current_version(), *self.current_version(), false)
             .unwrap();
+
+        let transaction_version = txn_w_proof.version;
+        let txn_info = txn_w_proof.proof.transaction_info;
+        let ledger_info_to_transaction_info_proof =
+            txn_w_proof.proof.ledger_info_to_transaction_info_proof;
 
         Some(SparseMerkleProofAssets {
             state_proof,
             key: account_0_resource_path.hash(),
             state_value,
             root_hash: txn_info.state_checkpoint_hash().unwrap(),
+            transaction_proof: ledger_info_to_transaction_info_proof,
+            transaction: txn_info,
+            transaction_version,
         })
-    }
-    /// Same as `get_latest_li` but with returned payload as bytes, serialized with bcs
-    pub fn get_latest_proof_account_bytes(&self, account_idx: usize) -> Option<Vec<u8>> {
-        Some(
-            bcs::to_bytes(&self.get_latest_proof_account(account_idx)?)
-                .expect("LedgerInfoWithSignatures serialization failed"),
-        )
     }
 }
 

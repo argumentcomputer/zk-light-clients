@@ -10,27 +10,53 @@
 
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
-use crate::crypto::sig::{AggregateSignature, PUB_KEY_LEN, SIG_LEN};
+use crate::crypto::sig::{AggregateSignature, SIG_LEN};
 use crate::types::block_info::BlockInfo;
 use crate::types::epoch_state::EpochState;
 use crate::types::error::{TypesError, VerifyError};
-use crate::types::validator::ValidatorVerifier;
+use crate::types::validator::{ValidatorVerifier, VALIDATOR_VERIFIER_SIZE};
 use crate::types::Version;
-use crate::NBR_VALIDATORS;
+use crate::{serde_error, NBR_VALIDATORS};
 use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
+/// Size in bytes for an enum variant representation.
 pub const ENUM_VARIANT_LEN: usize = 1;
-const LEB128_VEC_SIZE_VALIDATOR_LIST: usize = 2; // For 130 validators
+
+/// Size of a u64 representation in bytes.
+pub const U64_SIZE: usize = 8;
+
+/// Size of the LEB128 representation for the validator vector size.
+pub(crate) const LEB128_VEC_SIZE_VALIDATOR_LIST: usize = 2; // For NBR_VALIDATORS = 130
+const _: () = assert!(
+    NBR_VALIDATORS == 130,
+    "LEB128_VEC_SIZE_VALIDATOR_LIST assumes NBR_VALIDATORS == 130"
+);
+
+/// Byte representation to point the next one.
 const NEXT_BYTE_OFFSET: usize = 1;
-const EPOCH_OFFSET_INCR: usize = 8;
-const ROUND_OFFSET_INCR: usize = 8;
-const HASH_OFFSET_INCR: usize = 32;
-const VERSION_OFFSET_INCR: usize = 8;
-const TIMESTAMP_OFFSET_INCR: usize = 8;
-pub const VOTING_POWER_OFFSET_INCR: usize = 8;
+
+/// Offset of the epoch field in the [`LedgerInfo`] struct.
+const EPOCH_OFFSET_INCR: usize = U64_SIZE;
+
+/// Relative offset increments for the round field in the [`LedgerInfo`] struct.
+const ROUND_OFFSET_INCR: usize = U64_SIZE;
+
+/// Relative offset increments for any hash value.
+const HASH_OFFSET_INCR: usize = HASH_LENGTH;
+
+/// Relative offset increments for the version field in the [`LedgerInfo`] struct.
+const VERSION_OFFSET_INCR: usize = U64_SIZE;
+
+/// Relative offset increments for the timestamp field in the [`LedgerInfo`] struct.
+const TIMESTAMP_OFFSET_INCR: usize = U64_SIZE;
+
+/// Relative offset increments for the voting power field in the [`LedgerInfo`] struct.
+pub const VOTING_POWER_OFFSET_INCR: usize = U64_SIZE;
+
+/// Offset of a validator list in a [`LedgerInfo`] struct when changing epoch.
 pub const OFFSET_VALIDATOR_LIST: usize = EPOCH_OFFSET_INCR
     + ROUND_OFFSET_INCR
     + HASH_OFFSET_INCR // id
@@ -40,13 +66,15 @@ pub const OFFSET_VALIDATOR_LIST: usize = EPOCH_OFFSET_INCR
     + ENUM_VARIANT_LEN
     + EPOCH_OFFSET_INCR
     + NEXT_BYTE_OFFSET;
-pub const OFFSET_LEDGER_INFO: usize = ENUM_VARIANT_LEN;
-pub const LEB128_PUBKEY_LEN: usize = 1;
-pub const VALIDATORS_LIST_LEN: usize = LEB128_VEC_SIZE_VALIDATOR_LIST
-    + NBR_VALIDATORS
-        * (HASH_OFFSET_INCR + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR);
 
-pub const LEDGER_INFO_LEN: usize = EPOCH_OFFSET_INCR
+/// Offset of the [`LedgerInfo`] struct in a [`LedgerInfoWithSignatures`] struct.
+pub const OFFSET_LEDGER_INFO: usize = ENUM_VARIANT_LEN;
+
+/// Size of the LEB128 representation of a public key vector length.
+pub const LEB128_PUBKEY_LEN: usize = 1;
+
+/// Size of a [`LedgerInfo`] struct when changing epoch.
+pub const LEDGER_INFO_NEW_EPOCH_LEN: usize = EPOCH_OFFSET_INCR
     + ROUND_OFFSET_INCR
     + HASH_OFFSET_INCR // id
     + HASH_OFFSET_INCR // executed state id
@@ -54,13 +82,40 @@ pub const LEDGER_INFO_LEN: usize = EPOCH_OFFSET_INCR
     + TIMESTAMP_OFFSET_INCR
     + ENUM_VARIANT_LEN
     + EPOCH_OFFSET_INCR
-    + VALIDATORS_LIST_LEN
+    + VALIDATOR_VERIFIER_SIZE
     + HASH_OFFSET_INCR; // consensus data hash
 
-pub const OFFSET_SIGNATURE: usize = LEDGER_INFO_LEN + NEXT_BYTE_OFFSET;
+/// Size of a [`LedgerInfo`] struct when a block only represents
+/// a new block height with a new state.
+pub const LEDGER_INFO_NEW_BLOCK_HEIGHT_LEN: usize = EPOCH_OFFSET_INCR
+    + ROUND_OFFSET_INCR
+    + HASH_OFFSET_INCR // id
+    + HASH_OFFSET_INCR // executed state id
+    + VERSION_OFFSET_INCR
+    + TIMESTAMP_OFFSET_INCR
+    + ENUM_VARIANT_LEN
+    + HASH_OFFSET_INCR; // consensus data hash
 
+/// Size of a [`LedgerInfoWithSignatures`] struct when changing epoch.
+pub const LEDGER_INFO_WITH_SIG_NEW_EPOCH_LEN: usize =
+    ENUM_VARIANT_LEN + LEDGER_INFO_NEW_EPOCH_LEN + AGG_SIGNATURE_LEN;
+
+/// Size of a [`LedgerInfoWithSignatures`] struct when a block
+/// only represents a new block height with a new state.
+pub const LEDGER_INFO_WITH_SIG_NEW_BLOCK_HEIGHT_LEN: usize =
+    ENUM_VARIANT_LEN + LEDGER_INFO_NEW_BLOCK_HEIGHT_LEN + AGG_SIGNATURE_LEN;
+
+/// Offset of the signature field in a [`LedgerInfoWithSignatures`] struct when
+/// changing epoch.
+pub const OFFSET_SIGNATURE: usize = LEDGER_INFO_NEW_EPOCH_LEN + NEXT_BYTE_OFFSET;
+
+/// Size of the LEB128 representation of a bit vector length.
 const LEB128_VEC_SIZE_BITVEC: usize = 1;
+
+/// Size of the bit vector in bytes.
 const BITVEC_SIZE: usize = (NBR_VALIDATORS + 7) / 8 + 1;
+
+/// Size of the aggregated signature in bytes.
 pub const AGG_SIGNATURE_LEN: usize =
     LEB128_VEC_SIZE_BITVEC + BITVEC_SIZE + ENUM_VARIANT_LEN + SIG_LEN;
 
@@ -111,32 +166,31 @@ impl LedgerInfo {
     }
 
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
-        let commit_info =
-            BlockInfo::from_bytes(bytes.chunk().get(..bytes.len() - HASH_LENGTH).ok_or_else(
-                || TypesError::DeserializationError {
-                    structure: String::from("LedgerInfo"),
-                    source: "Not enough data for BlockInfo".into(),
-                },
-            )?)
-            .map_err(|e| TypesError::DeserializationError {
-                structure: String::from("LedgerInfo"),
-                source: e.into(),
-            })?;
+        let commit_info = BlockInfo::from_bytes(
+            bytes
+                .chunk()
+                .get(..bytes.len() - HASH_LENGTH)
+                .ok_or_else(|| serde_error!("LedgerInfo", "Not enough data for BlockInfo"))?,
+        )
+        .map_err(|e| serde_error!("LedgerInfo", e))?;
 
         bytes.advance(bytes.len() - HASH_LENGTH); // Advance the buffer to get the hash
 
         let consensus_data_hash =
             HashValue::from_slice(bytes.chunk().get(..HASH_LENGTH).ok_or_else(|| {
-                TypesError::DeserializationError {
-                    structure: String::from("LedgerInfo"),
-                    source: "Not enough data for consensus data hash".into(),
-                }
+                serde_error!("LedgerInfo", "Not enough data for consensus data hash")
             })?)
-            .map_err(|e| TypesError::DeserializationError {
-                structure: String::from("LedgerInfo"),
-                source: e.into(),
-            })?;
+            .map_err(|e| serde_error!("LedgerInfo", e))?;
+
         bytes.advance(HASH_LENGTH);
+
+        if bytes.remaining() != 0 {
+            return Err(serde_error!(
+                "LedgerInfo",
+                "Unexpected data after completing deserialization"
+            ));
+        }
+
         Ok(Self {
             commit_info,
             consensus_data_hash,
@@ -178,26 +232,27 @@ impl LedgerInfoWithV0 {
         bytes.to_vec()
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+    pub fn from_bytes<const LEDGER_INFO_LEN: usize>(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
 
         let ledger_info =
             LedgerInfo::from_bytes(buf.chunk().get(..LEDGER_INFO_LEN).ok_or_else(|| {
-                TypesError::DeserializationError {
-                    structure: String::from("LedgerInfoWithV0"),
-                    source: "Not enough data for LedgerInfo".into(),
-                }
+                serde_error!("LedgerInfoWithV0", "Not enough data for LedgerInfo")
             })?)?;
         buf.advance(LEDGER_INFO_LEN);
 
         let signatures =
             AggregateSignature::from_bytes(buf.chunk().get(..AGG_SIGNATURE_LEN).ok_or_else(
-                || TypesError::DeserializationError {
-                    structure: String::from("LedgerInfoWithV0"),
-                    source: "Not enough data for AggregateSignature".into(),
-                },
+                || serde_error!("LedgerInfoWithV0", "Not enough data for AggregateSignature"),
             )?)?;
         buf.advance(AGG_SIGNATURE_LEN);
+
+        if buf.remaining() != 0 {
+            return Err(serde_error!(
+                "LedgerInfoWithV0",
+                "Unexpected data after completing deserialization"
+            ));
+        }
 
         Ok(Self {
             ledger_info,
@@ -223,18 +278,35 @@ impl LedgerInfoWithSignatures {
         bytes.to_vec()
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+    pub fn from_bytes<const LEDGER_INFO_LEN: usize>(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
-        match buf.get_u8() {
+        let li_w_sig = match buf.get_u8() {
             0 => {
-                let ledger_info_with_v0 = LedgerInfoWithV0::from_bytes(&buf)?;
-                Ok(LedgerInfoWithSignatures::V0(ledger_info_with_v0))
+                let ledger_info_with_v0 = LedgerInfoWithV0::from_bytes::<LEDGER_INFO_LEN>(
+                    buf.chunk()
+                        .get(..LEDGER_INFO_LEN + AGG_SIGNATURE_LEN)
+                        .ok_or_else(|| {
+                            serde_error!(
+                                "LedgerInfoWithSignatures",
+                                "Not enough LedgerInfoWithV0 for LedgerInfo"
+                            )
+                        })?,
+                )?;
+                buf.advance(LEDGER_INFO_LEN + AGG_SIGNATURE_LEN);
+
+                LedgerInfoWithSignatures::V0(ledger_info_with_v0)
             }
-            _ => Err(TypesError::DeserializationError {
-                structure: String::from("LedgerInfoWithSignatures"),
-                source: "Unknown variant".into(),
-            }),
+            _ => return Err(serde_error!("LedgerInfoWithSignatures", "Unknown variant")),
+        };
+
+        if buf.remaining() != 0 {
+            return Err(serde_error!(
+                "LedgerInfoWithSignatures",
+                "Unexpected data after completing deserialization"
+            ));
         }
+
+        Ok(li_w_sig)
     }
 
     pub const fn signatures(&self) -> &AggregateSignature {
@@ -255,10 +327,9 @@ impl Deref for LedgerInfoWithSignatures {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "aptos"))]
 mod test {
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_ledger_info_hash() {
         use super::*;
@@ -280,7 +351,6 @@ mod test {
         assert_eq!(intern_li_hash.to_vec(), aptos_li_hash.to_vec());
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_ledger_info() {
         use super::*;
@@ -296,7 +366,7 @@ mod test {
             .unwrap()
             .iter()
             .skip(OFFSET_LEDGER_INFO)
-            .take(LEDGER_INFO_LEN)
+            .take(LEDGER_INFO_NEW_EPOCH_LEN)
             .copied()
             .collect::<Vec<u8>>();
 
@@ -306,7 +376,6 @@ mod test {
         assert_eq!(ledger_info_bytes, &ledger_info_serialized);
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_ledger_info_w_sig() {
         use super::*;
@@ -314,32 +383,42 @@ mod test {
 
         let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
 
+        fn test_li<const EXPECTED_SIZE: usize>(aptos_wrapper: &AptosWrapper) {
+            let latest_li = aptos_wrapper.get_latest_li().unwrap();
+            let latest_li_bytes = bcs::to_bytes(&latest_li).unwrap();
+
+            let intern_li_w_sig =
+                LedgerInfoWithSignatures::from_bytes::<EXPECTED_SIZE>(&latest_li_bytes).unwrap();
+
+            // Test LedgerInfo
+            let ledger_info = bcs::to_bytes(latest_li.ledger_info()).unwrap();
+            let intern_li = LedgerInfo::from_bytes(&ledger_info).unwrap();
+            assert_eq!(&intern_li, intern_li_w_sig.ledger_info());
+            let intern_li_bytes = intern_li.to_bytes();
+            assert_eq!(intern_li_bytes.len(), EXPECTED_SIZE);
+            assert_eq!(ledger_info, intern_li_bytes);
+
+            // Test AggregateSignature
+            let sig = bcs::to_bytes(latest_li.signatures()).unwrap();
+            let intern_sig = AggregateSignature::from_bytes(&sig).unwrap();
+            assert_eq!(&intern_sig, intern_li_w_sig.signatures());
+            let intern_sig_bytes = intern_sig.to_bytes();
+            assert_eq!(AGG_SIGNATURE_LEN, intern_sig_bytes.len());
+            assert_eq!(sig, intern_sig_bytes);
+
+            // Test LedgerInfoWithSignatures
+            let intern_li_w_sig =
+                LedgerInfoWithSignatures::from_bytes::<EXPECTED_SIZE>(&latest_li_bytes).unwrap();
+            let intern_li_w_sig_bytes = intern_li_w_sig.to_bytes();
+            assert_eq!(latest_li_bytes, intern_li_w_sig_bytes);
+        }
+
         aptos_wrapper.generate_traffic();
+
+        test_li::<LEDGER_INFO_NEW_BLOCK_HEIGHT_LEN>(&aptos_wrapper);
+
         aptos_wrapper.commit_new_epoch();
 
-        let latest_li = aptos_wrapper.get_latest_li().unwrap();
-        let latest_li_bytes = bcs::to_bytes(&latest_li).unwrap();
-        let intern_li_w_sig = LedgerInfoWithSignatures::from_bytes(&latest_li_bytes).unwrap();
-
-        // Test LedgerInfo
-        let ledger_info = bcs::to_bytes(latest_li.ledger_info()).unwrap();
-        let intern_li = LedgerInfo::from_bytes(&ledger_info).unwrap();
-        assert_eq!(&intern_li, intern_li_w_sig.ledger_info());
-        let intern_li_bytes = intern_li.to_bytes();
-        assert_eq!(intern_li_bytes.len(), LEDGER_INFO_LEN);
-        assert_eq!(ledger_info, intern_li_bytes);
-
-        // Test AggregateSignature
-        let sig = bcs::to_bytes(latest_li.signatures()).unwrap();
-        let intern_sig = AggregateSignature::from_bytes(&sig).unwrap();
-        assert_eq!(&intern_sig, intern_li_w_sig.signatures());
-        let intern_sig_bytes = intern_sig.to_bytes();
-        assert_eq!(AGG_SIGNATURE_LEN, intern_sig_bytes.len());
-        assert_eq!(sig, intern_sig_bytes);
-
-        // Test LedgerInfoWithSignatures
-        let intern_li_w_sig = LedgerInfoWithSignatures::from_bytes(&latest_li_bytes).unwrap();
-        let intern_li_w_sig_bytes = intern_li_w_sig.to_bytes();
-        assert_eq!(latest_li_bytes, intern_li_w_sig_bytes);
+        test_li::<LEDGER_INFO_NEW_EPOCH_LEN>(&aptos_wrapper);
     }
 }

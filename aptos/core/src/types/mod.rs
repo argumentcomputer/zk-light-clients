@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::HASH_LENGTH;
+use crate::serde_error;
 use crate::types::error::TypesError;
 use anyhow::Result;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -8,6 +9,7 @@ pub mod block_info;
 pub mod epoch_state;
 pub mod error;
 pub mod ledger_info;
+pub mod transaction;
 pub mod trusted_state;
 pub mod utils;
 pub mod validator;
@@ -17,6 +19,7 @@ pub type Round = u64;
 pub type Version = u64;
 
 pub const ACCOUNT_ADDRESS_SIZE: usize = HASH_LENGTH;
+
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct AccountAddress([u8; ACCOUNT_ADDRESS_SIZE]);
 
@@ -30,12 +33,17 @@ impl AccountAddress {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        let address = <[u8; ACCOUNT_ADDRESS_SIZE]>::try_from(bytes).map_err(|e| {
-            TypesError::DeserializationError {
-                structure: String::from("AccountAddress"),
-                source: e.into(),
-            }
-        })?;
+        if bytes.len() != ACCOUNT_ADDRESS_SIZE {
+            return Err(TypesError::InvalidLength {
+                structure: "AccountAddress".into(),
+                expected: ACCOUNT_ADDRESS_SIZE,
+                actual: bytes.len(),
+            });
+        }
+
+        let address = <[u8; ACCOUNT_ADDRESS_SIZE]>::try_from(bytes)
+            .map_err(|e| serde_error!("AccountAddress", e))?;
+
         Ok(Self(address))
     }
 }

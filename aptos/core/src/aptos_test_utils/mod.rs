@@ -4,7 +4,7 @@ pub mod wrapper;
 #[cfg(test)]
 mod test {
     use crate::aptos_test_utils::wrapper::AptosWrapper;
-    use crate::merkle::proof::SparseMerkleProof;
+    use crate::merkle::sparse_proof::SparseMerkleProof;
     use crate::types::error::VerifyError;
     use crate::types::ledger_info::LedgerInfoWithSignatures;
     use crate::types::trusted_state::TrustedStateChange::Epoch;

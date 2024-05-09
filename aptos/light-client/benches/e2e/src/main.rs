@@ -1,7 +1,8 @@
+use aptos_lc::merkle::{SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets};
 use aptos_lc_core::aptos_test_utils::wrapper::{AptosWrapper, ExecuteBlockArgs};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
-use aptos_lc_core::merkle::proof::SparseMerkleProof;
 use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, TrustedStateChange};
+use aptos_lc_core::types::validator::ValidatorVerifier;
 use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::time::Instant;
@@ -23,10 +24,11 @@ fn main() {
 
     // Get trusted state after genesis.
     let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
-    let validator_verifier_hash = match TrustedState::from_bytes(&trusted_state).unwrap() {
-        TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().hash().to_vec(),
-        _ => panic!("Expected epoch change for current trusted state"),
+    let validator_verifier = match TrustedState::from_bytes(&trusted_state).unwrap() {
+        TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().clone(),
+        _ => panic!("expected epoch state"),
     };
+    let validator_verifier_hash = validator_verifier.hash().to_vec();
     let trusted_state_version = *aptos_wrapper.current_version();
 
     // Generate a block with transactions and set a new epoch.
@@ -52,7 +54,8 @@ fn main() {
 
     let validator_verifier_hash: [u8; 32] = public_values.public_values.read();
 
-    let expected_hash = verify_and_ratchet_with_hash(&trusted_state, epoch_change_proof);
+    let (validator_verifier, expected_hash) =
+        verify_and_ratchet_with_hash(&trusted_state, epoch_change_proof);
 
     // Assert have the expected validator verifier hash.
     assert_eq!(
@@ -63,31 +66,51 @@ fn main() {
 
     // Retrieve assets for merkle verification.
     aptos_wrapper.execute_block(ExecuteBlockArgs::StateProof(Box::new(state_proof)));
+
+    aptos_wrapper.generate_traffic();
+
     let proof_assets = aptos_wrapper
         .get_latest_proof_account(NBR_ACCOUNTS - 1)
         .unwrap();
 
-    let sparse_merkle_proof =
-        SparseMerkleProof::from_bytes(&bcs::to_bytes(proof_assets.state_proof()).unwrap()).unwrap();
-    let leaf_key = proof_assets.key().to_vec();
-    let aptos_expected_root = proof_assets.root_hash().to_vec();
-    let leaf_value = proof_assets.state_value_hash().to_vec();
+    let sparse_merkle_proof = bcs::to_bytes(proof_assets.state_proof()).unwrap();
+    let key: [u8; 32] = *proof_assets.key().as_ref();
+    let element_hash: [u8; 32] = *proof_assets.state_value_hash().as_ref();
+
+    let transaction = bcs::to_bytes(&proof_assets.transaction()).unwrap();
+    let transaction_proof = bcs::to_bytes(&proof_assets.transaction_proof()).unwrap();
+    let latest_li = aptos_wrapper.get_latest_li_bytes().unwrap();
+
+    let sparse_merkle_proof_assets =
+        SparseMerkleProofAssets::new(sparse_merkle_proof, key, element_hash);
+
+    let transaction_proof_assets = TransactionProofAssets::new(
+        transaction,
+        *proof_assets.transaction_version(),
+        transaction_proof,
+        latest_li,
+    );
+
+    let validator_verifier_assets =
+        ValidatorVerifierAssets::new(validator_verifier.to_bytes(), validator_verifier_hash);
 
     let start_merkle_proving = Instant::now();
     let mut public_values = prove_merkle(
         &prover_client,
-        &sparse_merkle_proof.to_bytes(),
-        &leaf_key,
-        &leaf_value,
-        aptos_expected_root.as_ref(),
+        &sparse_merkle_proof_assets,
+        &transaction_proof_assets,
+        &validator_verifier_assets,
     );
     let merkle_proving_time = start_merkle_proving.elapsed();
-
     let merkle_root_slice: [u8; 32] = public_values.public_values.read();
 
     assert_eq!(
-        merkle_root_slice.to_vec(),
-        aptos_expected_root,
+        &merkle_root_slice,
+        proof_assets
+            .transaction()
+            .ensure_state_checkpoint_hash()
+            .unwrap()
+            .as_ref(),
         "Merkle root hash mismatch"
     );
 
@@ -122,24 +145,36 @@ fn prove_ratchet(
 
 fn prove_merkle(
     client: &ProverClient,
-    sparse_merkle_proof: &[u8],
-    leaf_key: &[u8],
-    leaf_value: &[u8],
-    expected_root: &[u8],
+    sparse_merkle_proof_assets: &SparseMerkleProofAssets,
+    transaction_proof_assets: &TransactionProofAssets,
+    validator_verifier_assets: &ValidatorVerifierAssets,
 ) -> SP1ProofWithIO<BabyBearPoseidon2> {
     let mut stdin = SP1Stdin::new();
 
     setup_logger();
 
-    stdin.write(&sparse_merkle_proof);
-    stdin.write(&<[u8; 32]>::try_from(leaf_key).unwrap());
-    stdin.write(&<[u8; 32]>::try_from(leaf_value).unwrap());
-    stdin.write(&<[u8; 32]>::try_from(expected_root).unwrap());
+    // Account inclusion input
+    stdin.write(sparse_merkle_proof_assets.sparse_merkle_proof());
+    stdin.write(sparse_merkle_proof_assets.leaf_key());
+    stdin.write(sparse_merkle_proof_assets.leaf_hash());
+
+    // Tx inclusion input
+    stdin.write(transaction_proof_assets.transaction());
+    stdin.write(transaction_proof_assets.transaction_index());
+    stdin.write(transaction_proof_assets.transaction_proof());
+    stdin.write(transaction_proof_assets.latest_li());
+
+    // Validator verifier
+    stdin.write(validator_verifier_assets.validator_verifier());
+    stdin.write(validator_verifier_assets.validator_hash());
 
     client.prove(aptos_programs::MERKLE_PROGRAM, stdin).unwrap()
 }
 
-fn verify_and_ratchet_with_hash(trusted_state: &[u8], epoch_change_proof: &[u8]) -> HashValue {
+fn verify_and_ratchet_with_hash(
+    trusted_state: &[u8],
+    epoch_change_proof: &[u8],
+) -> (ValidatorVerifier, HashValue) {
     let trusted_state = TrustedState::from_bytes(trusted_state).unwrap();
     let epoch_change_proof = EpochChangeProof::from_bytes(epoch_change_proof)
         .expect("EpochChangeProof::from_bytes: could not create epoch change proof");
@@ -152,12 +187,15 @@ fn verify_and_ratchet_with_hash(trusted_state: &[u8], epoch_change_proof: &[u8])
         TrustedStateChange::Epoch {
             latest_epoch_change_li,
             ..
-        } => latest_epoch_change_li
-            .ledger_info()
-            .next_epoch_state()
-            .expect("Expected epoch state")
-            .verifier()
-            .hash(),
+        } => {
+            let validator_verifier = latest_epoch_change_li
+                .ledger_info()
+                .next_epoch_state()
+                .expect("Expected epoch state")
+                .verifier();
+
+            (validator_verifier.clone(), validator_verifier.hash())
+        }
         _ => panic!("Expected epoch change"),
     }
 }

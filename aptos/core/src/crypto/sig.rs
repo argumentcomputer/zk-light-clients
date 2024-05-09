@@ -1,4 +1,5 @@
 use crate::crypto::error::CryptoError;
+use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::{read_leb128, write_leb128};
 use anyhow::Result;
@@ -75,18 +76,11 @@ impl PublicKey {
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         if bytes.len() != PUB_KEY_LEN {
-            return Err(TypesError::DeserializationError {
-                structure: String::from("PublicKey"),
-                source: "Invalid public key byte length".into(),
-            });
+            return Err(serde_error!("PublicKey", "Invalid public key byte length"));
         }
 
-        let bytes_fixed = <&[u8; PUB_KEY_LEN]>::try_from(bytes).map_err(|e| {
-            TypesError::DeserializationError {
-                structure: String::from("PublicKey"),
-                source: e.into(),
-            }
-        })?;
+        let bytes_fixed =
+            <&[u8; PUB_KEY_LEN]>::try_from(bytes).map_err(|e| serde_error!("PublicKey", e))?;
 
         Ok(Self {
             compressed_pubkey: *bytes_fixed,
@@ -170,29 +164,21 @@ impl Signature {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        println!("cycle-tracker-start: sig_from_bytes");
         if bytes.len() != SIG_LEN {
-            return Err(TypesError::DeserializationError {
-                structure: String::from("Signature"),
-                source: "Invalid signature byte length".into(),
-            });
+            return Err(serde_error!("Signature", "Invalid signature byte length"));
         }
 
         let bytes_fixed =
-            <&[u8; SIG_LEN]>::try_from(bytes).map_err(|e| TypesError::DeserializationError {
-                structure: String::from("PublicKey"),
-                source: e.into(),
-            })?;
+            <&[u8; SIG_LEN]>::try_from(bytes).map_err(|e| serde_error!("PublicKey", e))?;
 
         let decompressed = G2Affine::from_compressed(bytes_fixed);
 
         if decompressed.is_none().into() {
-            return Err(TypesError::DeserializationError {
-                structure: String::from("PublicKey"),
-                source: "G2Affine::from_compressed returned None".into(),
-            });
+            return Err(serde_error!(
+                "PublicKey",
+                "G2Affine::from_compressed returned None"
+            ));
         }
-        println!("cycle-tracker-end: sig_from_bytes");
 
         Ok(Self {
             sig: decompressed.unwrap(),
@@ -301,7 +287,7 @@ impl BitVec {
         bytes.to_vec()
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> BitVec {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
         Self {
             inner: bytes.to_vec(),
         }
@@ -357,36 +343,42 @@ impl AggregateSignature {
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let bitvec_len = bytes.get_u8() as usize;
 
-        let validator_bitmask =
-            BitVec::from_bytes(bytes.chunk().get(..bitvec_len).ok_or_else(|| {
-                TypesError::DeserializationError {
-                    structure: String::from("AggregateSignature"),
-                    source: "Not enough data for BitVec".into(),
-                }
-            })?);
+        let validator_bitmask = BitVec::from_bytes(
+            bytes
+                .chunk()
+                .get(..bitvec_len)
+                .ok_or_else(|| serde_error!("AggregateSignature", "Not enough data for BitVec"))?,
+        );
 
         bytes.advance(bitvec_len);
 
         let sig = match bytes.get_u8() {
             1 => {
-                let (slice_len, bytes_read) =
-                    read_leb128(bytes).map_err(|e| TypesError::DeserializationError {
-                        structure: String::from("AggregateSignature"),
-                        source: format!("Failed to read length of public_key: {e}").into(),
-                    })?;
+                let (slice_len, bytes_read) = read_leb128(bytes).map_err(|e| {
+                    serde_error!(
+                        "AggregateSignature",
+                        format!("Failed to read length of public_key: {e}")
+                    )
+                })?;
                 bytes.advance(bytes_read);
 
-                Some(Signature::from_bytes(
-                    bytes.chunk().get(..slice_len as usize).ok_or_else(|| {
-                        TypesError::DeserializationError {
-                            structure: String::from("AggregateSignature"),
-                            source: "Not enough data for Signature".into(),
-                        }
-                    })?,
-                )?)
+                let sig =
+                    Signature::from_bytes(bytes.chunk().get(..slice_len as usize).ok_or_else(
+                        || serde_error!("AggregateSignature", "Not enough data for Signature"),
+                    )?)?;
+                bytes.advance(slice_len as usize);
+
+                Some(sig)
             }
             _ => None,
         };
+
+        if bytes.remaining() != 0 {
+            return Err(serde_error!(
+                "AggregateSignature",
+                "Unexpected data after completing deserialization"
+            ));
+        }
 
         Ok(Self {
             validator_bitmask,
@@ -395,9 +387,8 @@ impl AggregateSignature {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "aptos"))]
 mod test {
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;

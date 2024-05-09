@@ -1,4 +1,4 @@
 mod error;
-mod merkle;
+pub mod merkle;
 mod ratchet;
 mod sig;

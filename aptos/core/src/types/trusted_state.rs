@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
-use crate::types::epoch_state::EpochState;
+use crate::serde_error;
+use crate::types::epoch_state::{EpochState, EPOCH_STATE_SIZE};
 use crate::types::error::TypesError;
 use crate::types::ledger_info::{
-    LedgerInfo, LedgerInfoWithSignatures, AGG_SIGNATURE_LEN, ENUM_VARIANT_LEN, LEDGER_INFO_LEN,
+    LedgerInfo, LedgerInfoWithSignatures, LEDGER_INFO_NEW_EPOCH_LEN,
+    LEDGER_INFO_WITH_SIG_NEW_EPOCH_LEN,
 };
 use crate::types::utils::{read_leb128, write_leb128};
-use crate::types::waypoint::Waypoint;
+use crate::types::waypoint::{Waypoint, WAYPOINT_SIZE};
 use crate::types::Version;
 use anyhow::{bail, ensure, format_err};
 use bytes::{Buf, BufMut, BytesMut};
@@ -151,40 +153,42 @@ impl TrustedState {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
 
-        const WAYPOINT_BYTES_LEN: usize = 40;
-
-        match buf.get_u8() {
+        let trusted_state = match buf.get_u8() {
             0 => {
-                println!("cycle-tracker-start: waypoint_from_bytes");
-                let waypoint = Waypoint::from_bytes(buf.chunk())?;
-                println!("cycle-tracker-end: waypoint_from_bytes");
-                Ok(TrustedState::EpochWaypoint(waypoint))
+                let waypoint =
+                    Waypoint::from_bytes(buf.chunk().get(..WAYPOINT_SIZE).ok_or_else(|| {
+                        serde_error!("TrustedState", "Not enough data for Waypoint")
+                    })?)?;
+                TrustedState::EpochWaypoint(waypoint)
             }
             1 => {
-                println!("cycle-tracker-start: waypoint_from_bytes");
                 let waypoint =
-                    Waypoint::from_bytes(buf.chunk().get(..WAYPOINT_BYTES_LEN).ok_or_else(
-                        || TypesError::DeserializationError {
-                            structure: String::from("Waypoint"),
-                            source: "Not enough data for value".into(),
-                        },
-                    )?)?;
+                    Waypoint::from_bytes(buf.chunk().get(..WAYPOINT_SIZE).ok_or_else(|| {
+                        serde_error!("TrustedState", "Not enough data for Waypoint")
+                    })?)?;
+                buf.advance(WAYPOINT_SIZE);
 
-                buf.advance(WAYPOINT_BYTES_LEN);
-                println!("cycle-tracker-end: waypoint_from_bytes");
-                println!("cycle-tracker-start: epoch_state_from_bytes");
-                let epoch_state = EpochState::from_bytes(buf.chunk())?;
-                println!("cycle-tracker-end: epoch_state_from_bytes");
-                Ok(TrustedState::EpochState {
+                let epoch_state =
+                    EpochState::from_bytes(buf.chunk().get(..EPOCH_STATE_SIZE).ok_or_else(
+                        || serde_error!("TrustedState", "Not enough data for epoch state"),
+                    )?)?;
+                buf.advance(EPOCH_STATE_SIZE);
+                TrustedState::EpochState {
                     waypoint,
                     epoch_state,
-                })
+                }
             }
-            _ => Err(TypesError::DeserializationError {
-                structure: String::from("TrustedState"),
-                source: "Unknown variant".into(),
-            }),
+            _ => return Err(serde_error!("TrustedState", "Unknown variant")),
+        };
+
+        if buf.remaining() != 0 {
+            return Err(serde_error!(
+                "LedgerInfo",
+                "Unexpected data after completing deserialization"
+            ));
         }
+
+        Ok(trusted_state)
     }
 }
 
@@ -307,36 +311,43 @@ impl EpochChangeProof {
         bytes.to_vec()
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
-        println!("cycle-tracker-start: read_leb128_advance");
+
         // Read the length of the vector from LEB128
-        let (len, bytes_read) = read_leb128(&buf)?;
+        let (len, bytes_read) = read_leb128(&buf)
+            .map_err(|_| serde_error!("EpochChangeProof", "Not enough data for length"))?;
         buf.advance(bytes_read);
-        println!("cycle-tracker-end: read_leb128_advance");
 
         // Read each LedgerInfoWithSignatures from bytes
         let mut ledger_info_with_sigs = Vec::new();
         for i in 0..len {
-            println!("cycle-tracker-start: li_w_signature_from_bytes");
-            let ledger_info_with_sig = LedgerInfoWithSignatures::from_bytes(
+            let ledger_info_with_sig = LedgerInfoWithSignatures::from_bytes::<
+                LEDGER_INFO_NEW_EPOCH_LEN,
+            >(
                 buf.chunk()
-                    .get(..ENUM_VARIANT_LEN + LEDGER_INFO_LEN + AGG_SIGNATURE_LEN)
-                    .ok_or_else(|| TypesError::DeserializationError {
-                        structure: String::from("EpochChangeProof"),
-                        source: format!(
-                            "Not enough data for LedgerInfoWithSignatures at index {i}"
+                    .get(..LEDGER_INFO_WITH_SIG_NEW_EPOCH_LEN)
+                    .ok_or_else(|| {
+                        serde_error!(
+                            "EpochChangeProof",
+                            format!("Not enough data for LedgerInfoWithSignatures at index {i}")
                         )
-                        .into(),
                     })?,
             )?;
-            println!("cycle-tracker-end: li_w_signature_from_bytes");
+
             ledger_info_with_sigs.push(ledger_info_with_sig);
-            buf.advance(ENUM_VARIANT_LEN + LEDGER_INFO_LEN + AGG_SIGNATURE_LEN);
+            buf.advance(LEDGER_INFO_WITH_SIG_NEW_EPOCH_LEN);
         }
 
         // Read the `more` field
         let more = buf.get_u8() != 0;
+
+        if buf.remaining() != 0 {
+            return Err(serde_error!(
+                "EpochChangeProof",
+                "Unexpected data after completing deserialization"
+            ));
+        }
 
         Ok(EpochChangeProof {
             ledger_info_with_sigs,
@@ -345,9 +356,8 @@ impl EpochChangeProof {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "aptos"))]
 mod test {
-    #[cfg(feature = "aptos")]
     fn assess_equality(bytes: &[u8]) {
         use crate::types::trusted_state::TrustedState;
 
@@ -357,7 +367,6 @@ mod test {
         assert_eq!(bytes, trusted_state_serialized);
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_trusted_state_epoch() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
@@ -385,7 +394,6 @@ mod test {
         assess_equality(&bytes);
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_epoch_change_proof() {
         use super::*;
@@ -407,7 +415,6 @@ mod test {
         assert_eq!(bytes, intern_epoch_change_proof.to_bytes());
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_trusted_state_hash() {
         use super::*;

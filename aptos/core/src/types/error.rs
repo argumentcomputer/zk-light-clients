@@ -48,4 +48,21 @@ pub enum TypesError {
         #[source]
         source: Box<dyn std::error::Error + Sync + Send>,
     },
+    #[error("Received data of invalid length for {structure}. Expected {expected}, got {actual}.")]
+    InvalidLength {
+        structure: String,
+        expected: usize,
+        actual: usize,
+    },
+}
+
+/// Macro to create a `TypesError::DeserializationError` with the given structure and source.
+#[macro_export]
+macro_rules! serde_error {
+    ($structure:expr, $source:expr) => {
+        TypesError::DeserializationError {
+            structure: String::from($structure),
+            source: $source.into(),
+        }
+    };
 }

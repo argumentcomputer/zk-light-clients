@@ -1,5 +1,5 @@
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
-use aptos_lc_core::merkle::proof::SparseMerkleProof;
+use aptos_lc_core::merkle::sparse_proof::SparseMerkleProof;
 use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::hint::black_box;

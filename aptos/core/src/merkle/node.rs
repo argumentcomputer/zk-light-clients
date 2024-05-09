@@ -1,9 +1,57 @@
-use bytes::{Buf, BufMut, BytesMut};
+//! # Merkle Node Module
+//!
+//! This module provides the necessary structures and traits for
+//! handling Merkle nodes in the context of Sparse Merkle Proofs
+//! and Transaction Accumulator Proofs.
+//!
+//! ## Design
+//!
+//! The `MerkleInternalNode` structure and `NodeHasher` trait
+//! were designed to provide a unified way to handle internal nodes
+//! in both Sparse Merkle Proofs and Transaction Accumulator Proofs.
+//! While the behavior of internal nodes is essentially the same in
+//! both contexts, the difference lies in the prefix they provide for hashing.
+//!
+//! The `NodeHasher` trait allows for a dynamic way to provide
+//! the prefix depending on the context, while relying on the same
+//! hash method. This design provides a level of abstraction that
+//! simplifies the handling of different types of proofs.
+//!
+//! In most cases, the prefix added while hashing an object is its name
+//! as described [here](https://docs.rs/aptos-crypto-derive-link/latest/aptos_crypto_derive_link/).
+//! `NodeHasher` circumvents around that as it is precisely an implementation
+//!  that makes the prefix dynamic for Internal Merkle Nodes.
+//!
+//! The `SparseMerkleInternalHasher` and `TransactionAccumulatorHasher`
+//! structures implement the `NodeHasher` trait, each providing a
+//! different prefix for hashing.
+//!
+//! ## Usage
+//!
+//! The `SparseMerkleLeafNode` structure provides methods for
+//! creating a new node (`new`), converting the node to bytes (`to_bytes`),
+//! and creating a node from bytes (`from_bytes`).
+//!
+//! The `MerkleInternalNode` structure provides a method for creating
+//! a new node (`new`), and implements the `CryptoHash` trait,
+//! which provides a method for hashing the node (`hash`).
+//!
+//! The `NodeHasher` trait provides a method for hashing (`hash`),
+//! which takes in the left and right child nodes and returns a `HashValue`.
+//!
+//! The `SparseMerkleInternalHasher` and `TransactionAccumulatorHasher`
+//! structures implement the `NodeHasher` trait, each providing
+//! a different prefix for hashing.
+//!
+
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
+use crate::serde_error;
 use crate::types::error::TypesError;
+use bytes::{Buf, BufMut, BytesMut};
 use getset::CopyGetters;
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, CopyGetters)]
 pub struct SparseMerkleLeafNode {
@@ -27,28 +75,29 @@ impl SparseMerkleLeafNode {
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = bytes;
-        let key = HashValue::from_slice(buf.chunk().get(..HASH_LENGTH).ok_or_else(|| {
-            TypesError::DeserializationError {
-                structure: String::from("SparseMerkleLeafNode"),
-                source: "Not enough data for key".into(),
-            }
-        })?)
-        .map_err(|e| TypesError::DeserializationError {
-            structure: String::from("SparseMerkleLeafNode"),
-            source: e.into(),
-        })?;
+
+        let key = HashValue::from_slice(
+            buf.chunk()
+                .get(..HASH_LENGTH)
+                .ok_or_else(|| serde_error!("SparseMerkleLeafNode", "Not enough data for key"))?,
+        )
+        .map_err(|e| serde_error!("SparseMerkleLeafNode", e))?;
         buf.advance(HASH_LENGTH);
+
         let value_hash =
             HashValue::from_slice(buf.chunk().get(..HASH_LENGTH).ok_or_else(|| {
-                TypesError::DeserializationError {
-                    structure: String::from("SparseMerkleLeafNode"),
-                    source: "Not enough data for value_hash".into(),
-                }
+                serde_error!("SparseMerkleLeafNode", "Not enough data for value_hash")
             })?)
-            .map_err(|e| TypesError::DeserializationError {
-                structure: String::from("SparseMerkleLeafNode"),
-                source: e.into(),
-            })?;
+            .map_err(|e| serde_error!("SparseMerkleLeafNode", e))?;
+        buf.advance(HASH_LENGTH);
+
+        if buf.remaining() != 0 {
+            return Err(serde_error!(
+                "SparseMerkleLeafNode",
+                "Unexpected data after completing deserialization"
+            ));
+        }
+
         Ok(Self { key, value_hash })
     }
 }
@@ -62,32 +111,64 @@ impl CryptoHash for SparseMerkleLeafNode {
     }
 }
 
-pub struct SparseMerkleInternalNode {
+pub struct MerkleInternalNode<H: NodeHasher> {
     left_child: HashValue,
     right_child: HashValue,
+    _p: PhantomData<H>,
 }
 
-impl SparseMerkleInternalNode {
+impl<H: NodeHasher> MerkleInternalNode<H> {
     pub const fn new(left_child: HashValue, right_child: HashValue) -> Self {
         Self {
             left_child,
             right_child,
+            _p: PhantomData,
         }
     }
 }
 
-impl CryptoHash for SparseMerkleInternalNode {
+impl<H: NodeHasher + Default> CryptoHash for MerkleInternalNode<H> {
     fn hash(&self) -> HashValue {
+        H::default().hash(&self.left_child, &self.right_child)
+    }
+}
+
+/// Trait used to implement generic hasher over `MerkleInternalNode` for
+/// its hash method.
+pub trait NodeHasher {
+    fn prefix(&self) -> &'static str;
+    fn hash(&self, left_child: &HashValue, right_child: &HashValue) -> HashValue {
         HashValue::new(hash_data(
-            &prefixed_sha3(b"SparseMerkleInternal"),
-            vec![&self.left_child.hash(), &self.right_child.hash()],
+            &prefixed_sha3(self.prefix().as_bytes()),
+            vec![&left_child.hash(), &right_child.hash()],
         ))
     }
 }
 
-#[cfg(test)]
+/// Structure representing the hasher  for node accumulator in
+/// order to prove  an account inclusion in the state.
+#[derive(Clone, Debug, Default)]
+pub struct SparseMerkleInternalHasher {}
+
+impl NodeHasher for SparseMerkleInternalHasher {
+    fn prefix(&self) -> &'static str {
+        "SparseMerkleInternal"
+    }
+}
+
+/// Structure representing the hasher for  transaction accumulator
+/// in order to prove its inclusion in a `LedgerInfoWithSignature`.
+#[derive(Clone, Debug, Default)]
+pub struct TransactionAccumulatorHasher {}
+
+impl NodeHasher for TransactionAccumulatorHasher {
+    fn prefix(&self) -> &'static str {
+        "TransactionAccumulator"
+    }
+}
+
+#[cfg(all(test, feature = "aptos"))]
 mod test {
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_sparse_merkle_leaf_node_hash() {
         use crate::crypto::hash::CryptoHash as LcCryptoHash;
@@ -115,12 +196,12 @@ mod test {
         assert_eq!(lc_hash.to_vec(), aptos_hash.to_vec());
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_sparse_merkle_internal_node_hash() {
         use crate::crypto::hash::CryptoHash as LcCryptoHash;
         use crate::crypto::hash::HashValue as LcHashValue;
-        use crate::merkle::node::SparseMerkleInternalNode as LcSparseMerkleInternalNode;
+        use crate::merkle::node::MerkleInternalNode as LcSparseMerkleInternalNode;
+        use crate::merkle::node::SparseMerkleInternalHasher;
 
         use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
         use aptos_crypto::HashValue as AptosHashValue;
@@ -132,7 +213,9 @@ mod test {
         let key_lc = LcHashValue::from_slice(key_slice).unwrap();
         let value_hash_lc = LcHashValue::from_slice(value_hash_slice).unwrap();
 
-        let lc_hash = LcCryptoHash::hash(&LcSparseMerkleInternalNode::new(key_lc, value_hash_lc));
+        let lc_hash = LcCryptoHash::hash(
+            &LcSparseMerkleInternalNode::<SparseMerkleInternalHasher>::new(key_lc, value_hash_lc),
+        );
 
         let key_aptos = AptosHashValue::new(key_slice);
         let value_hash_aptos = AptosHashValue::new(value_hash_slice);
@@ -145,11 +228,11 @@ mod test {
         assert_eq!(lc_hash.to_vec(), aptos_hash.to_vec());
     }
 
-    #[cfg(feature = "aptos")]
     #[test]
     fn test_bytes_conversion_sparse_merkle_leaf_node() {
         use crate::crypto::hash::HashValue;
         use crate::merkle::node::SparseMerkleLeafNode;
+
         use aptos_crypto::HashValue as AptosHashValue;
         use aptos_types::proof::SparseMerkleLeafNode as AptosSparseMerkleLeafNode;
 

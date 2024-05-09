@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use crate::crypto::hash::{HashValue, HASH_LENGTH};
-use crate::types::epoch_state::EpochState;
+use crate::serde_error;
+use crate::types::epoch_state::{EpochState, EPOCH_STATE_SIZE};
 use crate::types::error::TypesError;
 use crate::types::{Round, Version};
 use bytes::{Buf, BufMut, BytesMut};
@@ -83,46 +84,47 @@ impl BlockInfo {
         let epoch = bytes.get_u64_le();
         let round = bytes.get_u64_le();
 
-        let id = HashValue::from_slice(bytes.chunk().get(..HASH_LENGTH).ok_or_else(|| {
-            TypesError::DeserializationError {
-                structure: String::from("BlockInfo"),
-                source: "Not enough data for id".into(),
-            }
-        })?)
-        .map_err(|e| TypesError::DeserializationError {
-            structure: String::from("BlockInfo"),
-            source: e.into(),
-        })?;
+        let id = HashValue::from_slice(
+            bytes
+                .chunk()
+                .get(..HASH_LENGTH)
+                .ok_or_else(|| serde_error!("BlockInfo", "Not enough data for id"))?,
+        )
+        .map_err(|e| serde_error!("BlockInfo", e))?;
 
         bytes.advance(HASH_LENGTH); // Advance the buffer by the size of HashValue
 
         let executed_state_id =
             HashValue::from_slice(bytes.chunk().get(..HASH_LENGTH).ok_or_else(|| {
-                TypesError::DeserializationError {
-                    structure: String::from("BlockInfo"),
-                    source: "Not enough data for executed_state_id".into(),
-                }
+                serde_error!("BlockInfo", "Not enough data for executed_state_id")
             })?)
-            .map_err(|e| TypesError::DeserializationError {
-                structure: String::from("BlockInfo"),
-                source: e.into(),
-            })?;
+            .map_err(|e| serde_error!("BlockInfo", e))?;
 
         bytes.advance(HASH_LENGTH); // Advance the buffer by the size of HashValue
 
         let version = bytes.get_u64_le();
         let timestamp_usecs = bytes.get_u64_le();
-        println!("cycle-tracker-start: epoch_state_from_bytes");
+
         let next_epoch_state = match bytes.get_u8() {
-            1 => Some(EpochState::from_bytes(bytes.chunk()).map_err(|e| {
-                TypesError::DeserializationError {
-                    structure: String::from("BlockInfo"),
-                    source: e.into(),
-                }
-            })?),
+            1 => {
+                let epoch_state =
+                    EpochState::from_bytes(bytes.chunk().get(..EPOCH_STATE_SIZE).ok_or_else(
+                        || serde_error!("BlockInfo", "Not enough data for epoch state"),
+                    )?)
+                    .map_err(|e| serde_error!("BlockInfo", e))?;
+                bytes.advance(EPOCH_STATE_SIZE);
+
+                Some(epoch_state)
+            }
             _ => None,
         };
-        println!("cycle-tracker-end: epoch_state_from_bytes");
+
+        if bytes.remaining() != 0 {
+            return Err(serde_error!(
+                "BlockInfo",
+                "Unexpected data after completing deserialization"
+            ));
+        }
 
         Ok(Self {
             epoch,
