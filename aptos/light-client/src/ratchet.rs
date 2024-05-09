@@ -1,6 +1,5 @@
 use crate::error::LightClientError;
-use wp1_sdk::utils::BabyBearPoseidon2;
-use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1PublicValues, SP1Stdin};
 
 #[allow(dead_code)]
 fn verify_and_ratchet(
@@ -8,7 +7,7 @@ fn verify_and_ratchet(
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
     validator_verifier_hash: &[u8],
-) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, [u8; 32]), LightClientError> {
+) -> Result<(SP1PublicValues, [u8; 32]), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -19,7 +18,7 @@ fn verify_and_ratchet(
     stdin.write(&validator_verifier_hash);
 
     let mut proof = client
-        .prove(aptos_programs::RATCHET_PROGRAM, stdin)
+        .prove(aptos_programs::RATCHET_PROGRAM, &stdin)
         .map_err(|err| LightClientError::ProvingError {
             program: "verify-and-ratchet".to_string(),
             source: err.into(),
@@ -28,7 +27,7 @@ fn verify_and_ratchet(
     // Read output.
     let new_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
 
-    Ok((proof, new_validator_verifier_hash))
+    Ok((proof.public_values, new_validator_verifier_hash))
 }
 
 #[cfg(test)]

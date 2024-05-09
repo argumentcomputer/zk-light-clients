@@ -1,6 +1,5 @@
 use crate::error::LightClientError;
-use wp1_sdk::utils::BabyBearPoseidon2;
-use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1PublicValues, SP1Stdin};
 
 #[allow(dead_code)]
 fn merkle_proving(
@@ -9,7 +8,7 @@ fn merkle_proving(
     leaf_key: [u8; 32],
     leaf_hash: [u8; 32],
     expected_root_hash: [u8; 32],
-) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, [u8; 32]), LightClientError> {
+) -> Result<(SP1PublicValues, [u8; 32]), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -21,7 +20,7 @@ fn merkle_proving(
     stdin.write(&expected_root_hash);
 
     let mut proof = client
-        .prove(aptos_programs::MERKLE_PROGRAM, stdin)
+        .prove(aptos_programs::MERKLE_PROGRAM, &stdin)
         .map_err(|err| LightClientError::ProvingError {
             program: "merkle".to_string(),
             source: err.into(),
@@ -30,7 +29,7 @@ fn merkle_proving(
     // Read output.
     let expected_root_hash = proof.public_values.read::<[u8; 32]>();
 
-    Ok((proof, expected_root_hash))
+    Ok((proof.public_values, expected_root_hash))
 }
 
 #[cfg(feature = "aptos")]

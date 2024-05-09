@@ -1,12 +1,11 @@
 use crate::error::LightClientError;
-use wp1_sdk::utils::BabyBearPoseidon2;
-use wp1_sdk::{ProverClient, SP1ProofWithIO, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1PublicValues, SP1Stdin};
 
 #[allow(dead_code)]
 fn sig_verification(
     client: &ProverClient,
     ledger_info_w_sig: &[u8],
-) -> Result<(SP1ProofWithIO<BabyBearPoseidon2>, bool), LightClientError> {
+) -> Result<(SP1PublicValues, bool), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -15,7 +14,10 @@ fn sig_verification(
     stdin.write(&ledger_info_w_sig);
 
     let mut proof = client
-        .prove(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM, stdin)
+        .prove(
+            aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
+            &stdin,
+        )
         .map_err(|err| LightClientError::ProvingError {
             program: "signature-verification".to_string(),
             source: err.into(),
@@ -24,7 +26,7 @@ fn sig_verification(
     // Read output.
     let success = proof.public_values.read::<bool>();
 
-    Ok((proof, success))
+    Ok((proof.public_values, success))
 }
 
 #[cfg(test)]
