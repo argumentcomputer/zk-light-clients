@@ -49,13 +49,9 @@ impl PublicKey {
     }
 
     pub fn aggregate(pubkeys: Vec<&mut Self>) -> Result<PublicKey> {
-        fn aggregate_step(acc: G1Affine, pk: &mut PublicKey) -> G1Affine {
-            acc.add_affine(&pk.pubkey())
-        }
-
         let aggregate = pubkeys
             .into_iter()
-            .fold(G1Affine::identity(), aggregate_step);
+            .fold(G1Affine::identity(), |acc, pk| acc.add_affine(&pk.pubkey()));
 
         Ok(PublicKey {
             compressed_pubkey: [0u8; PUB_KEY_LEN],
@@ -137,15 +133,13 @@ pub struct Signature {
 
 impl Signature {
     pub fn verify(&self, msg: &[u8], pubkey: &mut PublicKey) -> Result<(), CryptoError> {
-        let mut ml_terms = Vec::<(G1Affine, G2Prepared)>::new();
-
         let msg = G2Prepared::from(G2Affine::from(hash(msg)));
         let g1 = G1Affine::generator();
 
-        ml_terms.push((-g1, G2Prepared::from(self.sig)));
-        ml_terms.push((pubkey.pubkey(), msg));
-
-        let ml_terms = ml_terms.iter().map(|(a, b)| (a, b)).collect::<Vec<_>>();
+        let ml_terms = [
+            (&-g1, &G2Prepared::from(self.sig)),
+            (&pubkey.pubkey(), &msg),
+        ];
 
         if multi_miller_loop(&ml_terms).final_exponentiation() == Gt::identity() {
             Ok(())

@@ -45,7 +45,7 @@ const BALANCE_MUILTIPLIER: u64 = 1_000_000_000;
 pub struct SparseMerkleProofAssets {
     /// Proof for the account inclusion
     state_proof: SparseMerkleProof,
-    /// Accout leaf key
+    /// Account leaf key
     key: HashValue,
     /// Account state value
     state_value: Option<StateValue>,

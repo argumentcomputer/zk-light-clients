@@ -13,7 +13,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Deserializer, Serialize};
 
-/// SIze in bytes for a `ValidatorConsensusInfo`
+/// Size in bytes for a `ValidatorConsensusInfo`
 pub const VALIDATOR_CONSENSUS_INFO_SIZE: usize =
     ACCOUNT_ADDRESS_SIZE + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR;
 
