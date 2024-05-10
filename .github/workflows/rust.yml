@@ -71,11 +71,20 @@ jobs:
 
           cd ~
           cargo prove install-toolchain          
-
       # make sure benches don't bit-rot
       - name: build benches
-        run: cargo build --benches --release
+        run: |
+          cargo check --benches
+          cd light-client/benches
+          for i in $(find . -maxdepth 1 -mindepth 1 -type d); do
+            echo "Checking $i bench"
+            cd "$i"
+            cargo check
+            cd ../
+          done
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
+        env:
+          RUSTFLAGS: "--cfg tokio_unstable"
       - name: Run cargo test on aptos-lc-core
         run: |
           cargo nextest run -p aptos-lc-core --release --profile ci --all-features
