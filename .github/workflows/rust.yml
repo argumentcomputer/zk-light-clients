@@ -57,6 +57,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "aptos -> target"
       - name: Install deps
         run: |
           sudo apt-get update || true
@@ -103,6 +105,8 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "aptos -> target"
       - name: Install deps
         run: |
           sudo apt-get update || true
@@ -127,6 +131,8 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "aptos -> target"
       - uses: taiki-e/install-action@nextest
       - name: Install deps
         run: |
