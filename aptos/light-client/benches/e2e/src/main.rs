@@ -28,7 +28,7 @@ fn main() {
         TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().clone(),
         _ => panic!("expected epoch state"),
     };
-    let validator_verifier_hash = validator_verifier.hash().to_vec();
+    let validator_verifier_hash = validator_verifier.hash();
     let trusted_state_version = *aptos_wrapper.current_version();
 
     // Generate a block with transactions and set a new epoch.
@@ -48,7 +48,7 @@ fn main() {
         &prover_client,
         &trusted_state,
         epoch_change_proof,
-        &validator_verifier_hash,
+        validator_verifier_hash.as_ref(),
     );
     let ratchet_proving_time = start_ratchet_proving.elapsed();
 

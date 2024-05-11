@@ -63,10 +63,10 @@ impl PublicKey {
     // Should be alright as we get all pubkeys from external source, apart from agg one (but we don't need it as bytes)
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
-        let pub_key_bytes = self.compressed_pubkey.to_vec();
+        let pub_key_bytes = self.compressed_pubkey.as_ref();
 
         bytes.put_slice(&write_leb128(pub_key_bytes.len() as u64));
-        bytes.put_slice(&pub_key_bytes);
+        bytes.put_slice(pub_key_bytes);
         bytes.to_vec()
     }
 
@@ -150,7 +150,7 @@ impl Signature {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
-        let sig_bytes = self.sig.to_compressed().to_vec();
+        let sig_bytes = self.sig.to_compressed();
 
         bytes.put_slice(&write_leb128(sig_bytes.len() as u64));
         bytes.put_slice(&sig_bytes);

@@ -161,7 +161,7 @@ impl LedgerInfo {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_slice(&self.commit_info.to_bytes());
-        bytes.put_slice(&self.consensus_data_hash.to_vec());
+        bytes.put_slice(self.consensus_data_hash.as_ref());
         bytes.to_vec()
     }
 

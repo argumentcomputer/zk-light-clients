@@ -68,8 +68,8 @@ impl SparseMerkleLeafNode {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
-        bytes.put_slice(self.key.to_vec().as_slice());
-        bytes.put_slice(self.value_hash.to_vec().as_slice());
+        bytes.put_slice(self.key.as_ref());
+        bytes.put_slice(self.value_hash.as_ref());
         bytes.to_vec()
     }
 

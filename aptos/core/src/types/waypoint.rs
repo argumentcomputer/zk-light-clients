@@ -57,7 +57,7 @@ impl Waypoint {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_u64_le(self.version);
-        bytes.put_slice(&self.value.to_vec());
+        bytes.put_slice(self.value.as_ref());
         bytes.to_vec()
     }
 }

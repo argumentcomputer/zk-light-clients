@@ -77,7 +77,7 @@ impl TransactionAccumulatorProof {
         let mut bytes = BytesMut::new();
         bytes.put_slice(&write_leb128(self.siblings.len() as u64));
         for sibling in &self.siblings {
-            bytes.put_slice(sibling.to_vec().as_slice());
+            bytes.put_slice(sibling.as_ref());
         }
         bytes.to_vec()
     }

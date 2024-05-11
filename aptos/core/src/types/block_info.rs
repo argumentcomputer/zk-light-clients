@@ -64,8 +64,8 @@ impl BlockInfo {
         let mut bytes = BytesMut::new();
         bytes.put_u64_le(self.epoch);
         bytes.put_u64_le(self.round);
-        bytes.put_slice(&self.id.to_vec());
-        bytes.put_slice(&self.executed_state_id.to_vec());
+        bytes.put_slice(self.id.as_ref());
+        bytes.put_slice(self.executed_state_id.as_ref());
         bytes.put_u64_le(self.version);
         bytes.put_u64_le(self.timestamp_usecs);
         match &self.next_epoch_state {
