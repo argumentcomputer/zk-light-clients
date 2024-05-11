@@ -44,7 +44,10 @@ impl ProvingAssets {
 
     fn verify(&self, proof: &SP1CoreProof) {
         self.client
-            .verify(aptos_programs::MERKLE_PROGRAM, proof)
+            .verify(
+                aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
+                proof,
+            )
             .expect("Verification failed");
     }
 }
