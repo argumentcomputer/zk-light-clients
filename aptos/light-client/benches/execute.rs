@@ -7,7 +7,11 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     // Execute each binary
-    for binary_name in args.iter().skip(1) {
+    for binary_name in args
+        .get(1..args.len() - 1)
+        .unwrap_or_else(|| panic!("Arguments error when executing benchmark, got!: {:?}", args))
+        .iter()
+    {
         execute_binary(binary_name);
     }
 }
