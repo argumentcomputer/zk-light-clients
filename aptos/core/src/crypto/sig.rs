@@ -9,6 +9,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::cell::OnceCell;
 
 // Every u8 is used as a bucket of 8 bits. Total max buckets = 65536 / 8 = 8192.
 const BUCKET_SIZE: usize = 8;
@@ -22,17 +23,17 @@ pub fn hash(msg: &[u8]) -> G2Projective {
     <G2Projective as HashToCurve<ExpandMsgXmd<sha2::Sha256>>>::hash_to_curve(msg, DST)
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PublicKey {
     compressed_pubkey: [u8; PUB_KEY_LEN],
-    pubkey: Option<G1Affine>,
+    pubkey: OnceCell<G1Affine>,
 }
 
 impl Default for PublicKey {
     fn default() -> Self {
         Self {
             compressed_pubkey: [0u8; PUB_KEY_LEN],
-            pubkey: None,
+            pubkey: OnceCell::new(),
         }
     }
 }
@@ -40,22 +41,23 @@ impl Default for PublicKey {
 impl PublicKey {
     // All public key data we receive are in a message signed by validators of a (prior) epoch.
     // We assume those signers check against rogue key attacks before signing those keys.
-    fn pubkey(&mut self) -> G1Affine {
-        self.pubkey.unwrap_or_else(|| {
-            let pubkey = G1Affine::from_compressed_unchecked(&self.compressed_pubkey).unwrap();
-            self.pubkey = Some(pubkey);
-            pubkey
-        })
+    #[inline]
+    fn pubkey(&self) -> &G1Affine {
+        self.pubkey
+            .get_or_init(|| G1Affine::from_compressed_unchecked(&self.compressed_pubkey).unwrap())
     }
 
-    pub fn aggregate(pubkeys: Vec<&mut Self>) -> Result<PublicKey> {
+    pub fn aggregate(pubkeys: &[&Self]) -> Result<PublicKey> {
         let aggregate = pubkeys
-            .into_iter()
-            .fold(G1Affine::identity(), |acc, pk| acc.add_affine(&pk.pubkey()));
+            .iter()
+            .fold(G1Affine::identity(), |acc, pk| acc.add_affine(pk.pubkey()));
+
+        let pubkey = OnceCell::new();
+        pubkey.set(aggregate).unwrap();
 
         Ok(PublicKey {
             compressed_pubkey: [0u8; PUB_KEY_LEN],
-            pubkey: Some(aggregate),
+            pubkey,
         })
     }
 
@@ -80,7 +82,7 @@ impl PublicKey {
 
         Ok(Self {
             compressed_pubkey: *bytes_fixed,
-            pubkey: None,
+            pubkey: OnceCell::new(),
         })
     }
 }
@@ -121,7 +123,7 @@ impl TryFrom<&[u8]> for PublicKey {
     fn try_from(bytes: &[u8]) -> std::result::Result<Self, Self::Error> {
         Ok(Self {
             compressed_pubkey: <[u8; PUB_KEY_LEN]>::try_from(bytes).unwrap(),
-            pubkey: None,
+            pubkey: OnceCell::new(),
         })
     }
 }
@@ -132,14 +134,11 @@ pub struct Signature {
 }
 
 impl Signature {
-    pub fn verify(&self, msg: &[u8], pubkey: &mut PublicKey) -> Result<(), CryptoError> {
+    pub fn verify(&self, msg: &[u8], pubkey: &PublicKey) -> Result<(), CryptoError> {
         let msg = G2Prepared::from(G2Affine::from(hash(msg)));
         let g1 = G1Affine::generator();
 
-        let ml_terms = [
-            (&-g1, &G2Prepared::from(self.sig)),
-            (&pubkey.pubkey(), &msg),
-        ];
+        let ml_terms = [(&-g1, &G2Prepared::from(self.sig)), (pubkey.pubkey(), &msg)];
 
         if multi_miller_loop(&ml_terms).final_exponentiation() == Gt::identity() {
             Ok(())

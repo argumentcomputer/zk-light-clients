@@ -10,18 +10,16 @@ use crate::types::{AccountAddress, ACCOUNT_ADDRESS_SIZE};
 use crate::{serde_error, NBR_VALIDATORS};
 use anyhow::Result;
 use bytes::{Buf, BufMut, BytesMut};
-use getset::{CopyGetters, Getters};
+use getset::Getters;
 use serde::{Deserialize, Deserializer, Serialize};
 
 /// Size in bytes for a `ValidatorConsensusInfo`
 pub const VALIDATOR_CONSENSUS_INFO_SIZE: usize =
     ACCOUNT_ADDRESS_SIZE + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR;
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, CopyGetters, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ValidatorConsensusInfo {
-    #[getset(get_copy)]
     address: AccountAddress,
-    #[getset(get_copy)]
     public_key: PublicKey, // bls12-381
     voting_power: u64,
 }
@@ -213,12 +211,12 @@ impl ValidatorVerifier {
                 .validator_infos
                 .get(index)
                 .ok_or(VerifyError::UnknownAuthor)?;
-            authors.push(validator.address());
-            pub_keys.push(validator.public_key());
+            authors.push(&validator.address);
+            pub_keys.push(&validator.public_key);
         }
 
         // Verify the quorum voting power of the authors
-        self.check_voting_power(authors.iter(), true)?;
+        self.check_voting_power(authors.into_iter(), true)?;
         if self.quorum_voting_power() == 0 {
             // This should happen only in case of tests.
             // TODO(skedia): Clean up the test behaviors to not rely on empty signature
@@ -231,10 +229,10 @@ impl ValidatorVerifier {
             .sig()
             .as_ref()
             .ok_or(VerifyError::EmptySignature)?;
-        let pk_refs = pub_keys.iter_mut().collect::<Vec<_>>();
+
         // Verify the optimistically aggregated signature.
-        let mut aggregated_key =
-            PublicKey::aggregate(pk_refs).map_err(|_| VerifyError::FailedToAggregatePubKey)?;
+        let aggregated_key =
+            PublicKey::aggregate(&pub_keys).map_err(|_| VerifyError::FailedToAggregatePubKey)?;
 
         // see aptos_crypto::unit_tests::cryptohasher
         let mut bytes = prefixed_sha3(b"LedgerInfo").to_vec();
@@ -242,7 +240,7 @@ impl ValidatorVerifier {
             .map_err(|_| VerifyError::InvalidMultiSignature)?;
 
         multi_sig
-            .verify(&bytes, &mut aggregated_key)
+            .verify(&bytes, &aggregated_key)
             .map_err(|_| VerifyError::InvalidMultiSignature)?;
         Ok(())
     }
