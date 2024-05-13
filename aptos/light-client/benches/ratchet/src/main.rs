@@ -19,7 +19,7 @@ const AVERAGE_SIGNERS_NBR: usize = 95;
 
 impl ProvingAssets {
     fn new() -> Self {
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
         let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
         let validator_verifier_hash = match TrustedState::from_bytes(&trusted_state).unwrap() {
@@ -28,9 +28,11 @@ impl ProvingAssets {
         };
         let trusted_state_version = *aptos_wrapper.current_version();
 
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic().unwrap();
 
-        let state_proof = aptos_wrapper.new_state_proof(trusted_state_version);
+        let state_proof = aptos_wrapper
+            .new_state_proof(trusted_state_version)
+            .unwrap();
 
         let epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 

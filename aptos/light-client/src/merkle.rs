@@ -123,14 +123,15 @@ mod test {
 
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
-        let mut aptos_wrapper = AptosWrapper::new(500, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper =
+            AptosWrapper::new(500, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(400).unwrap();
 
         let sparse_merkle_proof = bcs::to_bytes(proof_assets.state_proof()).unwrap();
         let key: [u8; 32] = *proof_assets.key().as_ref();
-        let element_hash: [u8; 32] = *proof_assets.state_value_hash().as_ref();
+        let element_hash: [u8; 32] = *proof_assets.state_value_hash().unwrap().as_ref();
 
         let transaction = bcs::to_bytes(&proof_assets.transaction()).unwrap();
         let transaction_proof = bcs::to_bytes(&proof_assets.transaction_proof()).unwrap();

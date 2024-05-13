@@ -1,3 +1,10 @@
+//! # Trusted State Module
+//!
+//! This module provides the `TrustedState` to keeps track
+//! of our light clients' latest, trusted view of the ledger state.
+//! It can be leveraged alongside an`EpochChangeProof`
+//! to "ratchet" our view forward to a newer state.
+
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::serde_error;
@@ -14,6 +21,10 @@ use anyhow::{bail, ensure, format_err};
 use bytes::{Buf, BufMut, BytesMut};
 use serde::{Deserialize, Serialize};
 
+/// `TrustedState` keeps track of our light clients' latest,
+/// trusted view of the ledger state. It can be leveraged
+/// alongside proofs from a state proof to "ratchet"
+/// our view forward to a newer state.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TrustedState {
     /// The current trusted state is an epoch waypoint, which is a commitment to
@@ -32,10 +43,20 @@ pub enum TrustedState {
 }
 
 impl TrustedState {
+    /// Returns the transaction version for the `TrustedState`.
+    ///
+    /// # Returns
+    ///
+    /// The transaction version of the `TrustedState`.
     pub fn version(&self) -> Version {
         self.waypoint().version()
     }
 
+    /// Returns the waypoint of the `TrustedState`.
+    ///
+    /// # Returns
+    ///
+    /// The waypoint of the `TrustedState`.
     pub fn waypoint(&self) -> Waypoint {
         match self {
             Self::EpochWaypoint(_waypoint) => {
@@ -44,7 +65,16 @@ impl TrustedState {
             Self::EpochState { waypoint, .. } => *waypoint,
         }
     }
-
+    /// Checks if epoch change verification is required. This
+    /// is the case if the current epoch is behind the target epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `epoch: u64` - The epoch number.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating whether epoch change verification is required.
     fn epoch_change_verification_required(&self, epoch: u64) -> bool {
         match self {
             Self::EpochWaypoint(_waypoint) => {
@@ -56,6 +86,16 @@ impl TrustedState {
         }
     }
 
+    /// Checks if a ledger info is stale. This is the case if the ledger info's
+    /// epoch is behind the current trusted epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `ledger_info: &LedgerInfo` - The ledger info to check.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating whether the ledger info is stale.
     fn is_ledger_info_stale(&self, ledger_info: &LedgerInfo) -> bool {
         match self {
             Self::EpochWaypoint(_waypoint) => {
@@ -64,6 +104,18 @@ impl TrustedState {
             Self::EpochState { epoch_state, .. } => epoch_state.is_ledger_info_stale(ledger_info),
         }
     }
+    /// Verifies a ledger info with signatures against  the current trusted state.
+    /// This will verify the signatures and the epoch number.
+    ///
+    /// # Arguments
+    ///
+    /// * `ledger_info: &LedgerInfoWithSignatures` - The
+    /// ledger info with signatures to verify.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the ledger info with
+    /// signatures is valid, and `Err` otherwise.
 
     fn verify(&self, ledger_info: &LedgerInfoWithSignatures) -> anyhow::Result<()> {
         match self {
@@ -74,10 +126,21 @@ impl TrustedState {
         }
     }
 
-    /// The main LC method
-    /// Expects to receive an `EpochChangeProof` containing one `LedgerInfoWithSignatures`
-    /// that represents an epoch transition from trusted_state.epoch -> trusted_state.epoch +1,
-    /// and verifies it.
+    /// The main LC method that verifies and ratchets the
+    /// trusted state. Expects to receive an `EpochChangeProof`
+    /// containing one `LedgerInfoWithSignatures` that
+    /// represents an epoch transition from
+    /// trusted_state.epoch -> trusted_state.epoch +1, and
+    /// verifies it.
+    ///
+    /// # Arguments
+    ///
+    /// * `epoch_change_proof: &'a EpochChangeProof` - The epoch change proof to verify.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the trusted state could be successfully verified and ratcheted, and `Err` otherwise.
+    ///
     pub fn verify_and_ratchet_inner<'a>(
         &self,
         epoch_change_proof: &'a EpochChangeProof,
@@ -129,6 +192,11 @@ impl TrustedState {
         }
     }
 
+    /// Converts the `TrustedState` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `TrustedState`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
 
@@ -150,6 +218,16 @@ impl TrustedState {
         bytes.to_vec()
     }
 
+    /// Creates a `TrustedState` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `TrustedState`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `TrustedState` could
+    /// be successfully created, and `Err` otherwise.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
 
@@ -201,6 +279,10 @@ impl CryptoHash for TrustedState {
     }
 }
 
+/// `TrustedStateChange` is an enum representing the
+/// possible changes in the trusted state.
+///
+/// It can either be a version change, an epoch change, or no change.
 #[derive(Debug)]
 pub enum TrustedStateChange<'a> {
     /// We have a newer `TrustedState` but it's still in the same epoch, so only
@@ -233,6 +315,14 @@ impl EpochChangeProof {
     /// pass a waypoint in case it's not needed).
     ///
     /// We will also skip any stale ledger info's in the [`EpochChangeProof`].
+    ///
+    /// # Arguments
+    ///
+    /// * `verifier` - The [`TrustedState`] to verify the [`EpochChangeProof`] against.
+    ///
+    /// # Returns
+    ///
+    /// The latest [`LedgerInfoWithSignatures`] in the [`EpochChangeProof`].
     pub fn verify(&self, verifier: &TrustedState) -> anyhow::Result<&LedgerInfoWithSignatures> {
         ensure!(
             !self.ledger_info_with_sigs.is_empty(),
@@ -294,6 +384,11 @@ impl EpochChangeProof {
         Ok(self.ledger_info_with_sigs.last().unwrap())
     }
 
+    /// Converts the `EpochChangeProof` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `EpochChangeProof`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
 
@@ -311,6 +406,16 @@ impl EpochChangeProof {
         bytes.to_vec()
     }
 
+    /// Creates an `EpochChangeProof` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `EpochChangeProof`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `EpochChangeProof`
+    /// could be successfully created, and `Err` otherwise.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
 
@@ -372,10 +477,10 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         // New epoch TrustedState
         let trusted_state = aptos_wrapper.trusted_state().clone();
@@ -385,7 +490,7 @@ mod test {
         assess_equality(&bytes);
 
         // No new epoch
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let trusted_state = aptos_wrapper.trusted_state().clone();
 
@@ -400,13 +505,15 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         // New epoch TrustedState
-        let state_proof = aptos_wrapper.new_state_proof(*aptos_wrapper.current_version());
+        let state_proof = aptos_wrapper
+            .new_state_proof(*aptos_wrapper.current_version())
+            .unwrap();
 
         let bytes = bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
@@ -423,10 +530,10 @@ mod test {
         use crate::NBR_VALIDATORS;
         use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let aptos_trusted_state = aptos_wrapper.trusted_state().clone();
         let intern_trusted_state_hash = LcCryptoHash::hash(

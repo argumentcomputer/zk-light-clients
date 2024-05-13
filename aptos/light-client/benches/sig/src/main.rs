@@ -13,9 +13,9 @@ struct ProvingAssets {
 
 impl ProvingAssets {
     fn new() -> Self {
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let ledger_info_with_signature = aptos_wrapper.get_latest_li_bytes().unwrap();
 

@@ -17,6 +17,9 @@ use serde::{Deserialize, Deserializer, Serialize};
 pub const VALIDATOR_CONSENSUS_INFO_SIZE: usize =
     ACCOUNT_ADDRESS_SIZE + LEB128_PUBKEY_LEN + PUB_KEY_LEN + VOTING_POWER_OFFSET_INCR;
 
+/// `ValidatorConsensusInfo` contains all the necessary
+/// information about a validator to assess its participation
+/// in the consensus.
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ValidatorConsensusInfo {
     address: AccountAddress,
@@ -25,6 +28,17 @@ pub struct ValidatorConsensusInfo {
 }
 
 impl ValidatorConsensusInfo {
+    /// Creates a new `ValidatorConsensusInfo`.
+    ///
+    /// # Arguments
+    ///
+    /// * `address: AccountAddress` - The address of the validator.
+    /// * `public_key: PublicKey` - The public key of the validator.
+    /// * `voting_power: u64` - The voting power of the validator.
+    ///
+    /// # Returns
+    ///
+    /// A new `ValidatorConsensusInfo`.
     pub const fn new(address: AccountAddress, public_key: PublicKey, voting_power: u64) -> Self {
         Self {
             address,
@@ -32,6 +46,12 @@ impl ValidatorConsensusInfo {
             voting_power,
         }
     }
+
+    /// Converts the `ValidatorConsensusInfo` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `ValidatorConsensusInfo`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_slice(&self.address.to_bytes());
@@ -40,6 +60,16 @@ impl ValidatorConsensusInfo {
         bytes.to_vec()
     }
 
+    /// Creates a `ValidatorConsensusInfo` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `ValidatorConsensusInfo`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `ValidatorConsensusInfo`
+    /// could be successfully created, and `Err` otherwise.
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let address = AccountAddress::from_bytes(
             bytes.chunk().get(..ACCOUNT_ADDRESS_SIZE).ok_or_else(|| {
@@ -87,6 +117,8 @@ impl ValidatorConsensusInfo {
 pub const VALIDATOR_VERIFIER_SIZE: usize =
     LEB128_VEC_SIZE_VALIDATOR_LIST + (VALIDATOR_CONSENSUS_INFO_SIZE) * NBR_VALIDATORS;
 
+/// `ValidatorVerifier` represents a list of validators, most
+/// of the time related to a given epoch.
 #[derive(Default, Debug, Clone, PartialEq, Eq, Getters, Serialize)]
 // this derive is in the original code, but it's probably a bug, as Validator set comparisons should have set (not list) semantics
 #[getset(get = "pub")]
@@ -96,20 +128,47 @@ pub struct ValidatorVerifier {
 }
 
 impl ValidatorVerifier {
+    /// Creates a new `ValidatorVerifier`.
+    ///
+    /// # Arguments
+    ///
+    /// * `validator_infos: Vec<ValidatorConsensusInfo>` - A vector of `ValidatorConsensusInfo`.
+    ///
+    /// # Returns
+    ///
+    /// A new `ValidatorVerifier`.
     pub fn new(validator_infos: Vec<ValidatorConsensusInfo>) -> Self {
         Self { validator_infos }
     }
 
     /// Returns the number of authors to be validated.
+    ///
+    /// # Returns
+    ///
+    /// The number of authors to be validated.
     pub fn len(&self) -> usize {
         self.validator_infos.len()
     }
 
+    /// Checks if the `ValidatorVerifier` is empty.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating whether the `ValidatorVerifier` is empty.
     pub fn is_empty(&self) -> bool {
         self.validator_infos.is_empty()
     }
 
     /// Ensure there are not more than the maximum expected voters (all possible signatures).
+    ///
+    /// # Arguments
+    ///
+    /// * `num_validators: u16` - The number of validators.
+    /// * `bitvec: &BitVec` - The bit vector of validators.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the number of voters is valid, and `Err` otherwise.
     fn check_num_of_voters(
         num_validators: u16,
         bitvec: &BitVec,
@@ -125,7 +184,12 @@ impl ValidatorVerifier {
         Ok(())
     }
 
-    /// Returns sum of voting power from Map of validator account addresses, validator consensus info
+    /// Returns sum of voting power from Map of validator
+    /// account addresses, validator consensus info.
+    ///
+    /// # Returns
+    ///
+    /// The total voting power of the `ValidatorVerifier`.
     fn s_voting_power(address_to_validator_info: &[ValidatorConsensusInfo]) -> u128 {
         address_to_validator_info.iter().fold(0, |sum, x| {
             sum.checked_add(u128::from(x.voting_power))
@@ -133,11 +197,22 @@ impl ValidatorVerifier {
         })
     }
 
+    /// Returns the total voting power of the `ValidatorVerifier`.
+    ///
+    /// # Returns
+    ///
+    /// The total voting power of the `ValidatorVerifier`.
     // TODO: Make this more efficient
     pub fn total_voting_power(&self) -> u128 {
         Self::s_voting_power(&self.validator_infos[..])
     }
 
+    /// Returns the quorum voting power of the `ValidatorVerifier`,
+    /// which is 2 / 3 + 1 of the total voting power.
+    ///
+    /// # Returns
+    ///
+    /// The quorum voting power of the `ValidatorVerifier`.
     pub fn quorum_voting_power(&self) -> u128 {
         if self.validator_infos.is_empty() {
             0
@@ -147,6 +222,14 @@ impl ValidatorVerifier {
     }
 
     /// Returns the voting power for this address.
+    ///
+    /// # Arguments
+    ///
+    /// * `author: &AccountAddress` - The address of the author.
+    ///
+    /// # Returns
+    ///
+    /// The voting power for this address.
     pub fn get_voting_power(&self, author: &AccountAddress) -> Option<u64> {
         self.validator_infos.iter().find_map(|info| {
             if &info.address == author {
@@ -158,6 +241,14 @@ impl ValidatorVerifier {
     }
 
     /// Sum voting power for valid accounts, exiting early for unknown authors
+    ///
+    /// # Arguments
+    ///
+    /// * `authors: impl Iterator<Item = &AccountAddress>` - An iterator of account addresses.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the sum of voting power is valid, and `Err` otherwise.
     pub fn sum_voting_power<'a>(
         &self,
         authors: impl Iterator<Item = &'a AccountAddress>,
@@ -175,6 +266,15 @@ impl ValidatorVerifier {
     /// Ensure there is at least quorum_voting_power in the provided signatures and there
     /// are only known authors. According to the threshold verification policy,
     /// invalid public keys are not allowed.
+    ///
+    /// # Arguments
+    ///
+    /// * `authors: impl Iterator<Item = &AccountAddress>` - An iterator of account addresses.
+    /// * `check_super_majority: bool` - A boolean indicating whether to check super majority.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the voting power is valid, and `Err` otherwise.
     pub fn check_voting_power<'a>(
         &self,
         authors: impl Iterator<Item = &'a AccountAddress>,
@@ -197,16 +297,28 @@ impl ValidatorVerifier {
         Ok(aggregated_voting_power)
     }
 
+    /// Verifies the multi-signatures of a given `LedgerInfo`
+    /// with the provided `AggregateSignature` from the
+    /// `ValidatorVerifier`.
+    ///
+    /// # Arguments
+    ///
+    /// * `message: &LedgerInfo` - The ledger info.
+    /// * `multi_signature: &AggregateSignature` - The aggregate signature.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the multi-signatures are valid, and `Err` otherwise.
     pub fn verify_multi_signatures(
         &self,
         message: &LedgerInfo,
         multi_signature: &AggregateSignature,
     ) -> std::result::Result<(), VerifyError> {
         // Verify the number of signature is not greater than expected.
-        Self::check_num_of_voters(self.len() as u16, multi_signature.get_signers_bitvec())?;
+        Self::check_num_of_voters(self.len() as u16, multi_signature.validator_bitmask())?;
         let mut pub_keys = vec![];
         let mut authors = vec![];
-        for index in multi_signature.get_signers_bitvec().iter_ones() {
+        for index in multi_signature.validator_bitmask().iter_ones() {
             let validator = self
                 .validator_infos
                 .get(index)
@@ -245,6 +357,11 @@ impl ValidatorVerifier {
         Ok(())
     }
 
+    /// Converts the `ValidatorVerifier` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `ValidatorVerifier`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_slice(&write_leb128(self.validator_infos.len() as u64));
@@ -254,6 +371,16 @@ impl ValidatorVerifier {
         bytes.to_vec()
     }
 
+    /// Creates a `ValidatorVerifier` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `ValidatorVerifier`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `ValidatorVerifier`
+    /// could be successfully created, and `Err` otherwise.
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let mut validator_infos = Vec::new();
 
@@ -333,10 +460,10 @@ mod test {
         use crate::types::validator::ValidatorConsensusInfo;
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         // We can use our intern struct as we test that the conversion is correct with bcs in
         // aptos_test_utils
@@ -365,10 +492,10 @@ mod test {
         use crate::types::validator::ValidatorVerifier;
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let bytes = &aptos_wrapper
             .get_latest_li_bytes()

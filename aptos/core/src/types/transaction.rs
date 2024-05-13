@@ -1,3 +1,13 @@
+//! # Transaction Module
+//!
+//! This module provides the `TransactionInfo` structure
+//! and associated methods for handling transaction information
+//! in the Aptos Light Client.
+//!
+//! The `TransactionInfo` structure represents the information
+//! about how a transaction affects the state of the Aptos blockchain.
+
+// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::error::TypesError;
@@ -5,20 +15,33 @@ use crate::types::ledger_info::{ENUM_VARIANT_LEN, U64_SIZE};
 use bytes::{Buf, BufMut, BytesMut};
 use serde::{Deserialize, Serialize};
 
-/// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
-/// transaction as well as the execution result of this transaction.
+/// `TransactionInfo` contains Information related to how
+/// a transaction affected the state of the Aptos blockchain.
+///
+/// It is implemented as an enum to allow for future expansion
+/// of the transaction info.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TransactionInfo {
     V0(TransactionInfoV0),
 }
 
 impl TransactionInfo {
+    /// Returns the state checkpoint of the `TransactionInfo`.
+    ///
+    /// # Returns
+    ///
+    /// The state checkpoint of the `TransactionInfo`.
     pub const fn state_checkpoint(&self) -> Option<HashValue> {
         match self {
             TransactionInfo::V0(info) => info.state_checkpoint_hash,
         }
     }
 
+    /// Converts the `TransactionInfo` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `TransactionInfo`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         match self {
@@ -30,6 +53,16 @@ impl TransactionInfo {
         bytes.to_vec()
     }
 
+    /// Creates a `TransactionInfo` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `TransactionInfo`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `TransactionInfo`
+    /// could be successfully created, and `Err` otherwise.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
         let tx_info = match buf.get_u8() {
@@ -69,6 +102,8 @@ impl CryptoHash for TransactionInfo {
 pub const TRANSACTION_INFO_V0_SIZE: usize =
     U64_SIZE + 4 * HASH_LENGTH + 2 * ENUM_VARIANT_LEN + EXECUTION_STATUS_SIZE;
 
+/// `TransactionInfoV0`  contains Information related to how
+/// a transaction affected the state of the Aptos blockchain.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfoV0 {
     /// The amount of gas used.
@@ -99,6 +134,11 @@ pub struct TransactionInfoV0 {
 }
 
 impl TransactionInfoV0 {
+    /// Converts the `TransactionInfoV0` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `TransactionInfoV0
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_u64_le(self.gas_used);
@@ -123,6 +163,16 @@ impl TransactionInfoV0 {
         bytes.to_vec()
     }
 
+    /// Creates a `TransactionInfoV0` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `TransactionInfoV0`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `TransactionInfoV0`
+    /// could be successfully created, and `Err` otherwise.
     pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
 
@@ -218,6 +268,11 @@ pub enum ExecutionStatus {
 }
 
 impl ExecutionStatus {
+    /// Converts the `ExecutionStatus` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `ExecutionStatus
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         match self {
@@ -227,6 +282,16 @@ impl ExecutionStatus {
         }
         bytes.to_vec()
     }
+    /// Creates a `ExecutionStatus` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `ExecutionStatus`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `ExecutionStatus`
+    /// could be successfully created, and `Err` otherwise.
     pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
         let execution_status = match buf.get_u8() {
@@ -275,8 +340,8 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::types::transaction::TransactionInfo;
 
-        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
 
@@ -298,8 +363,8 @@ mod test {
         use crate::types::transaction::TransactionInfo;
         use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
 
-        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
 

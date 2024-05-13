@@ -62,10 +62,11 @@ mod test {
 
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
-        let mut aptos_wrapper = AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
+        let mut aptos_wrapper =
+            AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let ledger_info_with_signature = aptos_wrapper.get_latest_li_bytes().unwrap();
 
@@ -85,10 +86,11 @@ mod test {
 
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
-        let mut aptos_wrapper = AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
+        let mut aptos_wrapper =
+            AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let ledger_info_with_signature = aptos_wrapper.get_latest_li_bytes().unwrap();
 

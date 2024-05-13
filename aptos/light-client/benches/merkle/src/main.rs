@@ -18,8 +18,9 @@ struct ProvingAssets {
 
 impl ProvingAssets {
     fn from_nbr_leaves(nbr_leaves: usize) -> Self {
-        let mut aptos_wrapper = AptosWrapper::new(nbr_leaves, NBR_VALIDATORS, NBR_VALIDATORS);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper =
+            AptosWrapper::new(nbr_leaves, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper
             .get_latest_proof_account(nbr_leaves - 1)
@@ -32,7 +33,8 @@ impl ProvingAssets {
         let expected_root: [u8; 32] =
             bcs::from_bytes(&bcs::to_bytes(proof_assets.root_hash()).unwrap()).unwrap();
         let leaf_value: [u8; 32] =
-            bcs::from_bytes(&bcs::to_bytes(&proof_assets.state_value_hash()).unwrap()).unwrap();
+            bcs::from_bytes(&bcs::to_bytes(&proof_assets.state_value_hash().unwrap()).unwrap())
+                .unwrap();
 
         let client = ProverClient::new();
 

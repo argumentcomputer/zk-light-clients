@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
+mod error;
 pub mod wrapper;
 
 #[cfg(test)]
@@ -18,9 +19,9 @@ mod test {
 
     #[test]
     fn test_serde_ledger_info_w_sig() {
-        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let intern_li: LedgerInfoWithSignatures =
             bcs::from_bytes(&aptos_wrapper.get_latest_li_bytes().unwrap()).unwrap();
@@ -35,9 +36,9 @@ mod test {
 
     #[test]
     fn test_serde_sparse_merkle_proof() {
-        let mut aptos_wrapper = AptosWrapper::new(4, 1, 1);
+        let mut aptos_wrapper = AptosWrapper::new(4, 1, 1).unwrap();
 
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(0).unwrap();
 
@@ -54,10 +55,10 @@ mod test {
 
     #[test]
     fn test_sig_verify() {
-        let mut aptos_wrapper = AptosWrapper::new(4, 10, 10);
+        let mut aptos_wrapper = AptosWrapper::new(4, 10, 10).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let intern_li: LedgerInfoWithSignatures =
             bcs::from_bytes(&aptos_wrapper.get_latest_li_bytes().unwrap()).unwrap();
@@ -88,17 +89,19 @@ mod test {
 
     #[test]
     fn test_happy_path_ratchet() {
-        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, 95);
+        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, 95).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let intern_trusted_state: TrustedState =
             bcs::from_bytes(&bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap()).unwrap();
 
-        let state_proof = aptos_wrapper.new_state_proof(intern_trusted_state.version());
+        let state_proof = aptos_wrapper
+            .new_state_proof(intern_trusted_state.version())
+            .unwrap();
 
         let intern_epoch_change_proof: EpochChangeProof =
             bcs::from_bytes(&bcs::to_bytes(state_proof.epoch_changes()).unwrap()).unwrap();
@@ -144,7 +147,7 @@ mod test {
 
     #[test]
     fn test_ratchet_missed_epoch() {
-        let mut aptos_wrapper = AptosWrapper::new(4, 3, 3);
+        let mut aptos_wrapper = AptosWrapper::new(4, 3, 3).unwrap();
         let intern_trusted_state: TrustedState =
             bcs::from_bytes(&bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap()).unwrap();
 
@@ -155,13 +158,15 @@ mod test {
             _ => panic!("Expected epoch state"),
         }
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
-        aptos_wrapper.commit_new_epoch();
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.commit_new_epoch().unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
-        let state_proof = aptos_wrapper.new_state_proof(intern_trusted_state.version());
+        let state_proof = aptos_wrapper
+            .new_state_proof(intern_trusted_state.version())
+            .unwrap();
 
         let intern_epoch_change_proof: EpochChangeProof =
             bcs::from_bytes(&bcs::to_bytes(state_proof.epoch_changes()).unwrap()).unwrap();

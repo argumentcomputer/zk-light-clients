@@ -19,4 +19,3 @@ wp1-sdk = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev"
 [patch.crates-io]
 merlin = { git = "https://github.com/aptos-labs/merlin" }
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
-twirp = { git = "https://github.com/github/twirp-rs", branch = "main" }

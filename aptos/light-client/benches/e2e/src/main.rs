@@ -20,7 +20,8 @@ struct Timings {
 
 fn main() {
     // Initialize assets needed for the test.
-    let mut aptos_wrapper = AptosWrapper::new(NBR_ACCOUNTS, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR);
+    let mut aptos_wrapper =
+        AptosWrapper::new(NBR_ACCOUNTS, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
     // Get trusted state after genesis.
     let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
@@ -32,10 +33,12 @@ fn main() {
     let trusted_state_version = *aptos_wrapper.current_version();
 
     // Generate a block with transactions and set a new epoch.
-    aptos_wrapper.generate_traffic();
+    aptos_wrapper.generate_traffic().unwrap();
 
     // Get epoch change proof for ratcheting.
-    let state_proof = aptos_wrapper.new_state_proof(trusted_state_version);
+    let state_proof = aptos_wrapper
+        .new_state_proof(trusted_state_version)
+        .unwrap();
     let epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
     // Instantiate prover client.
@@ -65,9 +68,9 @@ fn main() {
     );
 
     // Retrieve assets for merkle verification.
-    aptos_wrapper.execute_block(ExecuteBlockArgs::StateProof(Box::new(state_proof)));
+    let _ = aptos_wrapper.execute_block(ExecuteBlockArgs::StateProof(Box::new(state_proof)));
 
-    aptos_wrapper.generate_traffic();
+    aptos_wrapper.generate_traffic().unwrap();
 
     let proof_assets = aptos_wrapper
         .get_latest_proof_account(NBR_ACCOUNTS - 1)
@@ -75,7 +78,7 @@ fn main() {
 
     let sparse_merkle_proof = bcs::to_bytes(proof_assets.state_proof()).unwrap();
     let key: [u8; 32] = *proof_assets.key().as_ref();
-    let element_hash: [u8; 32] = *proof_assets.state_value_hash().as_ref();
+    let element_hash: [u8; 32] = *proof_assets.state_value_hash().unwrap().as_ref();
 
     let transaction = bcs::to_bytes(&proof_assets.transaction()).unwrap();
     let transaction_proof = bcs::to_bytes(&proof_assets.transaction_proof()).unwrap();

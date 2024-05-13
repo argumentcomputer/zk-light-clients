@@ -1,3 +1,36 @@
+//! # Types Module
+//!
+//! This module provides the core data structures and types used in the Aptos Light Client.
+//!
+//! ## Sub-modules
+//!
+//! - `block_info`: This sub-module contains the `BlockInfo`
+//! structure and associated methods. It is used to represent
+//! the block information in the blockchain.
+//! - `epoch_state`: This sub-module contains the `EpochState`
+//! structure and associated methods. It is used to represent
+//! the epoch state in the blockchain.
+//! - `ledger_info`: This sub-module contains the `LedgerInfo`
+//! structure and associated methods. It is used to represent
+//! the ledger information from the blockchain.
+//! - `transaction`: This sub-module contains the `Transaction`
+//! structure and associated methods. It is used to represent
+//! the transactions in the blockchain.
+//! - `trusted_state`: This sub-module contains the `TrustedState`
+//! structure and associated methods. It is used to represent the
+//! trusted state for the blockchain from the Light Client perspective.
+//! - `validator`: This sub-module contains the `ValidatorConsensusInfo`
+//! and `ValidatorVerifier` structures and associated methods. They are
+//! used to represent the validator information from the blockchain
+//! consensus.
+//! - `waypoint`: This sub-module contains the `Waypoint` and
+//! `Ledger2WaypointConverter` structures and associated methods.
+//! They are used to represent the waypoints over the blockchain
+//! state that can be leveraged for bootstrapping securely.
+//!
+//! For more detailed information, users should refer to the specific
+//! documentation for each sub-module.
+
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::HASH_LENGTH;
 use crate::serde_error;

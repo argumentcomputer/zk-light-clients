@@ -1,3 +1,17 @@
+//! # Transaction Proof Module
+//!
+//! This module provides the structures and functions
+//! necessary for handling Transaction Accumulator Proofs
+//! from the Aptos chain.
+//!
+//! ## Usage
+//!
+//! The `TransactionAccumulatorProof` structure is
+//! used to authenticate whether a given transaction exists
+//! in the  Aptos state or not. It contains a list of sibling nodes,
+//! ordered from the bottom level to the root level of the Merkle Tree.
+
+// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{CryptoHash, HashValue, HASH_LENGTH};
 use crate::merkle::node::MerkleInternalNode;
 use crate::merkle::node::TransactionAccumulatorHasher;
@@ -22,6 +36,16 @@ pub struct TransactionAccumulatorProof {
 impl TransactionAccumulatorProof {
     /// Verifies an element whose hash is `element_hash` and version is `element_version` exists in
     /// the accumulator whose root hash is `expected_root_hash` using the provided proof.
+    ///
+    /// # Arguments
+    ///
+    /// * `expected_root_hash: HashValue` - The expected root hash of the Transaction Accumulator.
+    /// * `element_hash: HashValue` - The hash of the element to verify.
+    /// * `element_index: u64` - The index of the element to verify.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the element exists in the Transaction Accumulator and the proof is valid, and `Err` otherwise.
     pub fn verify(
         &self,
         expected_root_hash: HashValue,
@@ -73,6 +97,11 @@ impl TransactionAccumulatorProof {
         Ok(())
     }
 
+    /// Converts the `TransactionAccumulatorProof` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `TransactionAccumulatorProof`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_slice(&write_leb128(self.siblings.len() as u64));
@@ -82,6 +111,15 @@ impl TransactionAccumulatorProof {
         bytes.to_vec()
     }
 
+    /// Creates a `TransactionAccumulatorProof` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `TransactionAccumulatorProof`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `TransactionAccumulatorProof` could be successfully created, and `Err` otherwise.
     pub fn from_bytes(bytes: &[u8]) -> std::result::Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
         let (len, read_bytes) = read_leb128(&buf).map_err(|_| {
@@ -122,8 +160,8 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::merkle::transaction_proof::TransactionAccumulatorProof;
 
-        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
 
@@ -144,8 +182,8 @@ mod test {
         use crate::merkle::transaction_proof::TransactionAccumulatorProof;
         use aptos_crypto::hash::CryptoHash;
 
-        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
 

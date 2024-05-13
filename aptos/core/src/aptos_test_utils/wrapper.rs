@@ -1,4 +1,10 @@
+//! This module provides a wrapper around the Aptos execution layer.
+//! It includes utilities for creating and interacting with a simulated Aptos blockchain.
+//! It is primarily used for testing purposes.
+
 // SPDX-License-Identifier: Apache-2.0, MIT
+use crate::aptos_test_utils::error::AptosError;
+use aptos_crypto::bls12381::Signature;
 use aptos_crypto::hash::{CryptoHash, TransactionAccumulatorHasher};
 use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
@@ -32,11 +38,15 @@ use aptos_types::validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier}
 use aptos_vm::AptosVM;
 use aptos_vm_genesis::TestValidator;
 use getset::Getters;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::move_resource::MoveStructType;
 use rand::prelude::SliceRandom;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
+/// Multiplier to fund accounts, so that they can interact with the chain without
+/// worrying about it.
 const BALANCE_MUILTIPLIER: u64 = 1_000_000_000;
 
 /// Structure containing a `SparseMerkleProof` for and account, along with the parameters to verify it.
@@ -61,12 +71,18 @@ pub struct SparseMerkleProofAssets {
 
 impl SparseMerkleProofAssets {
     /// Verify the proof against the root hash
-    pub fn state_value_hash(&self) -> HashValue {
-        self.state_value.as_ref().unwrap().hash()
+    pub fn state_value_hash(&self) -> Result<HashValue, AptosError> {
+        self.state_value
+            .as_ref()
+            .map(|sv| sv.hash())
+            .ok_or(AptosError::UnexpectedNone("state_value".to_string()))
     }
 }
 
-/// Wrapper atound aptos execution layer to get data out of it.
+/// Wrapper around the Aptos execution layer for testing purposes.
+///
+/// This struct provides methods for creating a simulated Aptos blockchain,
+/// executing transactions, and querying the state of the blockchain.
 #[derive(Getters)]
 #[getset(get = "pub")]
 #[allow(dead_code)]
@@ -113,12 +129,26 @@ pub enum ExecuteBlockArgs {
 
 #[allow(dead_code)]
 impl AptosWrapper {
-    /// Create a new instance of the wrapper with n accounts. Will commit a first block to fund
-    /// the accounts with some coins.
-    pub fn new(nbr_local_accounts: usize, nbr_validators: usize, signers_per_block: usize) -> Self {
+    /// Creates a new instance of the AptosWrapper with a specified number of local accounts, validators, and signers per block.
+    ///
+    /// # Arguments
+    ///
+    /// * `nbr_local_accounts` - The number of local accounts to create.
+    /// * `nbr_validators` - The number of validators to create.
+    /// * `signers_per_block` - The number of signers per block.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new instance of the AptosWrapper.
+    pub fn new(
+        nbr_local_accounts: usize,
+        nbr_validators: usize,
+        signers_per_block: usize,
+    ) -> Result<Self, AptosError> {
         // Create temporary location for the database
         let path = aptos_temppath::TempPath::new();
-        path.create_as_dir().unwrap();
+        path.create_as_dir()
+            .map_err(|e| AptosError::FileSystem { source: e })?;
         // Create a test genesis and some validator for our test chain
         let (genesis, validators) =
             aptos_vm_genesis::test_genesis_change_set_and_validators(Some(nbr_validators));
@@ -160,14 +190,16 @@ impl AptosWrapper {
             major_version: 100,
         };
 
-        aptos_wrapper.fund_accounts();
+        aptos_wrapper.fund_accounts()?;
 
-        aptos_wrapper
+        Ok(aptos_wrapper)
     }
 
     /// Funds the given accounts with some coins, effectively committing a new block on the chain.
+    ///
+    /// This method generates a block with transactions that fund each account and then executes the block.
     // TODO assume that accounts were not previously created so we always try to create them, could be nice to change in the future
-    fn fund_accounts(&mut self) {
+    fn fund_accounts(&mut self) -> Result<(), AptosError> {
         let (block_id, block_meta) = self.gen_block_id_and_metadata();
         let mut block_txs = vec![block_meta];
         for account in self.accounts() {
@@ -182,15 +214,26 @@ impl AptosWrapper {
             block_txs.push(UserTransaction(fund_tx));
         }
 
-        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)));
+        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)))
     }
 
+    /// Prepares the ratcheting process by executing a block and saving it to persistent storage.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_id` - The ID of the block to be executed.
+    /// * `block` - The transactions to be included in the block.
+    /// * `from_version` - The version from which to start the ratcheting process.
+    ///
+    /// # Returns
+    ///
+    /// * `StateProof` - The state proof for the executed block.
     fn prepare_ratcheting(
         &mut self,
         block_id: HashValue,
         block: &[SignatureVerifiedTransaction],
         from_version: u64,
-    ) -> StateProof {
+    ) -> Result<StateProof, AptosError> {
         let output = self
             .executor()
             .execute_block(
@@ -198,7 +241,7 @@ impl AptosWrapper {
                 self.executor().committed_block_id(),
                 TEST_BLOCK_EXECUTOR_ONCHAIN_CONFIG,
             )
-            .unwrap();
+            .map_err(|e| AptosError::Internal { source: e.into() })?;
 
         let ledger_info = aptos_types::ledger_info::LedgerInfo::new(
             BlockInfo::new(
@@ -216,10 +259,15 @@ impl AptosWrapper {
         let partial_sig = PartialSignatures::new(
             self.signers()
                 .get(..self.signers_per_block)
-                .unwrap()
+                .ok_or(AptosError::UnexpectedNone("ValidatorSigner".to_string()))?
                 .iter()
-                .map(|signer| (signer.author(), signer.sign(&ledger_info).unwrap()))
-                .collect(),
+                .map(|signer| {
+                    signer
+                        .sign(&ledger_info)
+                        .map_err(|e| AptosError::Internal { source: e.into() })
+                        .map(|s| (signer.author(), s))
+                })
+                .collect::<Result<BTreeMap<AccountAddress, Signature>, AptosError>>()?,
         );
 
         let validator_consensus_info = self
@@ -238,16 +286,30 @@ impl AptosWrapper {
             ledger_info,
             validator_verifier
                 .aggregate_signatures(&partial_sig)
-                .unwrap(),
+                .map_err(|e| AptosError::Internal { source: e.into() })?,
         );
 
         // Save block to persistent storage
-        self.executor().commit_blocks(vec![block_id], li).unwrap();
+        self.executor()
+            .commit_blocks(vec![block_id], li)
+            .map_err(|e| AptosError::Internal { source: e.into() })?;
 
-        self.db().reader.get_state_proof(from_version).unwrap()
+        self.db()
+            .reader
+            .get_state_proof(from_version)
+            .map_err(|e| AptosError::Internal { source: e.into() })
     }
 
-    pub fn new_state_proof(&mut self, from_version: u64) -> StateProof {
+    /// Generates a new state proof for a given version.
+    ///
+    /// # Arguments
+    ///
+    /// * `from_version` - The version for which to generate the state proof.
+    ///
+    /// # Returns
+    ///
+    /// * `StateProof` - The generated state proof for the given version.
+    pub fn new_state_proof(&mut self, from_version: u64) -> Result<StateProof, AptosError> {
         let (block_id, block_meta) = self.gen_block_id_and_metadata();
         let mut block_txs = vec![block_meta];
         let new_version = *self.major_version() + 100;
@@ -260,14 +322,26 @@ impl AptosWrapper {
         self.prepare_ratcheting(block_id, &block(block_txs), from_version)
     }
 
-    /// Execute a new block and updates necessary properties.
+    /// Executes a new block and updates necessary properties.
+    ///
     /// The `StateProof` for the ratcheting can either be passed from an external source
     /// or generated internally.
-    pub fn execute_block(&mut self, execution_arguments: ExecuteBlockArgs) {
+    ///
+    /// # Arguments
+    ///
+    /// * `execution_arguments` - The arguments for block execution, either a `StateProof` or a block ID and transactions.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if the trusted state fails to verify and ratchet the state proof.
+    pub fn execute_block(
+        &mut self,
+        execution_arguments: ExecuteBlockArgs,
+    ) -> Result<(), AptosError> {
         let state_proof = match execution_arguments {
             ExecuteBlockArgs::StateProof(state_proof) => *state_proof,
             ExecuteBlockArgs::Block(block_id, block) => {
-                self.prepare_ratcheting(block_id, &block, self.trusted_state.version())
+                self.prepare_ratcheting(block_id, &block, self.trusted_state.version())?
             }
         };
         // Ratchet trusted state to latest version
@@ -280,9 +354,9 @@ impl AptosWrapper {
                         }
                         self.current_epoch = epoch_state.epoch;
                     }
-                    _ => {
-                        panic!("should not happen")
-                    }
+                    _ => return Err(AptosError::TrustedStageChange {
+                        source: "Expected new state as TrustedState::EpochState for TrustedStateChange::Epoch".into()
+                    }),
                 }
 
                 new_state
@@ -291,11 +365,11 @@ impl AptosWrapper {
                 self.current_round += 1;
                 new_state
             }
-            Err(err) => {
-                panic!("ended with error: {:?}", err)
-            }
+            Err(err) => return Err(AptosError::TrustedStageChange { source: err.into() }),
             _ => {
-                panic!("unexpected state change")
+                return Err(AptosError::TrustedStageChange {
+                    source: "Expected TrustedState::EpochState".into(),
+                })
             }
         };
 
@@ -307,9 +381,15 @@ impl AptosWrapper {
         self.trusted_state = trusted_state;
         self.current_block += 1;
         self.current_version = current_version;
+
+        Ok(())
     }
 
-    /// Generate block id and metadata for the next block.
+    /// Generates a block ID and metadata for the next block.
+    ///
+    /// # Returns
+    ///
+    /// * `(HashValue, Transaction)` - A tuple containing the block ID and the block metadata transaction.
     fn gen_block_id_and_metadata(&self) -> (HashValue, Transaction) {
         let block_id = gen_block_id(self.current_block as u8);
         let block_meta = Transaction::BlockMetadata(BlockMetadata::new(
@@ -324,28 +404,48 @@ impl AptosWrapper {
         (block_id, block_meta)
     }
 
-    /// Create some random transfers between the accounts of the chain and execute them in a block.
-    // TODO, we only transfer small amounts to ensure there is no gas issue but calling this too much would result on tx not passing
-    pub fn generate_traffic(&mut self) {
+    /// Creates some random transfers between the accounts of the chain and executes them in a block.
+    ///
+    /// This method generates a block with transactions that transfer a small amount of coins between random accounts,
+    /// and then executes the block. It is used to simulate traffic in the blockchain for testing purposes.
+    ///
+    /// # Note
+    ///
+    /// This method only transfers small amounts to ensure there is no gas issue. However, calling this method too frequently
+    /// could result in transactions not passing due to insufficient funds.
+    pub fn generate_traffic(&mut self) -> Result<(), AptosError> {
         let (block_id, block_meta) = self.gen_block_id_and_metadata();
         let mut block_txs = vec![block_meta];
         for _ in 0..10 {
-            let sender = self.accounts().choose(&mut rand::thread_rng()).unwrap();
-            let mut receiver = self.accounts().choose(&mut rand::thread_rng()).unwrap();
+            let sender = self
+                .accounts()
+                .choose(&mut rand::thread_rng())
+                .ok_or(AptosError::UnexpectedNone("random sender".to_string()))?;
+            let mut receiver = self
+                .accounts()
+                .choose(&mut rand::thread_rng())
+                .ok_or(AptosError::UnexpectedNone("random receiver".to_string()))?;
 
             // Ensure receiver is different from sender
             while receiver.address() == sender.address() {
-                receiver = self.accounts().choose(&mut rand::thread_rng()).unwrap();
+                receiver = self
+                    .accounts()
+                    .choose(&mut rand::thread_rng())
+                    .ok_or(AptosError::UnexpectedNone("random receiver".to_string()))?;
             }
 
             let transfer_tx = sender
                 .sign_with_transaction_builder(self.txn_factory().transfer(receiver.address(), 10));
             block_txs.push(UserTransaction(transfer_tx));
         }
-        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)));
+        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)))
     }
 
-    pub fn commit_new_epoch(&mut self) {
+    /// Commits a new epoch by executing a block with a reconfiguration transaction.
+    ///
+    /// This method increments the major version, executes a block with a reconfiguration transaction,
+    /// and updates the current epoch, round, and version.
+    pub fn commit_new_epoch(&mut self) -> Result<(), AptosError> {
         let (block_id, block_meta) = self.gen_block_id_and_metadata();
         let mut block_txs = vec![block_meta];
         let new_version = *self.major_version() + 100;
@@ -354,29 +454,55 @@ impl AptosWrapper {
         );
         block_txs.push(UserTransaction(reconfig));
         self.major_version = new_version;
-        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)));
+        self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)))
     }
 
-    /// Get latest `LedgerInfoWithSignatures` generated while executing a block
-    pub fn get_latest_li(&self) -> Option<LedgerInfoWithSignatures> {
+    /// Returns the latest `LedgerInfoWithSignatures` generated while executing a block.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<LedgerInfoWithSignatures>` - The latest `LedgerInfoWithSignatures` if it exists.
+    pub fn get_latest_li(&self) -> Result<LedgerInfoWithSignatures, AptosError> {
         self.db()
             .reader
             .get_latest_ledger_info_option()
-            .expect("DB error while getting latest LedgerInfoWithSignatures")
-    }
-    /// Same as `get_latest_li` but with returned payload as bytes, serialized with bcs
-    pub fn get_latest_li_bytes(&self) -> Option<Vec<u8>> {
-        Some(
-            bcs::to_bytes(&self.get_latest_li()?)
-                .expect("LedgerInfoWithSignatures serialization failed"),
-        )
+            .map_err(|e| AptosError::Internal { source: e.into() })?
+            .ok_or(AptosError::UnexpectedNone(
+                "get_latest_ledger_info".to_string(),
+            ))
     }
 
-    /// Get latest `LedgerInfoWithSignatures` generated while executing a block
-    pub fn get_latest_proof_account(&self, account_idx: usize) -> Option<SparseMerkleProofAssets> {
+    /// Returns the latest `LedgerInfoWithSignatures` generated while executing a block, serialized with bcs.
+    ///
+    /// # Returns
+    ///
+    /// * `Option<Vec<u8>>` - The latest `LedgerInfoWithSignatures` serialized into bytes if it exists, `None` otherwise.
+    pub fn get_latest_li_bytes(&self) -> Result<Vec<u8>, AptosError> {
+        bcs::to_bytes(&self.get_latest_li()?).map_err(|e| AptosError::Serialization {
+            structure: "LedgerInfoWithSignatures".to_string(),
+            source: e.into(),
+        })
+    }
+
+    /// Returns a `SparseMerkleProofAssets` for a specified account.
+    ///
+    /// # Arguments
+    ///
+    /// * `account_idx` - The index of the account for which to get the `SparseMerkleProofAssets`.
+    ///
+    /// # Returns
+    ///
+    /// * `Option<SparseMerkleProofAssets>` - The `SparseMerkleProofAssets` for the specified account if it exists, `None` otherwise.
+    pub fn get_latest_proof_account(
+        &self,
+        account_idx: usize,
+    ) -> Result<SparseMerkleProofAssets, AptosError> {
         // Create a state key to get the info
         let account_0_resource_path = StateKey::access_path(AccessPath::new(
-            self.accounts().get(account_idx)?.address(),
+            self.accounts()
+                .get(account_idx)
+                .ok_or(AptosError::UnexpectedNone("get accounts".into()))?
+                .address(),
             AccountResource::struct_tag().access_vector(),
         ));
         // Get the state proof for the current version
@@ -387,25 +513,29 @@ impl AptosWrapper {
                 &account_0_resource_path,
                 *self.current_version(),
             )
-            .unwrap();
+            .map_err(|e| AptosError::Internal { source: e.into() })?;
 
         // Get the transaction with proof for the current version
         let txn_w_proof = self
             .db()
             .reader
             .get_transaction_by_version(*self.current_version(), *self.current_version(), false)
-            .unwrap();
+            .map_err(|e| AptosError::Internal { source: e.into() })?;
 
         let transaction_version = txn_w_proof.version;
         let txn_info = txn_w_proof.proof.transaction_info;
         let ledger_info_to_transaction_info_proof =
             txn_w_proof.proof.ledger_info_to_transaction_info_proof;
 
-        Some(SparseMerkleProofAssets {
+        Ok(SparseMerkleProofAssets {
             state_proof,
             key: account_0_resource_path.hash(),
             state_value,
-            root_hash: txn_info.state_checkpoint_hash().unwrap(),
+            root_hash: txn_info
+                .state_checkpoint_hash()
+                .ok_or(AptosError::UnexpectedNone(
+                    "state_checkpoint_hash".to_string(),
+                ))?,
             transaction_proof: ledger_info_to_transaction_info_proof,
             transaction: txn_info,
             transaction_version,
@@ -413,7 +543,17 @@ impl AptosWrapper {
     }
 }
 
-/// Generates some accounts to interact with the chain.
+/// Generates a specified number of local accounts.
+///
+/// This function creates a new random number generator with a fixed seed, and then generates the specified number of local accounts.
+///
+/// # Arguments
+///
+/// * `n` - The number of local accounts to generate.
+///
+/// # Returns
+///
+/// * `Vec<LocalAccount>` - A vector of the generated local accounts.
 fn generate_local_accounts(n: usize) -> Vec<LocalAccount> {
     let seed = [3u8; 32];
     let mut rng = ::rand::rngs::StdRng::from_seed(seed);
@@ -425,7 +565,7 @@ fn generate_local_accounts(n: usize) -> Vec<LocalAccount> {
 
 #[test]
 fn test_aptos_wrapper() {
-    let mut aptos_wrapper = AptosWrapper::new(4, 1, 1);
+    let mut aptos_wrapper = AptosWrapper::new(4, 1, 1).unwrap();
 
     // Get the state proof for the current version
     let state_proof_assets = aptos_wrapper.get_latest_proof_account(0).unwrap();
@@ -438,27 +578,27 @@ fn test_aptos_wrapper() {
         )
         .unwrap();
 
-    aptos_wrapper.generate_traffic();
+    aptos_wrapper.generate_traffic().unwrap();
     assert_eq!(aptos_wrapper.trusted_state().version(), 22);
 
     assert_eq!(*aptos_wrapper.current_epoch(), 1);
     assert_eq!(*aptos_wrapper.major_version(), 100);
     assert_eq!(*aptos_wrapper.current_round(), 2);
 
-    aptos_wrapper.commit_new_epoch();
+    aptos_wrapper.commit_new_epoch().unwrap();
 
     assert_eq!(*aptos_wrapper.major_version(), 200);
     assert_eq!(*aptos_wrapper.current_epoch(), 2);
     assert_eq!(*aptos_wrapper.current_round(), 1);
     assert_eq!(aptos_wrapper.trusted_state().version(), 24);
 
-    aptos_wrapper.generate_traffic();
+    aptos_wrapper.generate_traffic().unwrap();
     assert_eq!(*aptos_wrapper.current_version(), 36)
 }
 
 #[test]
 fn test_multiple_signers() {
-    let mut aptos_wrapper = AptosWrapper::new(4, 15, 15);
+    let mut aptos_wrapper = AptosWrapper::new(4, 15, 15).unwrap();
 
     // Get the state proof for the current version
     let state_proof_assets = aptos_wrapper.get_latest_proof_account(0).unwrap();
@@ -471,6 +611,6 @@ fn test_multiple_signers() {
         )
         .unwrap();
 
-    aptos_wrapper.generate_traffic();
+    aptos_wrapper.generate_traffic().unwrap();
     assert_eq!(aptos_wrapper.trusted_state().version(), 22);
 }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::{anyhow, Result};
 
 /// Reads a LEB128 encoded number from a byte slice.

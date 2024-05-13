@@ -53,6 +53,14 @@ use getset::CopyGetters;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
+/// `SparseMerkleLeafNode` is a structure representing
+/// a leaf node in a Sparse Merkle Tree.
+///
+/// Each `SparseMerkleLeafNode` contains a `key`
+/// and a `value_hash`, both of which are `HashValue`.
+/// The `key` represents the location of the leaf in the
+/// Sparse Merkle Tree, and the `value_hash` is the
+/// hash of the value stored in the leaf.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, CopyGetters)]
 pub struct SparseMerkleLeafNode {
     #[getset(get_copy = "pub")]
@@ -62,10 +70,30 @@ pub struct SparseMerkleLeafNode {
 }
 
 impl SparseMerkleLeafNode {
+    /// Creates a new `SparseMerkleLeafNode` with the
+    /// given `key` and `value_hash`.
+    ///
+    /// # Arguments
+    ///
+    /// * `key: HashValue` - The key of the leaf node.
+    /// * `value_hash: HashValue` - The hash of the value
+    /// stored in the leaf node.
+    ///
+    /// # Returns
+    ///
+    /// A new `SparseMerkleLeafNode` instance.
     pub const fn new(key: HashValue, value_hash: HashValue) -> Self {
         Self { key, value_hash }
     }
 
+    /// Converts the `SparseMerkleLeafNode` to a byte
+    /// vector. The byte vector is a BCS-serialized version
+    /// of the `SparseMerkleLeafNode`.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` containing the bytes of the `key`
+    /// followed by the bytes of the `value_hash`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_slice(self.key.as_ref());
@@ -73,6 +101,19 @@ impl SparseMerkleLeafNode {
         bytes.to_vec()
     }
 
+    /// Creates a `SparseMerkleLeafNode` from a byte
+    /// slice. The byte slice should be a BCS-serialized
+    /// version of the `SparseMerkleLeafNode`.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create
+    /// the `SparseMerkleLeafNode`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `SparseMerkleLeafNode`
+    /// could be successfully created, and `Err` otherwise.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = bytes;
 
@@ -111,6 +152,13 @@ impl CryptoHash for SparseMerkleLeafNode {
     }
 }
 
+/// `MerkleInternalNode` is a structure representing an
+/// internal node in a Merkle Tree.
+///
+/// Each `MerkleInternalNode` contains a `left_child`
+/// and a `right_child`, both of which are `HashValue`.
+/// The `left_child` and `right_child` represent the hashes
+/// of the left and right child nodes in the Merkle Tree.
 pub struct MerkleInternalNode<H: NodeHasher> {
     left_child: HashValue,
     right_child: HashValue,
@@ -118,6 +166,17 @@ pub struct MerkleInternalNode<H: NodeHasher> {
 }
 
 impl<H: NodeHasher> MerkleInternalNode<H> {
+    /// Creates a new `MerkleInternalNode` with the given
+    /// `left_child` and `right_child`.
+    ///
+    /// # Arguments
+    ///
+    /// * `left_child: HashValue` - The hash of the left child node.
+    /// * `right_child: HashValue` - The hash of the right child node.
+    ///
+    /// # Returns
+    ///
+    /// A new `MerkleInternalNode` instance.
     pub const fn new(left_child: HashValue, right_child: HashValue) -> Self {
         Self {
             left_child,
@@ -133,10 +192,26 @@ impl<H: NodeHasher + Default> CryptoHash for MerkleInternalNode<H> {
     }
 }
 
-/// Trait used to implement generic hasher over `MerkleInternalNode` for
-/// its hash method.
+/// `NodeHasher` is a trait used to implement a generic
+/// hasher over `MerkleInternalNode` for its hash method.
 pub trait NodeHasher {
+    /// Returns the prefix used for hashing.
+    ///
+    /// # Returns
+    ///
+    /// A static string slice representing the prefix.
     fn prefix(&self) -> &'static str;
+
+    /// Computes the hash of a node given its left and right child nodes.
+    ///
+    /// # Arguments
+    ///
+    /// * `left_child: &HashValue` - The hash of the left child node.
+    /// * `right_child: &HashValue` - The hash of the right child node.
+    ///
+    /// # Returns
+    ///
+    /// A `HashValue` representing the hash of the node.
     fn hash(&self, left_child: &HashValue, right_child: &HashValue) -> HashValue {
         HashValue::new(hash_data(
             &prefixed_sha3(self.prefix().as_bytes()),
@@ -145,23 +220,37 @@ pub trait NodeHasher {
     }
 }
 
-/// Structure representing the hasher  for node accumulator in
-/// order to prove  an account inclusion in the state.
+/// `SparseMerkleInternalHasher` is a structure representing
+/// the hasher for node accumulator in order to prove an
+/// account inclusion in the state.
 #[derive(Clone, Debug, Default)]
 pub struct SparseMerkleInternalHasher {}
 
 impl NodeHasher for SparseMerkleInternalHasher {
+    /// Returns the prefix used for hashing in the context of
+    /// a Sparse Merkle Tree.
+    ///
+    /// # Returns
+    ///
+    /// A static string slice representing the prefix.
     fn prefix(&self) -> &'static str {
         "SparseMerkleInternal"
     }
 }
 
-/// Structure representing the hasher for  transaction accumulator
-/// in order to prove its inclusion in a `LedgerInfoWithSignature`.
+/// `TransactionAccumulatorHasher` is a structure representing
+/// the hasher for transaction accumulator in order to prove
+/// its inclusion in a `LedgerInfoWithSignature`.
 #[derive(Clone, Debug, Default)]
 pub struct TransactionAccumulatorHasher {}
 
 impl NodeHasher for TransactionAccumulatorHasher {
+    /// Returns the prefix used for hashing in the context of
+    /// a Transaction Accumulator.
+    ///
+    /// # Returns
+    ///
+    /// A static string slice representing the prefix.
     fn prefix(&self) -> &'static str {
         "TransactionAccumulator"
     }
@@ -232,7 +321,6 @@ mod test {
     fn test_bytes_conversion_sparse_merkle_leaf_node() {
         use crate::crypto::hash::HashValue;
         use crate::merkle::node::SparseMerkleLeafNode;
-
         use aptos_crypto::HashValue as AptosHashValue;
         use aptos_types::proof::SparseMerkleLeafNode as AptosSparseMerkleLeafNode;
 

@@ -1,27 +1,79 @@
+//! # Crypto Hash Module
+//!
+//! This module provides the implementation of cryptographic hash functions and related structures.
+//!
+//! ## Usage
+//!
+//! This module is used for creating and manipulating cryptographic hashes in the Aptos codebase.
+//! The `CryptoHash` trait should be implemented by any structure that needs to be hashed.
+//! The `HashValue` and `HashValueBitIterator` structures provide functionality for working with hash values and their bits.
+
 // SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::{anyhow, Result};
 use getset::CopyGetters;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use tiny_keccak::{Hasher, Sha3};
+
+/// A prefix used in the Aptos codebase to begin the salt of every hashable structure.
+/// For each structure the salt consists in this global prefix, concatenated
+/// with the specified serialization name of the struct.
 pub const HASH_PREFIX: &[u8] = b"APTOS::";
+
+/// Length in bytes of a given `HashValue`.
 pub const HASH_LENGTH: usize = 32;
 
+/// `CryptoHash` is a trait to implement on types that can be hashed.
 pub trait CryptoHash {
     /// Hashes the object and produces a `HashValue`.
+    ///
+    /// This method should be implemented to hash the structure implementing this trait.
+    /// The hash is computed by concatenating `HASH_PREFIX`, the structure's name, and
+    /// the bytes resulting from serializing the structure with BCS (Binary Canonical Serialization).
+    ///
+    /// # Note
+    ///
+    /// An exception exists for `SparseMerkleInternalHasher` and
+    /// `TransactionAccumulatorHasher` that will be hashing the hash of
+    /// their children, and not their serialized bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `HashValue` representing the hash of the object.
     fn hash(&self) -> HashValue;
 }
 
+/// Computes a SHA3 hash of the input prefixed with `HASH_PREFIX`.
+///
+/// This function takes a byte slice as input, concatenates it with the `HASH_PREFIX`,
+/// and returns the SHA3 hash of the result.
+///
+/// # Arguments
+///
+/// * `input` - A byte slice to be hashed.
+///
+/// # Returns
+///
+/// A byte array of length `HASH_LENGTH` representing the SHA3 hash of the prefixed input.
 pub fn prefixed_sha3(input: &[u8]) -> [u8; HASH_LENGTH] {
-    let mut sha3 = Sha3::v256();
-    let salt: Vec<u8> = [HASH_PREFIX, input].concat();
-    sha3.update(&salt);
-    let mut output = [0u8; HASH_LENGTH];
-    sha3.finalize(&mut output);
-    output
+    hash_data(HASH_PREFIX, vec![input])
 }
 
+/// Computes a SHA3 hash of the given tag and data.
+///
+/// This function takes a tag and a vector of byte slices, hashes the tag and each byte slice using SHA3,
+/// and returns the final hash.
+///
+/// # Arguments
+///
+/// * `tag` - A byte slice representing the tag to be hashed.
+/// * `data` - A vector of byte slices to be hashed.
+///
+/// # Returns
+///
+/// A byte array of length `HASH_LENGTH` representing the SHA3 hash of the tag and data.
 pub fn hash_data(tag: &[u8], data: Vec<&[u8]>) -> [u8; HASH_LENGTH] {
     let mut hasher = Sha3::v256();
     if !tag.is_empty() {
@@ -35,6 +87,7 @@ pub fn hash_data(tag: &[u8], data: Vec<&[u8]>) -> [u8; HASH_LENGTH] {
     output
 }
 
+/// A structure representing a hash value.
 #[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone, Copy, CopyGetters, Hash)]
 pub struct HashValue {
     #[getset(get_copy = "pub(crate)")]
@@ -42,29 +95,51 @@ pub struct HashValue {
 }
 
 impl HashValue {
+    /// Creates a new `HashValue` from a given hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `hash` - A byte array of length `HASH_LENGTH` representing the hash value.
+    ///
+    /// # Returns
+    ///
+    /// A new `HashValue` instance.
     pub const fn new(hash: [u8; HASH_LENGTH]) -> Self {
         HashValue { hash }
     }
 
-    /// Create from a slice (e.g. retrieved from storage).
+    /// Creates a `HashValue` from a slice (e.g., retrieved from storage).
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - A byte slice from which to create the `HashValue`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `HashValue` could be created successfully. If the slice has an invalid length,
+    /// the `Result` is `Err` with an error message.
     pub fn from_slice<T: AsRef<[u8]>>(bytes: T) -> Result<Self> {
         <[u8; HASH_LENGTH]>::try_from(bytes.as_ref())
             .map_err(|e| anyhow!("Invalid length: {}", e))
             .map(Self::new)
     }
 
-    pub fn from_human_readable(hex: &str) -> Result<Self> {
-        let hex = hex.strip_prefix("0x").unwrap_or(hex);
-        let bytes = hex::decode(hex).unwrap();
-        Ok(HashValue::new(bytes.try_into().unwrap()))
-    }
-
     /// Returns a `HashValueBitIterator` over all the bits that represent this `HashValue`.
+    ///
+    /// # Returns
+    ///
+    /// A `HashValueBitIterator` instance for iterating over the bits of the `HashValue`.
     pub fn iter_bits(&self) -> HashValueBitIterator<'_> {
         HashValueBitIterator::new(self)
     }
 
-    /// Dumps into a vector.
+    /// Converts the `HashValue` into a vector.
+    ///
+    /// This method takes the hash value and converts it into a vector of bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the hash value.
     pub fn to_vec(&self) -> Vec<u8> {
         self.hash.to_vec()
     }

@@ -1,3 +1,25 @@
+//! # Sparse Merkle Proof Module
+//!
+//! This module provides the structures and functions
+//! necessary for handling Sparse Merkle Proofs in a Merkle Tree.
+//!
+//! ## Usage
+//!
+//! The `SparseMerkleProof` structure is used to authenticate
+//! whether a given leaf exists in the Sparse Merkle Tree
+//! or not. It contains a leaf node and a list of sibling nodes.
+//! The siblings are ordered from the bottom level to the
+//! root level of the Sparse Merkle Tree.
+//!
+//! The `SparseMerkleProof` structure provides methods
+//! for verifying the proof (`verify_by_hash`), converting
+//! the proof to bytes (`to_bytes`), and creating a proof
+//! from bytes (`from_bytes`). These methods are used
+//! to authenticate the existence of a leaf in the Sparse
+//! Merkle Tree, serialize the proof for storage or
+//! transmission, and deserialize the proof for verification,
+//! respectively.
+
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{CryptoHash, HashValue, HASH_LENGTH};
 use crate::merkle::node::{MerkleInternalNode, SparseMerkleInternalHasher, SparseMerkleLeafNode};
@@ -9,6 +31,13 @@ use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 
+/// `SparseMerkleProof` is a structure representing a proof
+/// in a Sparse Merkle Tree.
+///
+/// Each `SparseMerkleProof` contains an optional leaf
+/// node and a list of sibling nodes. The siblings are ordered
+/// from the bottom level to the root level of the Sparse
+/// Merkle Tree.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Getters)]
 #[getset(get = "pub")]
 pub struct SparseMerkleProof {
@@ -26,8 +55,21 @@ pub struct SparseMerkleProof {
 }
 
 impl SparseMerkleProof {
-    /// Verifies an element whose key is `element_key` and value is authenticated by `element_hash` exists in the Sparse
-    /// Merkle Tree using the provided proof.
+    /// Verifies an element whose key is `element_key` and
+    /// value is authenticated by `element_hash` exists in
+    /// the Sparse Merkle Tree using the provided proof.
+    ///
+    /// # Arguments
+    ///
+    /// * `expected_root_hash: HashValue` - The expected root hash of the Sparse Merkle Tree.
+    /// * `element_key: HashValue` - The key of the element to verify.
+    /// * `element_hash: HashValue` - The hash of the element to verify.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the element exists in
+    /// the Sparse Merkle Tree and the proof is valid, and
+    /// `Err` otherwise.
     #[allow(dead_code)]
     pub fn verify_by_hash(
         &self,
@@ -81,6 +123,11 @@ impl SparseMerkleProof {
         Ok(reconstructed_root)
     }
 
+    /// Converts the `SparseMerkleProof` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `SparseMerkleProof`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         match &self.leaf {
@@ -99,6 +146,17 @@ impl SparseMerkleProof {
         bytes.to_vec()
     }
 
+    /// Creates a `SparseMerkleProof` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create
+    /// the `SparseMerkleProof`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `SparseMerkleProof`
+    /// could be successfully created, and `Err` otherwise.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = bytes;
 
@@ -143,6 +201,17 @@ impl SparseMerkleProof {
     }
 }
 
+/// Updates the accumulator hash during proof verification.
+///
+/// # Arguments
+///
+/// * `acc_hash: HashValue` - The current accumulator hash.
+/// * `(sibling_hash, bit): (&HashValue, bool)` - The hash of the
+/// sibling node and a boolean indicating whether the sibling is on the right.
+///
+/// # Returns
+///
+/// A `HashValue` representing the updated accumulator hash.
 fn accumulator_update(acc_hash: HashValue, (sibling_hash, bit): (&HashValue, bool)) -> HashValue {
     if bit {
         MerkleInternalNode::<SparseMerkleInternalHasher>::new(*sibling_hash, acc_hash).hash()
@@ -215,8 +284,8 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_crypto::hash::CryptoHash;
 
-        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
 
@@ -244,8 +313,8 @@ mod test {
     fn test_bytes_conversion_sparse_merkle_proof() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1);
-        aptos_wrapper.generate_traffic();
+        let mut aptos_wrapper = AptosWrapper::new(40, 1, 1).unwrap();
+        aptos_wrapper.generate_traffic().unwrap();
 
         let proof_assets = aptos_wrapper.get_latest_proof_account(35).unwrap();
 

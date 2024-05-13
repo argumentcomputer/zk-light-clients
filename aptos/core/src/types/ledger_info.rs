@@ -119,6 +119,8 @@ const BITVEC_SIZE: usize = (NBR_VALIDATORS + 7) / 8 + 1;
 pub const AGG_SIGNATURE_LEN: usize =
     LEB128_VEC_SIZE_BITVEC + BITVEC_SIZE + ENUM_VARIANT_LEN + SIG_LEN;
 
+/// `LedgerInfo` is a structure representing the information
+/// about the latest committed block.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LedgerInfo {
     commit_info: BlockInfo,
@@ -128,36 +130,84 @@ pub struct LedgerInfo {
 }
 
 impl LedgerInfo {
+    /// Creates a new `LedgerInfo`.
+    ///
+    /// # Arguments
+    ///
+    /// * `commit_info: BlockInfo` - The commit info.
+    /// * `consensus_data_hash: HashValue` - The hash of consensus specific data.
+    ///
+    /// # Returns
+    ///
+    /// A new `LedgerInfo`.
     pub const fn new(commit_info: BlockInfo, consensus_data_hash: HashValue) -> Self {
         Self {
             commit_info,
             consensus_data_hash,
         }
     }
+
+    /// Returns the epoch of the `LedgerInfo`.
+    ///
+    /// # Returns
+    ///
+    /// The epoch of the `LedgerInfo` contained in its
+    /// `BlockInfo`.
     pub fn epoch(&self) -> u64 {
         self.commit_info.epoch()
     }
 
+    /// Returns the  epoch  of the `LedgerInfo`.
+    ///
+    /// # Returns
+    ///
+    /// The epoch of the `LedgerInfo` contained in its
+    /// `BlockInfo`.
     pub fn next_block_epoch(&self) -> u64 {
         self.commit_info.next_block_epoch()
     }
 
+    /// Returns the next epoch state of the `LedgerInfo`.
+    ///
+    /// # Returns
+    ///
+    /// The next epoch state of the `LedgerInfo`.
     pub fn next_epoch_state(&self) -> Option<&EpochState> {
         self.commit_info.next_epoch_state().as_ref()
     }
 
+    /// Returns the timestamp of the `LedgerInfo`.
+    ///
+    /// # Returns
+    ///
+    /// The timestamp of the `LedgerInfo`.
     pub fn timestamp_usecs(&self) -> u64 {
         self.commit_info.timestamp_usecs()
     }
 
+    /// Returns the transaction accumulator hash of the `LedgerInfo`.
+    ///
+    /// # Returns
+    ///
+    /// The transaction accumulator hash of the `LedgerInfo`
     pub fn transaction_accumulator_hash(&self) -> HashValue {
         self.commit_info.executed_state_id()
     }
 
+    /// Returns the version of the `LedgerInfo`.
+    ///
+    /// # Returns
+    ///
+    /// The version of the `LedgerInfo`.
     pub fn version(&self) -> Version {
         self.commit_info.version()
     }
 
+    /// Converts the `LedgerInfo` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `LedgerInfo`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_slice(&self.commit_info.to_bytes());
@@ -165,6 +215,16 @@ impl LedgerInfo {
         bytes.to_vec()
     }
 
+    /// Creates a `LedgerInfo` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `LedgerInfo`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `LedgerInfo` could be
+    /// successfully created, and `Err` otherwise.
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let commit_info = BlockInfo::from_bytes(
             bytes
@@ -261,12 +321,21 @@ impl LedgerInfoWithV0 {
     }
 }
 
+/// `LedgerInfoWithSignatures` is a structure representing the `LedgerInfo` with
+/// the aggregated signatures of the validators that signed the `LedgerInfo`.
+///
+/// This is  an enum to enable versioning of the `LedgerInfo` struct.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
 }
 
 impl LedgerInfoWithSignatures {
+    /// Converts the `LedgerInfoWithSignatures` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `LedgerInfoWithSignatures`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         match self {
@@ -278,6 +347,16 @@ impl LedgerInfoWithSignatures {
         bytes.to_vec()
     }
 
+    /// Creates a `LedgerInfoWithSignatures` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `LedgerInfoWithSignatures`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `LedgerInfoWithSignatures`
+    /// could be successfully created, and `Err` otherwise.
     pub fn from_bytes<const LEDGER_INFO_LEN: usize>(bytes: &[u8]) -> Result<Self, TypesError> {
         let mut buf = BytesMut::from(bytes);
         let li_w_sig = match buf.get_u8() {
@@ -309,6 +388,13 @@ impl LedgerInfoWithSignatures {
         Ok(li_w_sig)
     }
 
+    /// Returns the aggregated signatures of the validators
+    /// that signed the `LedgerInfoWithSignatures`.
+    ///
+    /// # Returns
+    ///
+    /// The aggregated signatures of the validators
+    /// that signed the `LedgerInfoWithSignatures`.
     pub const fn signatures(&self) -> &AggregateSignature {
         match &self {
             LedgerInfoWithSignatures::V0(ledger) => &ledger.signatures,
@@ -337,10 +423,10 @@ mod test {
         use crate::crypto::hash::CryptoHash as LcCryptoHash;
         use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let aptos_li = aptos_wrapper.get_latest_li().unwrap().ledger_info().clone();
         let intern_li_hash = LcCryptoHash::hash(
@@ -356,10 +442,10 @@ mod test {
         use super::*;
         use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let ledger_info_bytes = &aptos_wrapper
             .get_latest_li_bytes()
@@ -381,7 +467,7 @@ mod test {
         use super::*;
         use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
         fn test_li<const EXPECTED_SIZE: usize>(aptos_wrapper: &AptosWrapper) {
             let latest_li = aptos_wrapper.get_latest_li().unwrap();
@@ -413,11 +499,11 @@ mod test {
             assert_eq!(latest_li_bytes, intern_li_w_sig_bytes);
         }
 
-        aptos_wrapper.generate_traffic();
+        aptos_wrapper.generate_traffic().unwrap();
 
         test_li::<LEDGER_INFO_NEW_BLOCK_HEIGHT_LEN>(&aptos_wrapper);
 
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         test_li::<LEDGER_INFO_NEW_EPOCH_LEN>(&aptos_wrapper);
     }

@@ -1,4 +1,12 @@
-use bytes::{Buf, BufMut, BytesMut};
+//! # Waypoint Module
+//!
+//! This module provides the `Waypoint` structure and
+//! associated methods for handling waypoints in the
+//! Aptos Light Client.
+//!
+//! The `Waypoint` structure represents a waypoint on the Aptos chain,
+//! which is a value that clients can use to bootstrap securely to a ledger.
+
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
 use crate::serde_error;
@@ -6,6 +14,7 @@ use crate::types::epoch_state::EpochState;
 use crate::types::error::TypesError;
 use crate::types::ledger_info::{LedgerInfo, U64_SIZE};
 use crate::types::Version;
+use bytes::{Buf, BufMut, BytesMut};
 use getset::CopyGetters;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -21,8 +30,18 @@ pub struct Waypoint {
     value: HashValue,
 }
 
+/// `Waypoint` is a structure representing a waypoint,
+/// which is a value that clients can use to bootstrap securely to a ledger.
 impl Waypoint {
     /// Generate a new waypoint given any LedgerInfo.
+    ///
+    /// # Arguments
+    ///
+    /// * `ledger_info: &LedgerInfo` - The ledger info.
+    ///
+    /// # Returns
+    ///
+    /// A new `Waypoint`.
     pub fn new_any(ledger_info: &LedgerInfo) -> Self {
         let converter = Ledger2WaypointConverter::new(ledger_info);
         Self {
@@ -31,6 +50,16 @@ impl Waypoint {
         }
     }
 
+    /// Creates a `Waypoint` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `Waypoint`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `Waypoint` could
+    /// be successfully created, and `Err` otherwise.
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let version = bytes.get_u64_le();
 
@@ -54,6 +83,11 @@ impl Waypoint {
         Ok(Self { version, value })
     }
 
+    ///. Converts the `Waypoint` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `Waypoint`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_u64_le(self.version);
@@ -88,8 +122,7 @@ impl Serialize for Waypoint {
     }
 }
 
-// #[derive(CryptoHasher, BCSCryptoHash)]
-// This is just made to hash the LedgerInfo
+// This structure only exists to hash the LedgerInfo
 #[derive(Debug, PartialEq, Eq, Clone, Default, Serialize)]
 struct Ledger2WaypointConverter {
     epoch: u64,
@@ -100,6 +133,15 @@ struct Ledger2WaypointConverter {
 }
 
 impl Ledger2WaypointConverter {
+    /// Creates a new `Ledger2WaypointConverter` from a `LedgerInfo`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ledger_info: &LedgerInfo` - The ledger info.
+    ///
+    /// # Returns
+    ///
+    /// A new `Ledger2WaypointConverter`.
     pub(crate) fn new(ledger_info: &LedgerInfo) -> Self {
         Self {
             epoch: ledger_info.epoch(),
@@ -151,10 +193,10 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let waypoint = aptos_wrapper.trusted_state().waypoint();
 

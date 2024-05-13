@@ -1,5 +1,17 @@
-// SPDX-License-Identifier: Apache-2.0, MIT
+//! # Block Info Module
+//!
+//! This module provides the `BlockInfo` structure and
+//! associated methods for handling block information
+//! in the Aptos Light Client.
+//!
+//! The `BlockInfo` structure represents the metadata
+//! of a committed block in the blockchain, including the
+//! epoch and round numbers, the block identifier, the root
+//! hash of the state after executing this block, the version
+//! of the latest transaction, the timestamp when the block
+//! was proposed, and  optionally the state of the next epoch.
 
+// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::epoch_state::{EpochState, EPOCH_STATE_SIZE};
@@ -9,6 +21,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
+/// `BlockInfo` is a structure representing a block in the blockchain.
 #[derive(Default, Debug, Clone, PartialEq, Eq, CopyGetters, Getters, Serialize, Deserialize)]
 pub struct BlockInfo {
     /// The epoch to which the block belongs.
@@ -33,6 +46,21 @@ pub struct BlockInfo {
 }
 
 impl BlockInfo {
+    /// Creates a new `BlockInfo`.
+    ///
+    /// # Arguments
+    ///
+    /// * `epoch: u64` - The epoch to which the block belongs.
+    /// * `round: Round` - The round in which the consensus protocol was executed.
+    /// * `id: HashValue` - The identifier (hash) of the block.
+    /// * `executed_state_id: HashValue` - The accumulator root hash after executing this block.
+    /// * `version: Version` - The version of the latest transaction after executing this block.
+    /// * `timestamp_usecs: u64` - The timestamp this block was proposed by a proposer.
+    /// * `next_epoch_state: Option<EpochState>` - An optional field containing the next epoch info.
+    ///
+    /// # Returns
+    ///
+    /// A new `BlockInfo`.
     pub const fn new(
         epoch: u64,
         round: Round,
@@ -53,13 +81,22 @@ impl BlockInfo {
         }
     }
 
-    /// The epoch after this block committed
+    /// Returns the epoch after this block committed.
+    ///
+    /// # Returns
+    ///
+    /// The epoch after this block committed.
     pub fn next_block_epoch(&self) -> u64 {
         self.next_epoch_state()
             .as_ref()
             .map_or(self.epoch(), |e| e.epoch)
     }
 
+    /// Converts the `BlockInfo` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `BlockInfo`.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
         bytes.put_u64_le(self.epoch);
@@ -80,6 +117,16 @@ impl BlockInfo {
         bytes.to_vec()
     }
 
+    /// Creates a `BlockInfo` from a byte slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to create the `BlockInfo`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` which is `Ok` if the `BlockInfo` could
+    /// be successfully created, and `Err` otherwise.
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         let epoch = bytes.get_u64_le();
         let round = bytes.get_u64_le();
@@ -147,10 +194,10 @@ mod test {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS);
+        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
 
-        aptos_wrapper.generate_traffic();
-        aptos_wrapper.commit_new_epoch();
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
 
         let block_info = aptos_wrapper
             .get_latest_li()
