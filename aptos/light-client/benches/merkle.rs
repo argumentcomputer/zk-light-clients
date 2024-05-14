@@ -2,6 +2,7 @@ use aptos_lc::merkle::{SparseMerkleProofAssets, TransactionProofAssets, Validato
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
+use aptos_lc_core::types::validator::ValidatorVerifier;
 use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::hint::black_box;
@@ -30,7 +31,6 @@ impl ProvingAssets {
             TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().clone(),
             _ => panic!("expected epoch state"),
         };
-        let validator_verifier_hash = *validator_verifier.hash().as_ref();
 
         let proof_assets = aptos_wrapper
             .get_latest_proof_account(nbr_leaves - 1)
@@ -54,8 +54,7 @@ impl ProvingAssets {
             latest_li,
         );
 
-        let validator_verifier_assets =
-            ValidatorVerifierAssets::new(validator_verifier.to_bytes(), validator_verifier_hash);
+        let validator_verifier_assets = ValidatorVerifierAssets::new(validator_verifier.to_bytes());
 
         let client = ProverClient::new();
 
@@ -85,7 +84,6 @@ impl ProvingAssets {
 
         // Validator verifier
         stdin.write(self.validator_verifier_assets.validator_verifier());
-        stdin.write(self.validator_verifier_assets.validator_hash());
 
         self.client
             .prove(aptos_programs::MERKLE_PROGRAM, &stdin)
@@ -111,8 +109,23 @@ fn main() {
         let proving_assets = ProvingAssets::from_nbr_leaves(nbr_leaves);
 
         let start_proving = Instant::now();
-        let proof = proving_assets.prove();
+        let mut proof = proving_assets.prove();
         let proving_time = start_proving.elapsed();
+
+        // Assert that we received proper outputs
+        let prev_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
+
+        assert_eq!(
+            &prev_validator_verifier_hash,
+            ValidatorVerifier::from_bytes(
+                proving_assets
+                    .validator_verifier_assets
+                    .validator_verifier()
+            )
+            .unwrap()
+            .hash()
+            .as_ref()
+        );
 
         let start_verifying = Instant::now();
         proving_assets.verify(black_box(&proof));

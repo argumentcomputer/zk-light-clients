@@ -47,22 +47,27 @@ fn main() {
     // Out of circuit ratcheting for ensuring proper one in circuit, and also
     // for later merkle verification.
     let start_ratchet_proving = Instant::now();
-    let mut public_values = prove_ratchet(
-        &prover_client,
-        &trusted_state,
-        epoch_change_proof,
-        validator_verifier_hash.as_ref(),
-    );
+    let mut ratchet_proof = prove_ratchet(&prover_client, &trusted_state, epoch_change_proof);
     let ratchet_proving_time = start_ratchet_proving.elapsed();
 
-    let validator_verifier_hash: [u8; 32] = public_values.public_values.read();
+    let prev_validator_verifier_hash: [u8; 32] = ratchet_proof.public_values.read();
+
+    // Assert have the expected validator verifier hash committed
+    // by our program.
+    assert_eq!(
+        &prev_validator_verifier_hash,
+        validator_verifier_hash.as_ref(),
+        "The output for the previous validator verifier hash is not the expected one for the Ratchet program."
+    );
+
+    let new_validator_verifier_hash: [u8; 32] = ratchet_proof.public_values.read();
 
     let (validator_verifier, expected_hash) =
         verify_and_ratchet_with_hash(&trusted_state, epoch_change_proof);
 
     // Assert have the expected validator verifier hash.
     assert_eq!(
-        &validator_verifier_hash,
+        &new_validator_verifier_hash,
         expected_hash.as_ref(),
         "Validator verifier hash mismatch with previously known one"
     );
@@ -94,18 +99,27 @@ fn main() {
         latest_li,
     );
 
-    let validator_verifier_assets =
-        ValidatorVerifierAssets::new(validator_verifier.to_bytes(), validator_verifier_hash);
+    let validator_verifier_assets = ValidatorVerifierAssets::new(validator_verifier.to_bytes());
 
     let start_merkle_proving = Instant::now();
-    let mut public_values = prove_merkle(
+    let mut merkle_proof = prove_merkle(
         &prover_client,
         &sparse_merkle_proof_assets,
         &transaction_proof_assets,
         &validator_verifier_assets,
     );
     let merkle_proving_time = start_merkle_proving.elapsed();
-    let merkle_root_slice: [u8; 32] = public_values.public_values.read();
+    let output_validator_hash: [u8; 32] = merkle_proof.public_values.read();
+
+    // Assert have the expected validator verifier hash committed
+    // by our program.
+    assert_eq!(
+        output_validator_hash,
+        new_validator_verifier_hash,
+        "The output for the validator verifier hash is not the expected one for the Merkle program."
+    );
+
+    let merkle_root_slice: [u8; 32] = merkle_proof.public_values.read();
 
     assert_eq!(
         &merkle_root_slice,
@@ -131,7 +145,6 @@ fn prove_ratchet(
     client: &ProverClient,
     trusted_state: &[u8],
     epoch_change_proof: &[u8],
-    trusted_state_hash: &[u8],
 ) -> SP1CoreProof {
     let mut stdin = SP1Stdin::new();
 
@@ -139,7 +152,6 @@ fn prove_ratchet(
 
     stdin.write(&trusted_state);
     stdin.write(&epoch_change_proof);
-    stdin.write(&trusted_state_hash);
 
     client
         .prove(aptos_programs::RATCHET_PROGRAM, &stdin)
@@ -169,7 +181,6 @@ fn prove_merkle(
 
     // Validator verifier
     stdin.write(validator_verifier_assets.validator_verifier());
-    stdin.write(validator_verifier_assets.validator_hash());
 
     client
         .prove(aptos_programs::MERKLE_PROGRAM, &stdin)

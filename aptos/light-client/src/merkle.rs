@@ -53,16 +53,18 @@ impl TransactionProofAssets {
 #[getset(get = "pub")]
 pub struct ValidatorVerifierAssets {
     validator_verifier: Vec<u8>,
-    validator_hash: [u8; 32],
 }
 
 impl ValidatorVerifierAssets {
-    pub fn new(validator_verifier: Vec<u8>, validator_hash: [u8; 32]) -> ValidatorVerifierAssets {
-        ValidatorVerifierAssets {
-            validator_verifier,
-            validator_hash,
-        }
+    pub fn new(validator_verifier: Vec<u8>) -> ValidatorVerifierAssets {
+        ValidatorVerifierAssets { validator_verifier }
     }
+}
+
+#[allow(dead_code)]
+struct MerkleOutput {
+    validator_verifier_hash: [u8; 32],
+    state_hash: [u8; 32],
 }
 
 #[allow(dead_code)]
@@ -71,7 +73,7 @@ fn merkle_proving(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<(SP1CoreProof, [u8; 32]), LightClientError> {
+) -> Result<(SP1CoreProof, MerkleOutput), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -90,7 +92,6 @@ fn merkle_proving(
 
     // Validator verifier
     stdin.write(&validator_verifier_assets.validator_verifier);
-    stdin.write(&validator_verifier_assets.validator_hash);
 
     let mut proof = client
         .prove(aptos_programs::MERKLE_PROGRAM, &stdin)
@@ -100,15 +101,23 @@ fn merkle_proving(
         })?;
 
     // Read output.
-    let expected_root_hash = proof.public_values.read::<[u8; 32]>();
+    let validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
+    let state_hash = proof.public_values.read::<[u8; 32]>();
 
-    Ok((proof, expected_root_hash))
+    Ok((
+        proof,
+        MerkleOutput {
+            validator_verifier_hash,
+            state_hash,
+        },
+    ))
 }
 
 #[cfg(all(test, feature = "aptos"))]
 mod test {
     use crate::error::LightClientError;
     use crate::merkle::{SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets};
+    use aptos_lc_core::types::validator::ValidatorVerifier;
     use wp1_sdk::{ProverClient, SP1Stdin};
 
     fn setup_assets() -> (
@@ -117,7 +126,6 @@ mod test {
         ValidatorVerifierAssets,
     ) {
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
-        use aptos_lc_core::crypto::hash::CryptoHash;
         use aptos_lc_core::types::trusted_state::TrustedState;
         use aptos_lc_core::NBR_VALIDATORS;
 
@@ -146,8 +154,6 @@ mod test {
                 _ => panic!("expected epoch state"),
             };
 
-        let validator_verifier_hash = validator_verifier.hash();
-
         let sparse_merkle_proof_assets = SparseMerkleProofAssets {
             sparse_merkle_proof,
             leaf_key: key,
@@ -163,7 +169,6 @@ mod test {
 
         let validator_verifier_assets = ValidatorVerifierAssets {
             validator_verifier: validator_verifier.to_bytes(),
-            validator_hash: *validator_verifier_hash.as_ref(),
         };
 
         (
@@ -196,7 +201,6 @@ mod test {
 
         // Validator verifier
         stdin.write(&validator_verifier_assets.validator_verifier);
-        stdin.write(&validator_verifier_assets.validator_hash);
 
         ProverClient::execute(aptos_programs::MERKLE_PROGRAM, &stdin).map_err(|err| {
             LightClientError::ProvingError {
@@ -229,6 +233,7 @@ mod test {
     #[test]
     fn test_merkle() {
         use super::*;
+        use aptos_lc_core::crypto::hash::CryptoHash;
         use std::time::Instant;
         use wp1_sdk::ProverClient;
         let client = ProverClient::new();
@@ -238,13 +243,21 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of Merkle inclusion proof...");
-        let (proof, _) = merkle_proving(
+        let (proof, output) = merkle_proving(
             &client,
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
             &validator_verifier_assets,
         )
         .unwrap();
+
+        assert_eq!(
+            &output.validator_verifier_hash,
+            ValidatorVerifier::from_bytes(validator_verifier_assets.validator_verifier())
+                .unwrap()
+                .hash()
+                .as_ref()
+        );
 
         println!("Proving took {:?}", start.elapsed());
 

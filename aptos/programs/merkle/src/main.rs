@@ -27,27 +27,13 @@ pub fn main() {
 
     // Latest verified validator verifier &  hash
     let verified_validator_verifier = wp1_zkvm::io::read::<Vec<u8>>();
-    let verified_validator_hash = wp1_zkvm::io::read::<[u8; 32]>();
     wp1_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
 
-    // Ensure validator consistency
-    wp1_zkvm::precompiles::unconstrained! {
-                println!("cycle-tracker-start: verify_validator_hash");
-    }
+    // Deserialize Validator Verifier
     let validator_verifier = ValidatorVerifier::from_bytes(&verified_validator_verifier)
         .expect("validator_verifier: could not create ValidatorVerifier from bytes");
-    let verified_validator_hash = HashValue::from_slice(verified_validator_hash)
-        .expect("verified_validator_hash: could not create HashValue from bytes");
-    assert_eq!(
-        validator_verifier.hash(),
-        verified_validator_hash,
-        "Validator verifier hash mismatch with previously known one"
-    );
-    wp1_zkvm::precompiles::unconstrained! {
-                println!("cycle-tracker-end: verify_validator_hash");
-    }
 
     // Verify transaction inclusion in the LedgerInfoWithSignatures
     let transaction = TransactionInfo::from_bytes(&transaction_bytes)
@@ -108,5 +94,10 @@ pub fn main() {
     wp1_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: verify_merkle_proof");
     }
+
+    // Commit the validator verifier hash
+    wp1_zkvm::io::commit(validator_verifier.hash().as_ref());
+
+    // Commit the state root hash
     wp1_zkvm::io::commit(reconstructed_root_hash.as_ref());
 }

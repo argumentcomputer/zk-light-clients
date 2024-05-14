@@ -2,12 +2,17 @@ use crate::error::LightClientError;
 use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
 
 #[allow(dead_code)]
+struct RatchetOutput {
+    prev_validator_verifier_hash: [u8; 32],
+    new_validator_verifier_hash: [u8; 32],
+}
+
+#[allow(dead_code)]
 fn verify_and_ratchet(
     client: &ProverClient,
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
-    validator_verifier_hash: &[u8],
-) -> Result<(SP1CoreProof, [u8; 32]), LightClientError> {
+) -> Result<(SP1CoreProof, RatchetOutput), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -15,7 +20,6 @@ fn verify_and_ratchet(
 
     stdin.write(&current_trusted_state);
     stdin.write(&epoch_change_proof);
-    stdin.write(&validator_verifier_hash);
 
     let mut proof = client
         .prove(aptos_programs::RATCHET_PROGRAM, &stdin)
@@ -25,9 +29,16 @@ fn verify_and_ratchet(
         })?;
 
     // Read output.
+    let prev_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
     let new_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
 
-    Ok((proof, new_validator_verifier_hash))
+    Ok((
+        proof,
+        RatchetOutput {
+            prev_validator_verifier_hash,
+            new_validator_verifier_hash,
+        },
+    ))
 }
 
 #[cfg(all(test, feature = "aptos"))]
@@ -38,7 +49,6 @@ mod test {
     fn execute_and_ratchet(
         current_trusted_state: &[u8],
         epoch_change_proof: &[u8],
-        validator_verifier_hash: &[u8],
     ) -> Result<(), LightClientError> {
         use wp1_sdk::utils;
         utils::setup_logger();
@@ -47,7 +57,6 @@ mod test {
 
         stdin.write(&current_trusted_state);
         stdin.write(&epoch_change_proof);
-        stdin.write(&validator_verifier_hash);
 
         ProverClient::execute(aptos_programs::RATCHET_PROGRAM, &stdin).map_err(|err| {
             LightClientError::ProvingError {
@@ -62,8 +71,6 @@ mod test {
     #[test]
     fn test_ratchet_execute() {
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
-        use aptos_lc_core::crypto::hash::CryptoHash;
-        use aptos_lc_core::types::trusted_state::TrustedState;
         use aptos_lc_core::NBR_VALIDATORS;
         use std::time::Instant;
 
@@ -73,10 +80,6 @@ mod test {
             AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
         let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
-        let validator_verifier_hash = match TrustedState::from_bytes(&trusted_state).unwrap() {
-            TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().hash().to_vec(),
-            _ => panic!("Expected epoch change for current trusted state"),
-        };
         let trusted_state_version = *aptos_wrapper.current_version();
 
         aptos_wrapper.generate_traffic().unwrap();
@@ -89,7 +92,7 @@ mod test {
 
         println!("Starting execution of verify_and_ratchet...");
         let start = Instant::now();
-        execute_and_ratchet(&trusted_state, epoch_change_proof, &validator_verifier_hash).unwrap();
+        execute_and_ratchet(&trusted_state, epoch_change_proof).unwrap();
         println!("Execution took {:?}", start.elapsed());
     }
 
@@ -127,14 +130,14 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of verify_and_ratchet proof...");
-        let (proof, _) = verify_and_ratchet(
-            &client,
-            &trusted_state,
-            epoch_change_proof,
-            &validator_verifier_hash,
-        )
-        .unwrap();
+        let (proof, output) =
+            verify_and_ratchet(&client, &trusted_state, epoch_change_proof).unwrap();
         println!("Proving took {:?}", start.elapsed());
+
+        assert_eq!(
+            output.prev_validator_verifier_hash,
+            validator_verifier_hash.as_slice()
+        );
 
         let start = Instant::now();
         println!("Starting verification of verify_and_ratchet proof...");

@@ -1,6 +1,6 @@
 #![no_main]
 
-use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
+use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, TrustedStateChange};
 
 wp1_zkvm::entrypoint!(main);
@@ -11,7 +11,6 @@ pub fn main() {
     }
     let trusted_state_bytes = wp1_zkvm::io::read::<Vec<u8>>();
     let epoch_change_proof = wp1_zkvm::io::read::<Vec<u8>>();
-    let previous_validator_verifier_hash = wp1_zkvm::io::read::<Vec<u8>>();
     wp1_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
@@ -32,23 +31,6 @@ pub fn main() {
         .expect("EpochChangeProof::from_bytes: could not create epoch change proof");
     wp1_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: deserialize_epoch_change_proof");
-    }
-    // Check if the received validator set for the current epoch is the one we produced a proof for
-    wp1_zkvm::precompiles::unconstrained! {
-                println!("cycle-tracker-start: hash_comparison");
-    }
-    let previous_validator_verifier_hash = HashValue::from_slice(previous_validator_verifier_hash)
-        .expect("previous_validator_verifier_hash: Could not create hash value from bytes");
-    let prev_epoch_validator_verifier_hash = match &trusted_state {
-        TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().hash(),
-        _ => panic!("Expected epoch change for current trusted state"),
-    };
-    assert_eq!(
-        prev_epoch_validator_verifier_hash, previous_validator_verifier_hash,
-        "Validator verifier hash mismatch with previously known one"
-    );
-    wp1_zkvm::precompiles::unconstrained! {
-                println!("cycle-tracker-end: hash_comparison");
     }
 
     // Verify and ratchet the trusted state
@@ -82,6 +64,19 @@ pub fn main() {
                 println!("cycle-tracker-end: validator_verifier_hash");
     }
 
-    // Hash it and pass the hash as the now trusted state
+    // Compute previous epoch validator verifier hash and commit it
+    wp1_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-start: hash_prev_validator");
+    }
+    let prev_epoch_validator_verifier_hash = match &trusted_state {
+        TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().hash(),
+        _ => panic!("Expected epoch change for current trusted state"),
+    };
+    wp1_zkvm::io::commit(prev_epoch_validator_verifier_hash.as_ref());
+    wp1_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-end: hash_prev_validator");
+    }
+
+    // Hash new validator verifier and pass the hash as the now trusted state
     wp1_zkvm::io::commit(validator_verifier_hash.as_ref());
 }

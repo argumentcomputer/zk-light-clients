@@ -53,7 +53,6 @@ impl ProvingAssets {
 
         stdin.write(&self.trusted_state);
         stdin.write(&self.epoch_change_proof);
-        stdin.write(&self.validator_verifier_hash);
 
         self.client
             .prove(aptos_programs::RATCHET_PROGRAM, &stdin)
@@ -77,8 +76,16 @@ fn main() {
     let proving_assets = ProvingAssets::new();
 
     let start_proving = Instant::now();
-    let proof = proving_assets.prove();
+    let mut proof = proving_assets.prove();
     let proving_time = start_proving.elapsed();
+
+    // Assert that we received proper outputs
+    let prev_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
+
+    assert_eq!(
+        prev_validator_verifier_hash,
+        proving_assets.validator_verifier_hash.as_slice()
+    );
 
     let start_verifying = Instant::now();
     proving_assets.verify(black_box(&proof));
