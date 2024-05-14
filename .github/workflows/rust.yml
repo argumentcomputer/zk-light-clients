@@ -74,15 +74,8 @@ jobs:
       # make sure benches don't bit-rot
       - name: build benches
         run: |
-          cargo check --benches
-          cd light-client/benches
-          for i in $(find . -maxdepth 1 -mindepth 1 -type d); do
-            echo "Checking $i bench"
-            cd "$i"
-            cargo check
-            cd ../
-          done
-        working-directory: ${{ github.workspace }}/${{ matrix.package }}
+          cargo check --benches --features aptos
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/light-client
         env:
           RUSTFLAGS: "--cfg tokio_unstable"
       - name: Run cargo test on aptos-lc-core

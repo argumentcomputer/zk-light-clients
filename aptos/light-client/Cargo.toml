@@ -22,13 +22,34 @@ thiserror = { workspace = true }
 aptos-programs = { path = "../aptos-programs", features = ["bench"] }
 bcs = { workspace = true }
 cfg-if = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [features]
 default = []
 aptos = ["aptos-lc-core/aptos"]
 
 [[bench]]
-name = "execute"
-required-features = []
+name = "merkle"
+required-features = ["aptos"]
 harness = false
 
+[[bench]]
+name = "bytes"
+required-features = ["aptos"]
+harness = false
+
+[[bench]]
+name = "sig"
+required-features = ["aptos"]
+harness = false
+
+[[bench]]
+name = "ratchet"
+required-features = ["aptos"]
+harness = false
+
+[[bench]]
+name = "e2e"
+required-features = ["aptos"]
+harness = false
