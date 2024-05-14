@@ -78,9 +78,9 @@ jobs:
         working-directory: ${{ github.workspace }}/${{ matrix.package }}/light-client
         env:
           RUSTFLAGS: "--cfg tokio_unstable"
-      - name: Run cargo test on aptos-lc-core
+      - name: Run cargo test in workspace
         run: |
-          cargo nextest run -p aptos-lc-core --release --profile ci --all-features
+          cargo nextest run --workspace --release --profile ci --all-features
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
         env:
           RUSTFLAGS: "--cfg tokio_unstable"

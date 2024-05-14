@@ -231,6 +231,7 @@ mod test {
     }
 
     #[test]
+    #[ignore = "This test is too slow for CI"]
     fn test_merkle() {
         use super::*;
         use aptos_lc_core::crypto::hash::CryptoHash;

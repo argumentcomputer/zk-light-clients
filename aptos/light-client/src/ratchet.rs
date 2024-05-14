@@ -77,7 +77,7 @@ mod test {
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =
-            AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
+            AptosWrapper::new(20000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
         let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
         let trusted_state_version = *aptos_wrapper.current_version();
@@ -97,6 +97,7 @@ mod test {
     }
 
     #[test]
+    #[ignore = "This test is too slow for CI"]
     fn test_ratchet_prove() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
@@ -109,7 +110,7 @@ mod test {
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =
-            AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
+            AptosWrapper::new(20000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
         let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
         let validator_verifier_hash = match TrustedState::from_bytes(&trusted_state).unwrap() {

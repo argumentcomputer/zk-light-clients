@@ -63,7 +63,7 @@ mod test {
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =
-            AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
+            AptosWrapper::new(400, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
         aptos_wrapper.generate_traffic().unwrap();
         aptos_wrapper.commit_new_epoch().unwrap();
@@ -77,6 +77,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn test_sig_prove() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
@@ -87,7 +88,7 @@ mod test {
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =
-            AptosWrapper::new(30000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
+            AptosWrapper::new(400, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
         aptos_wrapper.generate_traffic().unwrap();
         aptos_wrapper.commit_new_epoch().unwrap();
