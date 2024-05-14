@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::hint::black_box;
 use std::time::Instant;
 use wp1_sdk::utils::setup_logger;
-use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
 
 struct ProvingAssets {
     client: ProverClient,
@@ -46,7 +46,7 @@ impl ProvingAssets {
         }
     }
 
-    fn prove(&self) -> SP1CoreProof {
+    fn prove(&self) -> SP1DefaultProof {
         let mut stdin = SP1Stdin::new();
 
         setup_logger();
@@ -54,15 +54,13 @@ impl ProvingAssets {
         stdin.write(&self.trusted_state);
         stdin.write(&self.epoch_change_proof);
 
-        self.client
-            .prove(aptos_programs::RATCHET_PROGRAM, &stdin)
-            .unwrap()
+        let (pk, _) = self.client.setup(aptos_programs::RATCHET_PROGRAM);
+        self.client.prove(&pk, stdin).unwrap()
     }
 
-    fn verify(&self, proof: &SP1CoreProof) {
-        self.client
-            .verify(aptos_programs::RATCHET_PROGRAM, proof)
-            .expect("Verification failed");
+    fn verify(&self, proof: &SP1DefaultProof) {
+        let (_, vk) = self.client.setup(aptos_programs::RATCHET_PROGRAM);
+        self.client.verify(proof, &vk).expect("Verification failed");
     }
 }
 

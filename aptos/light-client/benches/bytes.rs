@@ -3,7 +3,7 @@ use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::hint::black_box;
 use std::time::Instant;
-use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
 
 struct ProvingAssets {
     client: ProverClient,
@@ -26,20 +26,18 @@ impl ProvingAssets {
         }
     }
 
-    fn prove(&self) -> SP1CoreProof {
+    fn prove(&self) -> SP1DefaultProof {
         let mut stdin = SP1Stdin::new();
 
         stdin.write(&self.ledger_info_with_signature);
 
-        self.client
-            .prove(aptos_programs::bench::BYTES, &stdin)
-            .unwrap()
+        let (pk, _) = self.client.setup(aptos_programs::bench::BYTES);
+        self.client.prove(&pk, stdin).unwrap()
     }
 
-    fn verify(&self, proof: &SP1CoreProof) {
-        self.client
-            .verify(aptos_programs::bench::BYTES, proof)
-            .expect("Verification failed");
+    fn verify(&self, proof: &SP1DefaultProof) {
+        let (_, vk) = self.client.setup(aptos_programs::bench::BYTES);
+        self.client.verify(proof, &vk).expect("Verification failed");
     }
 }
 

@@ -1,11 +1,11 @@
 use crate::error::LightClientError;
-use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
 
 #[allow(dead_code)]
 fn sig_verification(
     client: &ProverClient,
     ledger_info_w_sig: &[u8],
-) -> Result<(SP1CoreProof, bool), LightClientError> {
+) -> Result<(SP1DefaultProof, bool), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -13,11 +13,9 @@ fn sig_verification(
 
     stdin.write(&ledger_info_w_sig);
 
+    let (pk, _) = client.setup(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM);
     let mut proof = client
-        .prove(
-            aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
-            &stdin,
-        )
+        .prove(&pk, stdin)
         .map_err(|err| LightClientError::ProvingError {
             program: "signature-verification".to_string(),
             source: err.into(),
@@ -102,14 +100,10 @@ mod test {
         let (proof, _) = sig_verification(&client, &ledger_info_with_signature).unwrap();
         println!("Proving took {:?}", start.elapsed());
 
+        let (_, vk) = client.setup(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM);
         let start = Instant::now();
         println!("Starting verification of signature verification proof...");
-        client
-            .verify(
-                aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
-                &proof,
-            )
-            .unwrap();
+        client.verify(&proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

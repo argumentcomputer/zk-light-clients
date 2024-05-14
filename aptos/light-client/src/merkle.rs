@@ -1,6 +1,6 @@
 use crate::error::LightClientError;
 use getset::Getters;
-use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
 
 #[derive(Clone, Debug, Getters)]
 #[getset(get = "pub")]
@@ -73,7 +73,7 @@ fn merkle_proving(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<(SP1CoreProof, MerkleOutput), LightClientError> {
+) -> Result<(SP1DefaultProof, MerkleOutput), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -93,8 +93,9 @@ fn merkle_proving(
     // Validator verifier
     stdin.write(&validator_verifier_assets.validator_verifier);
 
+    let (pk, _) = client.setup(aptos_programs::MERKLE_PROGRAM);
     let mut proof = client
-        .prove(aptos_programs::MERKLE_PROGRAM, &stdin)
+        .prove(&pk, stdin)
         .map_err(|err| LightClientError::ProvingError {
             program: "merkle".to_string(),
             source: err.into(),
@@ -262,11 +263,10 @@ mod test {
 
         println!("Proving took {:?}", start.elapsed());
 
+        let (_, vk) = client.setup(aptos_programs::MERKLE_PROGRAM);
         let start = Instant::now();
         println!("Starting verification of Merkle inclusion proof...");
-        client
-            .verify(aptos_programs::MERKLE_PROGRAM, &proof)
-            .unwrap();
+        client.verify(&proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

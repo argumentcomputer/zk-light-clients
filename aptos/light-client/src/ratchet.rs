@@ -1,5 +1,5 @@
 use crate::error::LightClientError;
-use wp1_sdk::{ProverClient, SP1CoreProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
 
 #[allow(dead_code)]
 struct RatchetOutput {
@@ -12,7 +12,7 @@ fn verify_and_ratchet(
     client: &ProverClient,
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
-) -> Result<(SP1CoreProof, RatchetOutput), LightClientError> {
+) -> Result<(SP1DefaultProof, RatchetOutput), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -21,8 +21,9 @@ fn verify_and_ratchet(
     stdin.write(&current_trusted_state);
     stdin.write(&epoch_change_proof);
 
+    let (pk, _) = client.setup(aptos_programs::RATCHET_PROGRAM);
     let mut proof = client
-        .prove(aptos_programs::RATCHET_PROGRAM, &stdin)
+        .prove(&pk, stdin)
         .map_err(|err| LightClientError::ProvingError {
             program: "verify-and-ratchet".to_string(),
             source: err.into(),
@@ -140,11 +141,10 @@ mod test {
             validator_verifier_hash.as_slice()
         );
 
+        let (_, vk) = client.setup(aptos_programs::RATCHET_PROGRAM);
         let start = Instant::now();
         println!("Starting verification of verify_and_ratchet proof...");
-        client
-            .verify(aptos_programs::RATCHET_PROGRAM, &proof)
-            .unwrap();
+        client.verify(&proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }
