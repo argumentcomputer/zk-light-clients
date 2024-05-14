@@ -262,7 +262,7 @@ impl CryptoHash for LedgerInfo {
     fn hash(&self) -> HashValue {
         HashValue::new(hash_data(
             &prefixed_sha3(b"LedgerInfo"),
-            vec![&bcs::to_bytes(&self).unwrap()],
+            vec![&self.to_bytes()],
         ))
     }
 }

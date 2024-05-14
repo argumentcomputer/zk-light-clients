@@ -348,8 +348,7 @@ impl ValidatorVerifier {
 
         // see aptos_crypto::unit_tests::cryptohasher
         let mut bytes = prefixed_sha3(b"LedgerInfo").to_vec();
-        bcs::serialize_into(&mut bytes, &message)
-            .map_err(|_| VerifyError::InvalidMultiSignature)?;
+        bytes.extend_from_slice(&message.to_bytes());
 
         multi_sig
             .verify(&bytes, &aggregated_key)

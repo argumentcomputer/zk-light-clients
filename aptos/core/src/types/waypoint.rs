@@ -151,13 +151,36 @@ impl Ledger2WaypointConverter {
             next_epoch_state: ledger_info.next_epoch_state().cloned(),
         }
     }
+
+    /// Converts the `Ledger2WaypointConverter` to a byte vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` representing the `Ledger2WaypointConverter`.
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = BytesMut::new();
+        bytes.put_u64_le(self.epoch);
+        bytes.put_slice(self.root_hash.as_ref());
+        bytes.put_u64_le(self.version);
+        bytes.put_u64_le(self.timestamp_usecs);
+        match &self.next_epoch_state {
+            Some(state) => {
+                bytes.put_u8(1); // Indicate that there is a next_epoch_state
+                bytes.put_slice(&state.to_bytes());
+            }
+            None => {
+                bytes.put_u8(0); // Indicate that there is no next_epoch_state
+            }
+        }
+        bytes.to_vec()
+    }
 }
 
 impl CryptoHash for Ledger2WaypointConverter {
     fn hash(&self) -> HashValue {
         HashValue::new(hash_data(
             &prefixed_sha3(b"Ledger2WaypointConverter"),
-            vec![&bcs::to_bytes(&self).unwrap()],
+            vec![&self.to_bytes()],
         ))
     }
 }
@@ -165,7 +188,6 @@ impl CryptoHash for Ledger2WaypointConverter {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::crypto::hash::{prefixed_sha3, HASH_LENGTH};
     use tiny_keccak::{Hasher, Sha3};
 
     #[test]
