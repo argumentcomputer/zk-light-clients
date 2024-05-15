@@ -148,16 +148,19 @@ jobs:
           cd ~
           cargo prove install-toolchain          
       - name: Get cycle counts for PR
-        id: get_cycles_base
+        id: get_cycles_pr
         run: |
           CYCLE_COUNTS='[]'
+          set -o pipefail
 
           # TODO: Remove hardcoded test names
           for test_name in "test_merkle_execute" "test_ratchet_execute" "test_sig_execute"; do
-            cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture -E "test($test_name)" | tee out.txt 2>&1
+            cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture -E "test($test_name)" 2>&1 | tee out.txt
             num_cycles=$(cat out.txt | grep -o 'finished execution clk = [0-9]\+' | awk -F'= ' '{ print $2 }')
             CYCLE_COUNTS=$(echo $CYCLE_COUNTS | jq -c ". += [{\"${test_name}\": \"$num_cycles\"}]")
           done
+
+          set +o pipefail
           echo "CYCLE_COUNTS=$CYCLE_COUNTS" | tee -a "$GITHUB_OUTPUT"
         working-directory: ${{ github.workspace }}/aptos/light-client
         env:
@@ -169,16 +172,19 @@ jobs:
         id: regression-check
         run: |
           counter=0
-          CYCLE_COUNTS='${{ steps.get_cycles_base.outputs.CYCLE_COUNTS }}'
+          CYCLE_COUNTS='${{ steps.get_cycles_pr.outputs.CYCLE_COUNTS }}'
           echo "$CYCLE_COUNTS"
           FAILING_TESTS=""
           REGRESSION="false"
+          set -o pipefail
 
           # TODO: Remove hardcoded test names
           for test_name in "test_merkle_execute" "test_ratchet_execute" "test_sig_execute"; do
-            cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture -E "test($test_name)" | tee out.txt 2>&1
+            cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture -E "test($test_name)" 2>&1 | tee out.txt
             num_cycles_base=$(cat out.txt | grep -o 'finished execution clk = [0-9]\+' | awk -F'= ' '{ print $2 }')
             num_cycles_pr=$(echo "$CYCLE_COUNTS" | jq ".[$counter] | to_entries | .[0].value")
+            echo "$test_name summary"
+            echo "Base = $num_cycles_base cycles, PR = ${num_cycles_pr:1:-1} cycles"
             if [[ "$num_cycles_pr" > "$num_cycles_base" ]]; then
               echo "Performance regression for test ${test_name}"
               REGRESSION="true"
@@ -188,6 +194,8 @@ jobs:
             fi
             counter=$((counter + 1))
           done
+
+          set +o pipefail
           echo "regression=$REGRESSION" | tee -a $GITHUB_OUTPUT
           echo "failing-tests<<EOF" >> $GITHUB_OUTPUT
           echo -e "$FAILING_TESTS" | tee -a $GITHUB_OUTPUT
