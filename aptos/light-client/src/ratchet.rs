@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
 
 use crate::error::LightClientError;
 
@@ -9,33 +9,34 @@ struct RatchetOutput {
     new_validator_verifier_hash: [u8; 32],
 }
 
-#[inline]
-pub fn generate_proof(
-    client: &ProverClient,
-    current_trusted_state: &[u8],
-    epoch_change_proof: &[u8],
-) -> Result<SP1DefaultProof> {
+pub fn generate_stdin(current_trusted_state: &[u8], epoch_change_proof: &[u8]) -> SP1Stdin {
     let mut stdin = SP1Stdin::new();
     stdin.write(&current_trusted_state);
     stdin.write(&epoch_change_proof);
-    let (pk, _) = client.setup(aptos_programs::RATCHET_PROGRAM);
-    client.prove(&pk, stdin)
+    stdin
+}
+
+#[inline]
+pub fn generate_keys(client: &ProverClient) -> (SP1ProvingKey, SP1VerifyingKey) {
+    client.setup(aptos_programs::RATCHET_PROGRAM)
 }
 
 #[allow(dead_code)]
-fn verify_and_ratchet(
+fn prove_ratcheting(
     client: &ProverClient,
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
 ) -> Result<(SP1DefaultProof, RatchetOutput), LightClientError> {
     wp1_sdk::utils::setup_logger();
 
-    let mut proof =
-        generate_proof(client, current_trusted_state, epoch_change_proof).map_err(|err| {
-            LightClientError::ProvingError {
-                program: "verify-and-ratchet".to_string(),
-                source: err.into(),
-            }
+    let stdin = generate_stdin(current_trusted_state, epoch_change_proof);
+    let (pk, _) = generate_keys(client);
+
+    let mut proof = client
+        .prove(&pk, stdin)
+        .map_err(|err| LightClientError::ProvingError {
+            program: "prove-ratcheting".to_string(),
+            source: err.into(),
         })?;
 
     // Read output.
@@ -70,7 +71,7 @@ mod test {
 
         ProverClient::execute(aptos_programs::RATCHET_PROGRAM, &stdin).map_err(|err| {
             LightClientError::ProvingError {
-                program: "verify-and-ratchet".to_string(),
+                program: "prove-ratcheting".to_string(),
                 source: err.into(),
             }
         })?;
@@ -100,7 +101,7 @@ mod test {
 
         let epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
-        println!("Starting execution of verify_and_ratchet...");
+        println!("Starting execution of prove_ratcheting...");
         let start = Instant::now();
         execute_and_ratchet(&trusted_state, epoch_change_proof).unwrap();
         println!("Execution took {:?}", start.elapsed());
@@ -140,9 +141,9 @@ mod test {
         let client = ProverClient::new();
 
         let start = Instant::now();
-        println!("Starting generation of verify_and_ratchet proof...");
+        println!("Starting generation of prove_ratcheting proof...");
         let (proof, output) =
-            verify_and_ratchet(&client, &trusted_state, epoch_change_proof).unwrap();
+            prove_ratcheting(&client, &trusted_state, epoch_change_proof).unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         assert_eq!(
@@ -152,7 +153,7 @@ mod test {
 
         let (_, vk) = client.setup(aptos_programs::RATCHET_PROGRAM);
         let start = Instant::now();
-        println!("Starting verification of verify_and_ratchet proof...");
+        println!("Starting verification of prove_ratcheting proof...");
         client.verify(&proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }

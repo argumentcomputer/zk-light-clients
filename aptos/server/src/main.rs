@@ -1,54 +1,106 @@
 use anyhow::{anyhow, Result};
 use aptos_lc::{merkle, ratchet};
-use wp1_sdk::{ProverClient, SP1DefaultProof};
+use once_cell::sync::OnceCell;
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1ProvingKey, SP1VerifyingKey};
 
-use server::{MerkleRequest, RatchetRequest};
+use server::{MerkleInclusionProofRequest, RatchetingProofRequest};
 
 #[tonic_rpc::tonic_rpc(bincode)]
 trait Aptos {
-    fn ratchet(request: RatchetRequest) -> SP1DefaultProof;
-    fn merkle(request: MerkleRequest) -> SP1DefaultProof;
+    fn prove_ratcheting(request: RatchetingProofRequest) -> SP1DefaultProof;
+    fn prove_merkle_inclusion(request: MerkleInclusionProofRequest) -> SP1DefaultProof;
+    fn verify_ratcheting_proof(proof: SP1DefaultProof) -> bool;
+    fn verify_merkle_inclusion_proof(proof: SP1DefaultProof) -> bool;
 }
 
-struct Server;
+#[derive(Default)]
+struct Server {
+    prover_client: ProverClient,
+    ratcheting_keys: OnceCell<(SP1ProvingKey, SP1VerifyingKey)>,
+    merkle_inclusion_keys: OnceCell<(SP1ProvingKey, SP1VerifyingKey)>,
+}
+
+impl Server {
+    #[inline]
+    fn get_ratcheting_keys(&self) -> &(SP1ProvingKey, SP1VerifyingKey) {
+        self.ratcheting_keys
+            .get_or_init(|| ratchet::generate_keys(&self.prover_client))
+    }
+
+    #[inline]
+    fn get_merkle_inclusion_keys(&self) -> &(SP1ProvingKey, SP1VerifyingKey) {
+        self.merkle_inclusion_keys
+            .get_or_init(|| merkle::generate_keys(&self.prover_client))
+    }
+}
 
 #[tonic::async_trait]
 impl aptos_server::Aptos for Server {
-    async fn ratchet(
+    async fn prove_ratcheting(
         &self,
-        request: tonic::Request<RatchetRequest>,
+        request: tonic::Request<RatchetingProofRequest>,
     ) -> Result<tonic::Response<SP1DefaultProof>, tonic::Status> {
-        let RatchetRequest {
+        let RatchetingProofRequest {
             trusted_state,
             epoch_change_proof,
         } = request.into_inner();
 
-        let proof =
-            ratchet::generate_proof(&ProverClient::new(), &trusted_state, &epoch_change_proof)
-                .map_err(|e| tonic::Status::internal(e.to_string()))?;
+        let (pk, _) = self.get_ratcheting_keys();
+        let stdin = ratchet::generate_stdin(&trusted_state, &epoch_change_proof);
+
+        let proof = self
+            .prover_client
+            .prove(pk, stdin)
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(proof))
     }
 
-    async fn merkle(
+    async fn prove_merkle_inclusion(
         &self,
-        request: tonic::Request<MerkleRequest>,
+        request: tonic::Request<MerkleInclusionProofRequest>,
     ) -> Result<tonic::Response<SP1DefaultProof>, tonic::Status> {
-        let MerkleRequest {
+        let MerkleInclusionProofRequest {
             sparse_merkle_proof_assets,
             transaction_proof_assets,
             validator_verifier_assets,
         } = request.into_inner();
 
-        let proof = merkle::generate_proof(
-            &ProverClient::new(),
+        let (pk, _) = self.get_merkle_inclusion_keys();
+        let stdin = merkle::generate_stdin(
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
             &validator_verifier_assets,
-        )
-        .map_err(|e| tonic::Status::internal(e.to_string()))?;
+        );
+
+        let proof = self
+            .prover_client
+            .prove(pk, stdin)
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(proof))
+    }
+
+    async fn verify_ratcheting_proof(
+        &self,
+        request: tonic::Request<SP1DefaultProof>,
+    ) -> Result<tonic::Response<bool>, tonic::Status> {
+        let (_, vk) = self.get_ratcheting_keys();
+        let proof = request.into_inner();
+        Ok(tonic::Response::new(
+            self.prover_client.verify(&proof, vk).is_ok(),
+        ))
+    }
+
+    async fn verify_merkle_inclusion_proof(
+        &self,
+        request: tonic::Request<SP1DefaultProof>,
+    ) -> Result<tonic::Response<bool>, tonic::Status> {
+        let (_, vk) = self.get_merkle_inclusion_keys();
+        let proof = request.into_inner();
+        Ok(tonic::Response::new(
+            self.prover_client.verify(&proof, vk).is_ok(),
+        ))
     }
 }
 
@@ -63,7 +115,7 @@ async fn main() -> Result<()> {
     let addr = format!("[::1]:{port}").parse()?;
 
     tonic::transport::Server::builder()
-        .add_service(aptos_server::AptosServer::new(Server))
+        .add_service(aptos_server::AptosServer::new(Server::default()))
         .serve(addr)
         .await?;
     Ok(())

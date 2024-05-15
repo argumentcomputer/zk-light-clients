@@ -1,7 +1,7 @@
 use anyhow::Result;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1DefaultProof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
 
 use crate::error::LightClientError;
 
@@ -64,21 +64,12 @@ impl ValidatorVerifierAssets {
     }
 }
 
-#[allow(dead_code)]
-struct MerkleOutput {
-    validator_verifier_hash: [u8; 32],
-    state_hash: [u8; 32],
-}
-
-#[inline]
-pub fn generate_proof(
-    client: &ProverClient,
+pub fn generate_stdin(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<SP1DefaultProof> {
+) -> SP1Stdin {
     let mut stdin = SP1Stdin::new();
-
     // Account inclusion input
     stdin.write(&sparse_merkle_proof_assets.sparse_merkle_proof);
     stdin.write(&sparse_merkle_proof_assets.leaf_key);
@@ -93,13 +84,22 @@ pub fn generate_proof(
     // Validator verifier
     stdin.write(&validator_verifier_assets.validator_verifier);
 
-    let (pk, _) = client.setup(aptos_programs::MERKLE_PROGRAM);
+    stdin
+}
 
-    client.prove(&pk, stdin)
+#[inline]
+pub fn generate_keys(client: &ProverClient) -> (SP1ProvingKey, SP1VerifyingKey) {
+    client.setup(aptos_programs::MERKLE_PROGRAM)
 }
 
 #[allow(dead_code)]
-fn merkle_proving(
+struct MerkleOutput {
+    validator_verifier_hash: [u8; 32],
+    state_hash: [u8; 32],
+}
+
+#[allow(dead_code)]
+fn prove_merkle_inclusion(
     client: &ProverClient,
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
@@ -107,16 +107,19 @@ fn merkle_proving(
 ) -> Result<(SP1DefaultProof, MerkleOutput), LightClientError> {
     wp1_sdk::utils::setup_logger();
 
-    let mut proof = generate_proof(
-        client,
+    let stdin = generate_stdin(
         sparse_merkle_proof_assets,
         transaction_proof_assets,
         validator_verifier_assets,
-    )
-    .map_err(|err| LightClientError::ProvingError {
-        program: "merkle".to_string(),
-        source: err.into(),
-    })?;
+    );
+    let (pk, _) = generate_keys(client);
+
+    let mut proof = client
+        .prove(&pk, stdin)
+        .map_err(|err| LightClientError::ProvingError {
+            program: "prove-merkle-inclusion".to_string(),
+            source: err.into(),
+        })?;
 
     // Read output.
     let validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
@@ -222,7 +225,7 @@ mod test {
 
         ProverClient::execute(aptos_programs::MERKLE_PROGRAM, &stdin).map_err(|err| {
             LightClientError::ProvingError {
-                program: "merkle".to_string(),
+                program: "prove-merkle-inclusion".to_string(),
                 source: err.into(),
             }
         })?;
@@ -262,7 +265,7 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of Merkle inclusion proof...");
-        let (proof, output) = merkle_proving(
+        let (proof, output) = prove_merkle_inclusion(
             &client,
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,

@@ -14,18 +14,31 @@ Where `<PORT>` is the port the server should listen to.
 
 The server provides two endpoints:
 
-* `ratchet` generates proofs about correct epoch transitions
-* `merkle` generates proofs about merkle inclusions of transactions
+* `prove_ratcheting` generates proofs about correct epoch transitions
+* `prove_merkle_inclusion` generates proofs about merkle inclusions of transactions
+* `verify_ratcheting_proof` verifies a ratcheting proof
+* `verify_merkle_inclusion_proof` verifies a merkle inclusion proof
 
 Since the server is built with [`tonic_rpc`](https://docs.rs/tonic-rpc/latest/tonic_rpc/), an implementation for a client that can connect to a server and access its API is generated automatically.
 
 ```rust
 let mut client = aptos_client::AptosClient::connect(addr).await?;
-let ratchet_proof: SP1DefaultProof = client.ratchet(ratchet_request).await?.into_inner();
-let merkle_proof: SP1DefaultProof = client.merkle(merkle_request).await?.into_inner();
+
+let ratcheting_proof: SP1DefaultProof =
+    client.prove_ratcheting(ratcheting_proof_request).await?.into_inner();
+let merkle_inclusion_proof: SP1DefaultProof =
+    client.prove_merkle_inclusion(merkle_inclusion_proof_request).await?.into_inner();
+
+let ratcheting_proof_verified: bool =
+    client.verify_ratcheting_proof(ratcheting_proof).await?.into_inner();
+let merkle_inclusion_proof_verified: bool =
+    client.verify_merkle_inclusion_proof(merkle_inclusion_proof).await?.into_inner();
+
+assert!(ratcheting_proof_verified);
+assert!(merkle_inclusion_proof_verified);
 ```
 
 Where:
 * `addr` is the address of the server
-* `ratchet_request: server::RatchetRequest` contains the data for generating the ratcheting proof
-* `merkle_request: server::MerkleRequest` contains the data for generating the merkle inclusion proof
+* `ratcheting_proof_request: server::RatchetingProofRequest` contains the data for generating the ratcheting proof
+* `merkle_inclusion_proof_request: server::MerkleInclusionProofRequest` contains the data for generating the merkle inclusion proof
