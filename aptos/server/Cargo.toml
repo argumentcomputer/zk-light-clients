@@ -1,0 +1,27 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# local
+aptos-lc = { path = "../light-client" }
+
+# workspace
+anyhow = { workspace = true }
+bcs = { workspace = true }
+serde = { workspace = true }
+wp1-sdk = { workspace = true }
+
+# other
+tokio = "1.37"
+tokio-stream = "0.1"
+tonic = "0.8"
+tonic-rpc = { version = "0.2", features = [ "bincode" ] }
+
+# Match the forks used by the aptos crates
+[patch.crates-io]
+merlin = { git = "https://github.com/aptos-labs/merlin" }
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }

@@ -1,8 +1,11 @@
-use crate::error::LightClientError;
+use anyhow::Result;
 use getset::Getters;
+use serde::{Deserialize, Serialize};
 use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
 
-#[derive(Clone, Debug, Getters)]
+use crate::error::LightClientError;
+
+#[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 pub struct SparseMerkleProofAssets {
     sparse_merkle_proof: Vec<u8>,
@@ -24,7 +27,7 @@ impl SparseMerkleProofAssets {
     }
 }
 
-#[derive(Clone, Debug, Getters)]
+#[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 pub struct TransactionProofAssets {
     transaction: Vec<u8>,
@@ -49,7 +52,7 @@ impl TransactionProofAssets {
     }
 }
 
-#[derive(Clone, Debug, Getters)]
+#[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 pub struct ValidatorVerifierAssets {
     validator_verifier: Vec<u8>,
@@ -67,16 +70,13 @@ struct MerkleOutput {
     state_hash: [u8; 32],
 }
 
-#[allow(dead_code)]
-fn merkle_proving(
+#[inline]
+pub fn generate_proof(
     client: &ProverClient,
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<(SP1DefaultProof, MerkleOutput), LightClientError> {
-    use wp1_sdk::utils;
-    utils::setup_logger();
-
+) -> Result<SP1DefaultProof> {
     let mut stdin = SP1Stdin::new();
 
     // Account inclusion input
@@ -94,12 +94,29 @@ fn merkle_proving(
     stdin.write(&validator_verifier_assets.validator_verifier);
 
     let (pk, _) = client.setup(aptos_programs::MERKLE_PROGRAM);
-    let mut proof = client
-        .prove(&pk, stdin)
-        .map_err(|err| LightClientError::ProvingError {
-            program: "merkle".to_string(),
-            source: err.into(),
-        })?;
+
+    client.prove(&pk, stdin)
+}
+
+#[allow(dead_code)]
+fn merkle_proving(
+    client: &ProverClient,
+    sparse_merkle_proof_assets: &SparseMerkleProofAssets,
+    transaction_proof_assets: &TransactionProofAssets,
+    validator_verifier_assets: &ValidatorVerifierAssets,
+) -> Result<(SP1DefaultProof, MerkleOutput), LightClientError> {
+    wp1_sdk::utils::setup_logger();
+
+    let mut proof = generate_proof(
+        client,
+        sparse_merkle_proof_assets,
+        transaction_proof_assets,
+        validator_verifier_assets,
+    )
+    .map_err(|err| LightClientError::ProvingError {
+        program: "merkle".to_string(),
+        source: err.into(),
+    })?;
 
     // Read output.
     let validator_verifier_hash = proof.public_values.read::<[u8; 32]>();

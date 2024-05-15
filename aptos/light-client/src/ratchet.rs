@@ -1,10 +1,25 @@
-use crate::error::LightClientError;
+use anyhow::Result;
 use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
+
+use crate::error::LightClientError;
 
 #[allow(dead_code)]
 struct RatchetOutput {
     prev_validator_verifier_hash: [u8; 32],
     new_validator_verifier_hash: [u8; 32],
+}
+
+#[inline]
+pub fn generate_proof(
+    client: &ProverClient,
+    current_trusted_state: &[u8],
+    epoch_change_proof: &[u8],
+) -> Result<SP1DefaultProof> {
+    let mut stdin = SP1Stdin::new();
+    stdin.write(&current_trusted_state);
+    stdin.write(&epoch_change_proof);
+    let (pk, _) = client.setup(aptos_programs::RATCHET_PROGRAM);
+    client.prove(&pk, stdin)
 }
 
 #[allow(dead_code)]
@@ -13,20 +28,14 @@ fn verify_and_ratchet(
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
 ) -> Result<(SP1DefaultProof, RatchetOutput), LightClientError> {
-    use wp1_sdk::utils;
-    utils::setup_logger();
+    wp1_sdk::utils::setup_logger();
 
-    let mut stdin = SP1Stdin::new();
-
-    stdin.write(&current_trusted_state);
-    stdin.write(&epoch_change_proof);
-
-    let (pk, _) = client.setup(aptos_programs::RATCHET_PROGRAM);
-    let mut proof = client
-        .prove(&pk, stdin)
-        .map_err(|err| LightClientError::ProvingError {
-            program: "verify-and-ratchet".to_string(),
-            source: err.into(),
+    let mut proof =
+        generate_proof(client, current_trusted_state, epoch_change_proof).map_err(|err| {
+            LightClientError::ProvingError {
+                program: "verify-and-ratchet".to_string(),
+                source: err.into(),
+            }
         })?;
 
     // Read output.

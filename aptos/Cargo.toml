@@ -5,6 +5,7 @@ members = [
     "core",
     "light-client",
     "aptos-programs",
+    "server",
 ]
 
 [workspace.dependencies]
