@@ -12,10 +12,9 @@ use aptos_executor_test_helpers::gen_block_id;
 use aptos_executor_test_helpers::integration_test_impl::create_db_and_executor;
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_sdk::transaction_builder::aptos_stdlib::version_set_version;
-use aptos_sdk::transaction_builder::TransactionFactory;
+use aptos_sdk::transaction_builder::{aptos_stdlib, TransactionFactory};
 use aptos_sdk::types::{AccountKey, LocalAccount};
 use aptos_storage_interface::DbReaderWriter;
-use aptos_types::access_path::AccessPath;
 use aptos_types::account_config::{aptos_test_root_address, AccountResource};
 use aptos_types::aggregate_signature::PartialSignatures;
 use aptos_types::block_info::BlockInfo;
@@ -317,6 +316,12 @@ impl AptosWrapper {
             self.txn_factory().payload(version_set_version(new_version)),
         );
         block_txs.push(UserTransaction(reconfig));
+        let end_epoch = self.core_resources_account().sign_with_transaction_builder(
+            self.txn_factory()
+                .payload(aptos_stdlib::aptos_governance_force_end_epoch_test_only()),
+        );
+        block_txs.push(UserTransaction(end_epoch));
+
         self.major_version = new_version;
 
         self.prepare_ratcheting(block_id, &block(block_txs), from_version)
@@ -344,6 +349,7 @@ impl AptosWrapper {
                 self.prepare_ratcheting(block_id, &block, self.trusted_state.version())?
             }
         };
+
         // Ratchet trusted state to latest version
         let trusted_state = match self.trusted_state().verify_and_ratchet(&state_proof) {
             Ok(TrustedStateChange::Epoch { new_state, .. }) => {
@@ -450,9 +456,15 @@ impl AptosWrapper {
         let mut block_txs = vec![block_meta];
         let new_version = *self.major_version() + 100;
         let reconfig = self.core_resources_account().sign_with_transaction_builder(
-            self.txn_factory().payload(version_set_version(new_version)),
+            self.txn_factory()
+                .payload(aptos_stdlib::version_set_for_next_epoch(new_version)),
         );
         block_txs.push(UserTransaction(reconfig));
+        let end_epoch = self.core_resources_account().sign_with_transaction_builder(
+            self.txn_factory()
+                .payload(aptos_stdlib::aptos_governance_force_end_epoch_test_only()),
+        );
+        block_txs.push(UserTransaction(end_epoch));
         self.major_version = new_version;
         self.execute_block(ExecuteBlockArgs::Block(block_id, block(block_txs)))
     }
@@ -498,13 +510,16 @@ impl AptosWrapper {
         account_idx: usize,
     ) -> Result<SparseMerkleProofAssets, AptosError> {
         // Create a state key to get the info
-        let account_0_resource_path = StateKey::access_path(AccessPath::new(
-            self.accounts()
+        let account_0_resource_path = StateKey::resource(
+            &self
+                .accounts()
                 .get(account_idx)
                 .ok_or(AptosError::UnexpectedNone("get accounts".into()))?
                 .address(),
-            AccountResource::struct_tag().access_vector(),
-        ));
+            &AccountResource::struct_tag(),
+        )
+        .map_err(|e| AptosError::Internal { source: e.into() })?;
+
         // Get the state proof for the current version
         let (state_value, state_proof) = self
             .db()
@@ -590,10 +605,10 @@ fn test_aptos_wrapper() {
     assert_eq!(*aptos_wrapper.major_version(), 200);
     assert_eq!(*aptos_wrapper.current_epoch(), 2);
     assert_eq!(*aptos_wrapper.current_round(), 1);
-    assert_eq!(aptos_wrapper.trusted_state().version(), 24);
+    assert_eq!(aptos_wrapper.trusted_state().version(), 25);
 
     aptos_wrapper.generate_traffic().unwrap();
-    assert_eq!(*aptos_wrapper.current_version(), 36)
+    assert_eq!(*aptos_wrapper.current_version(), 37)
 }
 
 #[test]
