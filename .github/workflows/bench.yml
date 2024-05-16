@@ -1,0 +1,75 @@
+# Runs benchmarks on self-hosted infra via `workflow_dispatch`
+# This trigger can be found at https://github.com/wormhole-foundation/example-zk-light-clients-internal/actions/workflows/bench.yml
+#
+# The output can be found in the logs or in a comment on the latest commit. This can be viewed on GitHub at the bottom of the commit page.
+# See https://github.com/wormhole-foundation/example-zk-light-clients-internal/commit/3d06c3585e94fe027bf7dacf865106c259994c85#comments
+name: Manual benchmark
+on:
+  workflow_dispatch:
+    inputs:
+      bench-name:
+        type: string
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Manual benchmark
+    runs-on: [self-hosted, bench, avx512]
+    env:
+      RUSTFLAGS: -D warnings
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+    steps:
+      - name: Set up git private repo access
+        run: |
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "aptos -> target"
+      - name: Install deps
+        run: |
+          sudo apt-get update || true
+
+          sudo apt-get install -y pkg-config libudev-dev clang llvm-dev libclang-dev python3-pip
+          export LIBCLANG_PATH=/usr/local/lib
+
+          git clone https://github.com/wormhole-foundation/wp1.git
+          cd wp1/cli
+          cargo install --locked --path .
+
+          cd ~
+          cargo prove install-toolchain
+
+          pip3 install jtbl
+      - name: Run benchmarks
+        id: run-benchmarks
+        run: |
+          make bench-ci BENCH=${{ inputs.bench-name }} 2>&1 | tee out.txt
+
+          grep 'cycles=' out.txt >> cycles.txt
+          grep 'proving_time' out.txt >> timings.txt
+
+          while IFS=$'\t' read -r f1 f2
+          do
+            num_cycles=$(echo "$f1" | grep -o 'cycles=[0-9]*' | awk -F'=' '{ print $2 }')
+            echo "$f2" | jq -c ". += {\"cycles\": $num_cycles}" >> summary.json
+          done < <(paste cycles.txt timings.txt)
+
+          echo "# Benchmark Results " | tee -a summary.md
+          echo "## ${{ inputs.bench-name }} Prove" | tee -a summary.md
+          cat summary.json | jtbl -m | tee -a summary.md
+          echo "" | tee -a summary.md
+
+          echo "Time unit = milliseconds" | tee -a summary.md
+          echo "Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a summary.md
+        working-directory: ${{ github.workspace }}/aptos/light-client
+      - name: Write bench on commit comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          body-path: ${{ github.workspace }}/aptos/light-client/summary.md
