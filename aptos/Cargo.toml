@@ -43,6 +43,11 @@ wp1-derive = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "d
 wp1-sdk = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
 wp1-zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
 wp1-helper = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
+once_cell = "1.19.0"
+tokio = "1.37"
+tokio-stream = "0.1"
+tonic = "0.8"
+tonic-rpc = "0.2"
 
 # Match the forks used by the aptos crates
 [patch.crates-io]

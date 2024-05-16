@@ -16,8 +16,8 @@ serde = { workspace = true }
 wp1-sdk = { workspace = true }
 
 # other
-once_cell = "1.19.0"
-tokio = "1.37"
-tokio-stream = "0.1"
-tonic = "0.8"
-tonic-rpc = { version = "0.2", features = ["bincode"] }
+once_cell = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tonic = { workspace = true }
+tonic-rpc = { workspace = true, features = ["bincode"] }
