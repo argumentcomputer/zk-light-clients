@@ -24,9 +24,9 @@ Since the server is built with [`tonic_rpc`](https://docs.rs/tonic-rpc/latest/to
 ```rust
 let mut client = aptos_client::AptosClient::connect(addr).await?;
 
-let ratcheting_proof: SP1DefaultProof =
+let ratcheting_proof: SP1Proof =
     client.prove_ratcheting(ratcheting_proof_request).await?.into_inner();
-let merkle_inclusion_proof: SP1DefaultProof =
+let merkle_inclusion_proof: SP1Proof =
     client.prove_merkle_inclusion(merkle_inclusion_proof_request).await?.into_inner();
 
 let ratcheting_proof_verified: bool =
