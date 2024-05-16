@@ -11,7 +11,6 @@ aptos-lc = { path = "../light-client" }
 
 # workspace
 anyhow = { workspace = true }
-bcs = { workspace = true }
 serde = { workspace = true }
 wp1-sdk = { workspace = true }
 
