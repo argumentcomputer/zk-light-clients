@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wp1_sdk::{ProverClient, SP1DefaultProof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
+use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
 
 use crate::error::LightClientError;
 
@@ -26,7 +26,7 @@ fn prove_ratcheting(
     client: &ProverClient,
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
-) -> Result<(SP1DefaultProof, RatchetOutput), LightClientError> {
+) -> Result<(SP1Proof, RatchetOutput), LightClientError> {
     wp1_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(current_trusted_state, epoch_change_proof);
@@ -69,12 +69,13 @@ mod test {
         stdin.write(&current_trusted_state);
         stdin.write(&epoch_change_proof);
 
-        ProverClient::execute(aptos_programs::RATCHET_PROGRAM, &stdin).map_err(|err| {
-            LightClientError::ProvingError {
+        let client = ProverClient::new();
+        client
+            .execute(aptos_programs::RATCHET_PROGRAM, &stdin)
+            .map_err(|err| LightClientError::ProvingError {
                 program: "prove-ratcheting".to_string(),
                 source: err.into(),
-            }
-        })?;
+            })?;
 
         Ok(())
     }

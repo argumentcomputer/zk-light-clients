@@ -8,7 +8,7 @@ use serde::Serialize;
 use std::hint::black_box;
 use std::time::Instant;
 use wp1_sdk::utils::setup_logger;
-use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
 
 const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
 const AVERAGE_SIGNERS_NBR: usize = 95;
@@ -66,7 +66,7 @@ impl ProvingAssets {
         }
     }
 
-    fn prove(&self) -> SP1DefaultProof {
+    fn prove(&self) -> SP1Proof {
         let mut stdin = SP1Stdin::new();
 
         setup_logger();
@@ -89,7 +89,7 @@ impl ProvingAssets {
         self.client.prove(&pk, stdin).unwrap()
     }
 
-    fn verify(&self, proof: &SP1DefaultProof) {
+    fn verify(&self, proof: &SP1Proof) {
         let (_, vk) = self.client.setup(aptos_programs::MERKLE_PROGRAM);
         self.client.verify(proof, &vk).expect("Verification failed");
     }

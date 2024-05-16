@@ -1,11 +1,11 @@
 use crate::error::LightClientError;
-use wp1_sdk::{ProverClient, SP1DefaultProof, SP1Stdin};
+use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
 
 #[allow(dead_code)]
 fn sig_verification(
     client: &ProverClient,
     ledger_info_w_sig: &[u8],
-) -> Result<(SP1DefaultProof, bool), LightClientError> {
+) -> Result<(SP1Proof, bool), LightClientError> {
     use wp1_sdk::utils;
     utils::setup_logger();
 
@@ -40,14 +40,16 @@ mod test {
 
         stdin.write(&ledger_info_w_sig);
 
-        ProverClient::execute(
-            aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
-            &stdin,
-        )
-        .map_err(|err| LightClientError::ProvingError {
-            program: "signature-verification".to_string(),
-            source: err.into(),
-        })?;
+        let client = ProverClient::new();
+        client
+            .execute(
+                aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
+                &stdin,
+            )
+            .map_err(|err| LightClientError::ProvingError {
+                program: "signature-verification".to_string(),
+                source: err.into(),
+            })?;
 
         Ok(())
     }

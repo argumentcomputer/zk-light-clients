@@ -1,7 +1,7 @@
 use anyhow::Result;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-use wp1_sdk::{ProverClient, SP1DefaultProof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
+use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
 
 use crate::error::LightClientError;
 
@@ -104,7 +104,7 @@ fn prove_merkle_inclusion(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<(SP1DefaultProof, MerkleOutput), LightClientError> {
+) -> Result<(SP1Proof, MerkleOutput), LightClientError> {
     wp1_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(
@@ -223,12 +223,13 @@ mod test {
         // Validator verifier
         stdin.write(&validator_verifier_assets.validator_verifier);
 
-        ProverClient::execute(aptos_programs::MERKLE_PROGRAM, &stdin).map_err(|err| {
-            LightClientError::ProvingError {
+        let client = ProverClient::new();
+        client
+            .execute(aptos_programs::MERKLE_PROGRAM, &stdin)
+            .map_err(|err| LightClientError::ProvingError {
                 program: "prove-merkle-inclusion".to_string(),
                 source: err.into(),
-            }
-        })?;
+            })?;
 
         Ok(())
     }

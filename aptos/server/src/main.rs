@@ -1,16 +1,16 @@
 use anyhow::{anyhow, Result};
 use aptos_lc::{merkle, ratchet};
 use once_cell::sync::OnceCell;
-use wp1_sdk::{ProverClient, SP1DefaultProof, SP1ProvingKey, SP1VerifyingKey};
+use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1VerifyingKey};
 
 use server::{MerkleInclusionProofRequest, RatchetingProofRequest};
 
 #[tonic_rpc::tonic_rpc(bincode)]
 trait Aptos {
-    fn prove_ratcheting(request: RatchetingProofRequest) -> SP1DefaultProof;
-    fn prove_merkle_inclusion(request: MerkleInclusionProofRequest) -> SP1DefaultProof;
-    fn verify_ratcheting_proof(proof: SP1DefaultProof) -> bool;
-    fn verify_merkle_inclusion_proof(proof: SP1DefaultProof) -> bool;
+    fn prove_ratcheting(request: RatchetingProofRequest) -> SP1Proof;
+    fn prove_merkle_inclusion(request: MerkleInclusionProofRequest) -> SP1Proof;
+    fn verify_ratcheting_proof(proof: SP1Proof) -> bool;
+    fn verify_merkle_inclusion_proof(proof: SP1Proof) -> bool;
 }
 
 #[derive(Default)]
@@ -39,7 +39,7 @@ impl aptos_server::Aptos for Server {
     async fn prove_ratcheting(
         &self,
         request: tonic::Request<RatchetingProofRequest>,
-    ) -> Result<tonic::Response<SP1DefaultProof>, tonic::Status> {
+    ) -> Result<tonic::Response<SP1Proof>, tonic::Status> {
         let RatchetingProofRequest {
             trusted_state,
             epoch_change_proof,
@@ -59,7 +59,7 @@ impl aptos_server::Aptos for Server {
     async fn prove_merkle_inclusion(
         &self,
         request: tonic::Request<MerkleInclusionProofRequest>,
-    ) -> Result<tonic::Response<SP1DefaultProof>, tonic::Status> {
+    ) -> Result<tonic::Response<SP1Proof>, tonic::Status> {
         let MerkleInclusionProofRequest {
             sparse_merkle_proof_assets,
             transaction_proof_assets,
@@ -83,7 +83,7 @@ impl aptos_server::Aptos for Server {
 
     async fn verify_ratcheting_proof(
         &self,
-        request: tonic::Request<SP1DefaultProof>,
+        request: tonic::Request<SP1Proof>,
     ) -> Result<tonic::Response<bool>, tonic::Status> {
         let (_, vk) = self.get_ratcheting_keys();
         let proof = request.into_inner();
@@ -94,7 +94,7 @@ impl aptos_server::Aptos for Server {
 
     async fn verify_merkle_inclusion_proof(
         &self,
-        request: tonic::Request<SP1DefaultProof>,
+        request: tonic::Request<SP1Proof>,
     ) -> Result<tonic::Response<bool>, tonic::Status> {
         let (_, vk) = self.get_merkle_inclusion_keys();
         let proof = request.into_inner();
