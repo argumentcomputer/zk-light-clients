@@ -9,7 +9,7 @@ const TARGET_DIR: &str = "./artifacts";
 fn main() {
     // Re-run if the core library changes
     let core_dir = std::path::Path::new("../core");
-    println!("cargo::rerun-if-changed={}", core_dir.display());
+    println!("cargo:rerun-if-changed={}", core_dir.display());
 
     // Create the target directory if it doesn't exist
     if !PathBuf::from(TARGET_DIR).exists() {
