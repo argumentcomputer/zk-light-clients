@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use aptos_lc::{merkle, ratchet};
-use once_cell::sync::OnceCell;
 use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1VerifyingKey};
 
 use server::{MerkleInclusionProofRequest, RatchetingProofRequest};
@@ -13,24 +12,22 @@ trait Aptos {
     fn verify_merkle_inclusion_proof(proof: SP1Proof) -> bool;
 }
 
-#[derive(Default)]
 struct Server {
     prover_client: ProverClient,
-    ratcheting_keys: OnceCell<(SP1ProvingKey, SP1VerifyingKey)>,
-    merkle_inclusion_keys: OnceCell<(SP1ProvingKey, SP1VerifyingKey)>,
+    ratcheting_keys: (SP1ProvingKey, SP1VerifyingKey),
+    merkle_inclusion_keys: (SP1ProvingKey, SP1VerifyingKey),
 }
 
-impl Server {
-    #[inline]
-    fn get_ratcheting_keys(&self) -> &(SP1ProvingKey, SP1VerifyingKey) {
-        self.ratcheting_keys
-            .get_or_init(|| ratchet::generate_keys(&self.prover_client))
-    }
-
-    #[inline]
-    fn get_merkle_inclusion_keys(&self) -> &(SP1ProvingKey, SP1VerifyingKey) {
-        self.merkle_inclusion_keys
-            .get_or_init(|| merkle::generate_keys(&self.prover_client))
+impl Default for Server {
+    fn default() -> Self {
+        let prover_client = ProverClient::default();
+        let ratcheting_keys = ratchet::generate_keys(&prover_client);
+        let merkle_inclusion_keys = merkle::generate_keys(&prover_client);
+        Self {
+            prover_client,
+            ratcheting_keys,
+            merkle_inclusion_keys,
+        }
     }
 }
 
@@ -45,7 +42,7 @@ impl aptos_server::Aptos for Server {
             epoch_change_proof,
         } = request.into_inner();
 
-        let (pk, _) = self.get_ratcheting_keys();
+        let (pk, _) = &self.ratcheting_keys;
         let stdin = ratchet::generate_stdin(&trusted_state, &epoch_change_proof);
 
         let proof = self
@@ -66,7 +63,7 @@ impl aptos_server::Aptos for Server {
             validator_verifier_assets,
         } = request.into_inner();
 
-        let (pk, _) = self.get_merkle_inclusion_keys();
+        let (pk, _) = &self.merkle_inclusion_keys;
         let stdin = merkle::generate_stdin(
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
@@ -85,7 +82,7 @@ impl aptos_server::Aptos for Server {
         &self,
         request: tonic::Request<SP1Proof>,
     ) -> Result<tonic::Response<bool>, tonic::Status> {
-        let (_, vk) = self.get_ratcheting_keys();
+        let (_, vk) = &self.ratcheting_keys;
         let proof = request.into_inner();
         Ok(tonic::Response::new(
             self.prover_client.verify(&proof, vk).is_ok(),
@@ -96,7 +93,7 @@ impl aptos_server::Aptos for Server {
         &self,
         request: tonic::Request<SP1Proof>,
     ) -> Result<tonic::Response<bool>, tonic::Status> {
-        let (_, vk) = self.get_merkle_inclusion_keys();
+        let (_, vk) = &self.merkle_inclusion_keys;
         let proof = request.into_inner();
         Ok(tonic::Response::new(
             self.prover_client.verify(&proof, vk).is_ok(),

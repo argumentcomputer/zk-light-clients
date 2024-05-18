@@ -15,7 +15,6 @@ serde = { workspace = true }
 wp1-sdk = { workspace = true }
 
 # other
-once_cell = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
