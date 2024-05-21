@@ -4,6 +4,10 @@ This is a light client for the Aptos blockchain. It is written in Rust and lives
 directory.
 In this README we will go over a few details that need to be known before hopping into development.
 
+> [!NOTE]
+> A dive in the Light Client design and the available programs can be found on
+> HackMD: https://hackmd.io/@lurk-lab/HJvnlbKGR
+
 ## Layout
 
 The workspace is divided into the following:
