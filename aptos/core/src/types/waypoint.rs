@@ -12,7 +12,8 @@ use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_
 use crate::serde_error;
 use crate::types::epoch_state::EpochState;
 use crate::types::error::TypesError;
-use crate::types::ledger_info::{LedgerInfo, U64_SIZE};
+use crate::types::ledger_info::LedgerInfo;
+use crate::types::utils::U64_SIZE;
 use crate::types::Version;
 use bytes::{Buf, BufMut, BytesMut};
 use getset::CopyGetters;
@@ -209,24 +210,34 @@ mod test {
     }
 
     #[cfg(feature = "aptos")]
-    #[test]
-    fn test_bytes_conversion_waypoint() {
-        use super::*;
-        use crate::aptos_test_utils::wrapper::AptosWrapper;
-        use crate::NBR_VALIDATORS;
+    mod aptos {
+        use proptest::prelude::ProptestConfig;
+        use proptest::proptest;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+        proptest! {
+            #![proptest_config(ProptestConfig::with_cases(10))]
+            #[test]
+            fn test_bytes_conversion_waypoint(
+                validators in 130..136,
+                signers in 95..101
+            ) {
+                use super::*;
+                use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-        aptos_wrapper.generate_traffic().unwrap();
-        aptos_wrapper.commit_new_epoch().unwrap();
+                let mut aptos_wrapper = AptosWrapper::new(2, validators as usize, signers as usize).unwrap();
 
-        let waypoint = aptos_wrapper.trusted_state().waypoint();
+                aptos_wrapper.generate_traffic().unwrap();
+                aptos_wrapper.commit_new_epoch().unwrap();
 
-        let bytes = bcs::to_bytes(&waypoint).unwrap();
+                let waypoint = aptos_wrapper.trusted_state().waypoint();
 
-        let waypoint_deserialized = Waypoint::from_bytes(&bytes).unwrap();
-        let waypoint_serialized = waypoint_deserialized.to_bytes();
+                let bytes = bcs::to_bytes(&waypoint).unwrap();
 
-        assert_eq!(bytes, waypoint_serialized);
+                let waypoint_deserialized = Waypoint::from_bytes(&bytes).unwrap();
+                let waypoint_serialized = waypoint_deserialized.to_bytes();
+
+                assert_eq!(bytes, waypoint_serialized);
+            }
+        }
     }
 }

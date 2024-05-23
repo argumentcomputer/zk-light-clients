@@ -21,7 +21,6 @@ use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::validator::ValidatorVerifier;
-use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::hint::black_box;
 use std::time::Instant;
@@ -29,6 +28,7 @@ use wp1_sdk::utils::setup_logger;
 use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
 
 const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
+const NBR_VALIDATORS: usize = 130;
 const AVERAGE_SIGNERS_NBR: usize = 95;
 
 struct ProvingAssets {

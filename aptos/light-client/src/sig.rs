@@ -55,11 +55,11 @@ mod test {
     }
 
     #[test]
-    fn test_sig_execute() {
+    fn test_execute_sig() {
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
-        use aptos_lc_core::NBR_VALIDATORS;
         use std::time::Instant;
 
+        const NBR_VALIDATORS: usize = 130;
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =
@@ -78,13 +78,13 @@ mod test {
 
     #[test]
     #[ignore]
-    fn test_sig_prove() {
+    fn test_prove_sig() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
-        use aptos_lc_core::NBR_VALIDATORS;
         use std::time::Instant;
         use wp1_sdk::ProverClient;
 
+        const NBR_VALIDATORS: usize = 130;
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =

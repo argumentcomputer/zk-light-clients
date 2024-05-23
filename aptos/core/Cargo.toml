@@ -37,6 +37,7 @@ rand_core = { workspace = true, optional = true }
 
 [dev-dependencies]
 cfg-if = { workspace = true }
+proptest = { workspace = true }
 reqwest = { workspace = true, features = ["blocking"] }
 
 [features]

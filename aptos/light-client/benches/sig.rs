@@ -1,10 +1,11 @@
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
-use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::hint::black_box;
 use std::time::Instant;
 use wp1_sdk::utils::setup_logger;
 use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
+
+const NBR_VALIDATORS: usize = 130;
 
 struct ProvingAssets {
     client: ProverClient,

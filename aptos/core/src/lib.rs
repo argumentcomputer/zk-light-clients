@@ -15,6 +15,3 @@ pub mod aptos_test_utils;
 pub mod crypto;
 pub mod merkle;
 pub mod types;
-
-/// `NBR_VALIDATORS` defines the number of validators in the network.
-pub const NBR_VALIDATORS: usize = 130;

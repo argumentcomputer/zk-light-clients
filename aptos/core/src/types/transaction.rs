@@ -11,7 +11,7 @@
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::ledger_info::{ENUM_VARIANT_LEN, U64_SIZE};
+use crate::types::utils::{ENUM_VARIANT_LEN, U64_SIZE};
 use bytes::{Buf, BufMut, BytesMut};
 use serde::{Deserialize, Serialize};
 

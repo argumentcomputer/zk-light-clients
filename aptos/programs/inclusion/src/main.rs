@@ -4,7 +4,6 @@ use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::merkle::sparse_proof::SparseMerkleProof;
 use aptos_lc_core::merkle::transaction_proof::TransactionAccumulatorProof;
 use aptos_lc_core::types::ledger_info::LedgerInfoWithSignatures;
-use aptos_lc_core::types::ledger_info::LEDGER_INFO_NEW_BLOCK_HEIGHT_LEN;
 use aptos_lc_core::types::transaction::TransactionInfo;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 
@@ -41,10 +40,8 @@ pub fn main() {
     let transaction_hash = transaction.hash();
     let transaction_proof = TransactionAccumulatorProof::from_bytes(&transaction_proof)
         .expect("from_bytes: could not deserialize TransactionAccumulatorProof");
-    let latest_li = LedgerInfoWithSignatures::from_bytes::<LEDGER_INFO_NEW_BLOCK_HEIGHT_LEN>(
-        &ledger_info_bytes,
-    )
-    .expect("from_bytes: could not deserialize LedgerInfo");
+    let latest_li = LedgerInfoWithSignatures::from_bytes(&ledger_info_bytes)
+        .expect("from_bytes: could not deserialize LedgerInfo");
 
     wp1_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: verify_transaction_inclusion");

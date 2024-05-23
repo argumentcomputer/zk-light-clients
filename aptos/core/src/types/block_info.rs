@@ -14,8 +14,9 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{HashValue, HASH_LENGTH};
 use crate::serde_error;
-use crate::types::epoch_state::{EpochState, EPOCH_STATE_SIZE};
+use crate::types::epoch_state::EpochState;
 use crate::types::error::TypesError;
+use crate::types::utils::U64_SIZE;
 use crate::types::{Round, Version};
 use bytes::{Buf, BufMut, BytesMut};
 use getset::{CopyGetters, Getters};
@@ -128,6 +129,8 @@ impl BlockInfo {
     /// A `Result` which is `Ok` if the `BlockInfo` could
     /// be successfully created, and `Err` otherwise.
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        let epoch_state_size = bytes.len() - 4 * U64_SIZE - 2 * HASH_LENGTH - 1;
+
         let epoch = bytes.get_u64_le();
         let round = bytes.get_u64_le();
 
@@ -155,11 +158,11 @@ impl BlockInfo {
         let next_epoch_state = match bytes.get_u8() {
             1 => {
                 let epoch_state =
-                    EpochState::from_bytes(bytes.chunk().get(..EPOCH_STATE_SIZE).ok_or_else(
+                    EpochState::from_bytes(bytes.chunk().get(..epoch_state_size).ok_or_else(
                         || serde_error!("BlockInfo", "Not enough data for epoch state"),
                     )?)
                     .map_err(|e| serde_error!("BlockInfo", e))?;
-                bytes.advance(EPOCH_STATE_SIZE);
+                bytes.advance(epoch_state_size);
 
                 Some(epoch_state)
             }
@@ -183,34 +186,74 @@ impl BlockInfo {
             next_epoch_state,
         })
     }
+
+    /// Estimate the size in bytes for  `BlockInfo` from the given bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to estimate the size.
+    ///
+    /// # Returns
+    ///
+    /// The estimated size in bytes for the structure.
+    ///
+    /// # Note
+    ///
+    /// The `BlockInfo` bytes should start from offset 0 of the slice.
+    pub(crate) fn estimate_size_from_bytes(bytes: &[u8]) -> Result<usize, TypesError> {
+        let fixed_size = 4 * U64_SIZE + 2 * HASH_LENGTH;
+
+        let has_epoch_state = bytes
+            .get(4 * U64_SIZE + 2 * HASH_LENGTH)
+            .ok_or_else(|| serde_error!("BlockInfo", "Not enough data for next_epoch_state"))?;
+
+        if *has_epoch_state == 0 {
+            return Ok(fixed_size + 1);
+        }
+
+        Ok(fixed_size
+            + 1
+            + EpochState::estimate_size_from_bytes(
+                bytes
+                    .get(fixed_size + 1..)
+                    .ok_or_else(|| serde_error!("BlockInfo", "Not enough data for EpochState"))?,
+            )?)
+    }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "aptos"))]
 mod test {
-    #[cfg(feature = "aptos")]
-    #[test]
-    fn test_bytes_conversion_block_info() {
-        use super::*;
-        use crate::aptos_test_utils::wrapper::AptosWrapper;
-        use crate::NBR_VALIDATORS;
+    use proptest::prelude::ProptestConfig;
+    use proptest::proptest;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10))]
+        #[test]
+        fn test_bytes_conversion_block_info(
+            validators in 130..136,
+            signers in 95..101
+        ) {
+            use super::*;
+            use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-        aptos_wrapper.generate_traffic().unwrap();
-        aptos_wrapper.commit_new_epoch().unwrap();
+            let mut aptos_wrapper = AptosWrapper::new(2, validators as usize, signers as usize).unwrap();
 
-        let block_info = aptos_wrapper
-            .get_latest_li()
-            .unwrap()
-            .ledger_info()
-            .commit_info()
-            .clone();
+            aptos_wrapper.generate_traffic().unwrap();
+            aptos_wrapper.commit_new_epoch().unwrap();
 
-        let bytes = bcs::to_bytes(&block_info).unwrap();
+            let block_info = aptos_wrapper
+                .get_latest_li()
+                .unwrap()
+                .ledger_info()
+                .commit_info()
+                .clone();
 
-        let block_info_deserialized = BlockInfo::from_bytes(&bytes).unwrap();
-        let block_info_serialized = block_info_deserialized.to_bytes();
+            let bytes = bcs::to_bytes(&block_info).unwrap();
 
-        assert_eq!(bytes, block_info_serialized);
+            let block_info_deserialized = BlockInfo::from_bytes(&bytes).unwrap();
+            let block_info_serialized = block_info_deserialized.to_bytes();
+
+            assert_eq!(bytes, block_info_serialized);
+        }
     }
 }

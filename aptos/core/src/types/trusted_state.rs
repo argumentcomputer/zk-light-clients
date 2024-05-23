@@ -8,12 +8,9 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::serde_error;
-use crate::types::epoch_state::{EpochState, EPOCH_STATE_SIZE};
+use crate::types::epoch_state::EpochState;
 use crate::types::error::TypesError;
-use crate::types::ledger_info::{
-    LedgerInfo, LedgerInfoWithSignatures, LEDGER_INFO_NEW_EPOCH_LEN,
-    LEDGER_INFO_WITH_SIG_NEW_EPOCH_LEN,
-};
+use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
 use crate::types::utils::{read_leb128, write_leb128};
 use crate::types::waypoint::{Waypoint, WAYPOINT_SIZE};
 use crate::types::Version;
@@ -228,29 +225,29 @@ impl TrustedState {
     ///
     /// A `Result` which is `Ok` if the `TrustedState` could
     /// be successfully created, and `Err` otherwise.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        let mut buf = BytesMut::from(bytes);
+    pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        let epoch_state_size = bytes.len() - WAYPOINT_SIZE - 1;
 
-        let trusted_state = match buf.get_u8() {
+        let trusted_state = match bytes.get_u8() {
             0 => {
                 let waypoint =
-                    Waypoint::from_bytes(buf.chunk().get(..WAYPOINT_SIZE).ok_or_else(|| {
+                    Waypoint::from_bytes(bytes.chunk().get(..WAYPOINT_SIZE).ok_or_else(|| {
                         serde_error!("TrustedState", "Not enough data for Waypoint")
                     })?)?;
                 TrustedState::EpochWaypoint(waypoint)
             }
             1 => {
                 let waypoint =
-                    Waypoint::from_bytes(buf.chunk().get(..WAYPOINT_SIZE).ok_or_else(|| {
+                    Waypoint::from_bytes(bytes.chunk().get(..WAYPOINT_SIZE).ok_or_else(|| {
                         serde_error!("TrustedState", "Not enough data for Waypoint")
                     })?)?;
-                buf.advance(WAYPOINT_SIZE);
+                bytes.advance(WAYPOINT_SIZE);
 
                 let epoch_state =
-                    EpochState::from_bytes(buf.chunk().get(..EPOCH_STATE_SIZE).ok_or_else(
+                    EpochState::from_bytes(bytes.chunk().get(..epoch_state_size).ok_or_else(
                         || serde_error!("TrustedState", "Not enough data for epoch state"),
                     )?)?;
-                buf.advance(EPOCH_STATE_SIZE);
+                bytes.advance(epoch_state_size);
                 TrustedState::EpochState {
                     waypoint,
                     epoch_state,
@@ -259,7 +256,7 @@ impl TrustedState {
             _ => return Err(serde_error!("TrustedState", "Unknown variant")),
         };
 
-        if buf.remaining() != 0 {
+        if bytes.remaining() != 0 {
             return Err(serde_error!(
                 "LedgerInfo",
                 "Unexpected data after completing deserialization"
@@ -416,22 +413,29 @@ impl EpochChangeProof {
     ///
     /// A `Result` which is `Ok` if the `EpochChangeProof`
     /// could be successfully created, and `Err` otherwise.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        let mut buf = BytesMut::from(bytes);
-
+    pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
         // Read the length of the vector from LEB128
-        let (len, bytes_read) = read_leb128(&buf)
+        let (len, bytes_read) = read_leb128(bytes)
             .map_err(|_| serde_error!("EpochChangeProof", "Not enough data for length"))?;
-        buf.advance(bytes_read);
+        bytes.advance(bytes_read);
+
+        // Total length for LedgerInfoWithSignatures
+        let total_len = bytes.remaining() - 1;
+
+        if total_len % len as usize != 0 {
+            return Err(serde_error!(
+                "EpochChangeProof",
+                "Invalid data length for ledger_info_with_sigs"
+            ));
+        }
 
         // Read each LedgerInfoWithSignatures from bytes
         let mut ledger_info_with_sigs = Vec::new();
         for i in 0..len {
-            let ledger_info_with_sig = LedgerInfoWithSignatures::from_bytes::<
-                LEDGER_INFO_NEW_EPOCH_LEN,
-            >(
-                buf.chunk()
-                    .get(..LEDGER_INFO_WITH_SIG_NEW_EPOCH_LEN)
+            let ledger_info_with_sig = LedgerInfoWithSignatures::from_bytes(
+                bytes
+                    .chunk()
+                    .get(..total_len / len as usize)
                     .ok_or_else(|| {
                         serde_error!(
                             "EpochChangeProof",
@@ -441,13 +445,13 @@ impl EpochChangeProof {
             )?;
 
             ledger_info_with_sigs.push(ledger_info_with_sig);
-            buf.advance(LEDGER_INFO_WITH_SIG_NEW_EPOCH_LEN);
+            bytes.advance(total_len / len as usize);
         }
 
         // Read the `more` field
-        let more = buf.get_u8() != 0;
+        let more = bytes.get_u8() != 0;
 
-        if buf.remaining() != 0 {
+        if bytes.remaining() != 0 {
             return Err(serde_error!(
                 "EpochChangeProof",
                 "Unexpected data after completing deserialization"
@@ -463,6 +467,9 @@ impl EpochChangeProof {
 
 #[cfg(all(test, feature = "aptos"))]
 mod test {
+    use proptest::prelude::ProptestConfig;
+    use proptest::proptest;
+
     fn assess_equality(bytes: &[u8]) {
         use crate::types::trusted_state::TrustedState;
 
@@ -471,55 +478,63 @@ mod test {
 
         assert_eq!(bytes, trusted_state_serialized);
     }
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10))]
+        #[test]
+        fn test_bytes_conversion_trusted_state_epoch(
+            validators in 130..136,
+            signers in 95..101
+        ) {
+            use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-    #[test]
-    fn test_bytes_conversion_trusted_state_epoch() {
-        use crate::aptos_test_utils::wrapper::AptosWrapper;
-        use crate::NBR_VALIDATORS;
+            let mut aptos_wrapper = AptosWrapper::new(2, validators as usize, signers as usize).unwrap();
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+            aptos_wrapper.generate_traffic().unwrap();
+            aptos_wrapper.commit_new_epoch().unwrap();
 
-        aptos_wrapper.generate_traffic().unwrap();
-        aptos_wrapper.commit_new_epoch().unwrap();
+            // New epoch TrustedState
+            let trusted_state = aptos_wrapper.trusted_state().clone();
 
-        // New epoch TrustedState
-        let trusted_state = aptos_wrapper.trusted_state().clone();
+            let bytes = bcs::to_bytes(&trusted_state).unwrap();
 
-        let bytes = bcs::to_bytes(&trusted_state).unwrap();
+            assess_equality(&bytes);
 
-        assess_equality(&bytes);
+            // No new epoch
+            aptos_wrapper.generate_traffic().unwrap();
 
-        // No new epoch
-        aptos_wrapper.generate_traffic().unwrap();
+            let trusted_state = aptos_wrapper.trusted_state().clone();
 
-        let trusted_state = aptos_wrapper.trusted_state().clone();
+            let bytes = bcs::to_bytes(&trusted_state).unwrap();
 
-        let bytes = bcs::to_bytes(&trusted_state).unwrap();
-
-        assess_equality(&bytes);
+            assess_equality(&bytes);
+        }
     }
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10))]
+        #[test]
+        fn test_bytes_conversion_epoch_change_proof(
+            validators in 130..136,
+            signers in 95..101
+        ) {
+            use super::*;
+            use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-    #[test]
-    fn test_bytes_conversion_epoch_change_proof() {
-        use super::*;
-        use crate::aptos_test_utils::wrapper::AptosWrapper;
-        use crate::NBR_VALIDATORS;
+            let mut aptos_wrapper = AptosWrapper::new(2, validators as usize, signers as usize).unwrap();
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+            aptos_wrapper.generate_traffic().unwrap();
+            aptos_wrapper.commit_new_epoch().unwrap();
 
-        aptos_wrapper.generate_traffic().unwrap();
-        aptos_wrapper.commit_new_epoch().unwrap();
+            // New epoch TrustedState
+            let state_proof = aptos_wrapper
+                .new_state_proof(*aptos_wrapper.current_version())
+                .unwrap();
 
-        // New epoch TrustedState
-        let state_proof = aptos_wrapper
-            .new_state_proof(*aptos_wrapper.current_version())
-            .unwrap();
+            let bytes = bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
-        let bytes = bcs::to_bytes(state_proof.epoch_changes()).unwrap();
+            let intern_epoch_change_proof = EpochChangeProof::from_bytes(&bytes).unwrap();
 
-        let intern_epoch_change_proof = EpochChangeProof::from_bytes(&bytes).unwrap();
-
-        assert_eq!(bytes, intern_epoch_change_proof.to_bytes());
+            assert_eq!(bytes, intern_epoch_change_proof.to_bytes());
+        }
     }
 
     #[test]
@@ -527,10 +542,9 @@ mod test {
         use super::*;
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::crypto::hash::CryptoHash as LcCryptoHash;
-        use crate::NBR_VALIDATORS;
         use aptos_crypto::hash::CryptoHash as AptosCryptoHash;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+        let mut aptos_wrapper = AptosWrapper::new(2, 130, 130).unwrap();
 
         aptos_wrapper.generate_traffic().unwrap();
         aptos_wrapper.commit_new_epoch().unwrap();

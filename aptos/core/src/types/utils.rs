@@ -2,6 +2,18 @@
 
 use anyhow::{anyhow, Result};
 
+/// Size in bytes for an enum variant representation.
+pub const ENUM_VARIANT_LEN: usize = 1;
+
+/// Size of a u64 representation in bytes.
+pub const U64_SIZE: usize = 8;
+
+/// Relative offset increments for the voting power field in the [`LedgerInfo`] struct.
+pub const VOTING_POWER_OFFSET_INCR: usize = U64_SIZE;
+
+/// Size of the LEB128 representation of a public key vector length.
+pub const LEB128_PUBKEY_LEN: usize = 1;
+
 /// Reads a LEB128 encoded number from a byte slice.
 ///
 /// This function takes a byte slice as input and returns a tuple of the parsed number and the number of bytes read.

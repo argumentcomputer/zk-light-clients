@@ -13,13 +13,12 @@ mod test {
     use crate::types::validator::{ValidatorConsensusInfo, ValidatorVerifier};
     use crate::types::waypoint::Waypoint;
     use crate::types::AccountAddress;
-    use crate::NBR_VALIDATORS;
     use bls12_381::{G1Affine, G1Projective};
     use std::ops::Add;
 
     #[test]
     fn test_serde_ledger_info_w_sig() {
-        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+        let mut aptos_wrapper = AptosWrapper::new(4, 130, 130).unwrap();
 
         aptos_wrapper.generate_traffic().unwrap();
 
@@ -89,7 +88,7 @@ mod test {
 
     #[test]
     fn test_happy_path_ratchet() {
-        let mut aptos_wrapper = AptosWrapper::new(4, NBR_VALIDATORS, 95).unwrap();
+        let mut aptos_wrapper = AptosWrapper::new(4, 130, 95).unwrap();
 
         aptos_wrapper.generate_traffic().unwrap();
         aptos_wrapper.generate_traffic().unwrap();

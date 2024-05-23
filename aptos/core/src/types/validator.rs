@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey, PUB_KEY_LEN};
+use crate::serde_error;
 use crate::types::error::{TypesError, VerifyError};
-use crate::types::ledger_info::{
-    LedgerInfo, LEB128_PUBKEY_LEN, LEB128_VEC_SIZE_VALIDATOR_LIST, VOTING_POWER_OFFSET_INCR,
-};
-use crate::types::utils::{read_leb128, write_leb128};
+use crate::types::ledger_info::LedgerInfo;
+use crate::types::utils::{read_leb128, write_leb128, LEB128_PUBKEY_LEN, VOTING_POWER_OFFSET_INCR};
 use crate::types::{AccountAddress, ACCOUNT_ADDRESS_SIZE};
-use crate::{serde_error, NBR_VALIDATORS};
 use anyhow::Result;
 use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
@@ -112,10 +110,6 @@ impl ValidatorConsensusInfo {
         })
     }
 }
-
-/// Length in bytes for a `ValidatorVerifier`
-pub const VALIDATOR_VERIFIER_SIZE: usize =
-    LEB128_VEC_SIZE_VALIDATOR_LIST + (VALIDATOR_CONSENSUS_INFO_SIZE) * NBR_VALIDATORS;
 
 /// `ValidatorVerifier` represents a list of validators, most
 /// of the time related to a given epoch.
@@ -418,6 +412,25 @@ impl ValidatorVerifier {
 
         Ok(Self { validator_infos })
     }
+
+    /// Estimate the size in bytes for  `ValidatorVerifier` from the given bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to estimate the size.
+    ///
+    /// # Returns
+    ///
+    /// The estimated size in bytes for the structure.
+    ///
+    /// # Note
+    ///
+    /// The `ValidatorVerifier` bytes should start from offset 0 of the slice.
+    pub(crate) fn estimate_size_from_bytes(bytes: &[u8]) -> Result<usize, TypesError> {
+        let (slice_len, bytes_read) =
+            read_leb128(bytes).map_err(|e| serde_error!("ValidatorVerifier", e))?;
+        Ok(slice_len as usize * VALIDATOR_CONSENSUS_INFO_SIZE + bytes_read)
+    }
 }
 
 impl CryptoHash for ValidatorVerifier {
@@ -450,16 +463,16 @@ impl<'de> Deserialize<'de> for ValidatorVerifier {
 
 #[cfg(all(test, feature = "aptos"))]
 mod test {
-    use crate::types::validator::VALIDATOR_VERIFIER_SIZE;
+    use proptest::prelude::ProptestConfig;
+    use proptest::proptest;
 
     #[test]
     fn test_bytes_conversion_validator_consensus_info() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::types::ledger_info::LedgerInfoWithSignatures;
         use crate::types::validator::ValidatorConsensusInfo;
-        use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+        let mut aptos_wrapper = AptosWrapper::new(2, 130, 130).unwrap();
 
         aptos_wrapper.generate_traffic().unwrap();
         aptos_wrapper.commit_new_epoch().unwrap();
@@ -484,29 +497,32 @@ mod test {
         assert_eq!(bytes, validator_to_bytes);
     }
 
-    #[test]
-    fn test_bytes_conversion_validator_verifier() {
-        use crate::aptos_test_utils::wrapper::AptosWrapper;
-        use crate::types::ledger_info::OFFSET_VALIDATOR_LIST;
-        use crate::types::validator::ValidatorVerifier;
-        use crate::NBR_VALIDATORS;
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10))]
+        #[test]
+        fn test_bytes_conversion_validator_verifier(
+            validators in 130..136,
+            signers in 95..101
+        ) {
+            use crate::aptos_test_utils::wrapper::AptosWrapper;
+            use crate::types::validator::ValidatorVerifier;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+            let mut aptos_wrapper = AptosWrapper::new(2, validators as usize, signers  as usize).unwrap();
 
-        aptos_wrapper.generate_traffic().unwrap();
-        aptos_wrapper.commit_new_epoch().unwrap();
+            aptos_wrapper.generate_traffic().unwrap();
+            aptos_wrapper.commit_new_epoch().unwrap();
 
-        let bytes = &aptos_wrapper
-            .get_latest_li_bytes()
-            .unwrap()
-            .iter()
-            .skip(OFFSET_VALIDATOR_LIST)
-            .take(VALIDATOR_VERIFIER_SIZE)
-            .copied()
-            .collect::<Vec<u8>>();
-        let validator_from_bytes = ValidatorVerifier::from_bytes(bytes).unwrap();
-        let validator_to_bytes = validator_from_bytes.to_bytes();
+            let bytes = bcs::to_bytes(
+                &aptos_wrapper
+                .get_latest_li().expect("Could not retrieve latest LedgetInfoWithSignatures")
+                .ledger_info()
+                .next_epoch_state().expect("LedgerInfoWithSignatures should contain a new EpochState")
+                .verifier
+            ).expect("Failed to serialize ValidatorVerifier");
+            let validator_from_bytes = ValidatorVerifier::from_bytes(&bytes).unwrap();
+            let validator_to_bytes = validator_from_bytes.to_bytes();
 
-        assert_eq!(bytes, &validator_to_bytes);
+            assert_eq!(bytes, validator_to_bytes);
+        }
     }
 }

@@ -11,15 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures, U64_SIZE};
-use crate::types::validator::{ValidatorVerifier, VALIDATOR_VERIFIER_SIZE};
+use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
+use crate::types::utils::U64_SIZE;
+use crate::types::validator::ValidatorVerifier;
 use anyhow::ensure;
 use bytes::{Buf, BufMut, BytesMut};
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-
-/// Length in bytes of the serialized `EpochState`.
-pub const EPOCH_STATE_SIZE: usize = U64_SIZE + VALIDATOR_VERIFIER_SIZE;
 
 /// `EpochState` is a structure representing the state of an epoch in the blockchain.
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Getters)]
@@ -101,15 +99,19 @@ impl EpochState {
     /// A `Result` which is `Ok` if the `EpochState` could
     /// be successfully created, and `Err` otherwise.
     pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        let validator_verifier_size = bytes.len() - U64_SIZE;
+
         let epoch = bytes.get_u64_le();
+
+        // Deserialize ValidatorVerifier
         let verifier = ValidatorVerifier::from_bytes(
             bytes
                 .chunk()
-                .get(..VALIDATOR_VERIFIER_SIZE)
+                .get(..validator_verifier_size)
                 .ok_or_else(|| serde_error!("EpochState", "Not enough data for verifier"))?,
         )
         .map_err(|e| serde_error!("EpochState", e))?;
-        bytes.advance(VALIDATOR_VERIFIER_SIZE);
+        bytes.advance(validator_verifier_size);
 
         if bytes.remaining() != 0 {
             return Err(serde_error!(
@@ -120,35 +122,64 @@ impl EpochState {
 
         Ok(Self { epoch, verifier })
     }
+
+    /// Estimate the size in bytes for  `EpochState` from the given bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes: &[u8]` - A byte slice from which to estimate the size.
+    ///
+    /// # Returns
+    ///
+    /// The estimated size in bytes for the structure.
+    ///
+    /// # Note
+    ///
+    /// The `EpochState` bytes should start from offset 0 of the slice.
+    pub(crate) fn estimate_size_from_bytes(bytes: &[u8]) -> Result<usize, TypesError> {
+        Ok(U64_SIZE
+            + ValidatorVerifier::estimate_size_from_bytes(
+                bytes
+                    .get(U64_SIZE..)
+                    .ok_or_else(|| serde_error!("EpochState", "Not enough data for verifier"))?,
+            )?)
+    }
 }
 
 #[cfg(all(test, feature = "aptos"))]
 mod test {
-    #[test]
-    fn test_bytes_conversion_epoch_state() {
-        use super::*;
-        use crate::aptos_test_utils::wrapper::AptosWrapper;
-        use crate::NBR_VALIDATORS;
+    use proptest::prelude::ProptestConfig;
+    use proptest::proptest;
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10))]
+        #[test]
+        fn test_bytes_conversion_epoch_state(
+            validators in 130..136,
+            signers in 95..101
+        ) {
+            use super::*;
+            use crate::aptos_test_utils::wrapper::AptosWrapper;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+            let mut aptos_wrapper = AptosWrapper::new(2, validators as usize, signers as usize).unwrap();
 
-        aptos_wrapper.generate_traffic().unwrap();
-        aptos_wrapper.commit_new_epoch().unwrap();
+            aptos_wrapper.generate_traffic().unwrap();
+            aptos_wrapper.commit_new_epoch().unwrap();
 
-        let epoch_state = aptos_wrapper
-            .get_latest_li()
-            .unwrap()
-            .ledger_info()
-            .commit_info()
-            .next_epoch_state()
-            .unwrap()
-            .clone();
+            let epoch_state = aptos_wrapper
+                .get_latest_li()
+                .unwrap()
+                .ledger_info()
+                .commit_info()
+                .next_epoch_state()
+                .unwrap()
+                .clone();
 
-        let bytes = bcs::to_bytes(&epoch_state).unwrap();
+            let bytes = bcs::to_bytes(&epoch_state).unwrap();
 
-        let epoch_state_deserialized = EpochState::from_bytes(&bytes).unwrap();
-        let epoch_state_serialized = epoch_state_deserialized.to_bytes();
+            let epoch_state_deserialized = EpochState::from_bytes(&bytes).unwrap();
+            let epoch_state_serialized = epoch_state_deserialized.to_bytes();
 
-        assert_eq!(bytes, epoch_state_serialized);
+            assert_eq!(bytes, epoch_state_serialized);
+        }
     }
 }

@@ -556,10 +556,8 @@ mod test {
     fn test_bytes_conversion() {
         use crate::aptos_test_utils::wrapper::AptosWrapper;
         use crate::crypto::sig::AggregateSignature;
-        use crate::types::ledger_info::{AGG_SIGNATURE_LEN, OFFSET_SIGNATURE};
-        use crate::NBR_VALIDATORS;
 
-        let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, NBR_VALIDATORS).unwrap();
+        let mut aptos_wrapper = AptosWrapper::new(2, 130, 130).unwrap();
 
         aptos_wrapper.generate_traffic().unwrap();
         aptos_wrapper.commit_new_epoch().unwrap();
@@ -568,15 +566,6 @@ mod test {
         let agg_sig = latest_li.signatures();
 
         let bytes = bcs::to_bytes(&agg_sig).unwrap();
-        let signature_bytes = &aptos_wrapper
-            .get_latest_li_bytes()
-            .unwrap()
-            .iter()
-            .skip(OFFSET_SIGNATURE)
-            .take(AGG_SIGNATURE_LEN)
-            .copied()
-            .collect::<Vec<u8>>();
-        assert_eq!(&bytes, signature_bytes);
 
         let intern_agg_sig = AggregateSignature::from_bytes(&bytes).unwrap();
         let intern_bytes = intern_agg_sig.to_bytes();

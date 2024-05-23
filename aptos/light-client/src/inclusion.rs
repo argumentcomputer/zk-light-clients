@@ -150,8 +150,8 @@ mod test {
     ) {
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_lc_core::types::trusted_state::TrustedState;
-        use aptos_lc_core::NBR_VALIDATORS;
 
+        const NBR_VALIDATORS: usize = 130;
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =

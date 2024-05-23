@@ -30,6 +30,7 @@ getset = "0.1.2"
 hex = "0.4.3"
 itertools = "0.12.1"
 move-core-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.12.0" }
+proptest = { version = "1.4.0" }
 rand = "0.7.3"
 rand_core = "0.5.1"
 reqwest = "0.11.23"

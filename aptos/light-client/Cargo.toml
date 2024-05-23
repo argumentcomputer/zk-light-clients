@@ -36,11 +36,6 @@ required-features = ["aptos"]
 harness = false
 
 [[bench]]
-name = "bytes"
-required-features = ["aptos"]
-harness = false
-
-[[bench]]
 name = "sig"
 required-features = ["aptos"]
 harness = false

@@ -22,12 +22,12 @@ use aptos_lc_core::aptos_test_utils::wrapper::{AptosWrapper, ExecuteBlockArgs};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, TrustedStateChange};
 use aptos_lc_core::types::validator::ValidatorVerifier;
-use aptos_lc_core::NBR_VALIDATORS;
 use serde::Serialize;
 use std::time::Instant;
 use wp1_sdk::utils::setup_logger;
 use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
 
+const NBR_VALIDATORS: usize = 130;
 const AVERAGE_SIGNERS_NBR: usize = 95;
 const NBR_ACCOUNTS: usize = 25000;
 

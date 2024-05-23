@@ -81,11 +81,11 @@ mod test {
     }
 
     #[test]
-    fn test_epoch_change_execute() {
+    fn test_execute_epoch_change() {
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
-        use aptos_lc_core::NBR_VALIDATORS;
         use std::time::Instant;
 
+        const NBR_VALIDATORS: usize = 130;
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =
@@ -110,15 +110,15 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_epoch_change_prove() {
+    fn test_prove_epoch_change() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_lc_core::crypto::hash::CryptoHash;
         use aptos_lc_core::types::trusted_state::TrustedState;
-        use aptos_lc_core::NBR_VALIDATORS;
         use std::time::Instant;
         use wp1_sdk::ProverClient;
 
+        const NBR_VALIDATORS: usize = 130;
         const AVERAGE_SIGNERS_NBR: usize = 95;
 
         let mut aptos_wrapper =
