@@ -26,9 +26,9 @@ pub const WAYPOINT_SIZE: usize = U64_SIZE + HASH_LENGTH;
 pub struct Waypoint {
     /// The version of the reconfiguration transaction that is being approved by this waypoint.
     #[getset(get_copy = "pub")]
-    version: Version,
+    pub(crate) version: Version,
     /// The hash of the chosen fields of LedgerInfo.
-    value: HashValue,
+    pub(crate) value: HashValue,
 }
 
 /// `Waypoint` is a structure representing a waypoint,

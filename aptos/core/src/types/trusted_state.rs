@@ -173,13 +173,23 @@ impl TrustedState {
             } else {
                 bail!("Inconsistent epoch change proof and latest ledger info");
             };
-            let new_waypoint = Waypoint::new_any(verified_ledger_info.ledger_info());
 
-            let new_state = TrustedState::EpochState {
-                waypoint: new_waypoint,
-                epoch_state: new_epoch_state,
-            };
-
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "waypoint")] {
+                    let new_state = TrustedState::EpochState {
+                        waypoint: Waypoint::new_any(verified_ledger_info.ledger_info()),
+                        epoch_state: new_epoch_state,
+                    };
+                } else {
+                   let new_state = TrustedState::EpochState {
+                        waypoint: Waypoint {
+                            version: verified_ledger_info.ledger_info().version(),
+                            value: HashValue::default(),
+                        },
+                        epoch_state: new_epoch_state,
+                    };
+                }
+            }
             Ok(TrustedStateChange::Epoch {
                 new_state,
                 latest_epoch_change_li: epoch_change_li,
@@ -370,11 +380,23 @@ impl EpochChangeProof {
             let new_epoch_state = new_li
                 .next_epoch_state()
                 .ok_or_else(|| format_err!("LedgerInfo doesn't carry a ValidatorSet"))?;
-            let new_waypoint = Waypoint::new_any(new_li);
-            let new_trusted_state = TrustedState::EpochState {
-                waypoint: new_waypoint,
-                epoch_state: new_epoch_state.clone(),
-            };
+
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "waypoint")] {
+                    let new_trusted_state = TrustedState::EpochState {
+                        waypoint: Waypoint::new_any(new_li),
+                        epoch_state: new_epoch_state.clone(),
+                    };
+                } else {
+                    let new_trusted_state = TrustedState::EpochState {
+                        waypoint: Waypoint {
+                            version: new_li.version(),
+                            value: HashValue::default(),
+                        },
+                        epoch_state: new_epoch_state.clone(),
+                    };
+                }
+            }
             trusted_state = new_trusted_state;
         }
 
