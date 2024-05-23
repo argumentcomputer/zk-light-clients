@@ -38,34 +38,39 @@ generated in two ways:
 
 The benchmarks for our various programs are located in the `light-client` crate folder.
 
-They are organized in the following way:
+Benchmarks can be classified in two distinct categories:
 
-- Each benchmark is located in the `benches` folder, and has a standalone binary
-  crate dedicated to the execution of its related program.
-- The different benchmarks available from their respective crates can be
-  invoked from our single entrypoint `executive.rs` file.
+- _end-to-end_: Those benchmarks are associated with programs that are meant to reproduce
+  a production environment settings. They are meant to measure performance for a complete
+  end-to-end flow.
+- _internals_: Those benchmarks are associated with programs that are solely meant for
+  performance measurements on specific parts of the codebase. They are
+  not meant to measure performance for, or reproduce a production environment settings.
 
-The following benchmarks are available:
+  ### End-to-end
 
 - `e2e`: Benchmark that will run a proof generation for the programs contained
   in `programs/ratchet/src/main.rs` and `programs/merkle/src/main.rs`. The goal here
   is to test the complete flow for our light client and get cycle count and proving
   time for it.
-- `ratchet`: Benchmark that will run a proof generation for the program contained
-  in `programs/ratchet/src/main.rs`. This program will execute a hash for the received
+- `epoch_change`: Benchmark that will run a proof generation for the program contained
+  in `programs/epoch-change/src/main.rs`. This program will execute a hash for the received
   `ValidatorVerifier` to ensure that the signature is from the previous validator set,
   execute a `TrustedState::verify_and_ratchet_inner` and finally generate the
   hash for the verified `ValidatorVerifier`.
+- `inclusion`: Benchmark that will run a proof generation for the program contained
+  in `programs/inclusion/src/main.rs`. It is meant to assess the cost of verifying
+  a Merkle proof for a given leaf and a given root.
+
+### Internals
+
 - `sig: Benchmark that will run a proof generation for the program contained
-  in `programs/signature-verification/src/main.rs`. This program mainly executes
+  in `programs/benchmarks/signature-verification/src/main.rs`. This program mainly executes
   an aggregated signature verification for an aggregated signature and a set
   of public keys.
 - `bytes`: Benchmark that will run a proof generation for the program contained
-  in `programs/bytes/src/main.rs`. It is meant to assess the cost of serializing
+  in `programs/benchmarks/bytes/src/main.rs`. It is meant to assess the cost of serializing
   and deserializing data structures of interest to us.
-- `merkle`: Benchmark that will run a proof generation for the program contained
-  in `programs/merkle/src/main.rs`. It is meant to assess the cost of verifying
-  a Merkle proof for a given leaf and a given root.
 
 The benchmark that is the closest to a production scenario is `e2e`. Most of
 the other benchmarks are more specific and are meant to assess the cost

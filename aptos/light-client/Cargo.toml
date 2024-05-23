@@ -31,7 +31,7 @@ default = []
 aptos = ["aptos-lc-core/aptos"]
 
 [[bench]]
-name = "merkle"
+name = "inclusion"
 required-features = ["aptos"]
 harness = false
 
@@ -46,7 +46,7 @@ required-features = ["aptos"]
 harness = false
 
 [[bench]]
-name = "ratchet"
+name = "epoch_change"
 required-features = ["aptos"]
 harness = false
 

@@ -89,22 +89,22 @@ pub fn generate_stdin(
 
 #[inline]
 pub fn generate_keys(client: &ProverClient) -> (SP1ProvingKey, SP1VerifyingKey) {
-    client.setup(aptos_programs::MERKLE_PROGRAM)
+    client.setup(aptos_programs::INCLUSION_PROGRAM)
 }
 
 #[allow(dead_code)]
-struct MerkleOutput {
+struct InclusionOutput {
     validator_verifier_hash: [u8; 32],
     state_hash: [u8; 32],
 }
 
 #[allow(dead_code)]
-fn prove_merkle_inclusion(
+fn prove_inclusion(
     client: &ProverClient,
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<(SP1Proof, MerkleOutput), LightClientError> {
+) -> Result<(SP1Proof, InclusionOutput), LightClientError> {
     wp1_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(
@@ -127,7 +127,7 @@ fn prove_merkle_inclusion(
 
     Ok((
         proof,
-        MerkleOutput {
+        InclusionOutput {
             validator_verifier_hash,
             state_hash,
         },
@@ -137,7 +137,9 @@ fn prove_merkle_inclusion(
 #[cfg(all(test, feature = "aptos"))]
 mod test {
     use crate::error::LightClientError;
-    use crate::merkle::{SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets};
+    use crate::inclusion::{
+        SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
+    };
     use aptos_lc_core::types::validator::ValidatorVerifier;
     use wp1_sdk::{ProverClient, SP1Stdin};
 
@@ -199,7 +201,7 @@ mod test {
         )
     }
 
-    fn merkle_execute(
+    fn execute_inclusion(
         sparse_merkle_proof_assets: &SparseMerkleProofAssets,
         transaction_proof_assets: &TransactionProofAssets,
         validator_verifier_assets: &ValidatorVerifierAssets,
@@ -225,7 +227,7 @@ mod test {
 
         let client = ProverClient::new();
         client
-            .execute(aptos_programs::MERKLE_PROGRAM, &stdin)
+            .execute(aptos_programs::INCLUSION_PROGRAM, &stdin)
             .map_err(|err| LightClientError::ProvingError {
                 program: "prove-merkle-inclusion".to_string(),
                 source: err.into(),
@@ -235,15 +237,15 @@ mod test {
     }
 
     #[test]
-    fn test_merkle_execute() {
+    fn test_execute_inclusion() {
         use std::time::Instant;
 
         let (sparse_merkle_proof_assets, transaction_proof_assets, validator_verifier_assets) =
             setup_assets();
 
-        println!("Starting execution of Merkle inclusion...");
+        println!("Starting execution of inclusion...");
         let start = Instant::now();
-        merkle_execute(
+        execute_inclusion(
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
             &validator_verifier_assets,
@@ -254,7 +256,7 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_merkle() {
+    fn test_prove_inclusion() {
         use super::*;
         use aptos_lc_core::crypto::hash::CryptoHash;
         use std::time::Instant;
@@ -265,8 +267,8 @@ mod test {
             setup_assets();
 
         let start = Instant::now();
-        println!("Starting generation of Merkle inclusion proof...");
-        let (proof, output) = prove_merkle_inclusion(
+        println!("Starting generation of inclusion proof...");
+        let (proof, output) = prove_inclusion(
             &client,
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
@@ -284,9 +286,9 @@ mod test {
 
         println!("Proving took {:?}", start.elapsed());
 
-        let (_, vk) = client.setup(aptos_programs::MERKLE_PROGRAM);
+        let (_, vk) = client.setup(aptos_programs::INCLUSION_PROGRAM);
         let start = Instant::now();
-        println!("Starting verification of Merkle inclusion proof...");
+        println!("Starting verification of inclusion proof...");
         client.verify(&proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }

@@ -1,4 +1,6 @@
-use aptos_lc::merkle::{SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets};
+use aptos_lc::inclusion::{
+    SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

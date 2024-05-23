@@ -1,4 +1,4 @@
+pub mod epoch_change;
 mod error;
-pub mod merkle;
-pub mod ratchet;
+pub mod inclusion;
 mod sig;

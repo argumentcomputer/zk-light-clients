@@ -1,4 +1,23 @@
-use aptos_lc::merkle::{SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets};
+//! # Benchmark Test for Aptos Light Client
+//!
+//! This benchmark simulates a full end-to-end test case for the Aptos Light Client, focusing on
+//! verifying the efficiency and correctness of epoch transition and account inclusion proofs.
+//! It leverages the `wp1_sdk` for predicate verification to ensure that:
+//!
+//! - P1(n): There exists a valid block header at a specific height with a valid Merkle root.
+//! - P2(n): There exists a valid transition to a new set of validators, signed off by the current validators.
+//! - P3(A, V, S_h): An account's value is included within the stated Merkle root.
+//!
+//! P1 and P3 are verified in the inclusion program, while P2 is verified in the ratchet program.
+//!
+//! This test also measures the performance of these operations to identify potential bottlenecks
+//! and optimize the verification process.
+//!
+//! For more information on the Light Client design, its programs and the predicates used in this
+//! benchmark, please refer to the  [HackMD document](https://hackmd.io/@lurk-lab/HJvnlbKGR)
+use aptos_lc::inclusion::{
+    SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
+};
 use aptos_lc_core::aptos_test_utils::wrapper::{AptosWrapper, ExecuteBlockArgs};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, TrustedStateChange};
@@ -19,11 +38,11 @@ struct Timings {
 }
 
 fn main() {
-    // Initialize assets needed for the test.
+    // Initialize Aptos Test Wrapper with configured validators and signers.
     let mut aptos_wrapper =
         AptosWrapper::new(NBR_ACCOUNTS, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
-    // Get trusted state after genesis.
+    // Extract and serialize the trusted state after the genesis block is created.
     let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
     let validator_verifier = match TrustedState::from_bytes(&trusted_state).unwrap() {
         TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().clone(),
@@ -32,55 +51,58 @@ fn main() {
     let validator_verifier_hash = validator_verifier.hash();
     let trusted_state_version = *aptos_wrapper.current_version();
 
-    // Generate a block with transactions and set a new epoch.
+    // Simulate traffic to generate a new block.
     aptos_wrapper.generate_traffic().unwrap();
 
-    // Get epoch change proof for ratcheting.
+    // Generate a new epoch block and serialize the epoch change proof.
     let state_proof = aptos_wrapper
         .new_state_proof(trusted_state_version)
         .unwrap();
-    let epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
+    let aptos_epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
     // Instantiate prover client.
     let prover_client = ProverClient::new();
 
-    // Out of circuit ratcheting for ensuring proper one in circuit, and also
-    // for later merkle verification.
+    // Execute proof generation for epoch change.
     let start_ratchet_proving = Instant::now();
-    let mut ratchet_proof = prove_ratchet(&prover_client, &trusted_state, epoch_change_proof);
+    let mut epoch_change_proof =
+        prove_epoch_change(&prover_client, &trusted_state, aptos_epoch_change_proof);
     let ratchet_proving_time = start_ratchet_proving.elapsed();
 
-    let prev_validator_verifier_hash: [u8; 32] = ratchet_proof.public_values.read();
+    let prev_validator_verifier_hash: [u8; 32] = epoch_change_proof.public_values.read();
 
-    // Assert have the expected validator verifier hash committed
-    // by our program.
+    // Verify that the ratchet program produces the expected validator verifier hash.
+    // This verifies validator consistency required by P2.
     assert_eq!(
         &prev_validator_verifier_hash,
         validator_verifier_hash.as_ref(),
         "The output for the previous validator verifier hash is not the expected one for the Ratchet program."
     );
 
-    let new_validator_verifier_hash: [u8; 32] = ratchet_proof.public_values.read();
+    let new_validator_verifier_hash: [u8; 32] = epoch_change_proof.public_values.read();
 
     let (validator_verifier, expected_hash) =
-        verify_and_ratchet_with_hash(&trusted_state, epoch_change_proof);
+        verify_and_ratchet_with_hash(&trusted_state, aptos_epoch_change_proof);
 
-    // Assert have the expected validator verifier hash.
+    // Assert the correct validator verifier hash against out-of-circuit computation
+    // after ratcheting.
     assert_eq!(
         &new_validator_verifier_hash,
         expected_hash.as_ref(),
         "Validator verifier hash mismatch with previously known one"
     );
 
-    // Retrieve assets for merkle verification.
+    // Retrieve and prepare assets for merkle verification.
     let _ = aptos_wrapper.execute_block(ExecuteBlockArgs::StateProof(Box::new(state_proof)));
 
+    // Simulate traffic to generate a new block.
     aptos_wrapper.generate_traffic().unwrap();
 
     let proof_assets = aptos_wrapper
         .get_latest_proof_account(NBR_ACCOUNTS - 1)
         .unwrap();
 
+    // Serialize and prepare merkle and accumulator proofs for the transaction and its inclusion in the ledger
     let sparse_merkle_proof = bcs::to_bytes(proof_assets.state_proof()).unwrap();
     let key: [u8; 32] = *proof_assets.key().as_ref();
     let element_hash: [u8; 32] = *proof_assets.state_value_hash().unwrap().as_ref();
@@ -101,26 +123,33 @@ fn main() {
 
     let validator_verifier_assets = ValidatorVerifierAssets::new(validator_verifier.to_bytes());
 
+    // Execute proof generation for an account being included
+    // in the state.
+    // The verification of the proofs in the program ensures the
+    // account inclusion required by P3.
     let start_merkle_proving = Instant::now();
-    let mut merkle_proof = prove_merkle(
+    let mut inclusion_proof = prove_inclusion(
         &prover_client,
         &sparse_merkle_proof_assets,
         &transaction_proof_assets,
         &validator_verifier_assets,
     );
     let merkle_proving_time = start_merkle_proving.elapsed();
-    let output_validator_hash: [u8; 32] = merkle_proof.public_values.read();
+    let output_validator_hash: [u8; 32] = inclusion_proof.public_values.read();
 
-    // Assert have the expected validator verifier hash committed
-    // by our program.
+    // Verify the consistency of the validator verifier hash post-merkle proof.
+    // This verifies the validator consistency required by P1.
     assert_eq!(
         output_validator_hash,
         new_validator_verifier_hash,
         "The output for the validator verifier hash is not the expected one for the Merkle program."
     );
 
-    let merkle_root_slice: [u8; 32] = merkle_proof.public_values.read();
+    let merkle_root_slice: [u8; 32] = inclusion_proof.public_values.read();
 
+    // Verify the consistency of the final merkle root hash computed
+    // by the program against the expected one.
+    // This verifies P3 out-of-circuit.
     assert_eq!(
         &merkle_root_slice,
         proof_assets
@@ -131,7 +160,7 @@ fn main() {
         "Merkle root hash mismatch"
     );
 
-    // Output timings.
+    // Serialize and print the timing results for both proofs.
     let timings = Timings {
         ratchet_proving_time: ratchet_proving_time.as_millis(),
         merkle_proving_time: merkle_proving_time.as_millis(),
@@ -141,7 +170,7 @@ fn main() {
     println!("{}", json_output);
 }
 
-fn prove_ratchet(
+fn prove_epoch_change(
     client: &ProverClient,
     trusted_state: &[u8],
     epoch_change_proof: &[u8],
@@ -153,11 +182,11 @@ fn prove_ratchet(
     stdin.write(&trusted_state);
     stdin.write(&epoch_change_proof);
 
-    let (pk, _) = client.setup(aptos_programs::RATCHET_PROGRAM);
+    let (pk, _) = client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
     client.prove(&pk, stdin).unwrap()
 }
 
-fn prove_merkle(
+fn prove_inclusion(
     client: &ProverClient,
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
@@ -181,7 +210,7 @@ fn prove_merkle(
     // Validator verifier
     stdin.write(validator_verifier_assets.validator_verifier());
 
-    let (pk, _) = client.setup(aptos_programs::MERKLE_PROGRAM);
+    let (pk, _) = client.setup(aptos_programs::INCLUSION_PROGRAM);
     client.prove(&pk, stdin).unwrap()
 }
 

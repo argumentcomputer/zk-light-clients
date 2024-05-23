@@ -1,11 +1,12 @@
 [workspace]
 [package]
 version = "0.1.0"
-name = "merkle-program"
+name = "signature-verification-program"
 edition = "2021"
 
 [dependencies]
-aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }
+aptos-lc-core = { path = "../../../core", package = "aptos-lc-core", default-features = false }
+wp1-derive = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
 wp1-zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
 
 [patch.crates-io]

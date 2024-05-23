@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use aptos_lc::{merkle, ratchet};
+use aptos_lc::{epoch_change, inclusion};
 use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1VerifyingKey};
 
 use server::{MerkleInclusionProofRequest, RatchetingProofRequest};
@@ -21,8 +21,8 @@ struct Server {
 impl Default for Server {
     fn default() -> Self {
         let prover_client = ProverClient::default();
-        let ratcheting_keys = ratchet::generate_keys(&prover_client);
-        let merkle_inclusion_keys = merkle::generate_keys(&prover_client);
+        let ratcheting_keys = epoch_change::generate_keys(&prover_client);
+        let merkle_inclusion_keys = inclusion::generate_keys(&prover_client);
         Self {
             prover_client,
             ratcheting_keys,
@@ -43,7 +43,7 @@ impl aptos_server::Aptos for Server {
         } = request.into_inner();
 
         let (pk, _) = &self.ratcheting_keys;
-        let stdin = ratchet::generate_stdin(&trusted_state, &epoch_change_proof);
+        let stdin = epoch_change::generate_stdin(&trusted_state, &epoch_change_proof);
 
         let proof = self
             .prover_client
@@ -64,7 +64,7 @@ impl aptos_server::Aptos for Server {
         } = request.into_inner();
 
         let (pk, _) = &self.merkle_inclusion_keys;
-        let stdin = merkle::generate_stdin(
+        let stdin = inclusion::generate_stdin(
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
             &validator_verifier_assets,

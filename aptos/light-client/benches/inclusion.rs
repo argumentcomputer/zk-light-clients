@@ -1,4 +1,22 @@
-use aptos_lc::merkle::{SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets};
+//! # Benchmark Test for Account Inclusion Proving and Verification
+//!
+//! This benchmark assesses the performance of the Aptos Light Client's account inclusion proof process
+//! across different sizes of state trees. It tests both the proving and verification time required for
+//! account inclusion using the `ProverClient` from `wp1_sdk`.
+//!
+//! The test checks:
+//!
+//! - Proving and verifying the inclusion of an account in the state tree.
+//!
+//! Predicates checked during the benchmark:
+//! - P1(V, S_h): Validates that the validator verifier hash V is consistent with the previous epoch's validator verifier hash.
+//! - P3(A, V, S_h): Validates that an account value V for account A exists in the state tree with Merkle root S_h.
+//!
+//! The benchmark aims to determine how state tree size impacts the efficiency of the proof generation and verification process.
+
+use aptos_lc::inclusion::{
+    SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
+};
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
@@ -18,9 +36,12 @@ struct ProvingAssets {
     sparse_merkle_proof_assets: SparseMerkleProofAssets,
     transaction_proof_assets: TransactionProofAssets,
     validator_verifier_assets: ValidatorVerifierAssets,
+    // Final state hash
+    state_checkpoint_hash: [u8; 32],
 }
 
 impl ProvingAssets {
+    /// Constructs proving assets for a given number of leaves, preparing the account inclusion proof.
     fn from_nbr_leaves(nbr_leaves: usize) -> Self {
         let mut aptos_wrapper =
             AptosWrapper::new(nbr_leaves, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
@@ -47,6 +68,11 @@ impl ProvingAssets {
         let sparse_merkle_proof_assets =
             SparseMerkleProofAssets::new(sparse_merkle_proof, key, element_hash);
 
+        let state_checkpoint_hash = proof_assets
+            .transaction()
+            .ensure_state_checkpoint_hash()
+            .unwrap();
+
         let transaction_proof_assets = TransactionProofAssets::new(
             transaction,
             *proof_assets.transaction_version(),
@@ -63,34 +89,37 @@ impl ProvingAssets {
             sparse_merkle_proof_assets,
             transaction_proof_assets,
             validator_verifier_assets,
+            state_checkpoint_hash: *state_checkpoint_hash.as_ref(),
         }
     }
 
+    /// Proves the account inclusion using the ProverClient.
+    /// Evaluates the predicate P3 during the proving process.
     fn prove(&self) -> SP1Proof {
         let mut stdin = SP1Stdin::new();
 
         setup_logger();
 
-        // Account inclusion input
+        // Account inclusion input: Writes Merkle proof related data to stdin.
         stdin.write(self.sparse_merkle_proof_assets.sparse_merkle_proof());
         stdin.write(self.sparse_merkle_proof_assets.leaf_key());
         stdin.write(self.sparse_merkle_proof_assets.leaf_hash());
 
-        // Tx inclusion input
+        // Tx inclusion input: Writes transaction related data to stdin.
         stdin.write(self.transaction_proof_assets.transaction());
         stdin.write(self.transaction_proof_assets.transaction_index());
         stdin.write(self.transaction_proof_assets.transaction_proof());
         stdin.write(self.transaction_proof_assets.latest_li());
 
-        // Validator verifier
+        // Validator verifier: Writes validator verifier data for proof validation.
         stdin.write(self.validator_verifier_assets.validator_verifier());
 
-        let (pk, _) = self.client.setup(aptos_programs::MERKLE_PROGRAM);
+        let (pk, _) = self.client.setup(aptos_programs::INCLUSION_PROGRAM);
         self.client.prove(&pk, stdin).unwrap()
     }
 
     fn verify(&self, proof: &SP1Proof) {
-        let (_, vk) = self.client.setup(aptos_programs::MERKLE_PROGRAM);
+        let (_, vk) = self.client.setup(aptos_programs::INCLUSION_PROGRAM);
         self.client.verify(proof, &vk).expect("Verification failed");
     }
 }
@@ -107,12 +136,12 @@ fn main() {
         let proving_assets = ProvingAssets::from_nbr_leaves(nbr_leaves);
 
         let start_proving = Instant::now();
-        let mut proof = proving_assets.prove();
+        let mut inclusion_proof = proving_assets.prove();
         let proving_time = start_proving.elapsed();
 
-        // Assert that we received proper outputs
-        let prev_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
-
+        // Verify the consistency of the validator verifier hash post-merkle proof.
+        // This verifies the validator consistency required by P1.
+        let prev_validator_verifier_hash = inclusion_proof.public_values.read::<[u8; 32]>();
         assert_eq!(
             &prev_validator_verifier_hash,
             ValidatorVerifier::from_bytes(
@@ -125,8 +154,17 @@ fn main() {
             .as_ref()
         );
 
+        // Verify the consistency of the final merkle root hash computed
+        // by the program against the expected one.
+        // This verifies P3 out-of-circuit.
+        let merkle_root_slice: [u8; 32] = inclusion_proof.public_values.read();
+        assert_eq!(
+            merkle_root_slice, proving_assets.state_checkpoint_hash,
+            "Merkle root hash mismatch"
+        );
+
         let start_verifying = Instant::now();
-        proving_assets.verify(black_box(&proof));
+        proving_assets.verify(black_box(&inclusion_proof));
         let verifying_time = start_verifying.elapsed();
 
         let timings = Timings {

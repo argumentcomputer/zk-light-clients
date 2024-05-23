@@ -1,3 +1,17 @@
+//! # Benchmark Test for Aptos Light Client Epoch Transition
+//!
+//! This benchmark evaluates the performance of the Aptos Light Client's epoch transition proof verification.
+//! It measures the time taken to prove and verify an epoch change using the `ProverClient` from `wp1_sdk`.
+//! The test covers:
+//!
+//! - Generating and proving the epoch transition proof.
+//! - Verifying the proof to ensure its correctness.
+//!
+//! Predicates checked during the benchmark:
+//! - P2(n): Verifies that there is a valid transition to a new set of validators, signed off by the current validators.
+//!
+//! This benchmark aims to identify potential optimizations in the proving and verification process of epoch transitions
+//! within the Aptos blockchain.
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
@@ -18,6 +32,7 @@ struct ProvingAssets {
 const AVERAGE_SIGNERS_NBR: usize = 95;
 
 impl ProvingAssets {
+    /// Constructs a new instance of `ProvingAssets` by setting up the necessary state and proofs for the benchmark.
     fn new() -> Self {
         let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
@@ -54,12 +69,12 @@ impl ProvingAssets {
         stdin.write(&self.trusted_state);
         stdin.write(&self.epoch_change_proof);
 
-        let (pk, _) = self.client.setup(aptos_programs::RATCHET_PROGRAM);
+        let (pk, _) = self.client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
         self.client.prove(&pk, stdin).unwrap()
     }
 
     fn verify(&self, proof: &SP1Proof) {
-        let (_, vk) = self.client.setup(aptos_programs::RATCHET_PROGRAM);
+        let (_, vk) = self.client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
         self.client.verify(proof, &vk).expect("Verification failed");
     }
 }
@@ -71,22 +86,24 @@ struct Timings {
 }
 
 fn main() {
+    // Initialize the proving assets and benchmark the proving process.
     let proving_assets = ProvingAssets::new();
 
     let start_proving = Instant::now();
-    let mut proof = proving_assets.prove();
+    let mut epoch_change_proof = proving_assets.prove();
     let proving_time = start_proving.elapsed();
 
-    // Assert that we received proper outputs
-    let prev_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
-
+    // Verify that the computed hash matches the expected validator verifier hash.
+    let prev_validator_verifier_hash = epoch_change_proof.public_values.read::<[u8; 32]>();
+    // This verifies predicate consistency required by P2.
     assert_eq!(
         prev_validator_verifier_hash,
         proving_assets.validator_verifier_hash.as_slice()
     );
 
+    // Benchmark the verification process.
     let start_verifying = Instant::now();
-    proving_assets.verify(black_box(&proof));
+    proving_assets.verify(black_box(&epoch_change_proof));
     let verifying_time = start_verifying.elapsed();
 
     // Print results in JSON format.

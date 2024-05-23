@@ -175,7 +175,7 @@ jobs:
           set -o pipefail
 
           # TODO: Remove hardcoded test names
-          for test_name in "test_merkle_execute" "test_ratchet_execute" "test_sig_execute"; do
+          for test_name in "test_execute_inclusion" "test_epoch_change_execute" "test_sig_execute"; do
             cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture -E "test($test_name)" 2>&1 | tee out.txt
             num_cycles_base=$(cat out.txt | grep -o 'finished execution clk = [0-9]\+' | awk -F'= ' '{ print $2 }')
             num_cycles_pr=$(echo "$CYCLE_COUNTS" | jq ".[$counter] | to_entries | .[0].value")

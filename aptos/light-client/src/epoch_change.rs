@@ -4,7 +4,7 @@ use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
 use crate::error::LightClientError;
 
 #[allow(dead_code)]
-struct RatchetOutput {
+struct EpochChangeOutput {
     prev_validator_verifier_hash: [u8; 32],
     new_validator_verifier_hash: [u8; 32],
 }
@@ -18,15 +18,15 @@ pub fn generate_stdin(current_trusted_state: &[u8], epoch_change_proof: &[u8]) -
 
 #[inline]
 pub fn generate_keys(client: &ProverClient) -> (SP1ProvingKey, SP1VerifyingKey) {
-    client.setup(aptos_programs::RATCHET_PROGRAM)
+    client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM)
 }
 
 #[allow(dead_code)]
-fn prove_ratcheting(
+fn prove_epoch_change(
     client: &ProverClient,
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
-) -> Result<(SP1Proof, RatchetOutput), LightClientError> {
+) -> Result<(SP1Proof, EpochChangeOutput), LightClientError> {
     wp1_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(current_trusted_state, epoch_change_proof);
@@ -35,7 +35,7 @@ fn prove_ratcheting(
     let mut proof = client
         .prove(&pk, stdin)
         .map_err(|err| LightClientError::ProvingError {
-            program: "prove-ratcheting".to_string(),
+            program: "prove-epoch-change".to_string(),
             source: err.into(),
         })?;
 
@@ -45,7 +45,7 @@ fn prove_ratcheting(
 
     Ok((
         proof,
-        RatchetOutput {
+        EpochChangeOutput {
             prev_validator_verifier_hash,
             new_validator_verifier_hash,
         },
@@ -57,7 +57,7 @@ mod test {
     use crate::error::LightClientError;
     use wp1_sdk::{ProverClient, SP1Stdin};
 
-    fn execute_and_ratchet(
+    fn execute_epoch_change(
         current_trusted_state: &[u8],
         epoch_change_proof: &[u8],
     ) -> Result<(), LightClientError> {
@@ -71,9 +71,9 @@ mod test {
 
         let client = ProverClient::new();
         client
-            .execute(aptos_programs::RATCHET_PROGRAM, &stdin)
+            .execute(aptos_programs::EPOCH_CHANGE_PROGRAM, &stdin)
             .map_err(|err| LightClientError::ProvingError {
-                program: "prove-ratcheting".to_string(),
+                program: "prove-epoch-change".to_string(),
                 source: err.into(),
             })?;
 
@@ -81,7 +81,7 @@ mod test {
     }
 
     #[test]
-    fn test_ratchet_execute() {
+    fn test_epoch_change_execute() {
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_lc_core::NBR_VALIDATORS;
         use std::time::Instant;
@@ -102,15 +102,15 @@ mod test {
 
         let epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
-        println!("Starting execution of prove_ratcheting...");
+        println!("Starting execution of prove_epoch_change...");
         let start = Instant::now();
-        execute_and_ratchet(&trusted_state, epoch_change_proof).unwrap();
+        execute_epoch_change(&trusted_state, epoch_change_proof).unwrap();
         println!("Execution took {:?}", start.elapsed());
     }
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_ratchet_prove() {
+    fn test_epoch_change_prove() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_lc_core::crypto::hash::CryptoHash;
@@ -142,9 +142,9 @@ mod test {
         let client = ProverClient::new();
 
         let start = Instant::now();
-        println!("Starting generation of prove_ratcheting proof...");
+        println!("Starting generation of prove_epoch_change proof...");
         let (proof, output) =
-            prove_ratcheting(&client, &trusted_state, epoch_change_proof).unwrap();
+            prove_epoch_change(&client, &trusted_state, epoch_change_proof).unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         assert_eq!(
@@ -152,9 +152,9 @@ mod test {
             validator_verifier_hash.as_slice()
         );
 
-        let (_, vk) = client.setup(aptos_programs::RATCHET_PROGRAM);
+        let (_, vk) = client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
         let start = Instant::now();
-        println!("Starting verification of prove_ratcheting proof...");
+        println!("Starting verification of prove_epoch_change proof...");
         client.verify(&proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
