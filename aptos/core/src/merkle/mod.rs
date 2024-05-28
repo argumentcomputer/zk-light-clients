@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Merkle Tree Module
 //!
 //! This module provides the structures and functions necessary for handling Merkle Trees in the Aptos Light Client.
@@ -9,8 +12,6 @@
 //! - `transaction_proof`: This sub-module contains the `TransactionAccumulatorProof` structure and associated methods. It is used to represent and verify proofs in the Transaction Accumulator.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
-
-// SPDX-License-Identifier: Apache-2.0, MIT
 pub mod node;
 pub mod sparse_proof;
 pub mod transaction_proof;

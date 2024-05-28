@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Types Module
 //!
 //! This module provides the core data structures and types used in the Aptos Light Client.

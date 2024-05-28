@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Crypto Hash Module
 //!
 //! This module provides the implementation of cryptographic hash functions and related structures.
@@ -7,9 +10,6 @@
 //! This module is used for creating and manipulating cryptographic hashes in the Aptos codebase.
 //! The `CryptoHash` trait should be implemented by any structure that needs to be hashed.
 //! The `HashValue` and `HashValueBitIterator` structures provide functionality for working with hash values and their bits.
-
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use anyhow::{anyhow, Result};
 use getset::CopyGetters;
 use serde::{Deserialize, Serialize};

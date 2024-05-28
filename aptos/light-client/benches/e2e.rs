@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Benchmark Test for Aptos Light Client
 //!
 //! This benchmark simulates a full end-to-end test case for the Aptos Light Client, focusing on

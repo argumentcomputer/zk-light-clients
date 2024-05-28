@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Benchmark Test for Aptos Light Client Epoch Transition
 //!
 //! This benchmark evaluates the performance of the Aptos Light Client's epoch transition proof verification.

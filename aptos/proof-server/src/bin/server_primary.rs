@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::{Error, Result};
 use aptos_lc::inclusion;
 use clap::Parser;

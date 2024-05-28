@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Crypto Signature Module
 //!
 //! This module provides the implementation of cryptographic signature functions and related structures.
@@ -7,9 +10,6 @@
 //!
 //! This module is used for creating, manipulating, and verifying cryptographic signatures in the Aptos codebase.
 //! The `PublicKey`, `Signature`, and `AggregateSignature` structures provide functionality for working with public keys and signatures.
-
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use crate::crypto::error::CryptoError;
 use crate::serde_error;
 use crate::types::error::TypesError;

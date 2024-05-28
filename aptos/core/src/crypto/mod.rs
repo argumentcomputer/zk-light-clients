@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Cryptographic Utilities for the Aptos Light Client
 //!
 //! This module contains cryptographic utilities used by the light client.
@@ -10,8 +13,6 @@
 //! - `error`: This sub-module contains the ``CryptoError` error type used throughout the `crypto` module.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
-
-// SPDX-License-Identifier: Apache-2.0, MIT
 mod error;
 pub mod hash;
 pub mod sig;

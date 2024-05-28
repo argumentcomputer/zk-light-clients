@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Benchmark Test for Account Inclusion Proving and Verification
 //!
 //! This benchmark assesses the performance of the Aptos Light Client's account inclusion proof process

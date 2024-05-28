@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Trusted State Module
 //!
 //! This module provides the `TrustedState` to keeps track

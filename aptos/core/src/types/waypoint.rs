@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Waypoint Module
 //!
 //! This module provides the `Waypoint` structure and

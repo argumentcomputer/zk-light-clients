@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Block Info Module
 //!
 //! This module provides the `BlockInfo` structure and

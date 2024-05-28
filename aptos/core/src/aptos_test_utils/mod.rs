@@ -1,4 +1,6 @@
+// Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0, MIT
+
 mod error;
 pub mod wrapper;
 

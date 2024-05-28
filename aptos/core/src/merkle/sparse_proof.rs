@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Sparse Merkle Proof Module
 //!
 //! This module provides the structures and functions

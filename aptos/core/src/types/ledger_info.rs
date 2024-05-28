@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! This module defines LedgerInfo and LedgerInfoWithSignatures structs which are used to
 //! represent the information about the latest committed block and the signatures of the
 //! validators over the LedgerInfo.

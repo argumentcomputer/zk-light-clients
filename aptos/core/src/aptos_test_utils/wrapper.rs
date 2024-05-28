@@ -1,8 +1,9 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! This module provides a wrapper around the Aptos execution layer.
 //! It includes utilities for creating and interacting with a simulated Aptos blockchain.
 //! It is primarily used for testing purposes.
-
-// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::aptos_test_utils::error::AptosError;
 use aptos_crypto::bls12381::Signature;
 use aptos_crypto::hash::{CryptoHash, TransactionAccumulatorHasher};

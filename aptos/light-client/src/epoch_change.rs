@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::Result;
 use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
 

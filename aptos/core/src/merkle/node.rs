@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Merkle Node Module
 //!
 //! This module provides the necessary structures and traits for
@@ -43,8 +46,6 @@
 //! structures implement the `NodeHasher` trait, each providing
 //! a different prefix for hashing.
 //!
-
-// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::error::TypesError;
