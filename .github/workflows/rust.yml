@@ -46,44 +46,26 @@ jobs:
           - "aptos"
       fail-fast: false
     env:
-      RUSTFLAGS: -D warnings
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
-      - name: Set up git private repo access
-        run: |
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: taiki-e/install-action@nextest
-      - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "aptos -> target"
-      - name: Install deps
-        run: |
-          sudo apt-get update || true
-          
-          sudo apt-get install -y pkg-config libssl-dev libudev-dev
-          
-          git clone https://github.com/wormhole-foundation/wp1.git
-          cd wp1/cli
-          cargo install --locked --path .
-
-          cd ~
-          cargo prove install-toolchain          
+          repository: lurk-lab/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./.github/actions/setup
+        with:
+          pull_token: ${{ secrets.REPO_TOKEN }}
       # make sure benches don't bit-rot
       - name: build benches
         run: |
           cargo check --benches --features aptos
         working-directory: ${{ github.workspace }}/${{ matrix.package }}/light-client
-        env:
-          RUSTFLAGS: "--cfg tokio_unstable"
       - name: Run cargo test in workspace
         run: |
           cargo nextest run --workspace --release --profile ci --all-features
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
-        env:
-          RUSTFLAGS: "--cfg tokio_unstable"
       - name: Doctests
         run: |
           cargo test --doc
@@ -98,19 +80,15 @@ jobs:
     env:
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
-      - name: Set up git private repo access
-        run: |
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "aptos -> target"
-      - name: Install deps
-        run: |
-          sudo apt-get update || true
-          sudo apt-get install -y pkg-config libudev-dev
+          repository: lurk-lab/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./.github/actions/setup
+        with:
+          pull_token: ${{ secrets.REPO_TOKEN }}
       # See '.cargo/config' for list of enabled/disabled clippy lints
       - name: rustfmt
         run: cargo fmt --all --check
@@ -122,27 +100,15 @@ jobs:
   cycle-count-regression:
     runs-on: warp-ubuntu-latest-x64-32x
     steps:
-      - name: Set up git private repo access
-        run: |
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "aptos -> target"
-      - uses: taiki-e/install-action@nextest
-      - name: Install deps
-        run: |
-          sudo apt-get update || true
-          sudo apt-get install -y pkg-config libudev-dev
-
-          git clone https://github.com/wormhole-foundation/wp1.git
-          cd wp1/cli
-          cargo install --locked --path .
-
-          cd ~
-          cargo prove install-toolchain          
+          repository: lurk-lab/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./.github/actions/setup
+        with:
+          pull_token: ${{ secrets.REPO_TOKEN }}
       - name: Get cycle counts for PR
         id: get_cycles_pr
         run: |
@@ -200,6 +166,7 @@ jobs:
         working-directory: ${{ github.workspace }}/aptos/light-client
         env:
           RUST_LOG: debug
+      - uses: actions/checkout@v4
       - name: Comment on failing run
         if: steps.regression-check.outputs.regression == 'true' && github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v4

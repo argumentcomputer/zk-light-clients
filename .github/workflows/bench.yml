@@ -20,31 +20,21 @@ jobs:
     name: Manual benchmark
     runs-on: [self-hosted, bench, avx512]
     env:
-      RUSTFLAGS: -D warnings
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
-      - name: Set up git private repo access
-        run: |
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "aptos -> target"
-      - name: Install deps
+          repository: lurk-lab/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./.github/actions/setup
+        with:
+          pull_token: ${{ secrets.REPO_TOKEN }}
+      - name: Install extra deps
         run: |
-          sudo apt-get update || true
-
-          sudo apt-get install -y pkg-config libudev-dev clang llvm-dev libclang-dev python3-pip
+          sudo apt-get install -y clang llvm-dev libclang-dev python3-pip
           export LIBCLANG_PATH=/usr/local/lib
-
-          git clone https://github.com/wormhole-foundation/wp1.git
-          cd wp1/cli
-          cargo install --locked --path .
-
-          cd ~
-          cargo prove install-toolchain
 
           pip3 install jtbl
       - name: Run benchmarks
