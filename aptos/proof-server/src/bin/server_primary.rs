@@ -9,6 +9,7 @@ use std::sync::Arc;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
+    task::spawn_blocking,
 };
 use wp1_sdk::ProverClient;
 
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
     let (pk, vk) = (Arc::new(pk), Arc::new(vk));
 
     loop {
-        let (mut socket, _) = listener.accept().await?;
+        let (mut client_stream, _) = listener.accept().await?;
         info!("Received a connection");
 
         // cheap `Arc` clones
@@ -80,7 +81,7 @@ async fn main() -> Result<()> {
 
         tokio::spawn(async move {
             info!("Awaiting request");
-            let request_bytes = read_bytes(&mut socket).await?;
+            let request_bytes = read_bytes(&mut client_stream).await?;
             info!("Request received");
 
             info!("Deserializing request");
@@ -97,46 +98,45 @@ async fn main() -> Result<()> {
                         &validator_verifier_assets,
                     );
                     info!("Start proving");
-                    let proof_handle =
-                        tokio::task::spawn_blocking(move || prover_client.prove(&pk, stdin));
+                    let proof_handle = spawn_blocking(move || prover_client.prove(&pk, stdin));
                     let proof = proof_handle.await??;
                     info!("Proof generated. Serializing");
                     let proof_bytes = bcs::to_bytes(&proof)?;
                     info!("Sending proof");
-                    write_bytes(&mut socket, &proof_bytes).await?;
+                    write_bytes(&mut client_stream, &proof_bytes).await?;
                     info!("Proof sent");
                 }
                 Ok(Request::VerifyInclusion(proof)) => {
-                    socket
+                    client_stream
                         .write_u8(u8::from(prover_client.verify(&proof, &vk).is_ok()))
                         .await?;
                 }
                 Ok(Request::ProveEpochChange(epoch_change_data)) => {
                     info!("Connecting to the secondary server");
-                    let mut stream = TcpStream::connect(&*snd_addr).await?;
+                    let mut secondary_stream = TcpStream::connect(&*snd_addr).await?;
                     let secondary_request = SecondaryRequest::Prove(epoch_change_data);
                     info!("Serializing secondary request");
                     let secondary_request_bytes = bcs::to_bytes(&secondary_request)?;
                     info!("Sending secondary request");
-                    write_bytes(&mut stream, &secondary_request_bytes).await?;
+                    write_bytes(&mut secondary_stream, &secondary_request_bytes).await?;
                     info!("Awaiting proof");
-                    let proof_bytes = read_bytes(&mut stream).await?;
+                    let proof_bytes = read_bytes(&mut secondary_stream).await?;
                     info!("Proof received. Sending it to the primary server");
-                    write_bytes(&mut socket, &proof_bytes).await?;
+                    write_bytes(&mut client_stream, &proof_bytes).await?;
                     info!("Proof sent");
                 }
                 Ok(Request::VerifyEpochChange(proof)) => {
                     info!("Connecting to the secondary server");
-                    let mut stream = TcpStream::connect(&*snd_addr).await?;
+                    let mut secondary_stream = TcpStream::connect(&*snd_addr).await?;
                     let secondary_request = SecondaryRequest::Verify(proof);
                     info!("Serializing secondary request");
                     let secondary_request_bytes = bcs::to_bytes(&secondary_request)?;
                     info!("Sending secondary request");
-                    write_bytes(&mut stream, &secondary_request_bytes).await?;
+                    write_bytes(&mut secondary_stream, &secondary_request_bytes).await?;
                     info!("Awaiting verification");
-                    let verified = stream.read_u8().await?;
+                    let verified = secondary_stream.read_u8().await?;
                     info!("Verification finished. Sending result");
-                    socket.write_u8(verified).await?;
+                    client_stream.write_u8(verified).await?;
                     info!("Verification result sent");
                 }
                 Err(e) => error!("Failed to deserialize request object: {e}"),

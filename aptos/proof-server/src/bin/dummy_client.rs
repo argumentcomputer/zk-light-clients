@@ -20,7 +20,7 @@ use wp1_sdk::{ProverClient, SP1Proof};
 #[derive(Parser)]
 struct Cli {
     /// The address of the proof server
-    #[arg(long)]
+    #[arg(short, long)]
     addr: String,
 
     #[clap(subcommand)]

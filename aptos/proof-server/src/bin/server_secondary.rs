@@ -6,7 +6,7 @@ use aptos_lc::epoch_change;
 use clap::Parser;
 use log::info;
 use std::sync::Arc;
-use tokio::{io::AsyncWriteExt, net::TcpListener};
+use tokio::{io::AsyncWriteExt, net::TcpListener, task::spawn_blocking};
 use wp1_sdk::ProverClient;
 
 use proof_server::{read_bytes, write_bytes, EpochChangeData, SecondaryRequest};
@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
     let (pk, vk) = (Arc::new(pk), Arc::new(vk));
 
     loop {
-        let (mut socket, _) = listener.accept().await?;
+        let (mut primary_stream, _) = listener.accept().await?;
         info!("Received a connection");
 
         // cheap `Arc` clones
@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
 
         tokio::spawn(async move {
             info!("Awaiting request data");
-            let request_bytes = read_bytes(&mut socket).await?;
+            let request_bytes = read_bytes(&mut primary_stream).await?;
             info!("Request data received");
 
             info!("Deserializing request data");
@@ -69,17 +69,16 @@ async fn main() -> Result<()> {
                 }) => {
                     let stdin = epoch_change::generate_stdin(&trusted_state, &epoch_change_proof);
                     info!("Start proving");
-                    let proof_handle =
-                        tokio::task::spawn_blocking(move || prover_client.prove(&pk, stdin));
+                    let proof_handle = spawn_blocking(move || prover_client.prove(&pk, stdin));
                     let proof = proof_handle.await??;
                     info!("Proof generated. Serializing");
                     let proof_bytes = bcs::to_bytes(&proof)?;
                     info!("Sending proof to the primary server");
-                    write_bytes(&mut socket, &proof_bytes).await?;
+                    write_bytes(&mut primary_stream, &proof_bytes).await?;
                     info!("Proof sent");
                 }
                 SecondaryRequest::Verify(proof) => {
-                    socket
+                    primary_stream
                         .write_u8(u8::from(prover_client.verify(&proof, &vk).is_ok()))
                         .await?;
                 }
