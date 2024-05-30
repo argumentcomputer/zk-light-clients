@@ -43,6 +43,18 @@ pub enum TrustedState {
 }
 
 impl TrustedState {
+    /// Returns the epoch for the `TrustedState`.
+    ///
+    /// # Returns
+    ///
+    /// The epoch of the `TrustedState`.
+    pub const fn epoch(&self) -> Option<u64> {
+        match self {
+            TrustedState::EpochState { epoch_state, .. } => Some(epoch_state.epoch),
+            _ => None,
+        }
+    }
+
     /// Returns the transaction version for the `TrustedState`.
     ///
     /// # Returns

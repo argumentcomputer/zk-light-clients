@@ -6,10 +6,13 @@ use aptos_lc::epoch_change;
 use clap::Parser;
 use log::info;
 use std::sync::Arc;
-use tokio::{io::AsyncWriteExt, net::TcpListener, task::spawn_blocking};
+use tokio::{net::TcpListener, task::spawn_blocking};
 use wp1_sdk::ProverClient;
 
-use proof_server::{read_bytes, write_bytes, EpochChangeData, SecondaryRequest};
+use proof_server::{
+    types::proof_server::{EpochChangeData, SecondaryRequest},
+    utils::{read_bytes, write_bytes},
+};
 
 /// Server capable of handling proof generation and verification regarding epoch
 /// changes. Such requests are expected to come from the primary server.
@@ -19,9 +22,7 @@ use proof_server::{read_bytes, write_bytes, EpochChangeData, SecondaryRequest};
 ///
 /// * Request data must be preceded by its size in bytes
 /// * Proof responses will follow the same logic
-/// * Verification responses are single bytes
-///     - 0 means that the proof didn't verify
-///     - 1 means that the proof did verify
+///  *Verification responses will follow the same logic.
 ///
 /// The request bytes must be deserializable into `proof_server::SecondaryRequest`
 /// by the `bcs` crate, so it's recommended to simply use that (pub) type when
@@ -78,9 +79,11 @@ async fn main() -> Result<()> {
                     info!("Proof sent");
                 }
                 SecondaryRequest::Verify(proof) => {
-                    primary_stream
-                        .write_u8(u8::from(prover_client.verify(&proof, &vk).is_ok()))
-                        .await?;
+                    write_bytes(
+                        &mut primary_stream,
+                        &bcs::to_bytes(&prover_client.verify(&proof, &vk).is_ok())?,
+                    )
+                    .await?;
                 }
             }
             Ok::<(), Error>(())

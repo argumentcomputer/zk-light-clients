@@ -69,6 +69,8 @@ jobs:
       - name: Doctests
         run: |
           cargo test --doc
+        env:
+          RUSTFLAGS: "--cfg tokio_unstable"
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
   clippy:

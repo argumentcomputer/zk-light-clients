@@ -24,6 +24,7 @@ aptos-vm-genesis = { git = "https://github.com/aptos-labs/aptos-core/", tag = "a
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm" }
 bytes = "1.5.0"
+chrono = "0.4.38"
 cfg-if = "1.0.0"
 clap = { version = "4.5.4", features = ["derive"] }
 env_logger = "0.11"
@@ -36,13 +37,14 @@ move-core-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "ap
 proptest = { version = "1.4.0" }
 rand = "0.7.3"
 rand_core = "0.5.1"
-reqwest = "0.11.23"
+reqwest = "0.12.4"
 serde = "1.0.193"
 serde_bytes = "0.11.6"
 serde_json = "1"
 sha2 = "0.9"
 thiserror = "1.0.58"
 tiny-keccak = "2.0.2"
+url = "2.5.0"
 wp1-derive = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
 wp1-sdk = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
 wp1-zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }

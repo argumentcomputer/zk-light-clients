@@ -7,13 +7,15 @@ use clap::Parser;
 use log::{error, info};
 use std::sync::Arc;
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
     task::spawn_blocking,
 };
 use wp1_sdk::ProverClient;
 
-use proof_server::{read_bytes, write_bytes, InclusionData, Request, SecondaryRequest};
+use proof_server::{
+    types::proof_server::{InclusionData, Request, SecondaryRequest},
+    utils::{read_bytes, write_bytes},
+};
 
 /// Server responsible from handling requests for proof generation and verification
 /// of inclusion and epoch changes.
@@ -41,9 +43,7 @@ use proof_server::{read_bytes, write_bytes, InclusionData, Request, SecondaryReq
 /// Proofs are provided following the same logic as above: their sizes (in number
 /// of bytes) must be read before reading the proof bytes themselves.
 ///
-/// Verification responses, on the other hand, are just single bytes:
-/// * 0 means that the proof didn't verify
-/// * 1 means that the proof did verify
+/// Verification responses are the same, with their payload only being a boolean.
 #[derive(Parser)]
 struct Cli {
     /// Address of this server. E.g. 127.0.0.1:1234
@@ -107,9 +107,11 @@ async fn main() -> Result<()> {
                     info!("Proof sent");
                 }
                 Ok(Request::VerifyInclusion(proof)) => {
-                    client_stream
-                        .write_u8(u8::from(prover_client.verify(&proof, &vk).is_ok()))
-                        .await?;
+                    write_bytes(
+                        &mut client_stream,
+                        &bcs::to_bytes(&prover_client.verify(&proof, &vk).is_ok())?,
+                    )
+                    .await?;
                 }
                 Ok(Request::ProveEpochChange(epoch_change_data)) => {
                     info!("Connecting to the secondary server");
@@ -134,9 +136,9 @@ async fn main() -> Result<()> {
                     info!("Sending secondary request");
                     write_bytes(&mut secondary_stream, &secondary_request_bytes).await?;
                     info!("Awaiting verification");
-                    let verified = secondary_stream.read_u8().await?;
+                    let verified = read_bytes(&mut secondary_stream).await?;
                     info!("Verification finished. Sending result");
-                    client_stream.write_u8(verified).await?;
+                    write_bytes(&mut client_stream, &verified).await?;
                     info!("Verification result sent");
                 }
                 Err(e) => error!("Failed to deserialize request object: {e}"),
