@@ -5,7 +5,7 @@ edition = "2021"
 
 [build-dependencies]
 glob = { workspace = true }
-wp1-helper = { workspace = true }
+sphinx-helper = { workspace = true }
 
 [features]
 bench = []

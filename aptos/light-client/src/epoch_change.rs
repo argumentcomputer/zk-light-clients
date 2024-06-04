@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use anyhow::Result;
-use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
+use sphinx_sdk::{ProverClient, SphinxProof, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
 
 use crate::error::LightClientError;
 
@@ -12,15 +12,15 @@ struct EpochChangeOutput {
     new_validator_verifier_hash: [u8; 32],
 }
 
-pub fn generate_stdin(current_trusted_state: &[u8], epoch_change_proof: &[u8]) -> SP1Stdin {
-    let mut stdin = SP1Stdin::new();
+pub fn generate_stdin(current_trusted_state: &[u8], epoch_change_proof: &[u8]) -> SphinxStdin {
+    let mut stdin = SphinxStdin::new();
     stdin.write(&current_trusted_state);
     stdin.write(&epoch_change_proof);
     stdin
 }
 
 #[inline]
-pub fn generate_keys(client: &ProverClient) -> (SP1ProvingKey, SP1VerifyingKey) {
+pub fn generate_keys(client: &ProverClient) -> (SphinxProvingKey, SphinxVerifyingKey) {
     client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM)
 }
 
@@ -29,8 +29,8 @@ fn prove_epoch_change(
     client: &ProverClient,
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
-) -> Result<(SP1Proof, EpochChangeOutput), LightClientError> {
-    wp1_sdk::utils::setup_logger();
+) -> Result<(SphinxProof, EpochChangeOutput), LightClientError> {
+    sphinx_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(current_trusted_state, epoch_change_proof);
     let (pk, _) = generate_keys(client);
@@ -58,16 +58,16 @@ fn prove_epoch_change(
 #[cfg(all(test, feature = "aptos"))]
 mod test {
     use crate::error::LightClientError;
-    use wp1_sdk::{ProverClient, SP1Stdin};
+    use sphinx_sdk::{ProverClient, SphinxStdin};
 
     fn execute_epoch_change(
         current_trusted_state: &[u8],
         epoch_change_proof: &[u8],
     ) -> Result<(), LightClientError> {
-        use wp1_sdk::utils;
+        use sphinx_sdk::utils;
         utils::setup_logger();
 
-        let mut stdin = SP1Stdin::new();
+        let mut stdin = SphinxStdin::new();
 
         stdin.write(&current_trusted_state);
         stdin.write(&epoch_change_proof);
@@ -118,8 +118,8 @@ mod test {
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_lc_core::crypto::hash::CryptoHash;
         use aptos_lc_core::types::trusted_state::TrustedState;
+        use sphinx_sdk::ProverClient;
         use std::time::Instant;
-        use wp1_sdk::ProverClient;
 
         const NBR_VALIDATORS: usize = 130;
         const AVERAGE_SIGNERS_NBR: usize = 95;

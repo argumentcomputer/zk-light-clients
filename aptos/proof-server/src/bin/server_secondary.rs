@@ -5,9 +5,9 @@ use anyhow::{Error, Result};
 use aptos_lc::epoch_change;
 use clap::Parser;
 use log::info;
+use sphinx_sdk::ProverClient;
 use std::sync::Arc;
 use tokio::{net::TcpListener, task::spawn_blocking};
-use wp1_sdk::ProverClient;
 
 use proof_server::{
     types::proof_server::{EpochChangeData, SecondaryRequest},

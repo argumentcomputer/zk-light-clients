@@ -15,8 +15,8 @@ The workspace is divided into the following:
 - `light-client`: The main library that contains the light client implementation. It is in charge of producing proofs
   regarding the consensus of the chain and inclusion of some account values in a Merkle Tree.
 - `core`: The core library that contains the data structures and utilities used by the light client.
-- `aptos-programs`: A library that exposes the WP1 programs used to generate proofs for our light client.*
-- `programs/*`: Actual implementations of the WP1 programs.
+- `aptos-programs`: A library that exposes the Sphinx programs used to generate proofs for our light client.*
+- `programs/*`: Actual implementations of the Sphinx programs.
 
 ## Development
 
@@ -93,7 +93,7 @@ These are slightly modified instructions from
 the [SP1 install from source](https://succinctlabs.github.io/sp1/getting-started/install.html#option-2-building-from-source)
 manual.
 
-**It's important to install `cargo-prove` from WP1 since it includes compiler optimization flags not present in SP1.**
+**It's important to install `cargo-prove` from Sphinx since it includes compiler optimization flags not present in SP1.**
 
 1. Ensure that the `cargo-prove` binary from SP1 is not installed, and if it is, remove it from `PATH`.
 2. Install `cargo-prove` from WP1:

@@ -22,4 +22,4 @@ serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 thiserror = { workspace = true }
 url = { workspace = true }
-wp1-sdk = { workspace = true }
+sphinx-sdk = { workspace = true }

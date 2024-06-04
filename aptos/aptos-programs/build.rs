@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use glob::glob;
+use sphinx_helper::build_program;
 use std::fs;
 use std::path::PathBuf;
-use wp1_helper::build_program;
 
 const PROGRAM_PATTERNS: [&str; 2] = ["../programs/*", "../programs/benchmarks/*"];
 const TARGET_DIR: [&str; 2] = ["./artifacts", "./artifacts/benchmarks"];

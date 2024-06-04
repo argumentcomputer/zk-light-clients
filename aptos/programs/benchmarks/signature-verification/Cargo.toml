@@ -6,10 +6,10 @@ edition = "2021"
 
 [dependencies]
 aptos-lc-core = { path = "../../../core", package = "aptos-lc-core", default-features = false }
-wp1-derive = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
-wp1-zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
+sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
 
 [patch.crates-io]
-# WP1 patch
+# Sphinx patch
 tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", branch = "patch-v2.0.2" }
 sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", branch = "patch-v0.10.8" }

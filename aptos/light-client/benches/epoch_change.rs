@@ -19,10 +19,10 @@ use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use serde::Serialize;
+use sphinx_sdk::utils::setup_logger;
+use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
 use std::hint::black_box;
 use std::time::Instant;
-use wp1_sdk::utils::setup_logger;
-use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
 
 struct ProvingAssets {
     client: ProverClient,
@@ -64,8 +64,8 @@ impl ProvingAssets {
         }
     }
 
-    fn prove(&self) -> SP1Proof {
-        let mut stdin = SP1Stdin::new();
+    fn prove(&self) -> SphinxProof {
+        let mut stdin = SphinxStdin::new();
 
         setup_logger();
 
@@ -76,7 +76,7 @@ impl ProvingAssets {
         self.client.prove(&pk, stdin).unwrap()
     }
 
-    fn verify(&self, proof: &SP1Proof) {
+    fn verify(&self, proof: &SphinxProof) {
         let (_, vk) = self.client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
         self.client.verify(proof, &vk).expect("Verification failed");
     }

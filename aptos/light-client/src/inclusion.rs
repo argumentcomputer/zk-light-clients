@@ -4,7 +4,7 @@
 use anyhow::Result;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-use wp1_sdk::{ProverClient, SP1Proof, SP1ProvingKey, SP1Stdin, SP1VerifyingKey};
+use sphinx_sdk::{ProverClient, SphinxProof, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
 
 use crate::error::LightClientError;
 
@@ -71,8 +71,8 @@ pub fn generate_stdin(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> SP1Stdin {
-    let mut stdin = SP1Stdin::new();
+) -> SphinxStdin {
+    let mut stdin = SphinxStdin::new();
     // Account inclusion input
     stdin.write(&sparse_merkle_proof_assets.sparse_merkle_proof);
     stdin.write(&sparse_merkle_proof_assets.leaf_key);
@@ -91,7 +91,7 @@ pub fn generate_stdin(
 }
 
 #[inline]
-pub fn generate_keys(client: &ProverClient) -> (SP1ProvingKey, SP1VerifyingKey) {
+pub fn generate_keys(client: &ProverClient) -> (SphinxProvingKey, SphinxVerifyingKey) {
     client.setup(aptos_programs::INCLUSION_PROGRAM)
 }
 
@@ -107,8 +107,8 @@ fn prove_inclusion(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<(SP1Proof, InclusionOutput), LightClientError> {
-    wp1_sdk::utils::setup_logger();
+) -> Result<(SphinxProof, InclusionOutput), LightClientError> {
+    sphinx_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(
         sparse_merkle_proof_assets,
@@ -144,7 +144,7 @@ mod test {
         SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
     };
     use aptos_lc_core::types::validator::ValidatorVerifier;
-    use wp1_sdk::{ProverClient, SP1Stdin};
+    use sphinx_sdk::{ProverClient, SphinxStdin};
 
     fn setup_assets() -> (
         SparseMerkleProofAssets,
@@ -209,10 +209,10 @@ mod test {
         transaction_proof_assets: &TransactionProofAssets,
         validator_verifier_assets: &ValidatorVerifierAssets,
     ) -> Result<(), LightClientError> {
-        use wp1_sdk::utils;
+        use sphinx_sdk::utils;
         utils::setup_logger();
 
-        let mut stdin = SP1Stdin::new();
+        let mut stdin = SphinxStdin::new();
 
         // Account inclusion input
         stdin.write(&sparse_merkle_proof_assets.sparse_merkle_proof);
@@ -262,8 +262,8 @@ mod test {
     fn test_prove_inclusion() {
         use super::*;
         use aptos_lc_core::crypto::hash::CryptoHash;
+        use sphinx_sdk::ProverClient;
         use std::time::Instant;
-        use wp1_sdk::ProverClient;
         let client = ProverClient::new();
 
         let (sparse_merkle_proof_assets, transaction_proof_assets, validator_verifier_assets) =

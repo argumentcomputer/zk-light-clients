@@ -10,26 +10,26 @@ use aptos_lc_core::types::ledger_info::LedgerInfoWithSignatures;
 use aptos_lc_core::types::transaction::TransactionInfo;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 
-wp1_zkvm::entrypoint!(main);
+sphinx_zkvm::entrypoint!(main);
 
 pub fn main() {
-    wp1_zkvm::precompiles::unconstrained! {
+    sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: read_inputs");
     }
     // Get inputs for account inclusion
-    let sparse_merkle_proof_bytes = wp1_zkvm::io::read::<Vec<u8>>();
-    let key = wp1_zkvm::io::read::<[u8; 32]>();
-    let leaf_value_hash = wp1_zkvm::io::read::<[u8; 32]>();
+    let sparse_merkle_proof_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
+    let key = sphinx_zkvm::io::read::<[u8; 32]>();
+    let leaf_value_hash = sphinx_zkvm::io::read::<[u8; 32]>();
 
     // Get inputs for tx inclusion
-    let transaction_bytes = wp1_zkvm::io::read::<Vec<u8>>();
-    let transaction_index = wp1_zkvm::io::read::<u64>();
-    let transaction_proof = wp1_zkvm::io::read::<Vec<u8>>();
-    let ledger_info_bytes = wp1_zkvm::io::read::<Vec<u8>>();
+    let transaction_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
+    let transaction_index = sphinx_zkvm::io::read::<u64>();
+    let transaction_proof = sphinx_zkvm::io::read::<Vec<u8>>();
+    let ledger_info_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
 
     // Latest verified validator verifier &  hash
-    let verified_validator_verifier = wp1_zkvm::io::read::<Vec<u8>>();
-    wp1_zkvm::precompiles::unconstrained! {
+    let verified_validator_verifier = sphinx_zkvm::io::read::<Vec<u8>>();
+    sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
 
@@ -46,7 +46,7 @@ pub fn main() {
     let latest_li = LedgerInfoWithSignatures::from_bytes(&ledger_info_bytes)
         .expect("from_bytes: could not deserialize LedgerInfo");
 
-    wp1_zkvm::precompiles::unconstrained! {
+    sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: verify_transaction_inclusion");
     }
     let expected_root_hash = HashValue::from_slice(
@@ -59,25 +59,25 @@ pub fn main() {
     transaction_proof
         .verify(expected_root_hash, transaction_hash, transaction_index)
         .expect("verify: could not verify proof");
-    wp1_zkvm::precompiles::unconstrained! {
+    sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: verify_transaction_inclusion");
     }
 
     // Check signature
-    wp1_zkvm::precompiles::unconstrained! {
+    sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: verify_signature");
     }
     latest_li
         .verify_signatures(&validator_verifier)
         .expect("verify_signatures: could not verify signatures");
-    wp1_zkvm::precompiles::unconstrained! {
+    sphinx_zkvm::precompiles::unconstrained! {
                     println!("cycle-tracker-end: verify_signature");
     }
     // Verify account inclusion in the SparseMerkleTree
     let sparse_merkle_proof = SparseMerkleProof::from_bytes(&sparse_merkle_proof_bytes)
         .expect("from_bytes: could not deserialize SparseMerkleProof");
 
-    wp1_zkvm::precompiles::unconstrained! {
+    sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: verify_merkle_proof");
     }
     let sparse_expected_root_hash = transaction
@@ -91,13 +91,13 @@ pub fn main() {
                 .expect("leaf_value_hash: could not use input to create HashValue"),
         )
         .expect("verify_by_hash: could not verify proof");
-    wp1_zkvm::precompiles::unconstrained! {
+    sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: verify_merkle_proof");
     }
 
     // Commit the validator verifier hash
-    wp1_zkvm::io::commit(validator_verifier.hash().as_ref());
+    sphinx_zkvm::io::commit(validator_verifier.hash().as_ref());
 
     // Commit the state root hash
-    wp1_zkvm::io::commit(reconstructed_root_hash.as_ref());
+    sphinx_zkvm::io::commit(reconstructed_root_hash.as_ref());
 }

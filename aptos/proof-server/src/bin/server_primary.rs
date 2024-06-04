@@ -5,12 +5,12 @@ use anyhow::{Error, Result};
 use aptos_lc::inclusion;
 use clap::Parser;
 use log::{error, info};
+use sphinx_sdk::ProverClient;
 use std::sync::Arc;
 use tokio::{
     net::{TcpListener, TcpStream},
     task::spawn_blocking,
 };
-use wp1_sdk::ProverClient;
 
 use proof_server::{
     types::proof_server::{InclusionData, Request, SecondaryRequest},

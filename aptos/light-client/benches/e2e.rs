@@ -26,9 +26,9 @@ use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, TrustedStateChange};
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
+use sphinx_sdk::utils::setup_logger;
+use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
 use std::time::Instant;
-use wp1_sdk::utils::setup_logger;
-use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
 
 const NBR_VALIDATORS: usize = 130;
 const AVERAGE_SIGNERS_NBR: usize = 95;
@@ -177,8 +177,8 @@ fn prove_epoch_change(
     client: &ProverClient,
     trusted_state: &[u8],
     epoch_change_proof: &[u8],
-) -> SP1Proof {
-    let mut stdin = SP1Stdin::new();
+) -> SphinxProof {
+    let mut stdin = SphinxStdin::new();
 
     setup_logger();
 
@@ -194,8 +194,8 @@ fn prove_inclusion(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> SP1Proof {
-    let mut stdin = SP1Stdin::new();
+) -> SphinxProof {
+    let mut stdin = SphinxStdin::new();
 
     setup_logger();
 

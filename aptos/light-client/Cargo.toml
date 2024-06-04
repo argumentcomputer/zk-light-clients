@@ -10,8 +10,8 @@ edition = "2021"
 aptos-lc-core = { path = "../core" }
 aptos-programs = { path = "../aptos-programs" }
 
-# WP1 crates
-wp1-sdk = { workspace = true }
+# Sphinx crates
+sphinx-sdk = { workspace = true }
 
 #Others
 anyhow = { workspace = true }

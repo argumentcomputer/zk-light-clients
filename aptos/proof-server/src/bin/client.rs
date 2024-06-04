@@ -17,6 +17,7 @@ use proof_server::{
     utils::{read_bytes, write_bytes},
     APTOS_EPOCH_CHANGE_PROOF_ENDPOINT, APTOS_LEDGER_INFO_ENDPOINT,
 };
+use sphinx_sdk::SphinxProof;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -24,7 +25,6 @@ use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::sync::{mpsc, Mutex, OwnedSemaphorePermit, Semaphore};
 use tokio::task::JoinHandle;
-use wp1_sdk::SP1Proof;
 
 const ACCOUNT: &str = "0x2d91309b5b07a8be428ccd75d0443e81542ffcd059d0ab380cefc552229b1a";
 
@@ -55,11 +55,11 @@ type VerifierState = (HashValue, HashValue);
 
 enum ProofType {
     EpochChange {
-        task: JoinHandle<Result<(TrustedState, HashValue, SP1Proof), ClientError>>,
+        task: JoinHandle<Result<(TrustedState, HashValue, SphinxProof), ClientError>>,
         permit: OwnedSemaphorePermit,
     },
     Inclusion {
-        task: JoinHandle<Result<SP1Proof, ClientError>>,
+        task: JoinHandle<Result<SphinxProof, ClientError>>,
         permit: OwnedSemaphorePermit,
     },
 }
@@ -354,7 +354,7 @@ async fn request_prover(
 /// This method verifies the validator verifier predicate, ie: that the validator committee that
 ///signed the block header corresponds to the one we have in state.
 fn assert_validator_verifier_predicate(
-    proof: &mut SP1Proof,
+    proof: &mut SphinxProof,
     expected_hash: HashValue,
 ) -> Result<(), ClientError> {
     info!("Verifying validator verifier equality");
@@ -382,7 +382,7 @@ async fn epoch_change_proving_task(
     proof_server_address: Arc<String>,
     aptos_node_url: Arc<String>,
     epoch: u64,
-) -> Result<(TrustedState, HashValue, SP1Proof), ClientError> {
+) -> Result<(TrustedState, HashValue, SphinxProof), ClientError> {
     info!("Starting epoch change proving task for epoch: {}", epoch);
 
     debug!("Fetching epoch change proof data for epoch: {}", epoch);
@@ -411,7 +411,7 @@ async fn epoch_change_proving_task(
 
     let request = Request::ProveEpochChange(epoch_change_proof_data.clone().into());
 
-    let epoch_change_proof: SP1Proof = bcs::from_bytes(
+    let epoch_change_proof: SphinxProof = bcs::from_bytes(
         &request_prover(&proof_server_address, &request).await?,
     )
     .map_err(|err| ClientError::ResponsePayload {
@@ -439,7 +439,7 @@ async fn epoch_change_proving_task(
 
 async fn epoch_change_verifying_task(
     proof_server_address: Arc<String>,
-    epoch_change_proof: &mut SP1Proof,
+    epoch_change_proof: &mut SphinxProof,
     verifier_state: VerifierState,
 ) -> Result<VerifierState, ClientError> {
     info!("Starting epoch change verification task");
@@ -474,7 +474,7 @@ async fn inclusion_proving_task(
     proof_server_address: Arc<String>,
     aptos_node_url: Arc<String>,
     account: String,
-) -> Result<SP1Proof, ClientError> {
+) -> Result<SphinxProof, ClientError> {
     info!("Starting account inclusion proving task");
 
     debug!("Fetching account inclusion proof for account: {}", account);
@@ -483,7 +483,7 @@ async fn inclusion_proving_task(
 
     debug!("Sending account inclusion proof request to the prover");
     let request = Request::ProveInclusion(inclusion_proof_data.into());
-    let account_inclusion_proof: SP1Proof = bcs::from_bytes(
+    let account_inclusion_proof: SphinxProof = bcs::from_bytes(
         &request_prover(&proof_server_address, &request).await?,
     )
     .map_err(|err| ClientError::ResponsePayload {
@@ -498,7 +498,7 @@ async fn inclusion_proving_task(
 
 async fn inclusion_verifying_task(
     proof_server_address: Arc<String>,
-    account_inclusion_proof: &mut SP1Proof,
+    account_inclusion_proof: &mut SphinxProof,
     verifier_state: VerifierState,
 ) -> Result<VerifierState, ClientError> {
     info!("Verifying account inclusion proof");

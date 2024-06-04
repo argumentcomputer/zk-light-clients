@@ -45,10 +45,10 @@ sha2 = "0.9"
 thiserror = "1.0.58"
 tiny-keccak = "2.0.2"
 url = "2.5.0"
-wp1-derive = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
-wp1-sdk = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
-wp1-zkvm = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
-wp1-helper = { git = "ssh://git@github.com/wormhole-foundation/wp1", branch = "dev" }
+sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
 tokio = "1.37"
 tokio-stream = "0.1"
 
@@ -56,6 +56,6 @@ tokio-stream = "0.1"
 [patch.crates-io]
 merlin = { git = "https://github.com/aptos-labs/merlin" }
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
-# WP1 patch
+# Sphinx patch
 tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", branch = "patch-v2.0.2" }
 sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", branch = "patch-v0.10.8" }

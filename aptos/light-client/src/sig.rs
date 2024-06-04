@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use crate::error::LightClientError;
-use wp1_sdk::{ProverClient, SP1Proof, SP1Stdin};
+use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
 
 #[allow(dead_code)]
 fn sig_verification(
     client: &ProverClient,
     ledger_info_w_sig: &[u8],
-) -> Result<(SP1Proof, bool), LightClientError> {
-    use wp1_sdk::utils;
+) -> Result<(SphinxProof, bool), LightClientError> {
+    use sphinx_sdk::utils;
     utils::setup_logger();
 
-    let mut stdin = SP1Stdin::new();
+    let mut stdin = SphinxStdin::new();
 
     stdin.write(&ledger_info_w_sig);
 
@@ -33,13 +33,13 @@ fn sig_verification(
 #[cfg(all(test, feature = "aptos"))]
 mod test {
     use crate::error::LightClientError;
-    use wp1_sdk::{ProverClient, SP1Stdin};
+    use sphinx_sdk::{ProverClient, SphinxStdin};
 
     fn sig_execute(ledger_info_w_sig: &[u8]) -> Result<(), LightClientError> {
-        use wp1_sdk::utils;
+        use sphinx_sdk::utils;
         utils::setup_logger();
 
-        let mut stdin = SP1Stdin::new();
+        let mut stdin = SphinxStdin::new();
 
         stdin.write(&ledger_info_w_sig);
 
@@ -84,8 +84,8 @@ mod test {
     fn test_prove_sig() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
+        use sphinx_sdk::ProverClient;
         use std::time::Instant;
-        use wp1_sdk::ProverClient;
 
         const NBR_VALIDATORS: usize = 130;
         const AVERAGE_SIGNERS_NBR: usize = 95;

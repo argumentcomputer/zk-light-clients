@@ -5,8 +5,8 @@ use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use serde::{Deserialize, Serialize};
+use sphinx_sdk::SphinxProof;
 use std::fmt::Display;
-use wp1_sdk::SP1Proof;
 
 #[derive(Serialize, Deserialize)]
 pub struct EpochChangeData {
@@ -25,8 +25,8 @@ pub struct InclusionData {
 pub enum Request {
     ProveInclusion(InclusionData),
     ProveEpochChange(EpochChangeData),
-    VerifyInclusion(SP1Proof),
-    VerifyEpochChange(SP1Proof),
+    VerifyInclusion(SphinxProof),
+    VerifyEpochChange(SphinxProof),
 }
 
 impl Display for &Request {
@@ -43,5 +43,5 @@ impl Display for &Request {
 #[derive(Serialize, Deserialize)]
 pub enum SecondaryRequest {
     Prove(EpochChangeData),
-    Verify(SP1Proof),
+    Verify(SphinxProof),
 }
