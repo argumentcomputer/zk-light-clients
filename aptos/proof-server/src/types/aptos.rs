@@ -79,6 +79,8 @@ pub struct AccountInclusionProofResponse {
     transaction_proof: TransactionAccumulatorProof,
     /// Hashed representation of the transaction
     transaction: TransactionInfo,
+    /// Transaction index in the accumulator
+    transaction_index: u64,
     /// Signed Ledger info with the transaction
     ledger_info_v0: LedgerInfoWithSignatures,
     /// ValidatorVerifier valid for the proof
@@ -95,7 +97,7 @@ impl From<AccountInclusionProofResponse> for InclusionData {
             ),
             transaction_proof_assets: TransactionProofAssets::new(
                 val.transaction.to_bytes(),
-                val.ledger_info_v0.ledger_info().version(),
+                val.transaction_index,
                 val.transaction_proof.to_bytes(),
                 val.ledger_info_v0.to_bytes(),
             ),
