@@ -5,7 +5,7 @@
 //!
 //! This benchmark simulates a full end-to-end test case for the Aptos Light Client, focusing on
 //! verifying the efficiency and correctness of epoch transition and account inclusion proofs.
-//! It leverages the `wp1_sdk` for predicate verification to ensure that:
+//! It leverages the `sphinx_sdk` for predicate verification to ensure that:
 //!
 //! - P1(n): There exists a valid block header at a specific height with a valid Merkle root.
 //! - P2(n): There exists a valid transition to a new set of validators, signed off by the current validators.

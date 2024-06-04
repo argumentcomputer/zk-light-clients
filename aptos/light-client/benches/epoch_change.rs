@@ -4,7 +4,7 @@
 //! # Benchmark Test for Aptos Light Client Epoch Transition
 //!
 //! This benchmark evaluates the performance of the Aptos Light Client's epoch transition proof verification.
-//! It measures the time taken to prove and verify an epoch change using the `ProverClient` from `wp1_sdk`.
+//! It measures the time taken to prove and verify an epoch change using the `ProverClient` from `sphinx_sdk`.
 //! The test covers:
 //!
 //! - Generating and proving the epoch transition proof.

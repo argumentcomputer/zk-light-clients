@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 # local
 aptos-lc = { path = "../light-client" }
-aptos-lc-core = { path = "../core", features = ["aptos"] }
+aptos-lc-core = { path = "../core" }
 
 # workspace
 anyhow = { workspace = true }
@@ -23,3 +23,10 @@ tokio = { workspace = true, features = ["full"] }
 thiserror = { workspace = true }
 url = { workspace = true }
 sphinx-sdk = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[[bench]]
+name = "proof_server"
+harness = false

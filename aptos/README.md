@@ -87,19 +87,20 @@ You will also need to install `pkg-config` and `libudev-dev`. On Linux, you can 
 sudo apt-get update && sudo apt-get install -y pkg-config libudev-dev
 ```
 
-### Installing zkvm toolchain and WP1's `cargo-prove`
+### Installing zkvm toolchain and Sphinx's `cargo-prove`
 
 These are slightly modified instructions from
 the [SP1 install from source](https://succinctlabs.github.io/sp1/getting-started/install.html#option-2-building-from-source)
 manual.
 
-**It's important to install `cargo-prove` from Sphinx since it includes compiler optimization flags not present in SP1.**
+**It's important to install `cargo-prove` from Sphinx since it includes compiler optimization flags not present in SP1.
+**
 
 1. Ensure that the `cargo-prove` binary from SP1 is not installed, and if it is, remove it from `PATH`.
-2. Install `cargo-prove` from WP1:
+2. Install `cargo-prove` from Sphinx:
 
-   git clone git@github.com:wormhole-foundation/wp1.git
-   cd wp1/cli
+   git clone git@github.com:lurk-lab/sphinx.git
+   cd sphinx/cli
    cargo install --locked --path .
 
 3. Install the toolchain. This downloads the pre-built toolchain from SP1
@@ -196,7 +197,7 @@ The proving time can be found through the output of the `criterion` crate.
 They have the following shape:
 
 ```shell
-WP1-Verifying/NbrSiblings/17                                                                          
+Sphinx-Verifying/NbrSiblings/17                                                                          
                         time:   [765.63 ms 770.67 ms 776.32 ms]
 ```
 

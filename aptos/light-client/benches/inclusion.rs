@@ -5,7 +5,7 @@
 //!
 //! This benchmark assesses the performance of the Aptos Light Client's account inclusion proof process
 //! across different sizes of state trees. It tests both the proving and verification time required for
-//! account inclusion using the `ProverClient` from `wp1_sdk`.
+//! account inclusion using the `ProverClient` from `sphinx_sdk`.
 //!
 //! The test checks:
 //!

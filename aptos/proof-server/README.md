@@ -92,14 +92,14 @@ $ cargo run -p aptos-node --release -- -f ./fullnode.yaml
 
 Start the secondary server:
 
-```
-cargo run --release --bin server_secondary -- -a 127.0.0.1:6380
+```shell
+$ cargo run --release --bin server_secondary -- -a 127.0.0.1:6380
 ```
 
 Start the primary server:
 
-```
-cargo run --release --bin server_primary -- -a 127.0.0.1:6379 --snd-addr 127.0.0.1:6380
+```shell
+$ cargo run --release --bin server_primary -- -a 127.0.0.1:6379 --snd-addr 127.0.0.1:6380
 ```
 
 The primary server needs to know the address of the secondary address. It's provided in the `snd-addr` argument.
@@ -111,8 +111,8 @@ The primary server needs to know the address of the secondary address. It's prov
 Once both servers and the Aptos node are running, you can make the following calls in separate terminals at the same
 time:
 
-```
-cargo run -p proof-server --release --bin client -- --proof-server-address 100.121.74.49:6379 --aptos-node-url 100.106.99.21:8080
+```shell
+$ cargo run -p proof-server --release --bin client -- --proof-server-address 100.121.74.49:6379 --aptos-node-url 100.106.99.21:8080
 ```
 
 > Note: use the environment variable `RUST_LOG="debug"` to get more insight on the client execution.
@@ -126,3 +126,36 @@ It contains information about the protocol a client needs to follow.
 
 Also, one of the main purposes of the dummy client is to showcase how a client can interact with the server.
 So it can be a helpful source to get started on a real client.
+
+## Running the benchmark
+
+We have implemented a benchmark for the proof server. It can be run with the following command:
+
+```shell
+$ RUST_LOG=debug RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly bench --bench proof_server
+```
+
+This benchmark will spawn the two servers locally and make two requests in parallel to them. This generates both proofs
+at the same time in the same machine. It measures to main metrics for each proof:
+
+- `e2e_proving_time`: Time taken to send a request to the proof server, generate the proof and receive the response.
+- `request_response_proof_size`: Size of the proof returned by the server.
+
+The output is formatted as such:
+
+```json
+{
+  "inclusion_proof": {
+    "e2e_proving_time": 107678,
+    "request_response_proof_size": 20823443
+  },
+  "epoch_change_proof": {
+    "e2e_proving_time": 125169,
+    "request_response_proof_size": 23088485
+  }
+}
+```
+
+> Note: As the proof server is run with the `RUST_LOG=debug` environment variable, it is also possible to grab the inner
+> metrics
+> from Sphinx.
