@@ -144,6 +144,7 @@ mod test {
         SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
     };
     use aptos_lc_core::types::validator::ValidatorVerifier;
+    use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};
 
     fn setup_assets() -> (
@@ -209,8 +210,7 @@ mod test {
         transaction_proof_assets: &TransactionProofAssets,
         validator_verifier_assets: &ValidatorVerifierAssets,
     ) -> Result<(), LightClientError> {
-        use sphinx_sdk::utils;
-        utils::setup_logger();
+        setup_logger();
 
         let mut stdin = SphinxStdin::new();
 
@@ -293,6 +293,38 @@ mod test {
         let start = Instant::now();
         println!("Starting verification of inclusion proof...");
         client.verify(&proof, &vk).unwrap();
+        println!("Verification took {:?}", start.elapsed());
+    }
+
+    #[test]
+    #[ignore = "This test is too slow for CI"]
+    fn test_groth16_prove_inclusion() {
+        use super::*;
+        use sphinx_sdk::ProverClient;
+        use std::time::Instant;
+
+        setup_logger();
+
+        let client = ProverClient::new();
+        let (pk, vk) = client.setup(aptos_programs::INCLUSION_PROGRAM);
+
+        let (sparse_merkle_proof_assets, transaction_proof_assets, validator_verifier_assets) =
+            setup_assets();
+
+        let stdin = generate_stdin(
+            &sparse_merkle_proof_assets,
+            &transaction_proof_assets,
+            &validator_verifier_assets,
+        );
+
+        let start = Instant::now();
+        println!("Starting generation of inclusion proof...");
+        let groth16proof = client.prove_groth16(&pk, stdin).unwrap();
+        println!("Proving took {:?}", start.elapsed());
+
+        let start = Instant::now();
+        println!("Starting verification of inclusion proof...");
+        client.verify_groth16(&groth16proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

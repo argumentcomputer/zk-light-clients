@@ -85,6 +85,28 @@ async fn main() -> Result<()> {
                     )
                     .await?;
                 }
+                SecondaryRequest::Groth16Prove(EpochChangeData {
+                    trusted_state,
+                    epoch_change_proof,
+                }) => {
+                    let stdin = epoch_change::generate_stdin(&trusted_state, &epoch_change_proof);
+                    info!("Start proving");
+                    let proof_handle =
+                        spawn_blocking(move || prover_client.prove_groth16(&pk, stdin));
+                    let proof = proof_handle.await??;
+                    info!("Proof generated. Serializing");
+                    let proof_bytes = bcs::to_bytes(&proof)?;
+                    info!("Sending proof to the primary server");
+                    write_bytes(&mut primary_stream, &proof_bytes).await?;
+                    info!("Proof sent");
+                }
+                SecondaryRequest::Groth16Verify(proof) => {
+                    write_bytes(
+                        &mut primary_stream,
+                        &bcs::to_bytes(&prover_client.verify_groth16(&proof, &vk).is_ok())?,
+                    )
+                    .await?;
+                }
             }
             Ok::<(), Error>(())
         });

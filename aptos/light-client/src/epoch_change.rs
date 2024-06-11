@@ -58,14 +58,14 @@ fn prove_epoch_change(
 #[cfg(all(test, feature = "aptos"))]
 mod test {
     use crate::error::LightClientError;
+    use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};
 
     fn execute_epoch_change(
         current_trusted_state: &[u8],
         epoch_change_proof: &[u8],
     ) -> Result<(), LightClientError> {
-        use sphinx_sdk::utils;
-        utils::setup_logger();
+        setup_logger();
 
         let mut stdin = SphinxStdin::new();
 
@@ -159,6 +159,54 @@ mod test {
         let start = Instant::now();
         println!("Starting verification of prove_epoch_change proof...");
         client.verify(&proof, &vk).unwrap();
+        println!("Verification took {:?}", start.elapsed());
+    }
+
+    #[test]
+    #[ignore = "This test is too slow for CI"]
+    fn test_groth16_prove_epoch_change() {
+        use super::*;
+        use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
+        use aptos_lc_core::crypto::hash::CryptoHash;
+        use aptos_lc_core::types::trusted_state::TrustedState;
+        use sphinx_sdk::ProverClient;
+        use std::time::Instant;
+
+        setup_logger();
+
+        const NBR_VALIDATORS: usize = 130;
+        const AVERAGE_SIGNERS_NBR: usize = 95;
+
+        let mut aptos_wrapper = AptosWrapper::new(5, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
+
+        let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
+        let _validator_verifier_hash = match TrustedState::from_bytes(&trusted_state).unwrap() {
+            TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().hash().to_vec(),
+            _ => panic!("Expected epoch change for current trusted state"),
+        };
+        let trusted_state_version = *aptos_wrapper.current_version();
+
+        aptos_wrapper.generate_traffic().unwrap();
+
+        let state_proof = aptos_wrapper
+            .new_state_proof(trusted_state_version)
+            .unwrap();
+
+        let epoch_change_proof = &bcs::to_bytes(state_proof.epoch_changes()).unwrap();
+
+        let client = ProverClient::new();
+        let (pk, vk) = client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
+
+        let stdin = generate_stdin(trusted_state.as_slice(), epoch_change_proof);
+
+        let start = Instant::now();
+        println!("Starting generation of prove_epoch_change proof...");
+        let groth16proof = client.prove_groth16(&pk, stdin).unwrap();
+        println!("Proving took {:?}", start.elapsed());
+
+        let start = Instant::now();
+        println!("Starting verification of prove_epoch_change proof...");
+        client.verify_groth16(&groth16proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

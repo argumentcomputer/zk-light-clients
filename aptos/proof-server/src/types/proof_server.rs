@@ -5,7 +5,7 @@ use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use serde::{Deserialize, Serialize};
-use sphinx_sdk::SphinxProof;
+use sphinx_sdk::{SphinxGroth16Proof, SphinxProof};
 use std::fmt::Display;
 
 #[derive(Serialize, Deserialize)]
@@ -27,6 +27,10 @@ pub enum Request {
     ProveEpochChange(EpochChangeData),
     VerifyInclusion(SphinxProof),
     VerifyEpochChange(SphinxProof),
+    Groth16ProveInclusion(InclusionData),
+    Groth16ProveEpochChange(EpochChangeData),
+    Groth16VerifyInclusion(SphinxGroth16Proof),
+    Groth16VerifyEpochChange(SphinxGroth16Proof),
 }
 
 impl Display for &Request {
@@ -36,6 +40,10 @@ impl Display for &Request {
             Request::ProveEpochChange(_) => write!(f, "ProveEpochChange"),
             Request::VerifyInclusion(_) => write!(f, "VerifyInclusion"),
             Request::VerifyEpochChange(_) => write!(f, "VerifyEpochChange"),
+            Request::Groth16ProveInclusion(_) => write!(f, "Groth16ProveInclusion"),
+            Request::Groth16ProveEpochChange(_) => write!(f, "Groth16ProveEpochChange"),
+            Request::Groth16VerifyInclusion(_) => write!(f, "Groth16VerifyInclusion"),
+            Request::Groth16VerifyEpochChange(_) => write!(f, "Groth16VerifyEpochChange"),
         }
     }
 }
@@ -44,4 +52,6 @@ impl Display for &Request {
 pub enum SecondaryRequest {
     Prove(EpochChangeData),
     Verify(SphinxProof),
+    Groth16Prove(EpochChangeData),
+    Groth16Verify(SphinxGroth16Proof),
 }

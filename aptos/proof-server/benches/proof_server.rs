@@ -30,24 +30,35 @@ const ACCOUNT_INCLUSION_DATA_PATH: &str = "./benches/assets/account_inclusion_da
 const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
 
 fn main() -> Result<(), anyhow::Error> {
+    let groth16: bool = env::var("GROTH16").unwrap_or_else(|_| "0".into()) == "1";
+    let run_serially: bool = env::var("RUN_SERIAL").unwrap_or_else(|_| "0".into()) == "1";
+
     let rt = Runtime::new().unwrap();
 
     // Start secondary server
-    let mut secondary_server_process = rt.block_on(start_secondary_server())?;
+    let mut secondary_server_process = rt.block_on(start_secondary_server(groth16))?;
 
     // Start primary server
-    let mut primary_server_process = rt.block_on(start_primary_server())?;
+    let mut primary_server_process = rt.block_on(start_primary_server(groth16))?;
 
     // Join the benchmark tasks and block until they are done
-    let (inclusion_proof, epoch_change_proof) = rt.block_on(async {
-        let inclusion_proof_task = tokio::spawn(bench_proving_inclusion());
-        let epoch_change_proof_task = tokio::spawn(bench_proving_epoch_change());
+    let (inclusion_proof, epoch_change_proof) = if run_serially {
+        rt.block_on(async {
+            let inclusion_proof = bench_proving_inclusion(groth16).await;
+            let epoch_change_proof = bench_proving_epoch_change(groth16).await;
+            (Ok(inclusion_proof), Ok(epoch_change_proof))
+        })
+    } else {
+        rt.block_on(async {
+            let inclusion_proof_task = tokio::spawn(bench_proving_inclusion(groth16));
+            let epoch_change_proof_task = tokio::spawn(bench_proving_epoch_change(groth16));
 
-        let inclusion_proof = inclusion_proof_task.await.map_err(|e| anyhow!(e));
-        let epoch_change_proof = epoch_change_proof_task.await.map_err(|e| anyhow!(e));
+            let inclusion_proof = inclusion_proof_task.await.map_err(|e| anyhow!(e));
+            let epoch_change_proof = epoch_change_proof_task.await.map_err(|e| anyhow!(e));
 
-        (inclusion_proof, epoch_change_proof)
-    });
+            (inclusion_proof, epoch_change_proof)
+        })
+    };
 
     let bench_results = BenchResults {
         inclusion_proof: inclusion_proof??,
@@ -63,11 +74,13 @@ fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-async fn start_primary_server() -> Result<Child, anyhow::Error> {
+async fn start_primary_server(groth16: bool) -> Result<Child, anyhow::Error> {
     let primary_addr =
         env::var("PRIMARY_ADDR").map_err(|_| anyhow::anyhow!("PRIMARY_ADDR not set"))?;
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
+
+    let shard_size = if groth16 { "4194304" } else { "1048576" };
 
     let process = Command::new("cargo")
         .args([
@@ -84,8 +97,8 @@ async fn start_primary_server() -> Result<Child, anyhow::Error> {
         ])
         .env("RUST_LOG", "debug")
         .env("RUSTFLAGS", "-C target-cpu=native --cfg tokio_unstable")
-        .env("SHARD_SIZE", "1048576")
-        .env("SHARD_BATCH_SIZE", "16384")
+        .env("SHARD_SIZE", shard_size)
+        .env("SHARD_BATCH_SIZE", "0")
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
@@ -109,9 +122,11 @@ async fn start_primary_server() -> Result<Child, anyhow::Error> {
     }
 }
 
-async fn start_secondary_server() -> Result<Child, anyhow::Error> {
+async fn start_secondary_server(groth16: bool) -> Result<Child, anyhow::Error> {
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
+
+    let shard_size = if groth16 { "4194304" } else { "1048576" };
 
     let process = Command::new("cargo")
         .args([
@@ -126,8 +141,8 @@ async fn start_secondary_server() -> Result<Child, anyhow::Error> {
         ])
         .env("RUST_LOG", "debug")
         .env("RUSTFLAGS", "-C target-cpu=native --cfg tokio_unstable")
-        .env("SHARD_SIZE", "1048576")
-        .env("SHARD_BATCH_SIZE", "16384")
+        .env("SHARD_SIZE", shard_size)
+        .env("SHARD_BATCH_SIZE", "0")
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
@@ -151,7 +166,7 @@ async fn start_secondary_server() -> Result<Child, anyhow::Error> {
     }
 }
 
-async fn bench_proving_inclusion() -> Result<ProofData, anyhow::Error> {
+async fn bench_proving_inclusion(groth16: bool) -> Result<ProofData, anyhow::Error> {
     // Connect to primary server
     let primary_address =
         env::var("PRIMARY_ADDR").map_err(|_| anyhow::anyhow!("PRIMARY_ADDR not set"))?;
@@ -172,8 +187,11 @@ async fn bench_proving_inclusion() -> Result<ProofData, anyhow::Error> {
     let inclusion_data: InclusionData = account_inclusion_proof_response.into();
 
     // Send the InclusionData as a request payload to the primary server
-    let request_bytes =
-        bcs::to_bytes(&Request::ProveInclusion(inclusion_data)).map_err(|e| anyhow!(e))?;
+    let request_bytes = if groth16 {
+        bcs::to_bytes(&Request::Groth16ProveInclusion(inclusion_data)).map_err(|e| anyhow!(e))?
+    } else {
+        bcs::to_bytes(&Request::ProveInclusion(inclusion_data)).map_err(|e| anyhow!(e))?
+    };
 
     // Start measuring proving time
     let start = Instant::now();
@@ -191,7 +209,7 @@ async fn bench_proving_inclusion() -> Result<ProofData, anyhow::Error> {
     })
 }
 
-async fn bench_proving_epoch_change() -> Result<ProofData, anyhow::Error> {
+async fn bench_proving_epoch_change(groth16: bool) -> Result<ProofData, anyhow::Error> {
     // Connect to primary server
     let primary_address =
         env::var("PRIMARY_ADDR").map_err(|_| anyhow::anyhow!("PRIMARY_ADDR not set"))?;
@@ -212,8 +230,11 @@ async fn bench_proving_epoch_change() -> Result<ProofData, anyhow::Error> {
     let inclusion_data: EpochChangeData = account_inclusion_proof_response.into();
 
     // Send the InclusionData as a request payload to the primary server
-    let request_bytes =
-        bcs::to_bytes(&Request::ProveEpochChange(inclusion_data)).map_err(|e| anyhow!(e))?;
+    let request_bytes = if groth16 {
+        bcs::to_bytes(&Request::Groth16ProveEpochChange(inclusion_data)).map_err(|e| anyhow!(e))?
+    } else {
+        bcs::to_bytes(&Request::ProveEpochChange(inclusion_data)).map_err(|e| anyhow!(e))?
+    };
 
     // Start measuring proving time
     let start = Instant::now();

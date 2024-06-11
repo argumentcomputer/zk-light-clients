@@ -33,11 +33,11 @@ fn sig_verification(
 #[cfg(all(test, feature = "aptos"))]
 mod test {
     use crate::error::LightClientError;
+    use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};
 
     fn sig_execute(ledger_info_w_sig: &[u8]) -> Result<(), LightClientError> {
-        use sphinx_sdk::utils;
-        utils::setup_logger();
+        setup_logger();
 
         let mut stdin = SphinxStdin::new();
 
@@ -80,7 +80,7 @@ mod test {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "This test is too slow for CI"]
     fn test_prove_sig() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
@@ -109,6 +109,44 @@ mod test {
         let start = Instant::now();
         println!("Starting verification of signature verification proof...");
         client.verify(&proof, &vk).unwrap();
+        println!("Verification took {:?}", start.elapsed());
+    }
+
+    #[test]
+    #[ignore = "This test is too slow for CI"]
+    fn test_groth16_prove_sig() {
+        use super::*;
+        use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
+        use sphinx_sdk::ProverClient;
+        use std::time::Instant;
+
+        setup_logger();
+
+        const NBR_VALIDATORS: usize = 130;
+        const AVERAGE_SIGNERS_NBR: usize = 95;
+
+        let mut aptos_wrapper =
+            AptosWrapper::new(400, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
+
+        aptos_wrapper.generate_traffic().unwrap();
+        aptos_wrapper.commit_new_epoch().unwrap();
+
+        let ledger_info_with_signature = aptos_wrapper.get_latest_li_bytes().unwrap();
+
+        let client = ProverClient::new();
+        let (pk, vk) = client.setup(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM);
+
+        let mut stdin = SphinxStdin::new();
+        stdin.write(&ledger_info_with_signature);
+
+        let start = Instant::now();
+        println!("Starting generation of signature verification proof...");
+        let groth16proof = client.prove_groth16(&pk, stdin).unwrap();
+        println!("Proving took {:?}", start.elapsed());
+
+        let start = Instant::now();
+        println!("Starting verification of signature verification proof...");
+        client.verify_groth16(&groth16proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }
