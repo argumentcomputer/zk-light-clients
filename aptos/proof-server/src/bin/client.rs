@@ -133,6 +133,8 @@ async fn main() -> Result<()> {
     let aptos_node_url = Arc::new(aptos_node_url);
 
     debug!("Initializing client");
+    // Try to connect to proof server.
+    connect_to_proof_server(&proof_server_address).await?;
     // Initialize the client.
     let (client_state, verififer_state) = init(&proof_server_address, &aptos_node_url).await?;
     debug!("Client initialized successfully");
@@ -203,7 +205,7 @@ async fn main() -> Result<()> {
                         "Failed to send an Epoch Change in the task channel: {}",
                         err
                     )
-                    .into(),
+                        .into(),
                 })?;
         }
 
@@ -226,6 +228,41 @@ async fn main() -> Result<()> {
                 .unwrap();
         }
     }
+}
+
+/// This method tries to connect to the proof server and returns an error if it fails.
+///
+/// # Errors
+/// This method returns an error if the connection to the proof server fails.
+async fn connect_to_proof_server(proof_server_address: &str) -> Result<(), ClientError> {
+    debug!("Connecting to the proof server at {}", proof_server_address);
+    // Try to connect to the proof server
+    let mut retries = 0;
+    loop {
+        match TcpStream::connect(&*proof_server_address).await {
+            Ok(_) => {
+                debug!("Successfully connected to the proof server");
+                break;
+            }
+            Err(e) if retries < 10 => {
+                debug!(
+                    "Failed to connect to the proof server (attempt {}/{}): {}",
+                    retries + 1,
+                    10,
+                    e
+                );
+                retries += 1;
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }
+            Err(e) => {
+                return Err(ClientError::Internal {
+                    source: format!("Failed to connect to the proof server: {}", e).into(),
+                });
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Method to initialize the client. It fetches the initial data from the Aptos node and generates
@@ -286,7 +323,7 @@ async fn init(
         &mut epoch_change_proof,
         verifier_state,
     )
-    .await?;
+        .await?;
 
     // Verify inclusion proof.
     let verifier_state = inclusion_verifying_task(
@@ -294,7 +331,7 @@ async fn init(
         &mut inclusion_proof,
         verifier_state,
     )
-    .await?;
+        .await?;
 
     Ok((ratcheted_trusted_state, verifier_state))
 }
@@ -515,10 +552,10 @@ async fn epoch_change_proving_task(
     let epoch_change_proof: SphinxProofWithPublicValues = bcs::from_bytes(
         &request_prover(&proof_server_address, &request).await?,
     )
-    .map_err(|err| ClientError::ResponsePayload {
-        endpoint: format!("{}", &request),
-        source: err.into(),
-    })?;
+        .map_err(|err| ClientError::ResponsePayload {
+            endpoint: format!("{}", &request),
+            source: err.into(),
+        })?;
 
     debug!("Epoch change proof for latest epoch received from prover");
 
@@ -618,10 +655,10 @@ async fn inclusion_proving_task(
     let account_inclusion_proof: SphinxProofWithPublicValues = bcs::from_bytes(
         &request_prover(&proof_server_address, &request).await?,
     )
-    .map_err(|err| ClientError::ResponsePayload {
-        endpoint: format!("{}", &request),
-        source: err.into(),
-    })?;
+        .map_err(|err| ClientError::ResponsePayload {
+            endpoint: format!("{}", &request),
+            source: err.into(),
+        })?;
 
     debug!("Account inclusion proof received from prover");
 
@@ -703,7 +740,7 @@ async fn verifier_task(
                                 &mut epoch_change_proof,
                                 verifier_state,
                             )
-                            .await;
+                                .await;
 
                             if let Ok(updated_verifier_state) = res {
                                 verifier_state = updated_verifier_state;
@@ -736,7 +773,7 @@ async fn verifier_task(
                                 &mut inclusion_proof,
                                 verifier_state,
                             )
-                            .await;
+                                .await;
 
                             if let Ok(updated_verifier_state) = res {
                                 verifier_state = updated_verifier_state;
