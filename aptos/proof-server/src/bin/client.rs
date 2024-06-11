@@ -132,6 +132,8 @@ async fn main() -> Result<()> {
     let aptos_node_url = Arc::new(aptos_node_url);
 
     debug!("Initializing client");
+    // Try to connect to proof server.
+    connect_to_proof_server(&proof_server_address).await?;
     // Initialize the client.
     let (client_state, verififer_state) = init(&proof_server_address, &aptos_node_url).await?;
     debug!("Client initialized successfully");
@@ -225,6 +227,41 @@ async fn main() -> Result<()> {
                 .unwrap();
         }
     }
+}
+
+/// This method tries to connect to the proof server and returns an error if it fails.
+///
+/// # Errors
+/// This method returns an error if the connection to the proof server fails.
+async fn connect_to_proof_server(proof_server_address: &str) -> Result<(), ClientError> {
+    debug!("Connecting to the proof server at {}", proof_server_address);
+    // Try to connect to the proof server
+    let mut retries = 0;
+    loop {
+        match TcpStream::connect(&*proof_server_address).await {
+            Ok(_) => {
+                debug!("Successfully connected to the proof server");
+                break;
+            }
+            Err(e) if retries < 10 => {
+                debug!(
+                    "Failed to connect to the proof server (attempt {}/{}): {}",
+                    retries + 1,
+                    10,
+                    e
+                );
+                retries += 1;
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }
+            Err(e) => {
+                return Err(ClientError::Internal {
+                    source: format!("Failed to connect to the proof server: {}", e).into(),
+                });
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Method to initialize the client. It fetches the initial data from the Aptos node and generates

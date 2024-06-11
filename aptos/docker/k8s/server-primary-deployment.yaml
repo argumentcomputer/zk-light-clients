@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-primary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-primary
+  template:
+    metadata:
+      labels:
+        app: server-primary
+    spec:
+      containers:
+        - name: server-primary
+          image: lurk-lab/aptos-light-client:latest
+          imagePullPolicy: IfNotPresent
+          command: [ "sh", "-c", "/app/server_primary --addr ${CONTAINER_PRIMARY_ADDR}:${CONTAINER_PRIMARY_PORT} --snd-addr server-secondary:80" ]
+          env:
+            - name: RUST_LOG
+              value: "debug"
+            - name: CONTAINER_PRIMARY_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: aptos-config
+                  key: CONTAINER_PRIMARY_ADDR
+            - name: CONTAINER_PRIMARY_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: aptos-config
+                  key: CONTAINER_PRIMARY_PORT
+          ports:
+            # The port is also set as 6379 in the server-primary-service.yml file, if you change it here, make sure to change it there as well
+            - containerPort: 6379

@@ -43,6 +43,12 @@ generated in two ways:
     make
     ```
 
+## Running the Project
+
+To run all the Light Client components, you can either run them manually (refer to [the README in the `proof-server`
+crate](./proof-server/README.md))
+or leverage our docker files (see [the README in the `docker` folder](./docker/README.md)).
+
 ## Benchmarks
 
 For more information about how to run the benchmarks, please refer to the dedicated section of the mdBook. Otherwise,
