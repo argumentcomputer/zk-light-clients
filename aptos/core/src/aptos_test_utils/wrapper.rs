@@ -12,6 +12,7 @@ use aptos_executor::block_executor::BlockExecutor;
 use aptos_executor_test_helpers::gen_block_id;
 use aptos_executor_test_helpers::integration_test_impl::create_db_and_executor;
 use aptos_executor_types::BlockExecutorTrait;
+use aptos_sdk::move_types::move_resource::MoveStructType;
 use aptos_sdk::transaction_builder::aptos_stdlib::version_set_version;
 use aptos_sdk::transaction_builder::{aptos_stdlib, TransactionFactory};
 use aptos_sdk::types::{AccountKey, LocalAccount};
@@ -35,11 +36,10 @@ use aptos_types::transaction::{Transaction, TransactionInfo, WriteSetPayload};
 use aptos_types::trusted_state::{TrustedState, TrustedStateChange};
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_types::validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier};
+use aptos_types::PeerId;
 use aptos_vm::AptosVM;
 use aptos_vm_genesis::TestValidator;
 use getset::Getters;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::move_resource::MoveStructType;
 use rand::prelude::SliceRandom;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
@@ -267,7 +267,7 @@ impl AptosWrapper {
                         .map_err(|e| AptosError::Internal { source: e.into() })
                         .map(|s| (signer.author(), s))
                 })
-                .collect::<Result<BTreeMap<AccountAddress, Signature>, AptosError>>()?,
+                .collect::<Result<BTreeMap<PeerId, Signature>, AptosError>>()?,
         );
 
         let validator_consensus_info = self

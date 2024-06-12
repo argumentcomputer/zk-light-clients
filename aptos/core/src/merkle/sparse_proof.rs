@@ -108,6 +108,7 @@ impl SparseMerkleProof {
         let reconstructed_root = self
             .siblings
             .iter()
+            .rev()
             .zip(
                 element_key
                     .iter_bits()
@@ -265,6 +266,7 @@ mod test {
         let value_hash = leaf_node.value_hash();
         let expected_root_hash = siblings
             .iter()
+            .rev()
             .zip(key.iter_bits().rev().skip(HASH_LENGTH * 8 - siblings.len()))
             .fold(leaf_node.hash(), |acc_hash, (sibling_hash, bit)| {
                 if bit {
