@@ -1,0 +1,32 @@
+name: On PR Merged
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches:
+      - dev
+
+jobs:
+  # Creates a new tag if a release branch is merged
+  tag:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get-version
+        run: |
+          VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
+          echo "name=version::${VERSION}" | tee -a $GITHUB_OUTPUT
+
+
+      - name: Push tag
+        uses: laputansoft/github-tag-action@v4.6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_sha: ${{ github.event.pull_request.merge_commit_sha }}
+          tag: ${{ steps.get-version.outputs.version }}
+

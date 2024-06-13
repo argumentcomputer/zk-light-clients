@@ -1,0 +1,79 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate: [
+          './aptos/aptos-programs',
+          './aptos/core',
+          './aptos/light-client',
+          './aptos/programs/epoch-change',
+          './aptos/programs/inclusion',
+          './aptos/proof-server'
+        ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      # Regex from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+      - name: Validate version
+        run: |
+          echo "Validating version..."
+          VERSION_REGEX="^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+          if [[ "${{ github.event.inputs.version }}" =~ $VERSION_REGEX ]]; then
+            echo "Version is valid."
+          else
+            echo "Version is not valid SemVer. Aborting..."
+            exit 1
+          fi
+
+      - name: Create release branch
+        run: |
+          git checkout -b release/${{ github.event.inputs.version }}
+
+      - name: Update version in Cargo.toml
+        run: |
+          echo "Updating version in Cargo.toml..."
+          cd ${{ matrix.crate }}
+          OLD_VERSION=$(grep -oP 'version = "\K[^"]+' Cargo.toml)
+          if [[ "${{ github.event.inputs.version }}" > "$OLD_VERSION" ]]; then
+            sed -i 's/version = "'$OLD_VERSION'"/version = "${{ github.event.inputs.version }}"/' Cargo.toml
+          else
+            echo "New version is not greater than the current version. Aborting..."
+            exit 1
+          fi
+
+      - name: Commit changes
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add .
+          git commit -m "Bump version to ${{ github.event.inputs.version }}"
+
+      - name: Push changes
+        run: git push origin release/${{ github.event.inputs.version }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Release ${{ github.event.inputs.version }}"
+          branch: "release/${{ github.event.inputs.version }}"
+          base: "dev"
