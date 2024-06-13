@@ -19,7 +19,9 @@ respectively.
 
 You need to run an Aptos node to fetch chain data. The current version
 of the node the has to be ran is a fork found
-here: [`tchataigner/aptos-core:feature/new-endpoints`](https://github.com/tchataigner/aptos-core/tree/feature/new-endpoints).
+here: [`lurk-lab/aptos-core:release/aptos-node-v1.14.0-patched`](https://github.com/lurk-lab/aptos-core/tree/release/aptos-node-v1.14.0-patched)
+and its current head at
+commit [`d94b897`](https://github.com/lurk-lab/aptos-core/tree/d94b8974451d088e42882f9e1f761dfddfada345).
 
 To run the node, you first need to clone the repository:
 
