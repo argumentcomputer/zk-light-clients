@@ -1,4 +1,4 @@
-name: Release PR Merged
+name: On PR Merged
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   # Creates a new tag if a release branch is merged
-  tag-release:
+  tag:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
 
@@ -20,18 +20,13 @@ jobs:
         id: get-version
         run: |
           VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "name=version::${VERSION}" | tee -a $GITHUB_OUTPUT
 
-      - name: Build Changelog
-        id: github_release
-        uses: mikepenz/release-changelog-builder-action@v4
-        with:
-          toTag: ${{ steps.get-version.outputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
+      - name: Push tag
+        uses: laputansoft/github-tag-action@v4.6
         with:
-          body: ${{steps.github_release.outputs.changelog}}
-          tag_name: ${{ steps.get-version.outputs.version }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_sha: ${{ github.event.pull_request.merge_commit_sha }}
+          tag: ${{ steps.get-version.outputs.version }}
+
