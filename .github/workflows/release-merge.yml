@@ -22,19 +22,10 @@ jobs:
           VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Push tag
-        uses: rickstaa/action-create-tag@v1
-        id: tag-create
-        with:
-          tag: ${{ steps.get-version.outputs.version }}
-          commit_sha: ${{ github.event.pull_request.merge_commit_sha }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build Changelog
         id: github_release
         uses: mikepenz/release-changelog-builder-action@v4
         with:
-          fromTag: ''
           toTag: ${{ steps.get-version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

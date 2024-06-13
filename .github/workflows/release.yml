@@ -15,18 +15,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       # Regex from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
       - name: Validate version
         run: |
-          echo "Validating version..."
+          echo "Validating version ${{ github.event.inputs.version }}..."
           D='0|[1-9][0-9]*'
           PW='[0-9]*[a-zA-Z-][0-9a-zA-Z-]*'
           MW='[0-9a-zA-Z-]+'
           if [[ "${{ github.event.inputs.version }}" =~ ^($D)\.($D)\.($D)(-(($D|$PW)(\.($D|$PW))*))?(\+($MW(\.$MW)*))?$ ]]; then
-            echo "Version is valid."
+            echo "Version ${{ github.event.inputs.version }} is valid."
           else
             echo "Version is not valid SemVer. Aborting..."
             exit 1
@@ -39,8 +37,8 @@ jobs:
           for path in "${CRATE_PATHS[@]}"; do
             cd $path
             OLD_VERSION=$(grep -oP 'version = "\K[^"]+' Cargo.toml)
-            if [[ "${{ github.event.inputs.version }}" > "$OLD_VERSION" ]]; then
-              sed -i 's/version = "'$OLD_VERSION'"/version = "${{ github.event.inputs.version }}"/' Cargo.toml
+            if [[ "${{ inputs.version }}" > "$OLD_VERSION" ]]; then
+              sed -i 's/version = "'$OLD_VERSION'"/version = "${{ inputs.version }}"/' Cargo.toml
             else
               echo "New version is not greater than the current version for $path. Aborting..."
               exit 1
@@ -52,12 +50,10 @@ jobs:
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'actions@github.com'
           git add .
-          git commit -m "feat: bump version to ${{ github.event.inputs.version }}"
+          git commit -m "feat: bump version to ${{ inputs.version }}"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Release ${{ github.event.inputs.version }}"
-          branch: "release/${{ github.event.inputs.version }}"
-          base: "dev"
+          title: "Release ${{ inputs.version }}"
+          branch: "release/${{ inputs.version }}"
