@@ -20,16 +20,15 @@ jobs:
         id: get-version
         run: |
           VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
-          echo "name=version::${VERSION}" | tee -a $GITHUB_OUTPUT
-
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Push tag
-        uses: laputansoft/github-tag-action@v4.6
+        uses: rickstaa/action-create-tag@v1
+        id: tag-create
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          commit_sha: ${{ github.event.pull_request.merge_commit_sha }}
           tag: ${{ steps.get-version.outputs.version }}
-
+          commit_sha: ${{ github.event.pull_request.merge_commit_sha }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Changelog
         id: github_release
@@ -41,6 +40,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: mikepenz/action-gh-release@v0.2.0-a03 #softprops/action-gh-release
+        uses: softprops/action-gh-release@v2
         with:
           body: ${{steps.github_release.outputs.changelog}}
+          tag_name: ${{ steps.get-version.outputs.version }}
