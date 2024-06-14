@@ -1,7 +1,11 @@
-name: Release
+name: Bump Version
 on:
   workflow_dispatch:
     inputs:
+      type:
+        description: 'release or hotfix'
+        required: true
+        default: 'release'
       version:
         description: 'Version'
         required: true
@@ -10,7 +14,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      CRATES: './crate_1,./crate_2'
+      # Crates fro which the version will be bumped
+      CRATES: './aptos/aptos-programs,./aptos/core,./aptos/light-client,./aptos/programs/inclusion,./aptos/programs/epoch-change,./aptos/proof-server'
 
     steps:
       - name: Checkout code
@@ -45,15 +50,10 @@ jobs:
             fi
             cd $GITHUB_WORKSPACE
           done
-      - name: Commit changes
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          git add .
-          git commit -m "feat: bump version to ${{ inputs.version }}"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
-          title: "Release ${{ inputs.version }}"
-          branch: "release/${{ inputs.version }}"
+          title: "${{ inputs.type == 'release' && 'Release' || 'Hotfix' }} ${{ inputs.version }}"
+          branch: "${{ inputs.type }}/${{ inputs.version }}"
+          commit-message: "${{ inputs.type == 'release' && 'feat' || 'fix' }}: bump version to ${{ inputs.version }}"

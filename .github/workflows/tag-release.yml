@@ -1,15 +1,19 @@
-name: Release PR Merged
+name: Tag release
 
 on:
   pull_request:
     types: [ closed ]
     branches:
       - dev
+      - release/*
 
 jobs:
   # Creates a new tag if a release branch is merged
-  tag-release:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+  tag-bump:
+    if: |
+      github.event.pull_request.merged == true &&
+      ((startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.base.ref == 'dev') ||
+      (startsWith(github.event.pull_request.head.ref, 'hotfix/') && startsWith(github.event.pull_request.base.ref, 'release/')))
     runs-on: ubuntu-latest
 
     steps:
@@ -35,3 +39,4 @@ jobs:
         with:
           body: ${{steps.github_release.outputs.changelog}}
           tag_name: ${{ steps.get-version.outputs.version }}
+          target_commitish: ${{ startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.head.ref || github.event.pull_request.base.ref }}
