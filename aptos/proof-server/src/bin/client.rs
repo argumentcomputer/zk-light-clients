@@ -1,3 +1,42 @@
+//! # Client
+//!
+//! The Client is a piece of software that serves as a coordinator between an Aptos Public Full Node
+//! and the Proof Server. It is responsible for fetching data from the Aptos node and sending it to
+//! the Proof Server to generate and verify proofs.
+//!
+//! In its current implementation, the client is also responsible for mocking a verifier state that
+//! would otherwise be a blockchian, such as Ethereum.
+//!
+//! ## Design
+//!
+//! The client has two main phases in its lifetime:
+//! - **Initialization**: In this phase, the client fetches the initial data from the Aptos node and
+//! generates the initial state for itself and the verifier.
+//! - **Main Loop**: In this phase, the client listens for new data from the Aptos node and generates
+//! proofs for the verifier to verify.
+//!
+//! ## Usage
+//!
+//! The client can be started by running the following command:
+//! ```bash
+//! cargo run --bin client -- --proof-server-address <PROOF_SERVER_ADDRESS> --aptos-node-url <APTOS_NODE_URL>
+//! ```
+//! with the following arguments:
+//! - `PROOF_SERVER_ADDRESS`: The address of the proof server.
+//! - `APTOS_NODE_URL`: The URL of the Aptos node.
+//!
+//! ## Note
+//!
+//! When running our Client two types of proofs are generated:
+//! - **Epoch Change Proof**: This proof is generated when the epoch changes in the Aptos node.
+//! - **Inclusion Proof**: This proof is generated when an account is included in the ledger.
+//!
+//! The client is responsible for verifying these proofs and updating the verifier state accordingly.
+//! The worst-case scenario that can happen in the client is that we receive the need to generate both
+//! proofs at the same time. In this case, the client will send both requests to the proof server, that
+//! is charged with parallelizing the proof generation, effectively reducing the time it takes to generate
+//! both proofs by two.
+
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -26,6 +65,7 @@ use tokio::net::TcpStream;
 use tokio::sync::{mpsc, Mutex, OwnedSemaphorePermit, Semaphore};
 use tokio::task::JoinHandle;
 
+/// Address that will be used to generate the inclusion proof.
 const ACCOUNT: &str = "0x2d91309b5b07a8be428ccd75d0443e81542ffcd059d0ab380cefc552229b1a";
 
 /// A client displaying how one can make requests to the proof server and
@@ -53,6 +93,7 @@ type ClientState = TrustedState;
 /// to contain the latest verified committee hash.
 type VerifierState = (HashValue, HashValue);
 
+/// The type of proof that is currently being processed.
 enum ProofType {
     EpochChange {
         task: JoinHandle<Result<(TrustedState, HashValue, SphinxProof), ClientError>>,
@@ -73,6 +114,7 @@ impl Display for &ProofType {
     }
 }
 
+/// The main function of the client. It initializes the client and starts the main loop.
 #[tokio::main]
 async fn main() -> Result<()> {
     let Cli {
@@ -190,6 +232,18 @@ async fn main() -> Result<()> {
     }
 }
 
+/// Method to initialize the client. It fetches the initial data from the Aptos node and generates
+/// the initial state for the client and the verifier. While initializing the client, it handles the
+/// generation of both proof as it would happen in the worst-case scenario.
+///
+/// # Arguments
+///
+/// * `proof_server_address` - The address of the proof server.
+/// * `aptos_node_url` - The URL of the Aptos node.
+///
+/// # Returns
+///
+/// A tuple containing the client state and the verifier state.
 async fn init(
     proof_server_address: &Arc<String>,
     aptos_node_url: &Arc<String>,
@@ -249,8 +303,18 @@ async fn init(
     Ok((ratcheted_trusted_state, verifier_state))
 }
 
-/// This method calls the endpoint to fetch epoch change proof data
-/// from the Aptos node and returns the deserialized payload.
+/// This method calls the endpoint to fetch epoch change proof data from the Aptos node and returns
+/// the deserialized payload.
+///
+/// # Arguments
+///
+/// * `aptos_node_url` - The URL of the Aptos node.
+/// * `specific_epoch` - The specific epoch to fetch the epoch change proof data. Latest one if none
+/// specified.
+///
+/// # Returns
+///
+/// The deserialized payload of the epoch change proof data.
 async fn fetch_epoch_change_proof_data(
     aptos_node_url: &str,
     specific_epoch: Option<u64>,
@@ -269,8 +333,16 @@ async fn fetch_epoch_change_proof_data(
     })
 }
 
-/// This method calls the endpoint to fetch epoch change proof data
-/// from the Aptos node and returns the deserialized payload.
+/// This method calls the endpoint to fetch epoch change proof data from the Aptos node and returns
+/// the deserialized payload.
+///
+/// # Arguments
+///
+/// * `aptos_node_url` - The URL of the Aptos node.
+///
+/// # Returns
+///
+/// The deserialized payload of the epoch change proof data.
 async fn fetch_inclusion_proof_data(
     aptos_node_url: &str,
 ) -> Result<AccountInclusionProofResponse, ClientError> {
@@ -291,7 +363,16 @@ async fn fetch_inclusion_proof_data(
 /// This method sends a request to the Aptos node and returns the deserialized payload.
 /// It is a generic method that can be used to fetch any data from the Aptos node.
 ///
+/// # Arguments
+///
+/// * `request_url` - The URL of the Aptos node.
+///
+/// # Returns
+///
+/// The payload of the response as bytes.
+///
 /// # Errors
+///
 /// This method returns an error if the request fails or if the response payload
 /// can't be deserialized.
 async fn request_aptos_node(request_url: &str) -> Result<Vec<u8>, ClientError> {
@@ -319,7 +400,17 @@ async fn request_aptos_node(request_url: &str) -> Result<Vec<u8>, ClientError> {
 
 /// This method sends a request to the prover and returns the proof.
 ///
+/// # Arguments
+///
+/// * `proof_server_address` - The address of the proof server.
+/// * `request` - The request to send to the prover.
+///
+/// # Returns
+///
+/// The proof as bytes.
+///
 /// # Errors
+///
 /// This method returns an error if the request fails or if the response payload
 /// can't be deserialized.
 async fn request_prover(
@@ -353,6 +444,15 @@ async fn request_prover(
 
 /// This method verifies the validator verifier predicate, ie: that the validator committee that
 ///signed the block header corresponds to the one we have in state.
+///
+/// # Arguments
+///
+/// * `proof` - The proof to verify.
+/// * `expected_hash` - The expected hash of the validator verifier.
+///
+/// # Returns
+///
+/// An error if the predicate is not satisfied.
 fn assert_validator_verifier_predicate(
     proof: &mut SphinxProof,
     expected_hash: HashValue,
@@ -375,7 +475,14 @@ fn assert_validator_verifier_predicate(
 
 /// This method sends a request to the prover to generate an epoch change proof.
 ///
+/// # Arguments
+///
+/// * `proof_server_address` - The address of the proof server.
+/// * `aptos_node_url` - The URL of the Aptos node.
+/// * `epoch` - The epoch for which to generate the epoch change proof.
+///
 /// # Errors
+///
 /// This method returns an error if the request fails or if the response payload
 /// can't be deserialized.
 async fn epoch_change_proving_task(
@@ -437,6 +544,17 @@ async fn epoch_change_proving_task(
     Ok((ratcheted_state, validator_verifier_hash, epoch_change_proof))
 }
 
+/// This method sends a request to the prover to verify an epoch change proof.
+///
+/// # Arguments
+///
+/// * `proof_server_address` - The address of the proof server.
+/// * `epoch_change_proof` - The epoch change proof to verify.
+/// * `verifier_state` - The verifier state to verify.
+///
+/// # Returns
+///
+/// The verifier state after the verification.
 async fn epoch_change_verifying_task(
     proof_server_address: Arc<String>,
     epoch_change_proof: &mut SphinxProof,
@@ -470,6 +588,17 @@ async fn epoch_change_verifying_task(
     ))
 }
 
+/// This method sends a request to the prover to generate an account inclusion proof.
+///
+/// # Arguments
+///
+/// * `proof_server_address` - The address of the proof server.
+/// * `aptos_node_url` - The URL of the Aptos node.
+/// * `account` - The account to generate the inclusion proof.
+///
+/// # Returns
+///
+/// The account inclusion proof.
 async fn inclusion_proving_task(
     proof_server_address: Arc<String>,
     aptos_node_url: Arc<String>,
@@ -496,6 +625,17 @@ async fn inclusion_proving_task(
     Ok(account_inclusion_proof)
 }
 
+/// This method sends a request to the prover to verify an account inclusion proof.
+///
+/// # Arguments
+///
+/// * `proof_server_address` - The address of the proof server.
+/// * `account_inclusion_proof` - The account inclusion proof to verify.
+/// * `verifier_state` - The verifier state to verify.
+///
+/// # Returns
+///
+/// The verifier state after the verification.
 async fn inclusion_verifying_task(
     proof_server_address: Arc<String>,
     account_inclusion_proof: &mut SphinxProof,
@@ -529,6 +669,14 @@ async fn inclusion_verifying_task(
     ))
 }
 
+/// This method creates a listener for new tasks to verify proofs and processes them.
+///
+/// # Arguments
+///
+/// * `task_receiver` - The receiver channel for the tasks.
+/// * `proof_server_address` - The address of the proof server.
+/// * `initial_verifier_state` - The initial verifier state.
+/// * `client_state` - The client state.
 async fn verifier_task(
     mut task_receiver: mpsc::Receiver<ProofType>,
     proof_server_address: Arc<String>,

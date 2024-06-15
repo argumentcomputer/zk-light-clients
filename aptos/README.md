@@ -242,4 +242,6 @@ mkdir -p ~/.sp1/circuits/groth16/9f43e920/
 cp build/* ~/.sp1/circuits/groth16/9f43e920/
 ```
 
-The trailing commit identifier after `~/.sp1/circuits/groth16/` depends on the value of `GROTH16_ARTIFACTS_COMMIT` defined [here](https://github.com/lurk-lab/sphinx/blob/3f60558d3465c51d7261c33aa8e63d7c7356ca25/prover/src/install.rs#L13), make sure to use the most up-to-date value.
+The trailing commit identifier after `~/.sp1/circuits/groth16/` depends on the value of `GROTH16_ARTIFACTS_COMMIT`
+defined [here](https://github.com/lurk-lab/sphinx/blob/3f60558d3465c51d7261c33aa8e63d7c7356ca25/prover/src/install.rs#L13),
+make sure to use the most up-to-date value.

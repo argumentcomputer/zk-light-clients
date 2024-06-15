@@ -1,3 +1,16 @@
+//! # Server secondary
+//!
+//! Server capable of handling proof generation and verification regarding epoch changes. Such
+//! requests are expected to come from the primary server.
+//!
+//! ## Usage
+//!
+//! The server can be started with the following command:
+//! ```bash
+//! RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo run --release --bin server_secondary -- -a <SERVER_SECONDARY_ADDR>
+//! ```
+//! where `<SERVER_SECONDARY_ADDR>` is the address where the server will be listening for incoming
+
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0, MIT
 

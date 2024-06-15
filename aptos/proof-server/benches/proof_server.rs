@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::anyhow;
 use bcs::from_bytes;
 use proof_server::types::aptos::{AccountInclusionProofResponse, EpochChangeProofResponse};
@@ -15,6 +18,7 @@ use tokio::time::sleep;
 
 #[derive(Debug, Clone, Serialize)]
 struct BenchResults {
+    e2e_proving_time: u128,
     inclusion_proof: ProofData,
     epoch_change_proof: ProofData,
 }
@@ -22,7 +26,7 @@ struct BenchResults {
 #[derive(Debug, Clone, Serialize)]
 
 struct ProofData {
-    e2e_proving_time: u128,
+    proving_time: u128,
     request_response_proof_size: usize,
 }
 
@@ -46,7 +50,7 @@ fn main() -> Result<(), anyhow::Error> {
         rt.block_on(async {
             let inclusion_proof = bench_proving_inclusion(groth16).await;
             let epoch_change_proof = bench_proving_epoch_change(groth16).await;
-            (Ok(inclusion_proof), Ok(epoch_change_proof))
+            (inclusion_proof?, epoch_change_proof?)
         })
     } else {
         rt.block_on(async {
@@ -56,13 +60,20 @@ fn main() -> Result<(), anyhow::Error> {
             let inclusion_proof = inclusion_proof_task.await.map_err(|e| anyhow!(e));
             let epoch_change_proof = epoch_change_proof_task.await.map_err(|e| anyhow!(e));
 
-            (inclusion_proof, epoch_change_proof)
+            (inclusion_proof??, epoch_change_proof??)
         })
     };
 
+    let e2e_proving_time = if inclusion_proof.proving_time > epoch_change_proof.proving_time {
+        inclusion_proof.proving_time
+    } else {
+        epoch_change_proof.proving_time
+    };
+
     let bench_results = BenchResults {
-        inclusion_proof: inclusion_proof??,
-        epoch_change_proof: epoch_change_proof??,
+        e2e_proving_time,
+        inclusion_proof,
+        epoch_change_proof,
     };
 
     let json_output = serde_json::to_string(&bench_results).unwrap();

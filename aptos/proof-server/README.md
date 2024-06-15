@@ -10,11 +10,6 @@ Internally, it's (currently) implemented as two servers that work in tandem.
 
 However, a client just needs to interact with the primary server directly.
 
-## Usage instructions
-
-The following instructions assume that both primary and secondary servers are running locally, on ports 6379 and 6380
-respectively.
-
 ## Run an Aptos node
 
 You need to run an Aptos node to fetch chain data. The current version
