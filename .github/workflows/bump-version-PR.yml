@@ -4,6 +4,10 @@ on:
     inputs:
       type:
         description: 'release or hotfix'
+        type: choice
+        options:
+          - release
+          - hotfix
         required: true
         default: 'release'
       version:
@@ -14,7 +18,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      # Crates fro which the version will be bumped
+      # Crates from which the version will be bumped
       CRATES: './aptos/aptos-programs,./aptos/core,./aptos/light-client,./aptos/programs/inclusion,./aptos/programs/epoch-change,./aptos/proof-server'
 
     steps:
@@ -57,3 +61,4 @@ jobs:
           title: "${{ inputs.type == 'release' && 'Release' || 'Hotfix' }} ${{ inputs.version }}"
           branch: "${{ inputs.type }}/${{ inputs.version }}"
           commit-message: "${{ inputs.type == 'release' && 'feat' || 'fix' }}: bump version to ${{ inputs.version }}"
+          base: "${{ inputs.type == 'hotfix' && 'release/${{ inputs.version }}' || 'dev' }}:
