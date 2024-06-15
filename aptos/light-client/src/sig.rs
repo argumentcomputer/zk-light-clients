@@ -114,7 +114,7 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_groth16_prove_sig() {
+    fn test_snark_prove_sig() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use sphinx_sdk::ProverClient;
@@ -141,12 +141,12 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of signature verification proof...");
-        let groth16proof = client.prove_groth16(&pk, stdin).unwrap();
+        let snark_proof = client.prove_plonk(&pk, stdin).unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         let start = Instant::now();
         println!("Starting verification of signature verification proof...");
-        client.verify_groth16(&groth16proof, &vk).unwrap();
+        client.verify_plonk(&snark_proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

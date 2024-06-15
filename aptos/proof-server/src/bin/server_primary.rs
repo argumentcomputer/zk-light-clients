@@ -141,7 +141,7 @@ async fn main() -> Result<()> {
                     write_bytes(&mut client_stream, &verified).await?;
                     info!("Verification result sent");
                 }
-                Ok(Request::Groth16ProveInclusion(inclusion_data)) => {
+                Ok(Request::SnarkProveInclusion(inclusion_data)) => {
                     let InclusionData {
                         sparse_merkle_proof_assets,
                         transaction_proof_assets,
@@ -154,7 +154,7 @@ async fn main() -> Result<()> {
                     );
                     info!("Start proving");
                     let proof_handle =
-                        spawn_blocking(move || prover_client.prove_groth16(&pk, stdin));
+                        spawn_blocking(move || prover_client.prove_plonk(&pk, stdin));
                     let proof = proof_handle.await??;
                     info!("Proof generated. Serializing");
                     let proof_bytes = bcs::to_bytes(&proof)?;
@@ -162,17 +162,17 @@ async fn main() -> Result<()> {
                     write_bytes(&mut client_stream, &proof_bytes).await?;
                     info!("Proof sent");
                 }
-                Ok(Request::Groth16VerifyInclusion(proof)) => {
+                Ok(Request::SnarkVerifyInclusion(proof)) => {
                     write_bytes(
                         &mut client_stream,
-                        &bcs::to_bytes(&prover_client.verify_groth16(&proof, &vk).is_ok())?,
+                        &bcs::to_bytes(&prover_client.verify_plonk(&proof, &vk).is_ok())?,
                     )
                     .await?;
                 }
-                Ok(Request::Groth16ProveEpochChange(epoch_change_data)) => {
+                Ok(Request::SnarkProveEpochChange(epoch_change_data)) => {
                     info!("Connecting to the secondary server");
                     let mut secondary_stream = TcpStream::connect(&*snd_addr).await?;
-                    let secondary_request = SecondaryRequest::Groth16Prove(epoch_change_data);
+                    let secondary_request = SecondaryRequest::SnarkProve(epoch_change_data);
                     info!("Serializing secondary request");
                     let secondary_request_bytes = bcs::to_bytes(&secondary_request)?;
                     info!("Sending secondary request");
@@ -183,10 +183,10 @@ async fn main() -> Result<()> {
                     write_bytes(&mut client_stream, &proof_bytes).await?;
                     info!("Proof sent");
                 }
-                Ok(Request::Groth16VerifyEpochChange(proof)) => {
+                Ok(Request::SnarkVerifyEpochChange(proof)) => {
                     info!("Connecting to the secondary server");
                     let mut secondary_stream = TcpStream::connect(&*snd_addr).await?;
-                    let secondary_request = SecondaryRequest::Groth16Verify(proof);
+                    let secondary_request = SecondaryRequest::SnarkVerify(proof);
                     info!("Serializing secondary request");
                     let secondary_request_bytes = bcs::to_bytes(&secondary_request)?;
                     info!("Sending secondary request");
