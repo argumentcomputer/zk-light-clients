@@ -45,10 +45,10 @@ sha2 = "0.9"
 thiserror = "1.0.58"
 tiny-keccak = "2.0.2"
 url = "2.5.0"
-sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
-sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
-sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
-sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk" }
+sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk", features = ["plonk"] }
+sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk" }
+sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk" }
 tokio = "1.37"
 tokio-stream = "0.1"
 
