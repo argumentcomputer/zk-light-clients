@@ -298,7 +298,7 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_groth16_prove_inclusion() {
+    fn test_snark_prove_inclusion() {
         use super::*;
         use sphinx_sdk::ProverClient;
         use std::time::Instant;
@@ -319,12 +319,12 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of inclusion proof...");
-        let groth16proof = client.prove_groth16(&pk, stdin).unwrap();
+        let snark_proof = client.prove_plonk(&pk, stdin).unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         let start = Instant::now();
         println!("Starting verification of inclusion proof...");
-        client.verify_groth16(&groth16proof, &vk).unwrap();
+        client.verify_plonk(&snark_proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }
