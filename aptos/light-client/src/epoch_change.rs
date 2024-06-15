@@ -164,7 +164,7 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_groth16_prove_epoch_change() {
+    fn test_snark_prove_epoch_change() {
         use super::*;
         use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
         use aptos_lc_core::crypto::hash::CryptoHash;
@@ -201,12 +201,12 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of prove_epoch_change proof...");
-        let groth16proof = client.prove_groth16(&pk, stdin).unwrap();
+        let snark_proof = client.prove_plonk(&pk, stdin).unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         let start = Instant::now();
         println!("Starting verification of prove_epoch_change proof...");
-        client.verify_groth16(&groth16proof, &vk).unwrap();
+        client.verify_plonk(&snark_proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

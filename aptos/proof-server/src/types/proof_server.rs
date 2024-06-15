@@ -5,7 +5,7 @@ use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use serde::{Deserialize, Serialize};
-use sphinx_sdk::{SphinxGroth16Proof, SphinxProof};
+use sphinx_sdk::{SphinxPlonkBn254Proof, SphinxProof};
 use std::fmt::Display;
 
 /// Data structure used as a payload to request an epoch change proof generation from the proof
@@ -26,17 +26,17 @@ pub struct InclusionData {
 
 /// Main request type for the proof server. It can be used to request both inclusion and epoch
 /// change proofs, as well as their verification. There are two variants for each type of proof:
-/// one using the [`SphinxProof`] type and another using the [`SphinxGroth16Proof`] type.
+/// one using the [`SphinxProof`] type and another using the [`SphinxPlonkBn254Proof`] type.
 #[derive(Serialize, Deserialize)]
 pub enum Request {
     ProveInclusion(InclusionData),
     ProveEpochChange(EpochChangeData),
     VerifyInclusion(SphinxProof),
     VerifyEpochChange(SphinxProof),
-    Groth16ProveInclusion(InclusionData),
-    Groth16ProveEpochChange(EpochChangeData),
-    Groth16VerifyInclusion(SphinxGroth16Proof),
-    Groth16VerifyEpochChange(SphinxGroth16Proof),
+    SnarkProveInclusion(InclusionData),
+    SnarkProveEpochChange(EpochChangeData),
+    SnarkVerifyInclusion(SphinxPlonkBn254Proof),
+    SnarkVerifyEpochChange(SphinxPlonkBn254Proof),
 }
 
 impl Display for &Request {
@@ -46,10 +46,10 @@ impl Display for &Request {
             Request::ProveEpochChange(_) => write!(f, "ProveEpochChange"),
             Request::VerifyInclusion(_) => write!(f, "VerifyInclusion"),
             Request::VerifyEpochChange(_) => write!(f, "VerifyEpochChange"),
-            Request::Groth16ProveInclusion(_) => write!(f, "Groth16ProveInclusion"),
-            Request::Groth16ProveEpochChange(_) => write!(f, "Groth16ProveEpochChange"),
-            Request::Groth16VerifyInclusion(_) => write!(f, "Groth16VerifyInclusion"),
-            Request::Groth16VerifyEpochChange(_) => write!(f, "Groth16VerifyEpochChange"),
+            Request::SnarkProveInclusion(_) => write!(f, "SnarkProveInclusion"),
+            Request::SnarkProveEpochChange(_) => write!(f, "SnarkProveEpochChange"),
+            Request::SnarkVerifyInclusion(_) => write!(f, "SnarkVerifyInclusion"),
+            Request::SnarkVerifyEpochChange(_) => write!(f, "SnarkVerifyEpochChange"),
         }
     }
 }
@@ -60,6 +60,6 @@ impl Display for &Request {
 pub enum SecondaryRequest {
     Prove(EpochChangeData),
     Verify(SphinxProof),
-    Groth16Prove(EpochChangeData),
-    Groth16Verify(SphinxGroth16Proof),
+    SnarkProve(EpochChangeData),
+    SnarkVerify(SphinxPlonkBn254Proof),
 }

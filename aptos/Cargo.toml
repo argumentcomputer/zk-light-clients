@@ -46,7 +46,7 @@ thiserror = "1.0.58"
 tiny-keccak = "2.0.2"
 url = "2.5.0"
 sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
-sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev", features = ["plonk"] }
 sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
 sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
 tokio = "1.37"
