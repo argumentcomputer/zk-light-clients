@@ -7,7 +7,6 @@ on:
       - "main"
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
-    branches: [ dev ]
 
 env:
   CARGO_TERM_COLOR: always
