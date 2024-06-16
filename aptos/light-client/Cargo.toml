@@ -18,10 +18,10 @@ anyhow = { workspace = true }
 getset = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 thiserror = { workspace = true }
+bcs = { workspace = true }
 
 [dev-dependencies]
 aptos-programs = { path = "../aptos-programs", features = ["bench"] }
-bcs = { workspace = true }
 cfg-if = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
