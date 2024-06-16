@@ -66,9 +66,11 @@ fn main() {
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../contracts/src/plonk_fixtures");
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
+    let fixture_path = fixture_path.join(args.program.as_str().to_owned() + "_fixture.json");
     std::fs::write(
-        fixture_path.join(args.program.as_str().to_owned() + "_fixture.json"),
+        fixture_path.clone(),
         serde_json::to_string_pretty(&fixture).unwrap(),
     )
     .expect("failed to write fixture");
+    tracing::info!("Fixture has been successfully saved to {:?}", fixture_path);
 }
