@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Proof Server
 //!
 //! This crate provides the proof server implementation for the Aptos node. The proof server is
@@ -13,9 +16,6 @@
 //! of load balancing the incoming requests and handling proofs about account inclusion.
 //! - [secondary server](./bin/server_secondary.rs): A secondary server that is in charge of handling
 //! requests about epoch changes.
-
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
 
 /// Module containing the errors that can be thrown while using the client and the proof server.
 pub mod error;

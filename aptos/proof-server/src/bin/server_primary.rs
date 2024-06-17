@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Primary server
 //!
 //! The primary server is responsible for handling requests regarding inclusion proofs. It is
@@ -6,16 +9,7 @@
 //!
 //! ## Usage
 //!
-//! The primary server can be started by running the following command:
-//! ```bash
-//! RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo +nightly run --release --bin server_primary -- -a <SERVER_PRIMARY_ADDRESS> --snd-addr <SERVER_SECONDARY_ADDRESS>
-//! ```
-//! where:
-//! - `<SERVER_PRIMARY_ADDRESS>` is the address of the primary server. E.g. 127.0.0.1:6379
-//! - `<SERVER_SECONDARY_ADDRESS>` is the address of the secondary server. E.g. 127.0.0.1:6380
-
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+//! For a detailed usage guide, please refer to the dedicated README in `aptos/docs/src/run/setup_proof_server.md`.
 
 use anyhow::{Error, Result};
 use aptos_lc::inclusion;

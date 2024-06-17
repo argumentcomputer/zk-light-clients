@@ -1,3 +1,6 @@
+// Copyright (c) Yatima, Inc.
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Client
 //!
 //! The Client is a piece of software that serves as a coordinator between an Aptos Public Full Node
@@ -17,13 +20,7 @@
 //!
 //! ## Usage
 //!
-//! The client can be started by running the following command:
-//! ```bash
-//! cargo run --bin client -- --proof-server-address <PROOF_SERVER_ADDRESS> --aptos-node-url <APTOS_NODE_URL>
-//! ```
-//! with the following arguments:
-//! - `PROOF_SERVER_ADDRESS`: The address of the proof server.
-//! - `APTOS_NODE_URL`: The URL of the Aptos node.
+//! For a detailed usage guide, please refer to the dedicated README in `aptos/docs/src/run/setup_client.md`.
 //!
 //! ## Note
 //!
@@ -36,9 +33,6 @@
 //! proofs at the same time. In this case, the client will send both requests to the proof server, that
 //! is charged with parallelizing the proof generation, effectively reducing the time it takes to generate
 //! both proofs by two.
-
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
 
 use anyhow::{anyhow, Result};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};

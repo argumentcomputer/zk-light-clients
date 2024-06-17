@@ -82,4 +82,6 @@ Once the configuration is done, we just need to run the node:
 cargo run -p aptos-node --release -- -f ./fullnode.yaml
 ```
 
-> Note: The synchronisation mode that we use as an example should reach the latest produced block in around 1 hour.
+> **Note**
+>
+>The synchronisation mode that we use as an example should reach the latest produced block in around 1 hour.
