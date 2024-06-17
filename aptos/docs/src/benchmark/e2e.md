@@ -47,11 +47,11 @@ It measures two main metrics for each proof:
 > As the proof server is run with the `RUST_LOG=debug` environment variable, it is also possible to grab the inner
 > metrics from Sphinx.
 
-## Groth16 proofs
+## SNARK proofs
 
-To benchmark the end-to-end flow with Groth16 proofs, we first need to generate the circuits assets as described in [the
-configuration section](./configuration.md). Then, just pass the environment variable `GROTH16=1`:
+To benchmark the end-to-end flow with Plonk proofs over BN254, we first need to generate the circuits assets as described in [the
+configuration section](./configuration.md). Then, just pass the environment variable `SNARK=1`:
 
 ```bash
-GROTH16=1 RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly bench --bench proof_server
+RUN_SERIAL=1 SNARK=1 RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly bench --bench proof_server
 ```

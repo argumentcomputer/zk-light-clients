@@ -12,7 +12,7 @@ Here are the standard config variables that are worth setting for any benchmark:
 - `SHARD_SIZE=4194304`
 
   The highest possible setting, giving the fewest shards. Because the compression phase dominates the timing of the
-  groth16 proofs, we need as few shards as possible.
+  SNARK proofs, we need as few shards as possible.
 
 - `SHARD_BATCH_SIZE=0`
 
@@ -36,23 +36,24 @@ Here are the standard config variables that are worth setting for any benchmark:
 The requirements to run the benchmarks are the same as the ones for the client. You can find those instructions
 in [their dedicated section](../run/configuration.md).
 
-## Groth16 proofs
+## SNARK proofs
 
-When running any tests or benchmarks that makes Groth16 proofs, it's necessary to build the correct circuit artifacts.
+When running any tests or benchmarks that makes Plonk proofs over BN254, it's necessary to build the correct circuit artifacts.
 
-Currently, if you don't manually build them, it will lead to a proof generation failure (unsatisfied constraint) due to
-circuit differences.
+If you don't manually build them, it will lead to a proof generation failure (unsatisfied constraint) due to
+circuit differences between SP1 and Sphinx.
 
-To build the Groth16 artifacts, do the following:
+To enable Plonk proofs, we first need to generate the necessary circuit artifacts.
 
-```shell
-unset FRI_QUERIES && \
-  cd sphinx/prover && \
-  make build-groth16 && \
-  mkdir -p ~/.sp1/circuits/groth16/9f43e920/ && \
-  cp build/* ~/.sp1/circuits/groth16/9f43e920/
+We need to head to the Sphinx repository and run the build script:
+
+```bash
+cd sphinx/prover && \
+  make build-plonk-bn254 && \
+  mkdir -p ~/.sp1/circuits/plonk_bn254/e48c01ec/ && \
+  cp build/* ~/.sp1/circuits/plonk_bn254/e48c01ec/
 ```
 
-The trailing commit identifier after `~/.sp1/circuits/groth16/` depends on the value of `GROTH16_ARTIFACTS_COMMIT`
+The trailing commit identifier after `~/.sp1/circuits/plonk_bn254/` depends on the value of `PLONK_BN254_ARTIFACTS_COMMIT`
 defined [here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs),
-make sure to use the most up-to-date value.
+make sure to use the most up-to-date value for the specific Sphinx release.

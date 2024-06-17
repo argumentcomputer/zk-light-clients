@@ -8,25 +8,25 @@ and then the primary.
 
 Make sure that the configuration specified in [the dedicated section](./configuration.md) are met.
 
-## Groth16 proofs
+## SNARK proofs
 
-We mentioned earlier that the Proof Server has the capabilities of handling two types of proofs: either SP1 core proofs
-or Groth16 proofs.
+We mentioned earlier that the Proof Server has the capabilities of handling two types of proofs: either Sphinx core proofs
+or SNARK proofs using Plonk.
 
-To enable Groth16 proofs, we first need to generate the necessary circuit artifacts.
+To enable Plonk proofs, we first need to generate the necessary circuit artifacts.
 
 We need to head to the Sphinx repository and run the build script:
 
 ```bash
 cd sphinx/prover && \
-  make build-groth16 && \
-  mkdir -p ~/.sp1/circuits/groth16/9f43e920/ && \
-  cp build/* ~/.sp1/circuits/groth16/9f43e920/
+  make build-plonk-bn254 && \
+  mkdir -p ~/.sp1/circuits/plonk_bn254/e48c01ec/ && \
+  cp build/* ~/.sp1/circuits/plonk_bn254/e48c01ec/
 ```
 
-The trailing commit identifier after `~/.sp1/circuits/groth16/` depends on the value of `GROTH16_ARTIFACTS_COMMIT`
-defined [here](https://github.com/lurk-lab/sphinx/blob/3f60558d3465c51d7261c33aa8e63d7c7356ca25/prover/src/install.rs#L13),
-make sure to use the most up-to-date value.
+The trailing commit identifier after `~/.sp1/circuits/plonk_bn254/` depends on the value of `PLONK_BN254_ARTIFACTS_COMMIT`
+defined [here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs),
+make sure to use the most up-to-date value for the specific Sphinx release.
 
 ## Environment variables
 
