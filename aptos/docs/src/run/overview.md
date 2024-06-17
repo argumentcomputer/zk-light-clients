@@ -1,11 +1,11 @@
 # Run the Light Client
 
 In the previous section, we covered all the architecture components of the Light Client and explained their specific
-role. In this section we will cover how to set them up and run the Light Client to start proving epoch change and
+roles. In this section we will cover how to set them up and run the Light Client to start proving epoch change and
 inclusion proofs.
 
-As the computational requirements for the Proof Server are heavy here are the recommended specs for the machine that
-will should be running each component:
+As the computational requirements for the Proof Server are heavy, here are the recommended specs for the machine that
+should be running each component:
 
 |                                                                       | CPU                                                                                          | Memory (GB) | Disk Size (GB) | Example                                                                  |
 |-----------------------------------------------------------------------|----------------------------------------------------------------------------------------------|-------------|----------------|--------------------------------------------------------------------------|

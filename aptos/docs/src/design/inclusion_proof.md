@@ -1,7 +1,7 @@
 # Inclusion proof
 
 To bridge an account from the Aptos chain to the Ethereum chain at any given time the LC needs to prove that the given
-account exists in the chain state for the latest block produce.
+account exists in the chain state for the latest block produced.
 
 To do so, the Light Client will first need to verify that the signature on the latest block corresponds to the validator
 list known for the current epoch. Then, it will have to prove that the account is part of the updated state that this

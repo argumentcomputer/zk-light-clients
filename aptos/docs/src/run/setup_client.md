@@ -1,10 +1,10 @@
 # Run the Client
 
-The final components that we need to set up is the Client. As both the Aptos Full Node and the Proof Server are
+The final component that we need to set up is the Client. As both the Aptos Full Node and the Proof Server are
 available,
-it will be able to start the coordinating the proving process between the two of them.
+one can start the coordination of the proving process between the two of them.
 
-The first setup steps are similar to the Proof Server as they are binaries of te same crate.
+The first setup steps are similar to the Proof Server as they are binaries of the same crate.
 
 ## Requirements
 

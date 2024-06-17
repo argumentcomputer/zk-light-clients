@@ -1,6 +1,6 @@
 # Epoch change proof
 
-The Aptos consensus has at any given time as set of validators that is charged with executing blocks and sign them to
+The Aptos consensus has (at any given time) a set of validators that are charged with executing blocks and sign them to
 append them to the chain state.
 
 A set of given validators is updated at the last block of every epoch on the chain. An **epoch on the Aptos chain has a

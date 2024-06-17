@@ -10,8 +10,8 @@ would allow us to retrieve the data we need. It is especially lacking when it co
 consensus layer, such as block header signatures.
 
 To make up for that, we forked the repository into our
-own [`lurk-lab/ptos-core`](https://github.com/lurk-lab/aptos-core). This forked repository should be the reference for
-the Aptos Full Node until the core developer of the Aptos protocol have made the necessary update.
+own [`lurk-lab/aptos-core`](https://github.com/lurk-lab/aptos-core). This forked repository should be the reference for
+the Aptos Full Node until the core developers of the Aptos protocol have made the necessary update.
 
 ## RPC endpoints
 
