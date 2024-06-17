@@ -29,3 +29,7 @@
 - [Configuration](./benchmark/configuration.md)
 - [Benchmarks individual proofs](./benchmark/proof.md)
 - [E2E benchmarks](./benchmark/e2e.md)
+
+# Miscellaneous
+
+- [Release / Hotfix process](./misc/release.md)
