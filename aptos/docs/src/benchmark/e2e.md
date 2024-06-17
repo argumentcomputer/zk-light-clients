@@ -13,7 +13,10 @@ RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" PRIMARY_A
 ```
 
 This benchmark will spawn the two servers locally and make two requests in parallel to them. This generates both proofs
-at the same time in the same machine. It measures to main metrics for each proof:
+at the same time in the same machine. In a production setting, the two prover servers will be in different machines, and the two proofs will be generated in parallel.
+To run the proofs serially instead, pass the `RUN_SERIAL=1` environment variable to the test. This report times that are closer to a production setting where each proof is generated in parallel by a different machine.
+
+It measures two main metrics for each proof:
 
 - `e2e_proving_time`: Time taken to send both request to the Proof Server and generate both proofs.
 - `inclusion_proof`:

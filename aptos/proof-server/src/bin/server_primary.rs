@@ -8,7 +8,7 @@
 //!
 //! The primary server can be started by running the following command:
 //! ```bash
-//! RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo run --release --bin server_primary -- -a <SERVER_PRIMARY_ADDRESS> --snd-addr <SERVER_SECONDARY_ADDRESS>
+//! RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo +nightly run --release --bin server_primary -- -a <SERVER_PRIMARY_ADDRESS> --snd-addr <SERVER_SECONDARY_ADDRESS>
 //! ```
 //! where:
 //! - `<SERVER_PRIMARY_ADDRESS>` is the address of the primary server. E.g. 127.0.0.1:6379

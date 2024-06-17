@@ -7,7 +7,7 @@
 //!
 //! The server can be started with the following command:
 //! ```bash
-//! RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo run --release --bin server_secondary -- -a <SERVER_SECONDARY_ADDR>
+//! RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo +nightly run --release --bin server_secondary -- -a <SERVER_SECONDARY_ADDR>
 //! ```
 //! where `<SERVER_SECONDARY_ADDR>` is the address where the server will be listening for incoming
 

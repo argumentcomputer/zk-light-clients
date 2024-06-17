@@ -21,7 +21,7 @@ Here are the standard config variables that are worth setting for any benchmark:
 - `cargo +nightly`
 
   This ensures you are on a nightly toolchain, overriding the local `rust-toolchain.toml` file. Nightly allows usage
-  of AVX512 instructions and `tokio_unstable`
+  of AVX512 instructions which is crucial for performance.
 
 - `cargo bench --release <...>`
 
@@ -30,11 +30,6 @@ Here are the standard config variables that are worth setting for any benchmark:
 - `RUST_LOG=debug` _(optional)_
 
   This prints out useful Sphinx metrics, such as cycle counts, iteration speed, proof size, etc.
-
-- `FRI_QUERIES=50` and `blowup_factor=2`
-
-  The default settings `FRI_QUERIES=25` and `blowup_factor=4` are slowing wrapping by a lot.
-
 ## Requirements
 
 There are a few requirements for the Proof Server to work.
@@ -85,5 +80,5 @@ unset FRI_QUERIES && \
 ```
 
 The trailing commit identifier after `~/.sp1/circuits/groth16/` depends on the value of `GROTH16_ARTIFACTS_COMMIT`
-defined [here](https://github.com/lurk-lab/sphinx/blob/3f60558d3465c51d7261c33aa8e63d7c7356ca25/prover/src/install.rs#L13),
+defined [here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs),
 make sure to use the most up-to-date value.
