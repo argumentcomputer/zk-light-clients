@@ -17,10 +17,10 @@ An overview of what is the Light Client and the feature set it provides.
 
 A detailed description of the components that make up the Light Client.
 
-**[Run the Light Client]()**
+**[Run the Light Client](./run/overview.md)**
 
 A guide on how to set up and run the Light Client.
 
-**[Benchmark the Light Client]()**
+**[Benchmark the Light Client](./benchmark/overview.md)**
 
 A guide on how to benchmark the Light Client.
