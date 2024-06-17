@@ -56,17 +56,49 @@ contract SolidityVerificationTest is Test {
         console.log("gas cost: ", gasCost - gasleft());
     }
 
-    function testFail_InclusionProofPlonk() public view {
+    // Negative tests with a fake proof
+    function testFail_FakeProofInclusion() public view {
         SP1ProofFixtureJson memory fixture = loadPlonkInclusionFixture();
-        // Create a fake proof.
         bytes memory fakeProof = new bytes(fixture.proof.length);
         inclusion.verifyProof(fakeProof, fixture.publicValues);
     }
 
-    function testFail_EpochChangeProofPlonk() public view {
+    function testFail_FakeProofEpochChange() public view {
         SP1ProofFixtureJson memory fixture = loadPlonkEpochChangeFixture();
-        // Create a fake proof.
         bytes memory fakeProof = new bytes(fixture.proof.length);
-        inclusion.verifyProof(fakeProof, fixture.publicValues);
+        epochChange.verifyProof(fakeProof, fixture.publicValues);
+    }
+
+    // Negative tests with a fake public values
+    function testFail_FakePublicValuesInclusion() public view {
+        console.log("running testFail_FakePublicValuesInclusion");
+        SP1ProofFixtureJson memory fixture = loadPlonkInclusionFixture();
+
+        bytes memory fakePublicValues = new bytes(fixture.proof.length + 100);
+
+        inclusion.verifyProof(fixture.proof, fakePublicValues);
+    }
+
+    function testFail_FakePublicValuesEpochChange() public view {
+        SP1ProofFixtureJson memory fixture = loadPlonkEpochChangeFixture();
+        bytes memory fakePublicValues = new bytes(fixture.proof.length);
+        epochChange.verifyProof(fixture.proof, fakePublicValues);
+    }
+
+    // Negative tests with a wrong vk
+    function testFail_WrongVkValuesInclusion() public {
+        SP1ProofFixtureJson memory plonkEpochChangeFixture = loadPlonkEpochChangeFixture();
+        inclusion = new Inclusion(plonkEpochChangeFixture.vkey); // take key of epoch_change program
+
+        SP1ProofFixtureJson memory fixture = loadPlonkInclusionFixture();
+        inclusion.verifyProof(fixture.proof, fixture.publicValues);
+    }
+
+    function testFail_WrongVkValuesEpochChange() public {
+        SP1ProofFixtureJson memory plonkInclusionFixture = loadPlonkInclusionFixture();
+        epochChange = new EpochChange(plonkInclusionFixture.vkey); // take key of inclusion program
+
+        SP1ProofFixtureJson memory fixture = loadPlonkEpochChangeFixture();
+        epochChange.verifyProof(fixture.proof, fixture.publicValues);
     }
 }
