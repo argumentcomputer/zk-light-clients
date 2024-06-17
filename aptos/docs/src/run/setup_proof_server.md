@@ -44,7 +44,7 @@ make sure to use the most up-to-date value.
 
 > **Note**
 >
-> It can also prove interesting to set the `RUST_LOG` environment variable to `debug` to get more information
+> One can also set the `RUST_LOG` environment variable to `debug` to get more information
 > about the execution of the server.
 
 ## Deploy the secondary server
