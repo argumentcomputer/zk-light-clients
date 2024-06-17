@@ -1,0 +1,13 @@
+[package]
+name = "contracts-generator"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "generate-contracts"
+path = "src/bin/main.rs"
+
+[dependencies]
+anyhow = "1.0.86"
+log = "0.4.21"
+sphinx-sdk = { workspace = true }
