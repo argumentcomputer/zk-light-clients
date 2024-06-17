@@ -2,9 +2,7 @@
 
 As we covered [in the previous section](../components/aptos_pfn.md), the current reference for the Aptos Full Node
 codebase is [`lurk-lab/aptos-core`](https://github.com/lurk-lab/aptos-core). The current version can be found on the
-branch [`lurk-lab/aptos-core:release/aptos-node-v1.14.0-patched`](https://github.com/lurk-lab/aptos-core/tree/release/aptos-node-v1.14.0-patched)
-and its current head at
-commit [`d94b897`](https://github.com/lurk-lab/aptos-core/tree/d94b8974451d088e42882f9e1f761dfddfada345).
+branch [`lurk-lab/aptos-core:release/aptos-node-v1.14.0-patched`](https://github.com/lurk-lab/aptos-core/tree/release/aptos-node-v1.14.0-patched).
 
 The setup we will go over is a setup by
 building the code source.

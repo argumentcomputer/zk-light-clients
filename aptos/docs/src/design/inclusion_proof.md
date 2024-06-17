@@ -1,6 +1,6 @@
 # Inclusion proof
 
-To bridge an account from the Aptos chain to the Ethereum chain at any given time the LC needs to prove that the given
+To bridge an account from the Aptos chain to another chain at any given time the LC needs to prove that the given
 account exists in the chain state for the latest block produced.
 
 To do so, the Light Client will first need to verify that the signature on the latest block corresponds to the validator
@@ -35,5 +35,5 @@ end of this document):
 
 ### Outputs
 
-- **Previous `ValidatorVerifier` Hash:** The previous validator verifier hash, used to validate the incoming data.
+- **Current `ValidatorVerifier` Hash:** The current validator verifier hash, used to validate the incoming data.
 - **State Root Hash:** The root hash of the state, derived from the `TransactionInfo::state_checkpoint`.
