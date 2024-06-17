@@ -60,5 +60,5 @@ jobs:
         with:
           title: "${{ inputs.type == 'release' && 'Release' || 'Hotfix' }} ${{ inputs.version }}"
           branch: "${{ inputs.type }}/${{ inputs.version }}"
-          commit-message: "${{ inputs.type == 'release' && 'feat' || 'fix' }}: bump version to ${{ inputs.version }}"
-          base: "${{ inputs.type == 'hotfix' && 'release/${{ inputs.version }}' || 'dev' }}:
+          commit-message: "chore: ${{ inputs.type == 'release' && 'release' || 'hotfix' }} ${{ inputs.version }}"
+          base: ${{ github.ref }}
