@@ -1,6 +1,15 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0, MIT
 
+//! # Server secondary
+//!
+//! Server capable of handling proof generation and verification regarding epoch changes. Such
+//! requests are expected to come from the primary server.
+//!
+//! ## Usage
+//!
+//! For a detailed usage guide, please refer to the dedicated README in `aptos/docs/src/run/setup_proof_server.md`.
+
 use anyhow::{Error, Result};
 use aptos_lc::epoch_change;
 use clap::Parser;

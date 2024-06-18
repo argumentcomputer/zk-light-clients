@@ -8,12 +8,15 @@ use serde::{Deserialize, Serialize};
 use sphinx_sdk::{SphinxPlonkBn254Proof, SphinxProof};
 use std::fmt::Display;
 
+/// Data structure used as a payload to request an epoch change proof generation from the proof
+/// server.
 #[derive(Serialize, Deserialize)]
 pub struct EpochChangeData {
     pub trusted_state: Vec<u8>,
     pub epoch_change_proof: Vec<u8>,
 }
 
+/// Data structure used as a payload to request an inclusion proof generation from the proof server.
 #[derive(Serialize, Deserialize)]
 pub struct InclusionData {
     pub sparse_merkle_proof_assets: SparseMerkleProofAssets,
@@ -21,6 +24,9 @@ pub struct InclusionData {
     pub validator_verifier_assets: ValidatorVerifierAssets,
 }
 
+/// Main request type for the proof server. It can be used to request both inclusion and epoch
+/// change proofs, as well as their verification. There are two variants for each type of proof:
+/// one using the [`SphinxProof`] type and another using the [`SphinxGroth16Proof`] type.
 #[derive(Serialize, Deserialize)]
 pub enum Request {
     ProveInclusion(InclusionData),
@@ -48,6 +54,8 @@ impl Display for &Request {
     }
 }
 
+/// Secondary request type for the proof server. It is used to convey request from the primary
+/// server to the secondary one.
 #[derive(Serialize, Deserialize)]
 pub enum SecondaryRequest {
     Prove(EpochChangeData),

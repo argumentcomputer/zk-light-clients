@@ -1,8 +1,6 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use anyhow::{anyhow, Result};
 
 /// Size in bytes for an enum variant representation.
@@ -11,7 +9,7 @@ pub const ENUM_VARIANT_LEN: usize = 1;
 /// Size of a u64 representation in bytes.
 pub const U64_SIZE: usize = 8;
 
-/// Relative offset increments for the voting power field in the [`LedgerInfo`] struct.
+/// Relative offset increments for the voting power field in the [`crate::types::ledger_info::LedgerInfo`] struct.
 pub const VOTING_POWER_OFFSET_INCR: usize = U64_SIZE;
 
 /// Size of the LEB128 representation of a public key vector length.

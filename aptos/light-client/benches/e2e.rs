@@ -17,7 +17,7 @@
 //! and optimize the verification process.
 //!
 //! For more information on the Light Client design, its programs and the predicates used in this
-//! benchmark, please refer to the  [HackMD document](https://hackmd.io/@lurk-lab/HJvnlbKGR)
+//! benchmark, please refer to the [documentation](../../docs/src/benchmark/overview.md).
 use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };

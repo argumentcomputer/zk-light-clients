@@ -5,6 +5,18 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "client"
+path = "src/bin/client.rs"
+
+[[bin]]
+name = "server_primary"
+path = "src/bin/server_primary.rs"
+
+[[bin]]
+name = "server_secondary"
+path = "src/bin/server_secondary.rs"
+
 [dependencies]
 # local
 aptos-lc = { path = "../light-client" }

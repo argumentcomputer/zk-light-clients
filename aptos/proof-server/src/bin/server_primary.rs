@@ -1,6 +1,16 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0, MIT
 
+//! # Primary server
+//!
+//! The primary server is responsible for handling requests regarding inclusion proofs. It is
+//! capable of generating and verifying such proofs. Epoch change requests are offloaded to a
+//! secondary server to ease the computational load necessary to handle inclusion proof requests.
+//!
+//! ## Usage
+//!
+//! For a detailed usage guide, please refer to the dedicated README in `aptos/docs/src/run/setup_proof_server.md`.
+
 use anyhow::{Error, Result};
 use aptos_lc::inclusion;
 use clap::Parser;
