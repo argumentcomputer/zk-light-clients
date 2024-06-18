@@ -13,8 +13,9 @@ struct EpochChangeOutput {
 }
 
 #[cfg(feature = "aptos")]
-pub fn setup_assets() -> (Vec<u8>, Vec<u8>) {
+pub fn setup_assets() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
+    use aptos_lc_core::crypto::hash::CryptoHash;
 
     const NBR_VALIDATORS: usize = 130;
     const AVERAGE_SIGNERS_NBR: usize = 95;
@@ -22,6 +23,14 @@ pub fn setup_assets() -> (Vec<u8>, Vec<u8>) {
     let mut aptos_wrapper = AptosWrapper::new(20000, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
     let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
+    let validator_verifier_hash =
+        match aptos_lc_core::types::trusted_state::TrustedState::from_bytes(&trusted_state).unwrap()
+        {
+            aptos_lc_core::types::trusted_state::TrustedState::EpochState {
+                epoch_state, ..
+            } => epoch_state.verifier().hash().to_vec(),
+            _ => panic!("Expected epoch change for current trusted state"),
+        };
     let trusted_state_version = *aptos_wrapper.current_version();
 
     aptos_wrapper.generate_traffic().unwrap();
@@ -32,7 +41,7 @@ pub fn setup_assets() -> (Vec<u8>, Vec<u8>) {
 
     let epoch_change_proof = bcs::to_bytes(state_proof.epoch_changes()).unwrap();
 
-    (trusted_state, epoch_change_proof)
+    (trusted_state, epoch_change_proof, validator_verifier_hash)
 }
 
 pub fn generate_stdin(current_trusted_state: &[u8], epoch_change_proof: &[u8]) -> SphinxStdin {
@@ -111,7 +120,7 @@ mod test {
     fn test_execute_epoch_change() {
         use std::time::Instant;
 
-        let (trusted_state, epoch_change_proof) = setup_assets();
+        let (trusted_state, epoch_change_proof, _) = setup_assets();
 
         println!("Starting execution of prove_epoch_change...");
         let start = Instant::now();
@@ -126,7 +135,7 @@ mod test {
         use sphinx_sdk::ProverClient;
         use std::time::Instant;
 
-        let (trusted_state, epoch_change_proof) = setup_assets();
+        let (trusted_state, epoch_change_proof, validator_verifier_hash) = setup_assets();
 
         let client = ProverClient::new();
 
@@ -157,7 +166,7 @@ mod test {
 
         setup_logger();
 
-        let (trusted_state, epoch_change_proof) = setup_assets();
+        let (trusted_state, epoch_change_proof, _) = setup_assets();
 
         let client = ProverClient::new();
         let (pk, vk) = client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
