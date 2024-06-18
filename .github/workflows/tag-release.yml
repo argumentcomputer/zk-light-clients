@@ -15,8 +15,15 @@ jobs:
       ((startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.base.ref == 'dev') ||
       (startsWith(github.event.pull_request.head.ref, 'hotfix/') && startsWith(github.event.pull_request.base.ref, 'release/')))
     runs-on: ubuntu-latest
-
     steps:
+      - name: Git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -24,7 +31,12 @@ jobs:
         id: get-version
         run: |
           VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          RELEASE_BRANCH="${{ startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.head.ref || github.event.pull_request.base.ref }}"
+
+          git tag -a $VERSION -m "$VERSION" $RELEASE_BRANCH
+          git push origin $VERSION -f
+          echo "version=$VERSION" | tee -a "$GITHUB_OUTPUT"
+          echo "RELEASE_BRANCH=$RELEASE_BRANCH" | tee -a "$GITHUB_ENV"
 
       - name: Build Changelog
         id: github_release
@@ -35,8 +47,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: ncipollo/release-action@v1
         with:
-          body: ${{steps.github_release.outputs.changelog}}
-          tag_name: ${{ steps.get-version.outputs.version }}
-          target_commitish: ${{ startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.head.ref || github.event.pull_request.base.ref }}
+          body: ${{ steps.github_release.outputs.changelog }}
+          tag: ${{ steps.get-version.outputs.version }}
+          commit: ${{ env.RELEASE_BRANCH }}
+          allowUpdates: true
