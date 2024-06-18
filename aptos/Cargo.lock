@@ -8,12 +8,18 @@ version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "lazy_static",
  "regex",
 ]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 
 [[package]]
 name = "abstract-domain-derive"
@@ -132,6 +138,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 name = "alloy"
@@ -276,6 +283,8 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "alloy-primitives"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -298,6 +307,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 name = "alloy-provider"
@@ -327,20 +337,26 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "alloy-rlp"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b155716bab55763c95ba212806cf43d05bcc70e5f35b02bad20cf5ec7fe11fed"
 dependencies = [
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
  "alloy-rlp-derive",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "arrayvec 0.7.4",
  "bytes",
 ]
 
 [[package]]
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 name = "alloy-rlp-derive"
@@ -443,6 +459,8 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "alloy-sol-macro"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -463,9 +481,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd9899da7d011b4fe4c406a524ed3e3f963797dbc93b45479d60341d3a27b252"
 dependencies = [
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
  "alloy-json-abi",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "alloy-sol-macro-input",
  "const-hex",
  "heck 0.5.0",
@@ -485,23 +506,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d32d595768fdc61331a132b6f65db41afae41b9b97d36c21eb1b955c422a7e60"
 dependencies = [
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
  "alloy-json-abi",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "const-hex",
  "dunce",
  "heck 0.5.0",
  "proc-macro2",
  "quote",
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
  "serde_json",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "syn 2.0.66",
  "syn-solidity",
 ]
 
 [[package]]
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 name = "alloy-sol-type-parser"
@@ -514,15 +542,20 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "alloy-sol-types"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a49042c6d3b66a9fe6b2b5a8bf0d39fc2ae1ee0310a2a26ffedd79fb097878dd"
 dependencies = [
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
  "alloy-json-abi",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "alloy-primitives",
  "alloy-sol-macro",
  "const-hex",
@@ -530,6 +563,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 name = "alloy-transport"
@@ -564,6 +598,8 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -959,10 +995,14 @@ dependencies = [
  "hex",
  "itertools 0.12.1",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "lru",
 =======
  "lru 0.7.8",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "lru",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "move-core-types 0.0.4 (git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0)",
  "num-derive",
  "once_cell",
@@ -1189,10 +1229,14 @@ dependencies = [
  "libsecp256k1",
  "log",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "lru",
 =======
  "lru 0.7.8",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "lru",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "merlin",
  "move-binary-format",
  "move-cli",
@@ -2432,6 +2476,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "async_io_stream"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2443,8 +2490,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2651,14 +2701,20 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "bech32"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "bellpepper"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2952,6 +3008,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "bs58"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2962,8 +3021,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "bstr"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3056,6 +3118,7 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 name = "c-kzg"
 version = "1.0.2"
@@ -3072,6 +3135,8 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "c_linked_list"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3353,6 +3418,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "coins-bip32"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3405,8 +3473,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "colorchoice"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4207,6 +4278,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "enr"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4225,8 +4299,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "enum_dispatch"
 version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4306,6 +4383,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "eth-keystore"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4570,8 +4650,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "ethnum"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4579,6 +4662,9 @@ checksum = "b90ca2580b73ab6a1f724b76ca11ab632df820fd6040c336200d2c1df7b3c82c"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "eyre"
 version = "0.6.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4589,8 +4675,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "fail"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4824,6 +4913,9 @@ checksum = "a44623e20b9681a318efdd71c299b6b222ed6f231972bfe2f224ebad6311f0c1"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "futures-locks"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4834,8 +4926,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "futures-macro"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4860,6 +4955,9 @@ checksum = "38d84fa142264698cdce1a9f9172cf383a0c82de1bddcf3092901442c4097004"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "futures-timer"
 version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4870,8 +4968,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "futures-util"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4891,6 +4992,7 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 name = "futures-utils-wasm"
 version = "0.1.0"
@@ -4899,6 +5001,8 @@ checksum = "42012b0f064e01aa58b545fe3727f90f7dd4020f4a3ea735b50344965f5a57e9"
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "fxhash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5062,6 +5166,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "gloo-timers"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5074,8 +5181,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "goldenfile"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5233,6 +5343,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "hashers"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5242,8 +5355,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "headers"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5826,6 +5942,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "impl-rlp"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5835,8 +5954,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "impl-serde"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5847,6 +5969,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "impl-serde"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5856,8 +5981,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "impl-trait-for-tuples"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5894,14 +6022,20 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "indenter"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6385,6 +6519,7 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 name = "lru"
 version = "0.12.3"
@@ -6396,6 +6531,8 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "lz4-sys"
 version = "1.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6939,10 +7076,14 @@ dependencies = [
  "tempfile",
  "termcolor",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "toml 0.7.8",
 =======
  "toml",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "toml 0.7.8",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "walkdir",
  "whoami",
 ]
@@ -6972,10 +7113,14 @@ dependencies = [
  "serde",
  "simplelog",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "toml 0.7.8",
 =======
  "toml",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "toml 0.7.8",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 ]
 
 [[package]]
@@ -7142,10 +7287,14 @@ dependencies = [
  "hashbrown 0.14.5",
  "lazy_static",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "lru",
 =======
  "lru 0.7.8",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "lru",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "move-binary-format",
  "move-bytecode-verifier",
  "move-core-types 0.0.4 (git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0)",
@@ -7485,6 +7634,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f646caf906c20226733ed5b1374287eb97e3c2a5c227ce668c1f2ce20ae57c9"
 dependencies = [
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "num_enum_derive 0.5.11",
 ]
 
@@ -7495,9 +7647,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02339744ee7253741199f897151b38e72257d13802d4ee837285cc2990a90845"
 dependencies = [
  "num_enum_derive 0.7.2",
+<<<<<<< HEAD
 =======
  "num_enum_derive",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 ]
 
 [[package]]
@@ -7514,6 +7669,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "num_enum_derive"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7526,8 +7684,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "num_threads"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7582,6 +7743,9 @@ checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "open-fastrlp"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7607,8 +7771,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "openssl"
 version = "0.10.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7697,10 +7864,14 @@ dependencies = [
 name = "p3-air"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -7710,10 +7881,14 @@ dependencies = [
 name = "p3-baby-bear"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "num-bigint 0.4.5",
  "p3-field",
@@ -7728,10 +7903,14 @@ dependencies = [
 name = "p3-blake3"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "blake3",
  "p3-symmetric",
@@ -7741,10 +7920,14 @@ dependencies = [
 name = "p3-bn254-fr"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "ff 0.13.0",
  "num-bigint 0.4.5",
@@ -7759,10 +7942,14 @@ dependencies = [
 name = "p3-challenger"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "p3-field",
  "p3-maybe-rayon",
@@ -7775,10 +7962,14 @@ dependencies = [
 name = "p3-commit"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-challenger",
@@ -7792,10 +7983,14 @@ dependencies = [
 name = "p3-dft"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -7808,10 +8003,14 @@ dependencies = [
 name = "p3-field"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "num-bigint 0.4.5",
@@ -7825,10 +8024,14 @@ dependencies = [
 name = "p3-fri"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-challenger",
@@ -7847,10 +8050,14 @@ dependencies = [
 name = "p3-interpolation"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -7861,10 +8068,14 @@ dependencies = [
 name = "p3-keccak"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "p3-symmetric",
  "tiny-keccak",
@@ -7874,10 +8085,14 @@ dependencies = [
 name = "p3-keccak-air"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "p3-air",
  "p3-field",
@@ -7891,10 +8106,14 @@ dependencies = [
 name = "p3-matrix"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-field",
@@ -7909,10 +8128,14 @@ dependencies = [
 name = "p3-maybe-rayon"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "rayon",
 ]
@@ -7921,10 +8144,14 @@ dependencies = [
 name = "p3-mds"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-dft",
@@ -7939,10 +8166,14 @@ dependencies = [
 name = "p3-merkle-tree"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-commit",
@@ -7959,10 +8190,14 @@ dependencies = [
 name = "p3-poseidon2"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "gcd",
  "p3-field",
@@ -7975,10 +8210,14 @@ dependencies = [
 name = "p3-symmetric"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-field",
@@ -7989,10 +8228,14 @@ dependencies = [
 name = "p3-uni-stark"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-air",
@@ -8011,10 +8254,14 @@ dependencies = [
 name = "p3-util"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
 =======
 source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1-new#da0489b75025ec17f1100952694d8b7879c2b43e"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/Plonky3/Plonky3.git?rev=3b5265f9d5af36534a46caebf0617595cfb42c5a#3b5265f9d5af36534a46caebf0617595cfb42c5a"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "serde",
 ]
@@ -8199,6 +8446,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "pbkdf2"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8218,8 +8468,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "peeking_take_while"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8306,6 +8559,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "pharos"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8316,8 +8572,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "phf"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8622,10 +8881,14 @@ dependencies = [
  "fixed-hash 0.7.0",
  "impl-codec 0.5.1",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "impl-serde 0.3.2",
 =======
  "impl-serde",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "impl-serde 0.3.2",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "uint",
 ]
 
@@ -8638,11 +8901,17 @@ dependencies = [
  "fixed-hash 0.8.0",
  "impl-codec 0.6.0",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "impl-rlp",
  "impl-serde 0.4.0",
  "scale-info",
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "impl-rlp",
+ "impl-serde 0.4.0",
+ "scale-info",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "uint",
 ]
 
@@ -9318,14 +9587,21 @@ checksum = "bb919243f34364b6bd2fc10ef797edbfa75f33c252e7998527479c6d6b47e1ec"
 dependencies = [
  "bytes",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "rlp-derive",
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "rlp-derive",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "rustc-hex",
 ]
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "rlp-derive"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9337,8 +9613,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "rocksdb"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9355,10 +9634,14 @@ source = "git+https://github.com/GregAC/rrs.git#b23afc16b4e6a1fb5c4a73eb1e337e94
 dependencies = [
  "downcast-rs",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "num_enum 0.5.11",
 =======
  "num_enum",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "num_enum 0.5.11",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "paste",
 ]
 
@@ -9586,6 +9869,9 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "salsa20"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9595,8 +9881,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9607,6 +9896,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "scale-info"
 version = "2.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9631,8 +9923,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "scc"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9658,6 +9953,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "scrypt"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9670,8 +9968,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "sct"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9753,6 +10054,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "send_wrapper"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9765,8 +10069,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "serde"
 version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10279,10 +10586,14 @@ dependencies = [
 name = "sphinx-core"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "anyhow",
  "arrayref",
@@ -10342,10 +10653,14 @@ dependencies = [
 name = "sphinx-derive"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10356,10 +10671,14 @@ dependencies = [
 name = "sphinx-helper"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "cargo_metadata 0.18.1",
  "chrono",
@@ -10369,10 +10688,14 @@ dependencies = [
 name = "sphinx-primitives"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "lazy_static",
@@ -10386,10 +10709,14 @@ dependencies = [
 name = "sphinx-prover"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "anyhow",
  "backtrace",
@@ -10421,9 +10748,13 @@ dependencies = [
  "sphinx-recursion-gnark-ffi",
  "sphinx-recursion-program",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "subtle-encoding",
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "subtle-encoding",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "tempfile",
  "thiserror",
  "tokio",
@@ -10435,10 +10766,14 @@ dependencies = [
 name = "sphinx-recursion-circuit"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "bincode",
  "itertools 0.12.1",
@@ -10462,10 +10797,14 @@ dependencies = [
 name = "sphinx-recursion-compiler"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "backtrace",
  "itertools 0.12.1",
@@ -10490,10 +10829,14 @@ dependencies = [
 name = "sphinx-recursion-core"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "arrayref",
  "backtrace",
@@ -10527,10 +10870,14 @@ dependencies = [
 name = "sphinx-recursion-derive"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10541,6 +10888,7 @@ dependencies = [
 name = "sphinx-recursion-gnark-ffi"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 dependencies = [
  "bindgen 0.69.4",
@@ -10550,6 +10898,12 @@ source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152f
 dependencies = [
  "bindgen 0.69.4",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+dependencies = [
+ "bindgen 0.69.4",
+ "cfg-if",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "log",
  "num-bigint 0.4.5",
  "p3-baby-bear",
@@ -10565,10 +10919,14 @@ dependencies = [
 name = "sphinx-recursion-program"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 =======
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "itertools 0.12.1",
  "p3-air",
@@ -10596,6 +10954,7 @@ dependencies = [
 name = "sphinx-sdk"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
 dependencies = [
  "alloy-sol-types",
@@ -10604,20 +10963,31 @@ source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152f
 dependencies = [
  "alloy",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+dependencies = [
+ "alloy-sol-types",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "anyhow",
  "async-trait",
  "axum 0.7.5",
  "bincode",
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "cfg-if",
  "ethers",
  "futures",
  "hex",
  "home",
+<<<<<<< HEAD
 =======
  "futures",
  "hex",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "indicatif",
  "log",
  "num-bigint 0.4.5",
@@ -10633,10 +11003,15 @@ dependencies = [
  "sphinx-core",
  "sphinx-prover",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "strum 0.26.2",
  "strum_macros 0.26.4",
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "strum 0.26.2",
+ "strum_macros 0.26.4",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "tempfile",
  "tokio",
  "tracing",
@@ -10757,11 +11132,17 @@ version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d8cec3501a5194c432b2b7976db6b7d10ec95c253208b45f83f7136aa985e29"
 <<<<<<< HEAD
+<<<<<<< HEAD
 dependencies = [
  "strum_macros 0.26.4",
 ]
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+dependencies = [
+ "strum_macros 0.26.4",
+]
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 
 [[package]]
 name = "strum_macros"
@@ -10810,6 +11191,9 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "subtle-encoding"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10819,8 +11203,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "subtle-ng"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11086,10 +11473,14 @@ dependencies = [
  "hmac 0.8.1",
  "once_cell",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "pbkdf2 0.4.0",
 =======
  "pbkdf2",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "pbkdf2 0.4.0",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
  "rand 0.7.3",
  "rustc-hash",
  "sha2 0.9.9",
@@ -11224,9 +11615,12 @@ dependencies = [
  "pin-project-lite",
  "tokio",
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
  "tokio-util",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 ]
 
 [[package]]
@@ -11256,6 +11650,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "toml"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11268,8 +11665,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "toml_datetime"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11289,10 +11689,14 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "winnow",
 =======
  "winnow 0.5.40",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "winnow",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 ]
 
 [[package]]
@@ -11303,6 +11707,7 @@ checksum = "396e4d48bbb2b7554c944bde63101b5ae446cff6ec4a24227428f15eb72ef338"
 dependencies = [
  "indexmap 2.2.6",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "serde",
  "serde_spanned",
  "toml_datetime",
@@ -11311,6 +11716,12 @@ dependencies = [
  "toml_datetime",
  "winnow 0.5.40",
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "winnow",
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 ]
 
 [[package]]
@@ -11439,6 +11850,9 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "tracing-futures"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11449,8 +11863,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "tracing-log"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11545,10 +11962,14 @@ dependencies = [
 name = "twirp"
 version = "0.3.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/github/twirp-rs.git?rev=c85f31f9c54957374e7dcb3534fc52cff0aa2dc5#c85f31f9c54957374e7dcb3534fc52cff0aa2dc5"
 =======
 source = "git+https://github.com/github/twirp-rs.git#e18a3cfb30853250213d4bdc486a9fb8f5ac9bd4"
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+source = "git+https://github.com/github/twirp-rs.git?rev=c85f31f9c54957374e7dcb3534fc52cff0aa2dc5#c85f31f9c54957374e7dcb3534fc52cff0aa2dc5"
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 dependencies = [
  "async-trait",
  "axum 0.7.5",
@@ -11861,6 +12282,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11871,8 +12295,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12360,6 +12787,7 @@ dependencies = [
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 name = "winnow"
 version = "0.6.13"
@@ -12371,6 +12799,8 @@ dependencies = [
 
 [[package]]
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "winreg"
 version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12404,6 +12834,9 @@ checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
 
 [[package]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "ws_stream_wasm"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12423,8 +12856,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 =======
 >>>>>>> f0c3286 (chore: check in Cargo.lock (#24))
+=======
+>>>>>>> 0e002e1 (docs: proof server rust doc (#20))
 name = "wyz"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
