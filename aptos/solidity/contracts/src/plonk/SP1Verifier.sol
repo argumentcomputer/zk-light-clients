@@ -24,7 +24,6 @@ contract SP1Verifier is PlonkVerifier {
     /// @param proofBytes The proof of the program execution the SP1 zkVM encoded as bytes.
     function verifyProof(bytes32 vkey, bytes memory publicValues, bytes memory proofBytes) public view {
         bytes32 publicValuesDigest = hashPublicValues(publicValues);
-
         uint256[] memory inputs = new uint256[](2);
         inputs[0] = uint256(vkey);
         inputs[1] = uint256(publicValuesDigest);
