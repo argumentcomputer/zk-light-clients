@@ -44,7 +44,7 @@ fn main() {
         }
         "epoch_change" => {
             elf = EPOCH_CHANGE_ELF;
-            let (trusted_state, epoch_change_proof) = aptos_lc::epoch_change::setup_assets();
+            let (trusted_state, epoch_change_proof, _) = aptos_lc::epoch_change::setup_assets();
             stdin = aptos_lc::epoch_change::generate_stdin(&trusted_state, &epoch_change_proof);
         }
         _ => panic!("Unsupported program. Use: ['inclusion', 'epoch_change']"),

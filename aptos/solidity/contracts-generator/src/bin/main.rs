@@ -1,11 +1,10 @@
-use std::path::PathBuf;
 use anyhow::Result;
 use log::info;
 use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use sphinx_sdk::utils::setup_logger;
+use std::path::PathBuf;
 
 fn main() -> Result<()> {
-
     setup_logger();
 
     let artifacts_dir = try_install_plonk_bn254_artifacts();
@@ -15,7 +14,6 @@ fn main() -> Result<()> {
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|ext| ext.to_str()) == Some("sol"))
         .collect::<Vec<_>>();
-
 
     // Write each Solidity file to the contracts directory.
     let contracts_src_dir =
