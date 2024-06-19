@@ -7,7 +7,6 @@ members = [
     "aptos-programs",
     "proof-server",
     "solidity/fixture-generator",
-    "solidity/contracts-generator",
 ]
 
 [workspace.dependencies]

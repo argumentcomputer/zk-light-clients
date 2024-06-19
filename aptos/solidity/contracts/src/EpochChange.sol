@@ -1,6 +1,6 @@
 pragma solidity ^0.8.25;
 
-import {SP1Verifier as SP1PlonkVerifier} from "../src/plonk/SP1Verifier.sol";
+import {SP1Verifier as SP1PlonkVerifier} from "sphinx-contracts/SP1Verifier.sol";
 
 contract EpochChange is SP1PlonkVerifier {
     bytes32 public epochChangeProgramVkey;

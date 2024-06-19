@@ -3,3 +3,6 @@
 	url = https://github.com/foundry-rs/forge-std
 	# https://stackoverflow.com/questions/5126765/how-to-get-rid-of-git-submodules-untracked-status
 	ignore = dirty
+[submodule "aptos/solidity/contracts/lib/sphinx-contracts"]
+	path = aptos/solidity/contracts/lib/sphinx-contracts
+	url = https://github.com/lurk-lab/sphinx-contracts
