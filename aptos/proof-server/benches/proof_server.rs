@@ -32,6 +32,11 @@ struct ProofData {
 
 const ACCOUNT_INCLUSION_DATA_PATH: &str = "./benches/assets/account_inclusion_data.bcs";
 const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
+const SNARK_SHARD_SIZE: &str = "4194304";
+const STARK_SHARD_SIZE: &str = "1048576";
+const SHARD_BATCH_SIZE: &str = "0";
+const RUST_LOG: &str = "debug";
+const RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable";
 
 fn main() -> Result<(), anyhow::Error> {
     let groth16: bool = env::var("GROTH16").unwrap_or_else(|_| "0".into()) == "1";
@@ -94,7 +99,11 @@ async fn start_primary_server(groth16: bool) -> Result<Child, anyhow::Error> {
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
 
-    let shard_size = if groth16 { "4194304" } else { "1048576" };
+    let shard_size = if groth16 {
+        SNARK_SHARD_SIZE
+    } else {
+        STARK_SHARD_SIZE
+    };
 
     let process = Command::new("cargo")
         .args([
@@ -109,10 +118,10 @@ async fn start_primary_server(groth16: bool) -> Result<Child, anyhow::Error> {
             "--snd-addr",
             &secondary_addr,
         ])
-        .env("RUST_LOG", "debug")
-        .env("RUSTFLAGS", "-C target-cpu=native --cfg tokio_unstable")
+        .env("RUST_LOG", RUST_LOG)
+        .env("RUSTFLAGS", RUSTFLAGS)
         .env("SHARD_SIZE", shard_size)
-        .env("SHARD_BATCH_SIZE", "0")
+        .env("SHARD_BATCH_SIZE", SHARD_BATCH_SIZE)
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
@@ -140,7 +149,11 @@ async fn start_secondary_server(groth16: bool) -> Result<Child, anyhow::Error> {
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
 
-    let shard_size = if groth16 { "4194304" } else { "1048576" };
+    let shard_size = if groth16 {
+        SNARK_SHARD_SIZE
+    } else {
+        STARK_SHARD_SIZE
+    };
 
     let process = Command::new("cargo")
         .args([
@@ -153,10 +166,10 @@ async fn start_secondary_server(groth16: bool) -> Result<Child, anyhow::Error> {
             "-a",
             &secondary_addr,
         ])
-        .env("RUST_LOG", "debug")
-        .env("RUSTFLAGS", "-C target-cpu=native --cfg tokio_unstable")
+        .env("RUST_LOG", RUST_LOG)
+        .env("RUSTFLAGS", RUSTFLAGS)
         .env("SHARD_SIZE", shard_size)
-        .env("SHARD_BATCH_SIZE", "0")
+        .env("SHARD_BATCH_SIZE", SHARD_BATCH_SIZE)
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
