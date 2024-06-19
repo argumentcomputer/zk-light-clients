@@ -11,13 +11,14 @@
 //! - P2(n): There exists a valid transition to a new set of validators, signed off by the current validators.
 //! - P3(A, V, S_h): An account's value is included within the stated Merkle root.
 //!
-//! P1 and P3 are verified in the inclusion program, while P2 is verified in the ratchet program.
+//! P1 and P3 are verified in the inclusion program, while P2 is verified in the epoch change program.
 //!
 //! This test also measures the performance of these operations to identify potential bottlenecks
 //! and optimize the verification process.
 //!
 //! For more information on the Light Client design, its programs and the predicates used in this
 //! benchmark, please refer to the [documentation](../../docs/src/benchmark/overview.md).
+use crate::ProofType::{Snark, Stark};
 use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
@@ -27,7 +28,8 @@ use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, Truste
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
-use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
+use sphinx_sdk::{ProverClient, SphinxGroth16Proof, SphinxProof, SphinxStdin};
+use std::env;
 use std::time::Instant;
 
 const NBR_VALIDATORS: usize = 130;
@@ -36,11 +38,26 @@ const NBR_ACCOUNTS: usize = 25000;
 
 #[derive(Serialize)]
 struct Timings {
-    ratchet_proving_time: u128,
-    merkle_proving_time: u128,
+    snark_proving_time: u128,
+    stark_proving_time: u128,
+}
+
+#[derive(Serialize)]
+struct BenchmarkResults {
+    epoch_change_proof: Timings,
+    inclusion_proof: Timings,
+}
+
+enum ProofType {
+    #[allow(dead_code)]
+    Snark(SphinxGroth16Proof),
+    Stark(SphinxProof),
 }
 
 fn main() {
+    // First we set the stark environment.
+    set_stark_environment();
+
     // Initialize Aptos Test Wrapper with configured validators and signers.
     let mut aptos_wrapper =
         AptosWrapper::new(NBR_ACCOUNTS, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
@@ -66,20 +83,28 @@ fn main() {
     // Instantiate prover client.
     let prover_client = ProverClient::new();
 
-    // Execute proof generation for epoch change.
-    let start_ratchet_proving = Instant::now();
-    let mut epoch_change_proof =
-        prove_epoch_change(&prover_client, &trusted_state, aptos_epoch_change_proof);
-    let ratchet_proving_time = start_ratchet_proving.elapsed();
+    // Execute stark generation for epoch change.
+    let start_epoch_change_stark_proving = Instant::now();
+    let mut epoch_change_proof = if let Stark(epoch_change_proof) = prove_epoch_change(
+        &prover_client,
+        &trusted_state,
+        aptos_epoch_change_proof,
+        false,
+    ) {
+        epoch_change_proof
+    } else {
+        panic!("Expected Stark proof for epoch change")
+    };
+    let epoch_change_stark_proving_time = start_epoch_change_stark_proving.elapsed();
 
     let prev_validator_verifier_hash: [u8; 32] = epoch_change_proof.public_values.read();
 
-    // Verify that the ratchet program produces the expected validator verifier hash.
+    // Verify that the epoch change program produces the expected validator verifier hash.
     // This verifies validator consistency required by P2.
     assert_eq!(
         &prev_validator_verifier_hash,
         validator_verifier_hash.as_ref(),
-        "The output for the previous validator verifier hash is not the expected one for the Ratchet program."
+        "The output for the previous validator verifier hash is not the expected one for the Epoch Change program."
     );
 
     let new_validator_verifier_hash: [u8; 32] = epoch_change_proof.public_values.read();
@@ -95,7 +120,7 @@ fn main() {
         "Validator verifier hash mismatch with previously known one"
     );
 
-    // Retrieve and prepare assets for merkle verification.
+    // Retrieve and prepare assets for inclusion verification.
     let _ = aptos_wrapper.execute_block(ExecuteBlockArgs::StateProof(Box::new(state_proof)));
 
     // Simulate traffic to generate a new block.
@@ -126,18 +151,24 @@ fn main() {
 
     let validator_verifier_assets = ValidatorVerifierAssets::new(validator_verifier.to_bytes());
 
-    // Execute proof generation for an account being included
+    // Execute stark generation for an account being included
     // in the state.
     // The verification of the proofs in the program ensures the
     // account inclusion required by P3.
-    let start_merkle_proving = Instant::now();
-    let mut inclusion_proof = prove_inclusion(
+    let start_inclusion_stark_proving = Instant::now();
+    let mut inclusion_proof = if let Stark(inclusion_proof) = prove_inclusion(
         &prover_client,
         &sparse_merkle_proof_assets,
         &transaction_proof_assets,
         &validator_verifier_assets,
-    );
-    let merkle_proving_time = start_merkle_proving.elapsed();
+        false,
+    ) {
+        inclusion_proof
+    } else {
+        panic!("Expected Stark proof for inclusion")
+    };
+
+    let inclusion_stark_proving_time = start_inclusion_stark_proving.elapsed();
     let output_validator_hash: [u8; 32] = inclusion_proof.public_values.read();
 
     // Verify the consistency of the validator verifier hash post-merkle proof.
@@ -163,10 +194,40 @@ fn main() {
         "Merkle root hash mismatch"
     );
 
+    // Finally, set environment for snark proofs.
+    set_snark_environment();
+
+    // Execute snark generation for epoch change.
+    let start_epoch_change_snark_proving = Instant::now();
+    let _ = prove_epoch_change(
+        &prover_client,
+        &trusted_state,
+        aptos_epoch_change_proof,
+        true,
+    );
+    let epoch_change_snark_proving_time = start_epoch_change_snark_proving.elapsed();
+
+    // Execute snark generation for an account being included in the state.
+    let start_inclusion_snark_proving = Instant::now();
+    let _ = prove_inclusion(
+        &prover_client,
+        &sparse_merkle_proof_assets,
+        &transaction_proof_assets,
+        &validator_verifier_assets,
+        true,
+    );
+    let inclusion_snark_proving_time = start_inclusion_snark_proving.elapsed();
+
     // Serialize and print the timing results for both proofs.
-    let timings = Timings {
-        ratchet_proving_time: ratchet_proving_time.as_millis(),
-        merkle_proving_time: merkle_proving_time.as_millis(),
+    let timings = BenchmarkResults {
+        epoch_change_proof: Timings {
+            snark_proving_time: epoch_change_snark_proving_time.as_millis(),
+            stark_proving_time: epoch_change_stark_proving_time.as_millis(),
+        },
+        inclusion_proof: Timings {
+            snark_proving_time: inclusion_snark_proving_time.as_millis(),
+            stark_proving_time: inclusion_stark_proving_time.as_millis(),
+        },
     };
 
     let json_output = serde_json::to_string(&timings).unwrap();
@@ -177,7 +238,8 @@ fn prove_epoch_change(
     client: &ProverClient,
     trusted_state: &[u8],
     epoch_change_proof: &[u8],
-) -> SphinxProof {
+    snark: bool,
+) -> ProofType {
     let mut stdin = SphinxStdin::new();
 
     setup_logger();
@@ -186,7 +248,12 @@ fn prove_epoch_change(
     stdin.write(&epoch_change_proof);
 
     let (pk, _) = client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
-    client.prove(&pk, stdin).unwrap()
+
+    if snark {
+        Snark(client.prove_groth16(&pk, stdin).unwrap())
+    } else {
+        Stark(client.prove(&pk, stdin).unwrap())
+    }
 }
 
 fn prove_inclusion(
@@ -194,7 +261,8 @@ fn prove_inclusion(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> SphinxProof {
+    snark: bool,
+) -> ProofType {
     let mut stdin = SphinxStdin::new();
 
     setup_logger();
@@ -214,7 +282,12 @@ fn prove_inclusion(
     stdin.write(validator_verifier_assets.validator_verifier());
 
     let (pk, _) = client.setup(aptos_programs::INCLUSION_PROGRAM);
-    client.prove(&pk, stdin).unwrap()
+
+    if snark {
+        Snark(client.prove_groth16(&pk, stdin).unwrap())
+    } else {
+        Stark(client.prove(&pk, stdin).unwrap())
+    }
 }
 
 fn verify_and_ratchet_with_hash(
@@ -244,4 +317,14 @@ fn verify_and_ratchet_with_hash(
         }
         _ => panic!("Expected epoch change"),
     }
+}
+
+fn set_stark_environment() {
+    env::set_var("SHARD_BATCH_SIZE", "0");
+    env::set_var("SHARD_SIZE", "1048576");
+}
+
+fn set_snark_environment() {
+    env::set_var("SHARD_BATCH_SIZE", "0");
+    env::set_var("SHARD_SIZE", "4194304");
 }
