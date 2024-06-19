@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 //! This module provides a wrapper around the Aptos execution layer.
 //! It includes utilities for creating and interacting with a simulated Aptos blockchain.

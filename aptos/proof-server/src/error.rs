@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 use aptos_lc_core::crypto::hash::HashValue;
 use thiserror::Error;
@@ -20,7 +20,7 @@ pub enum ClientError {
         source: Box<dyn std::error::Error + Sync + Send>,
     },
     #[error(
-        "Error while trying to verify committee hash predicate, expected {expected:?}, got {actual:?}"
+    "Error while trying to verify committee hash predicate, expected {expected:?}, got {actual:?}"
     )]
     VerifierHashInequality {
         expected: HashValue,

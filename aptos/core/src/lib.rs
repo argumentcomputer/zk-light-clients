@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 //! Core library for the Aptos light client.
 //!

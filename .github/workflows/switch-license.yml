@@ -1,0 +1,54 @@
+name: License Switch April 23rd, 2025
+on:
+  schedule:
+    - cron: '0 0 23 4 *'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Replace LICENSE.md
+        run: |
+          cp .github/workflows/assets/APACHE.md aptos/LICENSE.md
+
+      - name: Replace SPDX license headers
+        run: |
+          find aptos -type f -exec sed -i 's|// SPDX-License-Identifier: BUSL-1.1|// SPDX-License-Identifier: Apache-2.0, MIT|g' {} \;
+
+      - name: Remove License switch action and apache template
+        run: |
+          rm .github/workflows/switch-license.yml
+          rm .github/workflows/assets/APACHE.md
+
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "${{ env.PR_DESCRIPTION }}"
+          git push origin ${{ env.PR_BRANCH }}
+
+      # Note: Can't use `peter-evans/create-pull-request` because for hotfixes we need to make the PR with an existing branch
+      # The former always creates a new one for single-commit PRs, thus overwriting the actual hotfix
+      - name: Create PR
+        run: |
+          cat << 'EOF' > body.md
+          This is an automated release PR for version `${ env.VERSION }}`.
+
+          On merge, this will trigger the [release publish workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/tag-release.yml), which will upload a new GitHub release with tag `${{ env.VERSION }}`.
+
+          [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF
+
+          gh pr create --title "${{ env.PR_DESCRIPTION }}" --body-file ./body.md --head ${{ env.PR_BRANCH }} --base ${{ env.BASE_BRANCH }}
+        env:
+          GH_TOKEN: ${{ github.token }}
