@@ -20,7 +20,7 @@ Benchmarks can be classified in two distinct categories:
   and
   the [inclusion program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
   The goal here is to test the complete flow for our light client and get cycle count and proving time for it. Note that
-  each proof is handled sequentially, su running it might take some time.
+  each proof is handled sequentially, so running it might take some time.
 - [epoch_change](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/epoch_change.rs):
   Benchmark that will run a proof generation
   for [epoch change program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs).
