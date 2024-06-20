@@ -29,9 +29,9 @@ pub const WAYPOINT_SIZE: usize = U64_SIZE + HASH_LENGTH;
 pub struct Waypoint {
     /// The version of the reconfiguration transaction that is being approved by this waypoint.
     #[getset(get_copy = "pub")]
-    pub(crate) version: Version,
+    version: Version,
     /// The hash of the chosen fields of LedgerInfo.
-    pub(crate) value: HashValue,
+    value: HashValue,
 }
 
 /// `Waypoint` is a structure representing a waypoint,
@@ -46,11 +46,24 @@ impl Waypoint {
     /// # Returns
     ///
     /// A new `Waypoint`.
+    ///
+    /// # Note
+    ///
+    /// If the `waypoint` feature is not enabled, the `Waypoint` value will be a dummy value.
     pub fn new_any(ledger_info: &LedgerInfo) -> Self {
-        let converter = Ledger2WaypointConverter::new(ledger_info);
-        Self {
-            version: ledger_info.version(),
-            value: converter.hash(),
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "waypoint")] {
+                let converter = Ledger2WaypointConverter::new(ledger_info);
+                Self {
+                    version: ledger_info.version(),
+                    value: converter.hash(),
+                }
+            } else {
+                Self {
+                    version: ledger_info.version(),
+                    value: HashValue::default(),
+                }
+            }
         }
     }
 
@@ -146,6 +159,7 @@ impl Ledger2WaypointConverter {
     /// # Returns
     ///
     /// A new `Ledger2WaypointConverter`.
+    #[allow(dead_code)]
     pub(crate) fn new(ledger_info: &LedgerInfo) -> Self {
         Self {
             epoch: ledger_info.epoch(),

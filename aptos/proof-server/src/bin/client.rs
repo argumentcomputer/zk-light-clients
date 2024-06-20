@@ -36,7 +36,8 @@
 
 use anyhow::{anyhow, Result};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
-use aptos_lc_core::types::trusted_state::{TrustedState, TrustedStateChange};
+use aptos_lc_core::types::trusted_state::TrustedState;
+use aptos_lc_core::types::waypoint::Waypoint;
 use clap::Parser;
 use log::{debug, error, info};
 use proof_server::error::ClientError;
@@ -491,8 +492,6 @@ async fn epoch_change_proving_task(
         fetch_epoch_change_proof_data(&aptos_node_url, Some(epoch)).await?;
 
     // Retrieve the validator verifier hash for penultimate epoch.
-    let trusted_state = epoch_change_proof_data.trusted_state().clone();
-
     let validator_verifier_hash = match epoch_change_proof_data.trusted_state() {
         TrustedState::EpochState { epoch_state, .. } => epoch_state.verifier().hash(),
         _ => {
@@ -523,16 +522,25 @@ async fn epoch_change_proving_task(
     debug!("Epoch change proof for latest epoch received from prover");
 
     // Proving is done, ratchet the client state to the new trusted state.
-    let ratcheted_state = match trusted_state
-        .verify_and_ratchet_inner(epoch_change_proof_data.epoch_change_proof())
-        .map_err(|err| ClientError::Ratchet { source: err.into() })?
-    {
-        TrustedStateChange::Epoch { new_state, .. } => new_state,
-        _ => {
-            return Err(ClientError::Ratchet {
-                source: "Expected epoch change".into(),
-            })
-        }
+    let ledger_info = epoch_change_proof_data
+        .epoch_change_proof()
+        .ledger_info_with_sigs
+        .first()
+        .ok_or_else(|| ClientError::Internal {
+            source: "Epoch Change Proof has more than one LedgerInfoWithSignatures".into(),
+        })?
+        .ledger_info()
+        .clone();
+
+    let ratcheted_state = TrustedState::EpochState {
+        waypoint: Waypoint::new_any(&ledger_info),
+        epoch_state: ledger_info
+            .next_epoch_state()
+            .ok_or_else(|| ClientError::Internal {
+                source: "LedgerInfoWithSignatures in EpochChangeProof has no next EpochState"
+                    .into(),
+            })?
+            .clone(),
     };
 
     Ok((ratcheted_state, validator_verifier_hash, epoch_change_proof))
