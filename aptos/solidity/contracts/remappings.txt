@@ -1,0 +1,2 @@
+forge-std/=lib/forge-std/src/
+sphinx-contracts/=lib/sphinx-contracts/contracts/src/
