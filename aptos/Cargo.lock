@@ -2663,9 +2663,9 @@ checksum = "5ce89b21cab1437276d2650d57e971f9d548a2d9037cc231abdc0562b97498ce"
 
 [[package]]
 name = "bytemuck"
-version = "1.16.0"
+version = "1.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78834c15cb5d5efe3452d58b1e8ba890dd62d21907f867f383358198e56ebca5"
+checksum = "b236fc92302c97ed75b38da1f4917b5cdda4984745740f153a5d3059e48d725e"
 
 [[package]]
 name = "byteorder"
@@ -9610,7 +9610,7 @@ dependencies = [
 [[package]]
 name = "sphinx-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "anyhow",
  "arrayref",
@@ -9648,6 +9648,7 @@ dependencies = [
  "p3-symmetric",
  "p3-uni-stark",
  "p3-util",
+ "rand 0.8.5",
  "rayon-scan",
  "rrs-lib",
  "serde",
@@ -9669,7 +9670,7 @@ dependencies = [
 [[package]]
 name = "sphinx-derive"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9679,7 +9680,7 @@ dependencies = [
 [[package]]
 name = "sphinx-helper"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "cargo_metadata 0.18.1",
  "chrono",
@@ -9688,7 +9689,7 @@ dependencies = [
 [[package]]
 name = "sphinx-primitives"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "itertools 0.12.1",
  "lazy_static",
@@ -9701,7 +9702,7 @@ dependencies = [
 [[package]]
 name = "sphinx-prover"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -9743,7 +9744,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-circuit"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "bincode",
  "itertools 0.12.1",
@@ -9766,7 +9767,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-compiler"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "backtrace",
  "itertools 0.12.1",
@@ -9790,7 +9791,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "arrayref",
  "backtrace",
@@ -9823,7 +9824,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-derive"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9833,7 +9834,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-gnark-ffi"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "bindgen 0.69.4",
  "cfg-if",
@@ -9841,9 +9842,11 @@ dependencies = [
  "num-bigint 0.4.5",
  "p3-baby-bear",
  "p3-field",
+ "p3-symmetric",
  "rand 0.8.5",
  "serde",
  "serde_json",
+ "sphinx-core",
  "sphinx-recursion-compiler",
  "tempfile",
 ]
@@ -9851,7 +9854,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-program"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "itertools 0.12.1",
  "p3-air",
@@ -9878,7 +9881,7 @@ dependencies = [
 [[package]]
 name = "sphinx-sdk"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#f1cbdc22d04923b74adcaf398a444fdeeb5a5b97"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=plonk#317414f5edd90eb6931ed57b60093ef1886016c5"
 dependencies = [
  "alloy-sol-types",
  "anyhow",
@@ -10070,9 +10073,9 @@ dependencies = [
 
 [[package]]
 name = "subtle"
-version = "2.5.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
+checksum = "0d0208408ba0c3df17ed26eb06992cb1a1268d41b2c0e12e65203fbe3972cee5"
 
 [[package]]
 name = "subtle-encoding"

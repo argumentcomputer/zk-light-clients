@@ -1,9 +1,8 @@
 pragma solidity ^0.8.25;
 
-import {SP1Verifier as SP1PlonkVerifier} from "sphinx-contracts/SP1Verifier.sol";
+import {SphinxVerifier as SphinxPlonkVerifier} from "sphinx-contracts/SphinxVerifier.sol";
 
-
-contract Inclusion is SP1PlonkVerifier {
+contract Inclusion is SphinxPlonkVerifier {
     bytes32 public inclusionProgramVkey;
 
     constructor(bytes32 _inclusionProgramVkey) {
