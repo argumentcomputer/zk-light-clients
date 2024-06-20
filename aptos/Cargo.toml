@@ -6,6 +6,7 @@ members = [
     "light-client",
     "aptos-programs",
     "proof-server",
+    "solidity/fixture-generator",
 ]
 
 [workspace.dependencies]
@@ -49,6 +50,7 @@ sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk"
 sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk", features = ["plonk"] }
 sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk" }
 sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk" }
+sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "plonk" }
 tokio = "1.37"
 tokio-stream = "0.1"
 
