@@ -1,7 +1,7 @@
 name: License Switch April 23rd, 2025
 on:
   schedule:
-    - cron: '0 0 23 4 *'
+    - cron: '0 0 23 4 2025'
 
 jobs:
   release:
@@ -17,7 +17,7 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Replace LICENSE.md
         run: |
           cp .github/workflows/assets/APACHE.md aptos/LICENSE.md
@@ -31,24 +31,21 @@ jobs:
           rm .github/workflows/switch-license.yml
           rm .github/workflows/assets/APACHE.md
 
-      - name: Commit changes
+      - name: PR Body
+        id: pr-body
         run: |
-          git add .
-          git commit -m "${{ env.PR_DESCRIPTION }}"
-          git push origin ${{ env.PR_BRANCH }}
+          {
+            echo 'PR_BODY<<EOF'
+            This is an automated PR to update our licenses to Apache2.0.
+          
+            [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            EOF
+          } >> "$GITHUB_ENV"
 
-      # Note: Can't use `peter-evans/create-pull-request` because for hotfixes we need to make the PR with an existing branch
-      # The former always creates a new one for single-commit PRs, thus overwriting the actual hotfix
+
       - name: Create PR
-        run: |
-          cat << 'EOF' > body.md
-          This is an automated release PR for version `${ env.VERSION }}`.
-
-          On merge, this will trigger the [release publish workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/tag-release.yml), which will upload a new GitHub release with tag `${{ env.VERSION }}`.
-
-          [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          EOF
-
-          gh pr create --title "${{ env.PR_DESCRIPTION }}" --body-file ./body.md --head ${{ env.PR_BRANCH }} --base ${{ env.BASE_BRANCH }}
-        env:
-          GH_TOKEN: ${{ github.token }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          body: ${{ env.PR_BODY }}
+          branch: "feature/license-switch"
+          title: "Switch to Apache2.0 License"
