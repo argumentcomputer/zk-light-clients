@@ -1,0 +1,40 @@
+name: Solidity
+
+on:
+  merge_group:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+  jobs:
+    unit-tests:
+      name: Unit Tests
+      runs-on: buildjet-16vcpu-ubuntu-2204
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            submodules: recursive
+
+        - name: Install Foundry
+          uses: foundry-rs/foundry-toolchain@v1
+          with:
+            version: nightly
+
+        - name: Check formatting
+          run: |
+            forge fmt --check
+          working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+
+        - name: Run Forge build
+          run: |
+            forge --version
+            forge build
+          working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+
+        - name: Run Forge tests
+          run: |
+            forge test
+          working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
