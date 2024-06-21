@@ -28,7 +28,7 @@ use aptos_lc_core::types::trusted_state::{EpochChangeProof, TrustedState, Truste
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
-use sphinx_sdk::{ProverClient, SphinxGroth16Proof, SphinxProof, SphinxStdin};
+use sphinx_sdk::{ProverClient, SphinxPlonkBn254Proof, SphinxProof, SphinxStdin};
 use std::env;
 use std::time::Instant;
 
@@ -50,7 +50,7 @@ struct BenchmarkResults {
 
 enum ProofType {
     #[allow(dead_code)]
-    Snark(SphinxGroth16Proof),
+    Snark(SphinxPlonkBn254Proof),
     Stark(SphinxProof),
 }
 
@@ -250,7 +250,7 @@ fn prove_epoch_change(
     let (pk, _) = client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
 
     if snark {
-        Snark(client.prove_groth16(&pk, stdin).unwrap())
+        Snark(client.prove_plonk(&pk, stdin).unwrap())
     } else {
         Stark(client.prove(&pk, stdin).unwrap())
     }
@@ -284,7 +284,7 @@ fn prove_inclusion(
     let (pk, _) = client.setup(aptos_programs::INCLUSION_PROGRAM);
 
     if snark {
-        Snark(client.prove_groth16(&pk, stdin).unwrap())
+        Snark(client.prove_plonk(&pk, stdin).unwrap())
     } else {
         Stark(client.prove(&pk, stdin).unwrap())
     }
