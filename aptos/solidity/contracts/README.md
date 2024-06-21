@@ -1,3 +1,0 @@
-## On-chain verification
-
-TODO
