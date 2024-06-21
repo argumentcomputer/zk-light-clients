@@ -99,7 +99,11 @@ async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error>
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
 
-    let shard_size = if final_snark { SNARK_SHARD_SIZE } else { STARK_SHARD_SIZE };
+    let shard_size = if final_snark {
+        SNARK_SHARD_SIZE
+    } else {
+        STARK_SHARD_SIZE
+    };
 
     let process = Command::new("cargo")
         .args([
@@ -145,7 +149,11 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
 
-    let shard_size = if final_snark { SNARK_SHARD_SIZE } else { STARK_SHARD_SIZE };
+    let shard_size = if final_snark {
+        SNARK_SHARD_SIZE
+    } else {
+        STARK_SHARD_SIZE
+    };
 
     let process = Command::new("cargo")
         .args([
