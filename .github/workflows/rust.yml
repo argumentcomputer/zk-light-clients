@@ -98,6 +98,39 @@ jobs:
         run: cargo xclippy -D warnings
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
+  solidity-unit-tests:
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lurk-lab/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.REPO_TOKEN }}
+      - name: Setup CI
+        uses: ./.github/actions/setup
+        with:
+          pull_token: ${{ secrets.REPO_TOKEN }}
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: Check formatting
+        run: |
+          forge fmt --check
+        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build
+        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+      - name: Run Forge tests
+        run: |
+          forge test
+        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+
   cycle-count-regression:
     runs-on: warp-ubuntu-latest-x64-32x
     steps:
