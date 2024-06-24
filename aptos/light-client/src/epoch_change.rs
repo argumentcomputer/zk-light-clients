@@ -175,7 +175,7 @@ mod test {
         let stdin = generate_stdin(trusted_state.as_slice(), &epoch_change_proof);
 
         // Install PLONK artifacts.
-        try_install_plonk_bn254_artifacts(true);
+        try_install_plonk_bn254_artifacts(false);
 
         let start = Instant::now();
         println!("Starting generation of prove_epoch_change proof...");
