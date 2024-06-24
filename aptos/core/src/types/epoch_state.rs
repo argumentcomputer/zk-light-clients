@@ -62,7 +62,7 @@ impl EpochState {
     /// # Arguments
     ///
     /// * `ledger_info: &LedgerInfoWithSignatures` - The ledger
-    /// info with signatures to verify.
+    ///   info with signatures to verify.
     ///
     /// # Returns
     ///

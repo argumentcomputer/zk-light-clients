@@ -71,7 +71,7 @@ Enter benchmark name: e2e
 Run the following command:
 
 ```shell
-cargo +nightly bench --features aptos --bench execute -- <benchmark_name>
+SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 bench --features aptos --bench execute -- <benchmark_name>
 ```
 
 ## Interpreting the results
@@ -137,7 +137,7 @@ To run the test efficiently, first install `nextest` following [its documentatio
 Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
-cargo +nightly nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
+SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
 ```
 
 > **Note**
@@ -155,8 +155,3 @@ A short list of useful tests:
 - `test_execute_inclusion`: Executes the `epoch_change` program inside the zkVM but does not generate any proofs.
 - `test_prove_inclusion`: Generates and verifies a STARK proof of the `epoch_change` program.
 - `test_snark_inclusion`: Generates and verifies a SNARK proof of the `epoch_change` program.
-
-> **Note**
->
-> Any tests that generates SNARKs requires proper artifacts to be generated according to
-> the [instructions](./configuration.md).

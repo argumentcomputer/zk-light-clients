@@ -4,13 +4,14 @@ The Aptos consensus has (at any given time) a set of validators that are charged
 append them to the chain state.
 
 A set of given validators is updated at the last block of every epoch on the chain. An **epoch on the Aptos chain has a
-duration of 2 hours**.
+duration of 2 hours**. The light client needs to keep track of the current trusted validator set hash, which is
+updated on every epoch change.
 
 For a given epoch \\(N\\) with a set of validators \\(V_n\\), it is expected to have a block for the transition to
-epoch \\(N+1\\) signed by \\(V_n\\) containing the new validator set \\(V_{\text{n+1}}\\)`.
+epoch \\(N+1\\) signed by \\(V_n\\) containing the new validator set \\(V_{\text{n+1}}\\).
 
-It is the job of the Light Client to produce a proof at every epoch change to verify the signature on the validators for
-the new epoch.
+It is the job of the light client to produce a proof at every epoch change to verify the signature on the validators for
+the new epoch. This is handled by the Epoch Change program.
 
 ## Epoch Change program IO
 

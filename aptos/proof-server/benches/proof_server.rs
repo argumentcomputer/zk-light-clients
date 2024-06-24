@@ -36,12 +36,12 @@ const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
 const SNARK_SHARD_SIZE: &str = "4194304";
 const STARK_SHARD_SIZE: &str = "1048576";
 const SHARD_BATCH_SIZE: &str = "0";
-const RUST_LOG: &str = "debug";
-const RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable";
+const RUST_LOG: &str = "warn";
+const RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
 
 fn main() -> Result<(), anyhow::Error> {
     let final_snark: bool = env::var("SNARK").unwrap_or_else(|_| "0".into()) == "1";
-    let run_serially: bool = env::var("RUN_SERIAL").unwrap_or_else(|_| "0".into()) == "1";
+    let run_parallel: bool = env::var("RUN_PARALLEL").unwrap_or_else(|_| "0".into()) == "1";
 
     let rt = Runtime::new().unwrap();
 
@@ -57,13 +57,7 @@ fn main() -> Result<(), anyhow::Error> {
     let mut primary_server_process = rt.block_on(start_primary_server(final_snark))?;
 
     // Join the benchmark tasks and block until they are done
-    let (res_inclusion_proof, res_epoch_change_proof) = if run_serially {
-        rt.block_on(async {
-            let inclusion_proof = bench_proving_inclusion(final_snark).await;
-            let epoch_change_proof = bench_proving_epoch_change(final_snark).await;
-            (Ok(inclusion_proof), Ok(epoch_change_proof))
-        })
-    } else {
+    let (res_inclusion_proof, res_epoch_change_proof) = if run_parallel {
         rt.block_on(async {
             let inclusion_proof_task = tokio::spawn(bench_proving_inclusion(final_snark));
             let epoch_change_proof_task = tokio::spawn(bench_proving_epoch_change(final_snark));
@@ -72,6 +66,12 @@ fn main() -> Result<(), anyhow::Error> {
             let epoch_change_proof = epoch_change_proof_task.await.map_err(|e| anyhow!(e));
 
             (inclusion_proof, epoch_change_proof)
+        })
+    } else {
+        rt.block_on(async {
+            let inclusion_proof = bench_proving_inclusion(final_snark).await;
+            let epoch_change_proof = bench_proving_epoch_change(final_snark).await;
+            (Ok(inclusion_proof), Ok(epoch_change_proof))
         })
     };
 
@@ -113,7 +113,7 @@ async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error>
 
     let process = Command::new("cargo")
         .args([
-            "+nightly",
+            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
@@ -163,7 +163,7 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
 
     let process = Command::new("cargo")
         .args([
-            "+nightly",
+            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
@@ -172,10 +172,10 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
             "-a",
             &secondary_addr,
         ])
-        .env("RUST_LOG", "debug")
-        .env("RUSTFLAGS", "-C target-cpu=native --cfg tokio_unstable")
+        .env("RUST_LOG", RUST_LOG)
+        .env("RUSTFLAGS", RUSTFLAGS)
         .env("SHARD_SIZE", shard_size)
-        .env("SHARD_BATCH_SIZE", "0")
+        .env("SHARD_BATCH_SIZE", SHARD_BATCH_SIZE)
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
@@ -226,12 +226,12 @@ async fn bench_proving_inclusion(final_snark: bool) -> Result<ProofData, anyhow:
         bcs::to_bytes(&Request::ProveInclusion(inclusion_data)).map_err(|e| anyhow!(e))?
     };
 
-    // Start measuring proving time
-    let start = Instant::now();
-
     write_bytes(&mut tcp_stream, &request_bytes)
         .await
         .map_err(|e| anyhow!(e))?;
+
+    // Start measuring proving time
+    let start = Instant::now();
 
     // Measure the time taken to get a response and the size of the response payload
     let response_bytes = read_bytes(&mut tcp_stream).await.map_err(|e| anyhow!(e))?;
@@ -269,12 +269,12 @@ async fn bench_proving_epoch_change(final_snark: bool) -> Result<ProofData, anyh
         bcs::to_bytes(&Request::ProveEpochChange(inclusion_data)).map_err(|e| anyhow!(e))?
     };
 
-    // Start measuring proving time
-    let start = Instant::now();
-
     write_bytes(&mut tcp_stream, &request_bytes)
         .await
         .map_err(|e| anyhow!(e))?;
+
+    // Start measuring proving time
+    let start = Instant::now();
 
     // Measure the time taken to get a response and the size of the response payload
     let response_bytes = read_bytes(&mut tcp_stream).await.map_err(|e| anyhow!(e))?;

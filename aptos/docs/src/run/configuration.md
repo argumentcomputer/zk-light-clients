@@ -2,8 +2,18 @@
 
 To run the Proof Server and the Client there are a few requirements that needs to be followed on the host machine.
 
-First, you need to install Rust and Golang. You can find the installation instructions for
+First, you need to install nightly Rust and Golang. You can find the installation instructions for
 Rust [here](https://www.rust-lang.org/tools/install) and for Golang [here](https://golang.org/doc/install).
+
+Make sure to install **nightly** Rust, which is necessary for AVX-512 acceleration:
+
+```bash
+rustup default nightly-2024-05-31
+```
+
+We pin the nightly Rust version to version `1.80.0-nightly (431db31d0 2024-05-28)` to prevent unknown future changes
+to nightly from interfering with the build process. In principle however, any recent nightly release of Rust should
+work.
 
 Second, you need to install the `cargo-prove` binary.
 
@@ -24,8 +34,10 @@ cd ~ && \
 
 3. Verify the installation by checking if `succinct` is present in the output of `rustup toolchain list`
 
-Finally, there a few packages needed for the build to properly work:
+Finally, there's a few extra packages needed for the build:
 
 ```bash
 sudo apt update && sudo apt-get install -y build-essential libssl-dev pkg-config libudev-dev cmake
 ```
+
+For non-Ubuntu/non-Debian based distros, make sure to install the equivalent packages.

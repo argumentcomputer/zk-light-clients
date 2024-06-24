@@ -1,34 +1,32 @@
 # Deploy the Proof Server
 
-As previously stated, we have two components to deploy for the Proof Server to work as intended. The primary and the
-secondary server. There is no particular order in which they should be deployed, but here we will deploy the secondary
-and then the primary.
+We have two components to deploy for the Proof Server to work as intended. The primary and the secondary server.
+There is no particular order in which they should be deployed, but here we will deploy the secondary and then
+the primary.
+
+For best results, the primary and secondary servers should be deployed to **different server instances**, so that
+proof generation can happen in parallel if necessary.
 
 ## Requirements
 
-Make sure that the configuration specified in [the dedicated section](./configuration.md) are met.
-
-## SNARK proofs
-
-We mentioned earlier that the Proof Server has the capabilities of handling two types of proofs: either Sphinx core
-proofs
-or SNARK proofs using Plonk. The circuit artifacts for the SNARK proofs are stored in a remote storage. The current
-address
-for the storage can be found [here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs).
+Make sure to finish the [initial configuration](./configuration.md) first.
 
 ## Environment variables
 
-- `RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable"`:
+- `RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3"`:
     - `-C target-cpu=native`: This will ensure that the binary is optimized
       for the CPU it is running on. This is very important
       for [plonky3](https://github.com/plonky3/plonky3?tab=readme-ov-file#cpu-features) performance.
     - `--cfg tokio_unstable`: This will enable the unstable features of the
       Tokio runtime. This is necessary for aptos dependencies.
+    - `-C opt-level=3`: This turns on the maximum level of compiler optimizations.
     - This can also be configured in `~/.cargo/config.toml` instead by adding:
         ```toml
         [target.'cfg(all())']
-        rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native"]
+        rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native", "-C", "opt-level=3"]
         ```
+        
+Make sure to launch the proof servers with `cargo +nightly-2024-05-31`.
 
 > **Note**
 >
@@ -42,7 +40,7 @@ Now that our deployment machine is properly configured, we can run the secondary
 ```bash
 git clone git@github.com:lurk-lab/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
-  RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo +nightly run --release --bin server_secondary -- -a <NETWORK_ADDRESS>
+  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_secondary -- -a <NETWORK_ADDRESS>
 ```
 
 ## Deploy the primary server
@@ -52,5 +50,5 @@ Finally, once the primary server is configured in the same fashion, run it:
 ```bash
 git clone git@github.com:lurk-lab/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
-  RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" cargo +nightly run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
+  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```

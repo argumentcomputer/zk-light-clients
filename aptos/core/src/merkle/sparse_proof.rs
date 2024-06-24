@@ -155,7 +155,7 @@ impl SparseMerkleProof {
     /// # Arguments
     ///
     /// * `bytes: &[u8]` - A byte slice from which to create
-    /// the `SparseMerkleProof`.
+    ///   the `SparseMerkleProof`.
     ///
     /// # Returns
     ///
@@ -211,7 +211,7 @@ impl SparseMerkleProof {
 ///
 /// * `acc_hash: HashValue` - The current accumulator hash.
 /// * `(sibling_hash, bit): (&HashValue, bool)` - The hash of the
-/// sibling node and a boolean indicating whether the sibling is on the right.
+///   sibling node and a boolean indicating whether the sibling is on the right.
 ///
 /// # Returns
 ///

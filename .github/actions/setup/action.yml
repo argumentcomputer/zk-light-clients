@@ -14,13 +14,15 @@ runs:
     - name: Set env
       shell: bash
       run: |
-        echo "RUSTFLAGS=${{env.RUSTFLAGS}} --cfg tokio_unstable" | tee -a $GITHUB_ENV
+        echo "RUSTFLAGS=${{env.RUSTFLAGS}} --cfg tokio_unstable -C opt-level=3" | tee -a $GITHUB_ENV
         echo "RUST_LOG=info" | tee -a $GITHUB_ENV
     - uses: actions/setup-go@v5
       with:
         go-version: '1.22'
         cache-dependency-path: "**/go.sum"
-    - uses: dtolnay/rust-toolchain@stable
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: nightly-2024-05-31
     - uses: Swatinem/rust-cache@v2
       with:
         workspaces: "aptos -> target"

@@ -1,11 +1,17 @@
 # Inclusion proof
 
 To bridge an account from the Aptos chain to another chain at any given time the LC needs to prove that the given
-account exists in the chain state for the latest block produced.
+account exists in the chain state for the latest block produced, with a given balance.
 
 To do so, the Light Client will first need to verify that the signature on the latest block corresponds to the validator
 list known for the current epoch. Then, it will have to prove that the account is part of the updated state that this
 block commits.
+
+The inclusion program takes in an arbitrary Aptos `SparseMerkleProof`, so it can represent inclusion of any kind of state
+inside of the Aptos blockchain's state root. We have implemented a proof that checks that a given account key has a certain
+balance, but this can be adapted to different scenarios without changing the inclusion program. See the
+[Aptos PFN](../components/aptos_pfn.html) section of the documentation for more information on the code responsible for
+building the `SparseMerkleProof`.
 
 ## Inclusion program IO
 

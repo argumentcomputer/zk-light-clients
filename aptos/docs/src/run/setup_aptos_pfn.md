@@ -10,21 +10,21 @@ building the code source.
 The relevant documentation concerning a Full Node deployment can be
 found [on the Aptos website](https://aptos.dev/nodes/full-node/public-fullnode/).
 
-First, clone the repository and move in it:
+First, clone the repository, `cd` into it and checkout the patched branch:
 
 ```bash
-git clone git@github.com:lurk-lab/aptos-core.git && cd aptos-core
+git clone git@github.com:lurk-lab/aptos-core.git && cd aptos-core && git checkout release/aptos-node-v1.14.0-patched
 ```
 
 Then, we have some configuration to set up.
 Following [the Aptos documentation](https://aptos.dev/nodes/full-node/deployments/deploy-a-pfn-source-code):
 
-1. Download Genesis blob:
+1. Download Aptos mainnet Genesis blob:
     ```bash
     curl -O https://raw.githubusercontent.com/aptos-labs/aptos-networks/main/mainnet/genesis.blob
     ```
 
-2. Download waypoint file:
+2. Download Aptos mainnet waypoint file:
    ```bash
    curl -O https://raw.githubusercontent.com/aptos-labs/aptos-networks/main/mainnet/waypoint.txt
    ```
@@ -82,4 +82,4 @@ cargo run -p aptos-node --release -- -f ./fullnode.yaml
 
 > **Note**
 >
->The synchronisation mode that we use as an example should reach the latest produced block in around 1 hour.
+>The synchronisation mode that we use as an example above should reach the latest produced block in around 1 hour.
