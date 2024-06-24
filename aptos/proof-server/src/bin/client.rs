@@ -14,9 +14,9 @@
 //!
 //! The client has two main phases in its lifetime:
 //! - **Initialization**: In this phase, the client fetches the initial data from the Aptos node and
-//! generates the initial state for itself and the verifier.
+//!   generates the initial state for itself and the verifier.
 //! - **Main Loop**: In this phase, the client listens for new data from the Aptos node and generates
-//! proofs for the verifier to verify.
+//!   proofs for the verifier to verify.
 //!
 //! ## Usage
 //!
@@ -305,7 +305,7 @@ async fn init(
 ///
 /// * `aptos_node_url` - The URL of the Aptos node.
 /// * `specific_epoch` - The specific epoch to fetch the epoch change proof data. Latest one if none
-/// specified.
+///   specified.
 ///
 /// # Returns
 ///

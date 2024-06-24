@@ -122,7 +122,7 @@ impl TrustedState {
     /// # Arguments
     ///
     /// * `ledger_info: &LedgerInfoWithSignatures` - The
-    /// ledger info with signatures to verify.
+    ///   ledger info with signatures to verify.
     ///
     /// # Returns
     ///

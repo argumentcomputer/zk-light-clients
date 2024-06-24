@@ -78,7 +78,7 @@ impl SparseMerkleLeafNode {
     ///
     /// * `key: HashValue` - The key of the leaf node.
     /// * `value_hash: HashValue` - The hash of the value
-    /// stored in the leaf node.
+    ///   stored in the leaf node.
     ///
     /// # Returns
     ///
@@ -109,7 +109,7 @@ impl SparseMerkleLeafNode {
     /// # Arguments
     ///
     /// * `bytes: &[u8]` - A byte slice from which to create
-    /// the `SparseMerkleLeafNode`.
+    ///   the `SparseMerkleLeafNode`.
     ///
     /// # Returns
     ///

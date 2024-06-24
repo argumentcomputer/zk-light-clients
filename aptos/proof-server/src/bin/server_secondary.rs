@@ -31,7 +31,7 @@ use proof_server::{
 ///
 /// * Request data must be preceded by its size in bytes
 /// * Proof responses will follow the same logic
-///  *Verification responses will follow the same logic.
+/// * Verification responses will follow the same logic.
 ///
 /// The request bytes must be deserializable into `proof_server::SecondaryRequest`
 /// by the `bcs` crate, so it's recommended to simply use that (pub) type when
