@@ -10,6 +10,14 @@ const PROGRAM_PATTERNS: [&str; 2] = ["../programs/*", "../programs/benchmarks/*"
 const TARGET_DIR: [&str; 2] = ["./artifacts", "./artifacts/benchmarks"];
 
 fn main() {
+    // Get `LC_PROGRAM_AUTOBUILD` env variable, default to 0
+    let should_build: bool =
+        std::env::var("LC_PROGRAM_AUTOBUILD").unwrap_or_else(|_| "0".into()) == "1";
+
+    if !should_build {
+        return;
+    }
+
     // Re-run if the core library changes
     let core_dir = std::path::Path::new("../core");
     println!("cargo:rerun-if-changed={}", core_dir.display());

@@ -36,7 +36,7 @@ generated in two ways:
 
 - Automated: There is a build script located at `./aptos-programs/build.rs` that
   will compile all the programs and place them in the `./aptos-programs/artifacts`
-  folder.
+  folder. To enable this feature, it is needed to set the environment variable `LC_PROGRAM_AUTOBUILD=1`.
 - Manual: You can also compile the programs manually using `make` by running the following
   command in the `./aptos-programs` folder:
   ```shell
