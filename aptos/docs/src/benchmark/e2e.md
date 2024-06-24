@@ -49,8 +49,7 @@ It measures two main metrics for each proof:
 
 ## SNARK proofs
 
-To benchmark the end-to-end flow with Plonk proofs over BN254, we first need to generate the circuits assets as described in [the
-configuration section](./configuration.md). Then, just pass the environment variable `SNARK=1`:
+To enable SNARK proving, just pass the environment variable `SNARK=1`:
 
 ```bash
 RUN_SERIAL=1 SNARK=1 RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly bench --bench proof_server
