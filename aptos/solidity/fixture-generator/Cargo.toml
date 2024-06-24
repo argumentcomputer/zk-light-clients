@@ -10,7 +10,7 @@ path = "src/bin/main.rs"
 [dependencies]
 sphinx-sdk = { workspace = true }
 sphinx-prover = {workspace = true }
-aptos-lc = { path = "../../light-client" }
+aptos-lc = { path = "../../light-client", features = ["aptos"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 clap = { version = "4.0", features = ["derive", "env"] }
