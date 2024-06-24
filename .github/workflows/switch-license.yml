@@ -1,7 +1,7 @@
 name: License Switch April 23rd, 2025
 on:
   schedule:
-    - cron: '0 0 23 4 2025'
+    - cron: '0 0 23 4 *'
 
 jobs:
   release:
