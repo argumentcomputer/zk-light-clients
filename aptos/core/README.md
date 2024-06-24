@@ -22,19 +22,20 @@ chain. The code for this is located in the `aptos_test_utils` module.
 To run tests, we recommend the following command:
 
 ```shell
-cargo +nightly nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
+cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
 ```
 
 This command should be run with the following environment variable:
 
-- `RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable"`:
+- `RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3"`:
     - `-C target-cpu=native`: This will ensure that the binary is optimized
       for the CPU it is running on. This is very important
       for [plonky3](https://github.com/plonky3/plonky3?tab=readme-ov-file#cpu-features) performance.
     - `--cfg tokio_unstable`: This will enable the unstable features of the
       Tokio runtime. This is necessary for aptos dependencies.
+    - `-C opt-level=3`: This turns on the maximum level of compiler optimizations.
     - This can also be configured in `~/.cargo/config.toml` instead by adding:
         ```toml
         [target.'cfg(all())']
-        rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native"]
+        rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native", "-C", "opt-level=3"]
         ```

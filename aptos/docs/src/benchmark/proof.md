@@ -71,7 +71,7 @@ Enter benchmark name: e2e
 Run the following command:
 
 ```shell
-cargo +nightly bench --features aptos --bench execute -- <benchmark_name>
+cargo +nightly-2024-05-31 bench --features aptos --bench execute -- <benchmark_name>
 ```
 
 ## Interpreting the results
@@ -88,6 +88,7 @@ following:
 This value can be found on the following line:
 
 ```shell
+TODO FIXME
 INFO summary: cycles=63736, e2e=2506, khz=25.43, proofSize=2.66 MiB
 ```
 
@@ -99,6 +100,7 @@ CPU in kHz, and the size of the proof generated.
 In the output, you will find a section that looks like this:
 
 ```shell
+TODO FIXME
 DEBUG ┌╴read_inputs    
 DEBUG └╴9,553 cycles    
 DEBUG ┌╴verify_merkle_proof    
@@ -113,6 +115,7 @@ The proving time is an output at the end of a benchmark in the shape of the foll
 milliseconds:
 
 ```json
+TODO FIXME
 {
   ratchet_proving_time: 100000,
   merkle_proving_time: 100000
@@ -126,6 +129,7 @@ crate. They will output the same logs as the benchmarks, only the time necessary
 to generate a proof will change shape:
 
 ```shell
+TODO FIXME
 Starting generation of Merkle inclusion proof with 18 siblings...
 Proving locally
 Proving took 5.358508094s
@@ -137,7 +141,7 @@ To run the test efficiently, first install `nextest` following [its documentatio
 Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
-cargo +nightly nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
+cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
 ```
 
 > **Note**
@@ -155,8 +159,3 @@ A short list of useful tests:
 - `test_execute_inclusion`: Executes the `epoch_change` program inside the zkVM but does not generate any proofs.
 - `test_prove_inclusion`: Generates and verifies a STARK proof of the `epoch_change` program.
 - `test_snark_inclusion`: Generates and verifies a SNARK proof of the `epoch_change` program.
-
-> **Note**
->
-> Any tests that generates SNARKs requires proper artifacts to be generated according to
-> the [instructions](./configuration.md).

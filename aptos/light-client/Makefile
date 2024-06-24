@@ -3,12 +3,12 @@
 benchmark:
 	@read -p "Enter benchmark name: " bench; \
 	RUST_LOG="debug" \
-	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native" \
-	cargo +nightly bench --features aptos --bench $$bench
+	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native -C opt-level=3" \
+	cargo +nightly-2024-05-31 bench --features aptos --bench $$bench
 
 BENCH ?= e2e
 
 bench-ci:
 	RUST_LOG="info" \
-	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native" \
-	cargo +nightly bench --features aptos --bench $(BENCH)
+	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native -C opt-level=3" \
+	cargo +nightly-2024-05-31 bench --features aptos --bench $(BENCH)

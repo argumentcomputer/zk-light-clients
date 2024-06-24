@@ -1,3 +1,10 @@
+rewriting static
+rewriting static
+rewriting static
+rewriting static
+rewriting static
+rewriting static
+rewriting static
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -37,11 +44,11 @@ const SNARK_SHARD_SIZE: &str = "4194304";
 const STARK_SHARD_SIZE: &str = "1048576";
 const SHARD_BATCH_SIZE: &str = "0";
 const RUST_LOG: &str = "debug";
-const RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable";
+const RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
 
 fn main() -> Result<(), anyhow::Error> {
     let final_snark: bool = env::var("SNARK").unwrap_or_else(|_| "0".into()) == "1";
-    let run_serially: bool = env::var("RUN_SERIAL").unwrap_or_else(|_| "0".into()) == "1";
+    let run_parallel: bool = env::var("RUN_PARALLEL").unwrap_or_else(|_| "0".into()) == "1";
 
     let rt = Runtime::new().unwrap();
 
@@ -57,7 +64,7 @@ fn main() -> Result<(), anyhow::Error> {
     let mut primary_server_process = rt.block_on(start_primary_server(final_snark))?;
 
     // Join the benchmark tasks and block until they are done
-    let (res_inclusion_proof, res_epoch_change_proof) = if run_serially {
+    let (res_inclusion_proof, res_epoch_change_proof) = if run_parallel {
         rt.block_on(async {
             let inclusion_proof = bench_proving_inclusion(final_snark).await;
             let epoch_change_proof = bench_proving_epoch_change(final_snark).await;
@@ -113,7 +120,7 @@ async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error>
 
     let process = Command::new("cargo")
         .args([
-            "+nightly",
+            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
@@ -163,7 +170,7 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
 
     let process = Command::new("cargo")
         .args([
-            "+nightly",
+            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
@@ -172,10 +179,10 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
             "-a",
             &secondary_addr,
         ])
-        .env("RUST_LOG", "debug")
-        .env("RUSTFLAGS", "-C target-cpu=native --cfg tokio_unstable")
+        .env("RUST_LOG", RUST_LOG)
+        .env("RUSTFLAGS", RUSTFLAGS)
         .env("SHARD_SIZE", shard_size)
-        .env("SHARD_BATCH_SIZE", "0")
+        .env("SHARD_BATCH_SIZE", SHARD_BATCH_SIZE)
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
