@@ -202,6 +202,7 @@ mod test {
         setup_assets, SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
     };
     use aptos_lc_core::types::validator::ValidatorVerifier;
+    use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
     use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};
 
@@ -316,6 +317,9 @@ mod test {
             &transaction_proof_assets,
             &validator_verifier_assets,
         );
+
+        // Install PLONK artifacts.
+        try_install_plonk_bn254_artifacts(false);
 
         let start = Instant::now();
         println!("Starting generation of inclusion proof...");

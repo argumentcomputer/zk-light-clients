@@ -7,6 +7,7 @@ use proof_server::types::aptos::{AccountInclusionProofResponse, EpochChangeProof
 use proof_server::types::proof_server::{EpochChangeData, InclusionData, Request};
 use proof_server::utils::{read_bytes, write_bytes};
 use serde::Serialize;
+use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -43,6 +44,11 @@ fn main() -> Result<(), anyhow::Error> {
     let run_serially: bool = env::var("RUN_SERIAL").unwrap_or_else(|_| "0".into()) == "1";
 
     let rt = Runtime::new().unwrap();
+
+    if final_snark {
+        // Install PLONK artifacts.
+        try_install_plonk_bn254_artifacts(false);
+    }
 
     // Start secondary server
     let mut secondary_server_process = rt.block_on(start_secondary_server(final_snark))?;
