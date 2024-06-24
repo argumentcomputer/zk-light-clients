@@ -25,13 +25,13 @@ machines.
 
 The benchmark returns two main metrics for each proof:
 
-- `e2e_proving_time`: Time taken to send both request to the Proof Server and generate both proofs.
+- `e2e_proving_time`: Time in milliseconds taken to send both request to the Proof Server and generate both proofs.
 - `inclusion_proof`:
-    - `proving_time`: Time taken to generate the inclusion proof.
-    - `request_response_proof_size`: Size of the proof returned by the server.
+    - `proving_time`: Time in milliseconds taken to generate the inclusion proof.
+    - `request_response_proof_size`: Size of the proof in bytes returned by the server.
 - `epoch_change_proof`:
-    - `proving_time`: Time taken to generate the epoch change proof.
-    - `request_response_proof_size`: Size of the proof returned by the server.
+    - `proving_time`: Time in milliseconds taken to generate the epoch change proof.
+    - `request_response_proof_size`: Size of the proof in bytes returned by the server.
 
 For our [production configuration](../run/overview.md), we currently get the following results:
 

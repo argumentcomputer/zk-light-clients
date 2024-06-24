@@ -59,12 +59,6 @@ fn main() -> Result<(), anyhow::Error> {
     // Join the benchmark tasks and block until they are done
     let (res_inclusion_proof, res_epoch_change_proof) = if run_parallel {
         rt.block_on(async {
-            let inclusion_proof = bench_proving_inclusion(final_snark).await;
-            let epoch_change_proof = bench_proving_epoch_change(final_snark).await;
-            (Ok(inclusion_proof), Ok(epoch_change_proof))
-        })
-    } else {
-        rt.block_on(async {
             let inclusion_proof_task = tokio::spawn(bench_proving_inclusion(final_snark));
             let epoch_change_proof_task = tokio::spawn(bench_proving_epoch_change(final_snark));
 
@@ -72,6 +66,12 @@ fn main() -> Result<(), anyhow::Error> {
             let epoch_change_proof = epoch_change_proof_task.await.map_err(|e| anyhow!(e));
 
             (inclusion_proof, epoch_change_proof)
+        })
+    } else {
+        rt.block_on(async {
+            let inclusion_proof = bench_proving_inclusion(final_snark).await;
+            let epoch_change_proof = bench_proving_epoch_change(final_snark).await;
+            (Ok(inclusion_proof), Ok(epoch_change_proof))
         })
     };
 
