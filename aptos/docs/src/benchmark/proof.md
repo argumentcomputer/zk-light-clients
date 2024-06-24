@@ -88,7 +88,6 @@ following:
 This value can be found on the following line:
 
 ```shell
-TODO FIXME
 INFO summary: cycles=63736, e2e=2506, khz=25.43, proofSize=2.66 MiB
 ```
 
@@ -100,7 +99,6 @@ CPU in kHz, and the size of the proof generated.
 In the output, you will find a section that looks like this:
 
 ```shell
-TODO FIXME
 DEBUG ┌╴read_inputs    
 DEBUG └╴9,553 cycles    
 DEBUG ┌╴verify_merkle_proof    
@@ -115,7 +113,6 @@ The proving time is an output at the end of a benchmark in the shape of the foll
 milliseconds:
 
 ```json
-TODO FIXME
 {
   ratchet_proving_time: 100000,
   merkle_proving_time: 100000
@@ -129,7 +126,6 @@ crate. They will output the same logs as the benchmarks, only the time necessary
 to generate a proof will change shape:
 
 ```shell
-TODO FIXME
 Starting generation of Merkle inclusion proof with 18 siblings...
 Proving locally
 Proving took 5.358508094s

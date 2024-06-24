@@ -8,3 +8,6 @@ Due to the SNARK compression, the SNARK proofs take longer to generate and requi
 
 The worst case latency (described [here](../design/edge_cases.md)) can be evaluated by running the end-to-end benchmark
 for each of the two proofs, and looking at the maximum of the time it took to genereate each proof.
+
+The numbers we've measured using our [production configuration](../run/overview.md) are present in the
+[E2E Benchmarks](./e2e.md) section.

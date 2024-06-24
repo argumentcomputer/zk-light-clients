@@ -1,10 +1,3 @@
-rewriting static
-rewriting static
-rewriting static
-rewriting static
-rewriting static
-rewriting static
-rewriting static
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: BUSL-1.1
 

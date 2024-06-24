@@ -10,10 +10,10 @@ building the code source.
 The relevant documentation concerning a Full Node deployment can be
 found [on the Aptos website](https://aptos.dev/nodes/full-node/public-fullnode/).
 
-First, clone the repository and `cd` into it:
+First, clone the repository, `cd` into it and checkout the patched branch:
 
 ```bash
-git clone git@github.com:lurk-lab/aptos-core.git && cd aptos-core
+git clone git@github.com:lurk-lab/aptos-core.git && cd aptos-core && git checkout release/aptos-node-v1.14.0-patched
 ```
 
 Then, we have some configuration to set up.
