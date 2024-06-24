@@ -36,7 +36,7 @@ const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
 const SNARK_SHARD_SIZE: &str = "4194304";
 const STARK_SHARD_SIZE: &str = "1048576";
 const SHARD_BATCH_SIZE: &str = "0";
-const RUST_LOG: &str = "debug";
+const RUST_LOG: &str = "warn";
 const RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
 
 fn main() -> Result<(), anyhow::Error> {
@@ -226,12 +226,12 @@ async fn bench_proving_inclusion(final_snark: bool) -> Result<ProofData, anyhow:
         bcs::to_bytes(&Request::ProveInclusion(inclusion_data)).map_err(|e| anyhow!(e))?
     };
 
-    // Start measuring proving time
-    let start = Instant::now();
-
     write_bytes(&mut tcp_stream, &request_bytes)
         .await
         .map_err(|e| anyhow!(e))?;
+
+    // Start measuring proving time
+    let start = Instant::now();
 
     // Measure the time taken to get a response and the size of the response payload
     let response_bytes = read_bytes(&mut tcp_stream).await.map_err(|e| anyhow!(e))?;
@@ -269,12 +269,12 @@ async fn bench_proving_epoch_change(final_snark: bool) -> Result<ProofData, anyh
         bcs::to_bytes(&Request::ProveEpochChange(inclusion_data)).map_err(|e| anyhow!(e))?
     };
 
-    // Start measuring proving time
-    let start = Instant::now();
-
     write_bytes(&mut tcp_stream, &request_bytes)
         .await
         .map_err(|e| anyhow!(e))?;
+
+    // Start measuring proving time
+    let start = Instant::now();
 
     // Measure the time taken to get a response and the size of the response payload
     let response_bytes = read_bytes(&mut tcp_stream).await.map_err(|e| anyhow!(e))?;

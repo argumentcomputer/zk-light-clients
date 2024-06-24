@@ -10,7 +10,7 @@ the [`proof-server`](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos
 crate. It can be run with the following command:
 
 ```bash
-SHARD_BATCH_SIZE=0 RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly-2024-05-31 bench --bench proof_server
+SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly-2024-05-31 bench --bench proof_server
 ```
 
 This benchmark will spawn the two servers locally and make two requests in sequence to them. This generates both proofs
@@ -36,24 +36,39 @@ The benchmark returns two main metrics for each proof:
 For our [production configuration](../run/overview.md), we currently get the following results:
 
 ```json
-TODO FIXME
+{
+  "e2e_proving_time": 51489,
+  "inclusion_proof": {
+    "proving_time": 46636,
+    "request_response_proof_size": 22830628
+  },
+  "epoch_change_proof": {
+    "proving_time": 51489,
+    "request_response_proof_size": 25482668
+  }
+}
 ```
-
-> **Note**
->
-> As the proof server is run with the `RUST_LOG=debug` environment variable, it is also possible to grab the inner
-> metrics from Sphinx.
 
 ## SNARK proofs
 
 To enable SNARK proving, just pass the environment variable `SNARK=1` when running:
 
 ```bash
-SNARK=1 SHARD_BATCH_SIZE=0 RUST_LOG="debug" RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly-2024-05-31 bench --bench proof_server
+SNARK=1 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly-2024-05-31 bench --bench proof_server
 ```
 
 For our [production configuration](../run/overview.md), we currently get the following results:
 
 ```json
-TODO FIXME
+{
+  "e2e_proving_time": 694809,
+  "inclusion_proof": {
+    "proving_time": 689228,
+    "request_response_proof_size": 18454
+  },
+  "epoch_change_proof": {
+    "proving_time": 694809,
+    "request_response_proof_size": 28661
+  }
+}
 ```

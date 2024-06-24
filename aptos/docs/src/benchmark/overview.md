@@ -14,12 +14,32 @@ The numbers we've measured using our [production configuration](../run/overview.
 
 For STARKs:
 ```
-TODO FIXME
+{
+  "e2e_proving_time": 51489,
+  "inclusion_proof": {
+    "proving_time": 46636,
+    "request_response_proof_size": 22830628
+  },
+  "epoch_change_proof": {
+    "proving_time": 51489,
+    "request_response_proof_size": 25482668
+  }
+}
 ```
 
 For SNARKs:
 ```
-TODO FIXME
+{
+  "e2e_proving_time": 694809,
+  "inclusion_proof": {
+    "proving_time": 689228,
+    "request_response_proof_size": 18454
+  },
+  "epoch_change_proof": {
+    "proving_time": 694809,
+    "request_response_proof_size": 28661
+  }
+}
 ```
 
 ## Blob proofs on Ethereum
