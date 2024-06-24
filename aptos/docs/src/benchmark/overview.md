@@ -9,5 +9,23 @@ Due to the SNARK compression, the SNARK proofs take longer to generate and requi
 The worst case latency (described [here](../design/edge_cases.md)) can be evaluated by running the end-to-end benchmark
 for each of the two proofs, and looking at the maximum of the time it took to genereate each proof.
 
-The numbers we've measured using our [production configuration](../run/overview.md) are present in the
-[E2E Benchmarks](./e2e.md) section.
+The numbers we've measured using our [production configuration](../run/overview.md) are further detailed in the 
+[E2E Benchmarks](./e2e.md) section. They are included below as well for reference:
+
+For STARKs:
+```
+TODO FIXME
+```
+
+For SNARKs:
+```
+TODO FIXME
+```
+
+## Blob proofs on Ethereum
+
+We're also working on a STARK verifier that could be used alongside Ethereum's new
+[blob transactions](https://eips.ethereum.org/EIPS/eip-4844), which can be used to drastically minimize the gas costs
+for large data such as STARK proofs. This is still experimental and an early work-in-progress, but
+[preliminary](https://github.com/lurk-lab/sphinx/pull/51) benchmarks using an Ethereum-friendly hash function and
+compression show that proof generation could be achieved at around 6 to 7 minutes.
