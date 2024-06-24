@@ -3,9 +3,9 @@
 ## Sphinx
 
 The [Sphinx](https://github.com/lurk-lab/sphinx) prover is a fork of [SP1](https://github.com/succinctlabs/sp1)
-and as such inherits many of its security design. The current release of Sphinx (`v1.0.0`) has backported all the
+and as such inherits a lot from its security design. The current release of Sphinx (`v1.0.0`) has backported all the
 upstream security fixes as of SP1 `v1.0.5-testnet`. We will continue to update Sphinx with backports of upstream
-security fixes and subsequent updates to both Sphinx and the Light Client will be made available as hotfixes.
+security fixes and subsequent updates to both Sphinx and the Light Client making them available as hotfixes.
 
 In terms of Sphinx-specific changes that require special attention, here is a non-exhaustive list of Sphinx
 AIR chips used for pre-compiles that are either not present in upstream SP1, or have had non-trivial changes:

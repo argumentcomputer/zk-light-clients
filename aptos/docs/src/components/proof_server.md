@@ -17,7 +17,7 @@ and leverages the [`lurk-lab/sphinx`](https://github.com/lurk-lab/sphinx) zkVM t
 
 In the design document of both the [epoch change proof](../design/epoch_change_proof.md) and
 the [inclusion proof](../design/inclusion_proof.md), we describe what each program has to prove. Most computations
-performed by the proof grams are directed towards cryptographic operations, such as verifying signatures on the block
+performed by the proof programs are directed towards cryptographic operations, such as verifying signatures on the block
 header.
 
 To accelerate those operations, we leverage some out-of-VM circuits called **pre-compiles** that are optimized for those

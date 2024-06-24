@@ -4,7 +4,7 @@ The Aptos consensus has (at any given time) a set of validators that are charged
 append them to the chain state.
 
 A set of given validators is updated at the last block of every epoch on the chain. An **epoch on the Aptos chain has a
-duration of 2 hours**. The light client needs to keep track of the hash of the current trusted validator set, which is
+duration of 2 hours**. The light client needs to keep track of the current trusted validator set hash, which is
 updated on every epoch change.
 
 For a given epoch \\(N\\) with a set of validators \\(V_n\\), it is expected to have a block for the transition to
