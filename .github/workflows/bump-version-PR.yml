@@ -41,7 +41,7 @@ jobs:
 
       # The `release/1.0` branch is always truncated, so that patch version merges still are valid Semver
       # However, when we make the initial `release/1.0` version bump, we include the full `1.0.0` in `Cargo.toml`
-      # and the release for clarity 
+      # and the release for clarity
       - name: Set branches
         run: |
           BASE_VERSION_SHORT=$(echo "${{ inputs.version }}" | cut -d'.' -f1-2)

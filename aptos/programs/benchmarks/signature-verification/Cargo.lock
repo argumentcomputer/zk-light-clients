@@ -541,8 +541,8 @@ dependencies = [
 
 [[package]]
 name = "sphinx-derive"
-version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#8dc9cbd822439faf941392cf7a2bd7b82340c667"
+version = "1.0.0"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -551,8 +551,8 @@ dependencies = [
 
 [[package]]
 name = "sphinx-precompiles"
-version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#8dc9cbd822439faf941392cf7a2bd7b82340c667"
+version = "1.0.0"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
 dependencies = [
  "anyhow",
  "bincode",
@@ -566,8 +566,8 @@ dependencies = [
 
 [[package]]
 name = "sphinx-zkvm"
-version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#8dc9cbd822439faf941392cf7a2bd7b82340c667"
+version = "1.0.0"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
 dependencies = [
  "bincode",
  "cfg-if",
