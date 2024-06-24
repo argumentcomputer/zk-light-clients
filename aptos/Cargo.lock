@@ -6964,7 +6964,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "681030a937600a36906c185595136d26abfebb4aa9c65701cefcaf8578bb982b"
 dependencies = [
- "proc-macro-crate 1.3.1",
+ "proc-macro-crate 2.0.2",
  "proc-macro2",
  "quote",
  "syn 2.0.68",
@@ -9611,7 +9611,7 @@ dependencies = [
 [[package]]
 name = "sphinx-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "anyhow",
  "arrayref",
@@ -9672,7 +9672,7 @@ dependencies = [
 [[package]]
 name = "sphinx-derive"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9682,7 +9682,7 @@ dependencies = [
 [[package]]
 name = "sphinx-helper"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "cargo_metadata 0.18.1",
  "chrono",
@@ -9691,7 +9691,7 @@ dependencies = [
 [[package]]
 name = "sphinx-primitives"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "itertools 0.12.1",
  "lazy_static",
@@ -9704,7 +9704,7 @@ dependencies = [
 [[package]]
 name = "sphinx-prover"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -9746,7 +9746,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-circuit"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "bincode",
  "itertools 0.12.1",
@@ -9769,7 +9769,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-compiler"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "backtrace",
  "hashbrown 0.14.5",
@@ -9794,7 +9794,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "arrayref",
  "backtrace",
@@ -9827,7 +9827,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-derive"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9837,7 +9837,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-gnark-ffi"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "bindgen 0.69.4",
  "cfg-if",
@@ -9857,7 +9857,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-program"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "itertools 0.12.1",
  "p3-air",
@@ -9884,7 +9884,7 @@ dependencies = [
 [[package]]
 name = "sphinx-sdk"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#74313b844256f63729f8cbccb23842183b79b867"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#b8972fdd88f63e6d0fdce7e56667ab6741406b3a"
 dependencies = [
  "alloy-sol-types",
  "anyhow",
