@@ -302,9 +302,9 @@ dependencies = [
 
 [[package]]
 name = "hybrid-array"
-version = "0.2.0-rc.8"
+version = "0.2.0-rc.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53668f5da5a41d9eaf4bf7064be46d1ebe6a4e1ceed817f387587b18f2b51047"
+checksum = "4d306b679262030ad8813a82d4915fc04efff97776e4db7f8eb5137039d56400"
 dependencies = [
  "typenum",
 ]
@@ -392,9 +392,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.85"
+version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22244ce15aa966053a896d1accb3a6e68469b97c7f33f284b99f0d576879fc23"
+checksum = "5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77"
 dependencies = [
  "unicode-ident",
 ]
@@ -494,7 +494,7 @@ checksum = "500cbc0ebeb6f46627f50f3f5811ccf6bf00643be300b4c3eabc0ef55dc5b5ba"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.68",
 ]
 
 [[package]]
@@ -542,7 +542,7 @@ dependencies = [
 [[package]]
 name = "sphinx-derive"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#8dc9cbd822439faf941392cf7a2bd7b82340c667"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -552,7 +552,7 @@ dependencies = [
 [[package]]
 name = "sphinx-precompiles"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#8dc9cbd822439faf941392cf7a2bd7b82340c667"
 dependencies = [
  "anyhow",
  "bincode",
@@ -567,7 +567,7 @@ dependencies = [
 [[package]]
 name = "sphinx-zkvm"
 version = "0.1.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#785d0e01c92133152fe534bb181f2f80ef180d78"
+source = "git+ssh://git@github.com/lurk-lab/sphinx?branch=dev#8dc9cbd822439faf941392cf7a2bd7b82340c667"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -591,9 +591,9 @@ dependencies = [
 
 [[package]]
 name = "subtle"
-version = "2.5.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
+checksum = "0d0208408ba0c3df17ed26eb06992cb1a1268d41b2c0e12e65203fbe3972cee5"
 
 [[package]]
 name = "syn"
@@ -608,9 +608,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.66"
+version = "2.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42f3f41a2de00b01c0aaad383c5a45241efc8b2d1eda5661812fda5f3cdcff5"
+checksum = "901fa70d88b9d6c98022e23b4136f9f3e54e4662c3bc1bd1d84a42a9a0f0c1e9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -640,7 +640,7 @@ checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.68",
 ]
 
 [[package]]
