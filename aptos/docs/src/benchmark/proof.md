@@ -71,7 +71,7 @@ Enter benchmark name: e2e
 Run the following command:
 
 ```shell
-cargo +nightly-2024-05-31 bench --features aptos --bench execute -- <benchmark_name>
+SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 bench --features aptos --bench execute -- <benchmark_name>
 ```
 
 ## Interpreting the results
@@ -137,7 +137,7 @@ To run the test efficiently, first install `nextest` following [its documentatio
 Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
-cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
+SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
 ```
 
 > **Note**
