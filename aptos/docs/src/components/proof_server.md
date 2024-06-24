@@ -4,9 +4,9 @@ The Proof Server is a component of the Light Client that is responsible for gene
 The server is designed to be stateless and can be scaled horizontally to handle a large number of requests. The Proof
 Server can be divided in two distinct implementations:
 
-- Proof programs: The proof program contains the logic that will be executed by our Proof server, generating
+- **Proof programs**: The proof program contains the logic that will be executed by our Proof server, generating
   the succinct proof to be verified. The proof programs are run inside the Sphinx zkVM and prover.
-- Server: The server is a layer added on top of the proving service that makes it available to external users via a
+- **Server**: The server is a layer added on top of the proving service that makes it available to external users via a
   simple protocol.
 
 ## Proof programs
