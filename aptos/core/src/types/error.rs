@@ -1,7 +1,7 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: BUSL-1.1
 
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: BUSL-1.1
 use thiserror::Error;
 
 /// Errors possible during signature verification.

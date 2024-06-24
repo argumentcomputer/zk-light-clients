@@ -1,0 +1,51 @@
+name: License Switch April 23rd, 2025
+on:
+  schedule:
+    - cron: '0 0 23 4 2025'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf ssh://git@github.com
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com".insteadOf https://github.com
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Replace LICENSE.md
+        run: |
+          cp .github/workflows/assets/APACHE.md aptos/LICENSE.md
+
+      - name: Replace SPDX license headers
+        run: |
+          find aptos -type f -exec sed -i 's|// SPDX-License-Identifier: BUSL-1.1|// SPDX-License-Identifier: Apache-2.0, MIT|g' {} \;
+
+      - name: Remove License switch action and apache template
+        run: |
+          rm .github/workflows/switch-license.yml
+          rm .github/workflows/assets/APACHE.md
+
+      - name: PR Body
+        id: pr-body
+        run: |
+          {
+            echo 'PR_BODY<<EOF'
+            This is an automated PR to update our licenses to Apache2.0.
+          
+            [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            EOF
+          } >> "$GITHUB_ENV"
+
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          body: ${{ env.PR_BODY }}
+          branch: "feature/license-switch"
+          title: "Switch to Apache2.0 License"

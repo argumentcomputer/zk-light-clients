@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 pub const INCLUSION_PROGRAM: &[u8] = include_bytes!("../artifacts/inclusion-program");
 
