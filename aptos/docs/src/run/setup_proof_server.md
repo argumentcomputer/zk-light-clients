@@ -10,23 +10,11 @@ Make sure that the configuration specified in [the dedicated section](./configur
 
 ## SNARK proofs
 
-We mentioned earlier that the Proof Server has the capabilities of handling two types of proofs: either Sphinx core proofs
-or SNARK proofs using Plonk.
-
-To enable Plonk proofs, we first need to generate the necessary circuit artifacts.
-
-We need to head to the Sphinx repository and run the build script:
-
-```bash
-cd sphinx/prover && \
-  make build-plonk-bn254 && \
-  mkdir -p ~/.sp1/circuits/plonk_bn254/e48c01ec/ && \
-  cp build/* ~/.sp1/circuits/plonk_bn254/e48c01ec/
-```
-
-The trailing commit identifier after `~/.sp1/circuits/plonk_bn254/` depends on the value of `PLONK_BN254_ARTIFACTS_COMMIT`
-defined [here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs),
-make sure to use the most up-to-date value for the specific Sphinx release.
+We mentioned earlier that the Proof Server has the capabilities of handling two types of proofs: either Sphinx core
+proofs
+or SNARK proofs using Plonk. The circuit artifacts for the SNARK proofs are stored in a remote storage. The current
+address
+for the storage can be found [here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs).
 
 ## Environment variables
 
