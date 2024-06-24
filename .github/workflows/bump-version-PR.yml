@@ -51,7 +51,7 @@ jobs:
             git checkout $PR_BRANCH
           else
             VERSION=$BASE_VERSION
-            BASE_BRANCH="main"
+            BASE_BRANCH="dev"
             PR_BRANCH="release/$BASE_VERSION_SHORT"
             git checkout -b $PR_BRANCH
           fi
