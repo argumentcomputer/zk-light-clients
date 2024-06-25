@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }
-sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
 
 [patch.crates-io]
 # Sphinx patch
