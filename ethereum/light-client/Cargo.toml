@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+getset = { workspace = true }
 # LC crates
 ethereum-lc-core = { path = "../core" }
 ethereum-programs = { path = "../ethereum-programs" }

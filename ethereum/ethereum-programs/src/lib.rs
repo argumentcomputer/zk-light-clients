@@ -3,4 +3,4 @@
 
 pub const INCLUSION_PROGRAM: &[u8] = include_bytes!("../artifacts/inclusion-program");
 
-pub const EPOCH_CHANGE_PROGRAM: &[u8] = include_bytes!("../artifacts/epoch-change-program");
+pub const COMMITTEE_CHANGE_PROGRAM: &[u8] = include_bytes!("../artifacts/committee-change-program");

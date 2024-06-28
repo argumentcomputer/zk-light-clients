@@ -5,3 +5,9 @@ edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/wormhole-foundation/example-zk-light-clients"
 repository = "https://github.com/wormhole-foundation/example-zk-light-clients"
+
+[dependencies]
+anyhow = { workspace = true }
+bls12_381 = { workspace = true }
+getset = { workspace = true }
+thiserror = { workspace = true }
