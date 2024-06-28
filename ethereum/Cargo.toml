@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+
+members = ["core", "ethereum-programs", "light-client"]
+
+[workspace.dependencies]
+glob = "0.3.1"
+# Crypto dependencies
+bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm" }
+# Sphinx dependencies
+sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0", features = ["plonk"] }
+sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+
+[patch.crates-io]
+# Sphinx patch
+tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", branch = "patch-v2.0.2" }
+sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", branch = "patch-v0.10.8" }

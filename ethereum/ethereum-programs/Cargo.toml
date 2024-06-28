@@ -1,0 +1,11 @@
+[package]
+name = "ethereum-programs"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+glob = { workspace = true }
+sphinx-helper = { workspace = true }
+
+[features]
+bench = []

@@ -1,0 +1,16 @@
+[book]
+authors = ["Thomas Chataigner"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Ethereum Light Client"
+description = "A book about the Ethereum ZK Light Client"
+
+[preprocessor.external-links]
+
+[output.html]
+mathjax-support = true
+
+[output.html.fold]
+enable = true
+level = 1
