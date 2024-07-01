@@ -1,0 +1,1 @@
+This crates contains necessary logic for the Ethereum Light Client to generate and verify proofs.

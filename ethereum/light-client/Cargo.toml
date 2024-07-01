@@ -1,0 +1,21 @@
+[package]
+name = "ethereum-lc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# LC crates
+ethereum-lc-core = { path = "../core" }
+ethereum-programs = { path = "../ethereum-programs" }
+
+[[bin]]
+name = "client"
+path = "src/bin/client.rs"
+
+[[bin]]
+name = "server_primary"
+path = "src/bin/server_primary.rs"
+
+[[bin]]
+name = "server_secondary"
+path = "src/bin/server_secondary.rs"
