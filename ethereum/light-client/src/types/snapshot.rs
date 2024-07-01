@@ -1,7 +1,7 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: APACHE-2.0
 
-use ethereum_lc_core::types::block::BeaconBlockHeader;
+use ethereum_lc_core::types::block::LightClientHeader;
 use ethereum_lc_core::types::committee::SyncCommittee;
 use getset::Getters;
 
@@ -13,7 +13,7 @@ use getset::Getters;
 #[getset(get = "pub")]
 pub struct LightClientSnapshot {
     /// Beacon block header
-    header: BeaconBlockHeader,
+    header: LightClientHeader,
     /// Latest validated sync committee
     current_sync_committee: SyncCommittee,
     /// Next sync committee

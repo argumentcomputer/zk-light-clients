@@ -5,9 +5,19 @@ members = ["core", "ethereum-programs", "light-client"]
 
 [workspace.dependencies]
 anyhow = "1.0.86"
+clap = "4.5.8"
+env_logger = "0.11.3"
+ethereum_serde_utils = "0.5.2"
+ethereum_ssz = "0.5"
+ethereum_ssz_derive = "0.5"
 glob = "0.3.1"
 getset = "0.1.2"
+log = "0.4.22"
+reqwest = "0.12.5"
+serde = "1.0.203"
+serde_json = "1.0.119"
 thiserror = "1.0.61"
+tokio = "1.38.0"
 # Crypto dependencies
 bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm" }
 # Sphinx dependencies

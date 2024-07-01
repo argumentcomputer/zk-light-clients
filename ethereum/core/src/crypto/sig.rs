@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: APACHE-2.0
 
 use crate::crypto::error::CryptoError;
+use crate::types::error::TypesError;
 use anyhow::Result;
 use bls12_381::G1Affine;
 use std::cell::OnceCell;
@@ -14,6 +15,7 @@ pub const PUB_KEY_LEN: usize = 48;
 /// The public key is represented as a compressed byte array and an optional `G1Affine` point.
 /// The `G1Affine` point is computed from the compressed byte array when needed.
 #[derive(Clone, Debug, PartialEq, Eq)]
+
 pub struct PublicKey {
     compressed_pubkey: [u8; PUB_KEY_LEN],
     pubkey: OnceCell<G1Affine>,
@@ -70,6 +72,32 @@ impl PublicKey {
         Ok(PublicKey {
             compressed_pubkey: [0u8; PUB_KEY_LEN],
             pubkey,
+        })
+    }
+
+    pub fn to_ssz_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![];
+
+        bytes.extend_from_slice(&self.compressed_pubkey);
+
+        bytes
+    }
+
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        if bytes.len() != PUB_KEY_LEN {
+            return Err(TypesError::InvalidLength {
+                structure: "PublicKey".into(),
+                expected: PUB_KEY_LEN,
+                actual: bytes.len(),
+            });
+        }
+
+        let mut compressed_pubkey = [0u8; PUB_KEY_LEN];
+        compressed_pubkey.copy_from_slice(bytes);
+
+        Ok(Self {
+            compressed_pubkey,
+            pubkey: OnceCell::new(),
         })
     }
 }
