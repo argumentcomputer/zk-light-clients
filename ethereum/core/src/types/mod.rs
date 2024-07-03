@@ -3,7 +3,9 @@
 
 //! # Types Module
 //!
-//! This module provides the core data structures and types used in the Ethereum Light Client.
+//! This module provides the core data structures and types used in the Ethereum Light Client. Most
+//!types defined in this module implement custom `to_ssz_bytes` and `from_ssz_bytes` methods to handle
+//! their serialization and deserialization. This is to reduce dependencies on external libraries.
 //!
 //! ## Sub-modules
 //!

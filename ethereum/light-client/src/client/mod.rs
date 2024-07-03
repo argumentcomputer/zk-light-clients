@@ -1,6 +1,17 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Client module
+//!
+//! This module contains the client for the light client. It is the entrypoint for any needed remote call.
+//! The client is composed of two main components: the Beacon Client and the Checkpoint Client.
+//!
+//! ## Sub-modules
+//!
+//! - `beacon`: The Beacon Client is responsible for fetching the data necessary to prove sync committee changes
+//! and value inclusion in the state of the Ethereum network.
+//! - `checkpoint`: The Checkpoint Client is responsible for fetching the data of the latest finalized block root.
+
 use crate::client::beacon::BeaconClient;
 use crate::client::checkpoint::CheckpointClient;
 use crate::client::error::ClientError;

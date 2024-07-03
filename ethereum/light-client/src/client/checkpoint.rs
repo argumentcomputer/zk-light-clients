@@ -1,6 +1,13 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Checkpoint client module
+//!
+//! This module contains the client for the Checkpoint Provider. It is responsible for fetching the data
+//! for the latest finalized block root.
+//!
+//! It maintains an internal HTTP client to handle communication with the Checkpoint Provider API.
+
 use crate::client::error::ClientError;
 use crate::types::checkpoint::{Checkpoint, SlotsResponse};
 use reqwest::header::ACCEPT;

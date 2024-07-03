@@ -1,6 +1,13 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Beacon client module
+//!
+//! This module contains the client for the Beacon Node API. It is responsible for fetching the data
+//! necessary to prove sync committee changes and value inclusion in the state of the Ethereum network.
+//!
+//! It maintains an internal HTTP client to handle communication with the Beacon Node.
+
 use crate::client::error::ClientError;
 use crate::types::beacon::bootstrap::Bootstrap;
 use getset::Getters;

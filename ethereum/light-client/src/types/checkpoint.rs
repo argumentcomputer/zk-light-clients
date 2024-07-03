@@ -1,6 +1,13 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Checkpoint module
+//!
+//! This module contains the data structures used by the Checkpoint service. The checkpoints are the
+//! latest finalized block root that are accessed through a trusted service.
+//!
+//! A list of available services to fetch this data can be found [on _eth-clients.github.io_](https://eth-clients.github.io/checkpoint-sync-endpoints/).
+
 use getset::Getters;
 use serde::Deserialize;
 

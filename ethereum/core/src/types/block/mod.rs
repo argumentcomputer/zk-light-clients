@@ -10,6 +10,19 @@ use crate::types::error::TypesError;
 use crate::types::utils::OFFSET_BYTE_LENGTH;
 use crate::types::BYTES_32_LEN;
 
+//! # Block module
+//!
+//! This module contains the data structures used by the Light Client to store block-related
+//! data. It is divided in two main modules, `consensus` and `execution`, each with its own
+//! specific functionality.
+//!
+//! ## Sub-modules
+//!
+//! - `consensus`: This module contains the data structures related to consensus-related blocks.
+//! - `execution`: This module contains the data structures related to execution-related blocks.
+//!
+//! For more detailed information, users should refer to the specific documentation for each sub-module.
+
 pub mod consensus;
 pub mod execution;
 

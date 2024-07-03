@@ -44,6 +44,10 @@ generated in two ways:
     make
     ```
 
-checkpoint provider: https://eth-clients.github.io/checkpoint-sync-endpoints/
-checkpoint testdata 0xefb4338d596b9d335b2da176dc85ee97469fc80c7e2d35b9b9c1558b4602077a
-https://simpleserialize.com/
+## Testing custom serde implementations
+
+To test the custom SSZ serialization/deserialization implementations, we use static data located in `./test-assets`.
+Those data files come from the data located in the `./test-assets/base-data` serialize through the website
+https://simpleserialize.com/.
+
+The checkpoint used to fetch the data is `0xefb4338d596b9d335b2da176dc85ee97469fc80c7e2d35b9b9c1558b4602077a`.

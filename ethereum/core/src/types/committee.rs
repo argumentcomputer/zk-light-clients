@@ -1,6 +1,17 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: APACHE-2.0
 
+//! # Sync Committee module
+//!
+//! This module contains the data structures used by the Beacon Node to define the syc committee and
+//! its related data.
+//!
+//! In the context of the Ethereum network, the sync committee is a subset of the full validator set
+//! that is responsible for attesting to the latest block.
+//!
+//! For more information about the sync committee you can refer [to the Eth2 book](https://eth2book.info/capella/part2/building_blocks/committees/)
+//! by Ben Edgington.
+
 use crate::crypto::sig::{PublicKey, PUB_KEY_LEN};
 use crate::serde_error;
 use crate::types::error::TypesError;

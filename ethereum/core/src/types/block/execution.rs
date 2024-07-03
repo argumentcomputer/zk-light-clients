@@ -1,6 +1,10 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Execution Block module
+//!
+//! This module contains the types and utilities necessary to represent the data in an execution block.
+
 use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::OFFSET_BYTE_LENGTH;

@@ -1,6 +1,13 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Consensus block module
+//!
+//! This module contains the data structures used by the Beacon Node to store consensus-related
+//! data.
+//!
+//! It mainly contains the `BeaconBlockHeader` data structure, which represent the header of a beacon block.
+
 use crate::types::error::TypesError;
 use crate::types::{Bytes32, BYTES_32_LEN, U64_LEN};
 use getset::Getters;

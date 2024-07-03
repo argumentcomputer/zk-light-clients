@@ -1,6 +1,11 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+//! # Bootstrap module
+//!
+//! This module contains the data structures available for a Light Client to bootstrap to the network.
+//! The `Bootstrap` data structure definition can be found [on the Beacon API document](https://ethereum.github.io/beacon-APIs/#/Beacon/getLightClientBootstrap).
+
 use ethereum_lc_core::serde_error;
 use ethereum_lc_core::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use ethereum_lc_core::types::committee::{
