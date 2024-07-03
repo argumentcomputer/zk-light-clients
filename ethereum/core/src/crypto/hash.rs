@@ -6,13 +6,13 @@ use anyhow::{anyhow, Result};
 use getset::Getters;
 
 /// Length of hash digests in bytes.
-pub const HASH_LEN: usize = 32;
+pub const HASH_LENGTH: usize = 32;
 
 /// A structure representing a hash value.
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Getters, Hash)]
 pub struct HashValue {
     #[getset(get = "pub(crate)")]
-    hash: [u8; HASH_LEN],
+    hash: [u8; HASH_LENGTH],
 }
 
 impl HashValue {
@@ -25,7 +25,7 @@ impl HashValue {
     /// # Returns
     ///
     /// A new `HashValue` instance.
-    pub const fn new(hash: [u8; HASH_LEN]) -> Self {
+    pub const fn new(hash: [u8; HASH_LENGTH]) -> Self {
         HashValue { hash }
     }
 
@@ -40,7 +40,7 @@ impl HashValue {
     /// A `Result` which is `Ok` if the `HashValue` could be created successfully. If the slice has an invalid length,
     /// the `Result` is `Err` with an error message.
     pub fn from_slice<T: AsRef<[u8]>>(bytes: T) -> Result<Self> {
-        <[u8; HASH_LEN]>::try_from(bytes.as_ref())
+        <[u8; HASH_LENGTH]>::try_from(bytes.as_ref())
             .map_err(|e| anyhow!("Invalid length: {}", e))
             .map(Self::new)
     }

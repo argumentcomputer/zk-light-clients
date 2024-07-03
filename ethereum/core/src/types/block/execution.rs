@@ -5,6 +5,7 @@
 //!
 //! This module contains the types and utilities necessary to represent the data in an execution block.
 
+use crate::crypto::hash::{HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::{extract_fixed_bytes, extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
@@ -26,8 +27,12 @@ pub const LOGS_BLOOM_BYTES_LEN: usize = 256;
 pub type LogsBloom = [u8; LOGS_BLOOM_BYTES_LEN];
 
 /// Minimal size in bytes of an execution header.
-pub const EXECUTION_HEADER_BASE_BYTES_LEN: usize =
-    BYTES_32_LEN * 8 + U64_LEN * 6 + ADDRESS_BYTES_LEN + LOGS_BLOOM_BYTES_LEN + OFFSET_BYTE_LENGTH;
+pub const EXECUTION_HEADER_BASE_BYTES_LEN: usize = BYTES_32_LEN * 6
+    + HASH_LENGTH * 2
+    + U64_LEN * 6
+    + ADDRESS_BYTES_LEN
+    + LOGS_BLOOM_BYTES_LEN
+    + OFFSET_BYTE_LENGTH;
 
 /// Max extra_data size, from [the Bellatrix specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/presets/mainnet/bellatrix.yaml).
 pub const MAX_EXTRA_DATA_BYTES_LEN: usize = BYTES_32_LEN;
@@ -38,7 +43,7 @@ pub const MAX_EXTRA_DATA_BYTES_LEN: usize = BYTES_32_LEN;
 #[derive(Debug, Clone, Getters)]
 #[getset(get = "pub")]
 pub struct ExecutionBlockHeader {
-    parent_hash: Bytes32,
+    parent_hash: HashValue,
     fee_recipient: Address,
     state_root: Bytes32,
     receipts_root: Bytes32,
@@ -50,7 +55,7 @@ pub struct ExecutionBlockHeader {
     timestamp: u64,
     extra_data: Vec<u8>,
     base_fee_per_gas: Bytes32,
-    block_hash: Bytes32,
+    block_hash: HashValue,
     transactions_root: Bytes32,
     withdrawals_root: Bytes32,
     blob_gas_used: u64,
@@ -65,7 +70,7 @@ impl ExecutionBlockHeader {
     /// A `Vec<u8>` containing the SSZ serialized `ExecutionBlockHeader` data structure.
     pub fn to_ssz_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.parent_hash);
+        bytes.extend_from_slice(self.parent_hash.hash());
         bytes.extend_from_slice(&self.fee_recipient);
         bytes.extend_from_slice(&self.state_root);
         bytes.extend_from_slice(&self.receipts_root);
@@ -80,7 +85,7 @@ impl ExecutionBlockHeader {
         bytes.extend_from_slice(&(offset as u32).to_le_bytes());
 
         bytes.extend_from_slice(&self.base_fee_per_gas);
-        bytes.extend_from_slice(&self.block_hash);
+        bytes.extend_from_slice(self.block_hash.hash());
         bytes.extend_from_slice(&self.transactions_root);
         bytes.extend_from_slice(&self.withdrawals_root);
         bytes.extend_from_slice(&self.blob_gas_used.to_le_bytes());
@@ -122,7 +127,7 @@ impl ExecutionBlockHeader {
 
         let cursor = 0;
 
-        let (cursor, parent_hash) =
+        let (cursor, parent_hash_bytes) =
             extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
         let (cursor, fee_recipient) =
             extract_fixed_bytes::<ADDRESS_BYTES_LEN>("ExecutionBlockHeader", bytes, cursor)?;
@@ -143,7 +148,7 @@ impl ExecutionBlockHeader {
 
         let (cursor, base_fee_per_gas) =
             extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
-        let (cursor, block_hash) =
+        let (cursor, block_hash_bytes) =
             extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
         let (cursor, transactions_root) =
             extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
@@ -177,7 +182,7 @@ impl ExecutionBlockHeader {
         }
 
         Ok(ExecutionBlockHeader {
-            parent_hash,
+            parent_hash: HashValue::new(parent_hash_bytes),
             fee_recipient,
             state_root,
             receipts_root,
@@ -189,7 +194,7 @@ impl ExecutionBlockHeader {
             timestamp,
             extra_data,
             base_fee_per_gas,
-            block_hash,
+            block_hash: HashValue::new(block_hash_bytes),
             transactions_root,
             withdrawals_root,
             blob_gas_used,
