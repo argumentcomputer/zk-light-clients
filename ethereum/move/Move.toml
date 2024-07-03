@@ -1,0 +1,16 @@
+[package]
+name = "plonk-verifier"
+version = "1.0.0"
+authors = []
+
+[addresses]
+plonk_verifier_addr = '4207422239492c11a6499620c869fe2248c7fe52c05ca1c443bffe8a8878d32d'
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

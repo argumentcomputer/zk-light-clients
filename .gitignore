@@ -1,2 +1,6 @@
 **/target
 .idea
+
+ethereum/move/build/*
+ethereum/move/gas-profiling/*
+
