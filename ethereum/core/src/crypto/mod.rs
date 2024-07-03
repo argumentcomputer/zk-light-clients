@@ -1,7 +1,7 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: APACHE-2.0
 
-//! # Cryptographic Utilities for the Aptos Light Client
+//! # Cryptographic Utilities for the Ethereum Light Client
 //!
 //! This module contains cryptographic utilities used by the light client.
 //! It is divided into several sub-modules, each with its own specific functionality.
