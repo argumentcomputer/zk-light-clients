@@ -9,6 +9,9 @@ members = [
     "solidity/fixture-generator",
 ]
 
+[workspace.license]
+license-file = "../LICENSE.md"
+
 [workspace.dependencies]
 anyhow = "1.0.79"
 aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.14.0" }

@@ -92,6 +92,8 @@ jobs:
         run: |
           cargo test --doc
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
+      - name: Cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v1
 
   solidity-unit-tests:
     needs: changes

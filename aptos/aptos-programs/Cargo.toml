@@ -2,6 +2,7 @@
 name = "aptos-programs"
 version = "1.0.0"
 edition = "2021"
+license-file = "../LICENSE.md"
 
 [build-dependencies]
 glob = { workspace = true }

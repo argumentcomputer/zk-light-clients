@@ -2,6 +2,8 @@
 version = "1.0.0"
 name = "fixture-generator"
 edition = "2021"
+license-file = "../../LICENSE.md"
+
 
 [[bin]]
 name = "generate-fixture"
