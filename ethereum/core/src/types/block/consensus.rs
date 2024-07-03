@@ -9,9 +9,9 @@
 //! It mainly contains the `BeaconBlockHeader` data structure, which represent the header of a beacon block.
 
 use crate::types::error::TypesError;
+use crate::types::utils::{extract_fixed_bytes, extract_u64};
 use crate::types::{Bytes32, BYTES_32_LEN, U64_LEN};
 use getset::Getters;
-use std::convert::TryInto;
 
 /// Length in bytes of a serialized `BeaconBlockHeader`.
 pub const BEACON_BLOCK_HEADER_BYTES_LEN: usize = BYTES_32_LEN * 3 + U64_LEN * 2;
@@ -80,20 +80,14 @@ impl BeaconBlockHeader {
         }
 
         let cursor = 0;
-        let slot = u64::from_le_bytes(bytes[cursor..cursor + U64_LEN].try_into().unwrap());
-
-        let cursor = cursor + U64_LEN;
-        let proposer_index =
-            u64::from_le_bytes(bytes[cursor..cursor + U64_LEN].try_into().unwrap());
-
-        let cursor = cursor + U64_LEN;
-        let parent_root = bytes[cursor..cursor + BYTES_32_LEN].try_into().unwrap();
-
-        let cursor = cursor + BYTES_32_LEN;
-        let state_root = bytes[cursor..cursor + BYTES_32_LEN].try_into().unwrap();
-
-        let cursor = cursor + BYTES_32_LEN;
-        let body_root = bytes[cursor..cursor + BYTES_32_LEN].try_into().unwrap();
+        let (cursor, slot) = extract_u64("BeaconBlockHeader", bytes, cursor)?;
+        let (cursor, proposer_index) = extract_u64("BeaconBlockHeader", bytes, cursor)?;
+        let (cursor, parent_root) =
+            extract_fixed_bytes::<BYTES_32_LEN>("BeaconBlockHeader", bytes, cursor)?;
+        let (cursor, state_root) =
+            extract_fixed_bytes::<BYTES_32_LEN>("BeaconBlockHeader", bytes, cursor)?;
+        let (_, body_root) =
+            extract_fixed_bytes::<BYTES_32_LEN>("BeaconBlockHeader", bytes, cursor)?;
 
         Ok(Self {
             slot,

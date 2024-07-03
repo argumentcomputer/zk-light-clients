@@ -15,6 +15,7 @@
 use crate::crypto::sig::{PublicKey, PUB_KEY_LEN};
 use crate::serde_error;
 use crate::types::error::TypesError;
+use crate::types::utils::extract_fixed_bytes;
 use crate::types::{Bytes32, SYNC_COMMITTEE_SIZE};
 use getset::Getters;
 
@@ -82,7 +83,7 @@ impl SyncCommittee {
             });
         }
 
-        let pubkeys = (0..SYNC_COMMITTEE_SIZE)
+        let pubkeys: [PublicKey; SYNC_COMMITTEE_SIZE] = (0..SYNC_COMMITTEE_SIZE)
             .map(|i| {
                 let start = i * PUB_KEY_LEN;
                 let end = start + PUB_KEY_LEN;
@@ -97,13 +98,14 @@ impl SyncCommittee {
                 )
             })?;
 
-        // Deserialize the aggregate public key
-        let aggregate_pubkey =
-            PublicKey::from_ssz_bytes(&bytes[SYNC_COMMITTEE_SIZE * PUB_KEY_LEN..])?;
+        let cursor = PUB_KEY_LEN * SYNC_COMMITTEE_SIZE;
+
+        let (_, aggregate_pubkey) =
+            extract_fixed_bytes::<PUB_KEY_LEN>("SyncCommittee", bytes, cursor)?;
 
         Ok(Self {
             pubkeys,
-            aggregate_pubkey,
+            aggregate_pubkey: PublicKey::from_ssz_bytes(&aggregate_pubkey)?,
         })
     }
 }

@@ -7,7 +7,7 @@
 
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::utils::OFFSET_BYTE_LENGTH;
+use crate::types::utils::{extract_fixed_bytes, extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
 use crate::types::{Address, Bytes32, ADDRESS_BYTES_LEN, BYTES_32_LEN, U64_LEN};
 
 /// Number of leaf values on a given execution path.
@@ -119,112 +119,45 @@ impl ExecutionBlockHeader {
         }
 
         let cursor = 0;
-        let parent_hash = bytes[cursor..BYTES_32_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid parent_hash bytes"))?;
 
-        let cursor = cursor + BYTES_32_LEN;
-        let fee_recipient = bytes[cursor..cursor + ADDRESS_BYTES_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid fee_recipient bytes"))?;
+        let (cursor, parent_hash) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, fee_recipient) =
+            extract_fixed_bytes::<ADDRESS_BYTES_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, state_root) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, receipts_root) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, logs_bloom) =
+            extract_fixed_bytes::<LOGS_BLOOM_BYTES_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, prev_randao) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, block_number) = extract_u64("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, gas_limit) = extract_u64("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, gas_used) = extract_u64("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, timestamp) = extract_u64("ExecutionBlockHeader", bytes, cursor)?;
 
-        let cursor = cursor + ADDRESS_BYTES_LEN;
-        let state_root = bytes[cursor..cursor + BYTES_32_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid state_root bytes"))?;
+        let (cursor, offset) = extract_u32("ExecutionBlockHeader", bytes, cursor)?;
 
-        let cursor = cursor + BYTES_32_LEN;
-        let receipts_root = bytes[cursor..cursor + BYTES_32_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid receipts_root bytes"))?;
+        let (cursor, base_fee_per_gas) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, block_hash) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, transactions_root) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, withdrawals_root) =
+            extract_fixed_bytes::<BYTES_32_LEN>("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, blob_gas_used) = extract_u64("ExecutionBlockHeader", bytes, cursor)?;
+        let (cursor, excess_blob_gas) = extract_u64("ExecutionBlockHeader", bytes, cursor)?;
 
-        let cursor = cursor + BYTES_32_LEN;
-        let logs_bloom = bytes[cursor..cursor + LOGS_BLOOM_BYTES_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid logs_bloom bytes"))?;
-
-        let cursor = cursor + LOGS_BLOOM_BYTES_LEN;
-        let prev_randao = bytes[cursor..cursor + BYTES_32_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid prev_randao bytes"))?;
-
-        let cursor = cursor + BYTES_32_LEN;
-        let block_number = u64::from_le_bytes(
-            bytes[cursor..cursor + U64_LEN]
-                .try_into()
-                .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid block_number bytes"))?,
-        );
-
-        let cursor = cursor + U64_LEN;
-        let gas_limit = u64::from_le_bytes(
-            bytes[cursor..cursor + U64_LEN]
-                .try_into()
-                .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid gas_limit bytes"))?,
-        );
-
-        let cursor = cursor + U64_LEN;
-        let gas_used = u64::from_le_bytes(
-            bytes[cursor..cursor + U64_LEN]
-                .try_into()
-                .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid gas_used bytes"))?,
-        );
-
-        let cursor = cursor + U64_LEN;
-        let timestamp = u64::from_le_bytes(
-            bytes[cursor..cursor + U64_LEN]
-                .try_into()
-                .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid timestamp bytes"))?,
-        );
-
-        let cursor = cursor + U64_LEN;
-        let offset = u32::from_le_bytes(
-            bytes[cursor..cursor + OFFSET_BYTE_LENGTH]
-                .try_into()
-                .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid offset bytes"))?,
-        ) as usize;
-
-        let cursor = cursor + OFFSET_BYTE_LENGTH;
-        let base_fee_per_gas = bytes[cursor..cursor + BYTES_32_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid base_fee_per_gas bytes"))?;
-
-        let cursor = cursor + BYTES_32_LEN;
-        let block_hash = bytes[472..504]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid block_hash bytes"))?;
-
-        let cursor = cursor + BYTES_32_LEN;
-        let transactions_root = bytes[cursor..cursor + BYTES_32_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid transactions_root bytes"))?;
-
-        let cursor = cursor + BYTES_32_LEN;
-        let withdrawals_root = bytes[cursor..cursor + BYTES_32_LEN]
-            .try_into()
-            .map_err(|_| serde_error!("ExecutionBlockHeader", "Invalid withdrawals_root bytes"))?;
-
-        let cursor = cursor + BYTES_32_LEN;
-        let blob_gas_used =
-            u64::from_le_bytes(bytes[cursor..cursor + U64_LEN].try_into().map_err(|_| {
-                serde_error!("ExecutionBlockHeader", "Invalid blob_gas_used bytes")
-            })?);
-
-        let cursor = cursor + U64_LEN;
-        let excess_blob_gas =
-            u64::from_le_bytes(bytes[cursor..cursor + U64_LEN].try_into().map_err(|_| {
-                serde_error!("ExecutionBlockHeader", "Invalid excess_blob_gas bytes")
-            })?);
-
-        let cursor = cursor + U64_LEN;
-
-        if cursor != offset {
+        if cursor != offset as usize {
             return Err(serde_error!(
                 "ExecutionBlockHeader",
                 "Invalid offset for extra_data"
             ));
         }
 
-        let extra_data = bytes[offset..].to_vec();
+        let extra_data = bytes[cursor..].to_vec();
 
         if extra_data.len() > MAX_EXTRA_DATA_BYTES_LEN {
             return Err(serde_error!(

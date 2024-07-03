@@ -20,7 +20,7 @@ use crate::types::block::execution::{
     ExecutionBlockHeader, ExecutionBranch, EXECUTION_HEADER_BASE_BYTES_LEN, EXECUTION_PROOF_SIZE,
 };
 use crate::types::error::TypesError;
-use crate::types::utils::OFFSET_BYTE_LENGTH;
+use crate::types::utils::extract_u32;
 use crate::types::BYTES_32_LEN;
 
 pub mod consensus;
@@ -98,14 +98,9 @@ impl LightClientHeader {
 
         // Deserialize the `ExecutionBlockHeader` offset
         let cursor = cursor + BEACON_BLOCK_HEADER_BYTES_LEN;
-        let offset = u32::from_le_bytes(
-            bytes[cursor..cursor + OFFSET_BYTE_LENGTH]
-                .try_into()
-                .map_err(|_| serde_error!("LightClientHeader", "Invalid offset bytes"))?,
-        ) as usize;
+        let (cursor, offset) = extract_u32("LightClientHeader", bytes, cursor)?;
 
         // Deserialize the execution branch
-        let cursor = cursor + OFFSET_BYTE_LENGTH;
         let execution_branch = (0..EXECUTION_PROOF_SIZE)
             .map(|i| {
                 let start = cursor + i * BYTES_32_LEN;
@@ -122,16 +117,17 @@ impl LightClientHeader {
                 )
             })?;
 
-        // Deserialize the execution block header
         let cursor = cursor + EXECUTION_PROOF_SIZE * BYTES_32_LEN;
 
-        if cursor != offset {
+        // Check offset
+        if cursor != offset as usize {
             return Err(serde_error!(
                 "LightClientHeader",
                 "Invalid offset for execution"
             ));
         }
 
+        // Deserialize the execution block header
         let execution = ExecutionBlockHeader::from_ssz_bytes(&bytes[cursor..])?;
 
         Ok(Self {
