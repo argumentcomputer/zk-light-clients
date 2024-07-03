@@ -10,7 +10,7 @@
 
 use crate::client::error::ClientError;
 use crate::types::beacon::bootstrap::Bootstrap;
-use crate::types::beacon::update::{Update, UpdateResponse};
+use crate::types::beacon::update::UpdateResponse;
 use getset::Getters;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
@@ -103,6 +103,16 @@ impl BeaconClient {
         Ok(bootstrap)
     }
 
+    /// `get_update_data` makes an HTTP request to the Beacon Node API to get the update data.
+    ///
+    /// # Arguments
+    ///
+    /// * `start_period` - The start period to get the update data for.
+    /// * `count` - The number of updates to get. Maximum number is set at 128, see [the specifications](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/p2p-interface.md#configuration).
+    ///
+    /// # Returns
+    ///
+    /// The update data.
     pub(crate) async fn get_update_data(
         &self,
         start_period: u64,
@@ -111,7 +121,7 @@ impl BeaconClient {
         // Format the endpoint for the call
         let url = format!(
             "{}/eth/v1/beacon/light_client/updates?start_period={}&count={}",
-            self.beacon_node_address, 1151, count
+            self.beacon_node_address, start_period, count
         );
 
         // Send the HTTP request
@@ -142,13 +152,6 @@ impl BeaconClient {
             endpoint: url.clone(),
             source: err.into(),
         })?;
-
-        let joined = bytes
-            .iter()
-            .map(|i| i.to_string())
-            .collect::<Vec<String>>()
-            .join(", ");
-        println!("{}", joined);
 
         let update_response: UpdateResponse = UpdateResponse::from_ssz_bytes(bytes.as_ref())
             .map_err(|err| ClientError::Request {

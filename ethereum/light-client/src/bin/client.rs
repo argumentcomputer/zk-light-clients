@@ -71,4 +71,8 @@ async fn main() {
         .get_update_data(sync_period, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
         .await
         .expect("Failed to fetch update data");
+
+    println!("Update: {:?}", update);
+
+    // TODO verify the updates against the bootstrap checkpoint
 }

@@ -16,7 +16,7 @@ use crate::client::beacon::BeaconClient;
 use crate::client::checkpoint::CheckpointClient;
 use crate::client::error::ClientError;
 use crate::types::beacon::bootstrap::Bootstrap;
-use crate::types::beacon::update::{Update, UpdateResponse};
+use crate::types::beacon::update::UpdateResponse;
 use crate::types::checkpoint::Checkpoint;
 
 pub(crate) mod beacon;

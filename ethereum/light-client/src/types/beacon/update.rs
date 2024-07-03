@@ -20,6 +20,7 @@ use ethereum_lc_core::types::{
 };
 use getset::Getters;
 
+/// Payload received from the Beacon Node when fetching updates starting at a given period.
 #[derive(Debug, Clone, Getters)]
 #[getset(get = "pub")]
 pub struct UpdateResponse {
@@ -27,6 +28,15 @@ pub struct UpdateResponse {
 }
 
 impl UpdateResponse {
+    /// Deserialize a `UpdateResponse` from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ encoded bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `UpdateResponse` or a `TypesError`.
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<UpdateResponse, TypesError> {
         let mut cursor = 0;
         let mut updates = vec![];
@@ -39,7 +49,7 @@ impl UpdateResponse {
 
             let update = Update::from_ssz_bytes(&bytes[cursor + 4..cursor + size as usize])?;
             cursor += size as usize;
-            dbg!(&cursor);
+
             updates.push(UpdateItem {
                 size,
                 fork_digest,
@@ -51,6 +61,7 @@ impl UpdateResponse {
     }
 }
 
+/// An item in the `UpdateResponse` containing the size of the update, the fork digest and the update itself.
 #[derive(Debug, Clone, Getters)]
 #[getset(get = "pub")]
 pub struct UpdateItem {
@@ -59,6 +70,8 @@ pub struct UpdateItem {
     update: Update,
 }
 
+/// A data structure containing the necessary data for a light client to update its state from the Beacon chain.
+///
 /// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/light-client/sync-protocol.md#lightclientupdate).
 #[derive(Debug, Clone, Getters)]
 #[getset(get = "pub")]
@@ -73,6 +86,11 @@ pub struct Update {
 }
 
 impl Update {
+    /// Serialize the `Update` struct to SSZ bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` containing the SSZ serialized `Update` struct.
     pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
         let mut bytes = vec![];
 
@@ -118,6 +136,15 @@ impl Update {
         Ok(bytes)
     }
 
+    /// Deserialize a `Update` struct from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ encoded bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `Update` struct or a `TypesError`.
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let expected_len = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
             + SYNC_COMMITTEE_BYTES_LEN
