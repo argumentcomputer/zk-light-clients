@@ -10,6 +10,9 @@
 //!
 //! - `bootstrap`: This module contains the data structures available for a Light Client to bootstrap
 //!   to the network.
+//! - `update`: This module contains the data structures available for a Light Client to update its
+//!   state.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
 pub mod bootstrap;
+pub mod update;

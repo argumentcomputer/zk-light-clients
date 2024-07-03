@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: APACHE-2.0
 
 use crate::crypto::error::CryptoError;
+use crate::serde_error;
 use crate::types::error::TypesError;
 use anyhow::Result;
 use bls12_381::hash_to_curve::{ExpandMsgXmd, HashToCurve};
@@ -206,8 +207,23 @@ impl Signature {
         }
 
         // Decompress G2 point
-        let sig = G2Affine::from_compressed_unchecked(&bytes.try_into().unwrap()).unwrap();
+        let decompressed =
+            G2Affine::from_compressed_unchecked(&bytes.try_into().map_err(|_| {
+                serde_error!(
+                    "Signature",
+                    "Could not convert the received bytes in G2 point compressed shape"
+                )
+            })?);
 
-        Ok(Self { sig })
+        if decompressed.is_none().into() {
+            return Err(serde_error!(
+                "Signature",
+                "G2Affine::from_compressed returned None"
+            ));
+        }
+
+        Ok(Self {
+            sig: decompressed.unwrap(),
+        })
     }
 }

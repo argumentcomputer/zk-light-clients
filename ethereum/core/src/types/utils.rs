@@ -92,3 +92,39 @@ pub fn extract_u32(
 
     Ok((cursor + OFFSET_BYTE_LENGTH, result))
 }
+
+/// Utility to convert a slice of bits into a slice of bytes.
+///
+/// # Arguments
+///
+/// * `bits` - The slice of bits to convert.
+///
+/// # Returns
+///
+/// A vector of bytes.
+pub fn pack_bits(bits: &[u8]) -> Vec<u8> {
+    bits.chunks(8)
+        .map(|chunk| {
+            chunk
+                .iter()
+                .enumerate()
+                .fold(0, |byte, (i, &bit)| byte | ((bit & 1) << i))
+        })
+        .collect()
+}
+
+/// Utility to convert a slice of bytes into a slice of bits.
+///
+/// # Arguments
+///
+/// * `bytes` - The slice of bytes to convert.
+/// * `num_bits` - The number of bits to convert.
+///
+/// # Returns
+///
+/// A vector of bits.
+pub fn unpack_bits(bytes: &[u8], num_bits: usize) -> Vec<u8> {
+    (0..num_bits)
+        .map(|i| (bytes[i / 8] >> (i % 8)) & 1)
+        .collect()
+}

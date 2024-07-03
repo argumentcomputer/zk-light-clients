@@ -1,10 +1,20 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-//! # Bootstrap module
+//! # Light Client Bootstrap
 //!
 //! This module contains the data structures available for a Light Client to bootstrap to the network.
 //! The `Bootstrap` data structure definition can be found [on the Beacon API document](https://ethereum.github.io/beacon-APIs/#/Beacon/getLightClientBootstrap).
+//!
+//! # Notes
+//!
+//! For Light Clients to easily get up to date with the latest state of the Beacon chain without
+//! having to validate everything since genesis checkpoints have been implemented. The checkpoints
+//! are the latest finalized block root that are accessed through a trusted service.
+//!
+//! By calling a bootstrap endpoint at a Beacon Node address with a given checkpoint it is possible to
+//! fetch some consensus data for the given checkpoint, such as the sync committee. This allows the Light
+//! Client to start validating the consensus from the given checkpoint to the latest state.
 
 use ethereum_lc_core::serde_error;
 use ethereum_lc_core::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
@@ -14,7 +24,7 @@ use ethereum_lc_core::types::committee::{
 };
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
-use ethereum_lc_core::types::{Bytes32, BYTES_32_LEN};
+use ethereum_lc_core::types::BYTES_32_LEN;
 use getset::Getters;
 
 /// `Bootstrap` represents the bootstrap data for the light client.
@@ -93,8 +103,7 @@ impl Bootstrap {
 
         // Deserialize `SyncCommitteeBranch`
         let cursor = cursor + SYNC_COMMITTEE_BYTES_LEN;
-        let current_sync_committee_branch: [Bytes32; SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS] = (0
-            ..SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS)
+        let current_sync_committee_branch = (0..SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS)
             .map(|i| {
                 let start = cursor + i * BYTES_32_LEN;
                 let end = start + BYTES_32_LEN;
