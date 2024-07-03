@@ -7,7 +7,11 @@ name: Manual benchmark
 on:
   workflow_dispatch:
     inputs:
-      # Name of the `aptos/light-client` benchmark to run
+      # Which light client to bench, e.g. `aptos` or `ethereum`
+      package:
+        type: string
+        required: true
+      # Name of the `light-client` benchmark to run
       bench-name:
         type: string
         required: true
@@ -47,8 +51,6 @@ jobs:
   benchmark:
     name: Manual benchmark
     runs-on: [self-hosted, bench, avx512]
-    env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -115,11 +117,11 @@ jobs:
           echo "report<<EOF" >> $GITHUB_OUTPUT
           cat summary.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/aptos/light-client
+        working-directory: ${{ github.workspace }}/${{ inputs.package }}/light-client
       - name: Write bench on commit comment
         uses: peter-evans/commit-comment@v3
         with:
-          body-path: ${{ github.workspace }}/aptos/light-client/summary.md
+          body-path: ${{ github.workspace }}/${{ inputs.package }}/light-client/summary.md
       - name: Send report to Zulip
         if: inputs.zulip
         uses: zulip/github-actions-zulip/send-message@v1
