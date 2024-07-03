@@ -6,7 +6,7 @@ use getset::Getters;
 
 /// `BeaconBlockHeader` represents the header of a beacon block.
 ///
-/// From [the CL specifications](https://github.com/ethereum/consensus-specs/blob/v1.3.0/specs/phase0/beacon-chain.md#beaconblockheader).
+/// From [the sync protocol specifications](https://github.com/ethereum/consensus-specs/blob/v1.3.0/specs/phase0/beacon-chain.md#beaconblockheader).
 #[derive(Debug, Default, Clone, Getters)]
 #[getset(get = "pub")]
 pub struct BeaconBlockHeader {
