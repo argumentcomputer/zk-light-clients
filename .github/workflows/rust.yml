@@ -22,13 +22,16 @@ jobs:
       aptos: ${{ steps.filter.outputs.aptos }}
       ethereum: ${{ steps.filter.outputs.ethereum }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          aptos: aptos
-          ethereum: ethereum
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          token: ${{ secrets.REPO_TOKEN }}
+          filters: |
+            aptos:
+              - 'aptos/**'
+            ethereum:
+              - 'ethereum/**'
 
   test:
     needs: changes
