@@ -9,9 +9,5 @@ repository = "https://github.com/wormhole-foundation/example-zk-light-clients"
 [dependencies]
 anyhow = { workspace = true }
 bls12_381 = { workspace = true }
-ethereum_ssz = { workspace = true }
-ethereum_ssz_derive = { workspace = true }
 getset = { workspace = true }
 thiserror = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-hex = "0.4.3"

@@ -12,11 +12,11 @@
 //!
 //! The light client is divided in 3 main components:
 //! - `client`: A client that can be used to coordinate data fetching from an Ethereum 2.0 Beacon Node
-//!  and an execution RPC provider.
+//!   and an execution RPC provider.
 //! - `server_primary`: The main entrypoint for our proof server, in charge of load balancing the
-//! incoming requests and handling proofs about state inclusion.
+//!   incoming requests and handling proofs about state inclusion.
 //! - `server_secondary`: A secondary server that is in charge of handling proof generation for sync
-//! committee changes.
+//!   committee changes.
 //!
 //! ## Library
 //!

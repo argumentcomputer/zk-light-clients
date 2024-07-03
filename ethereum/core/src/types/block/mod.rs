@@ -1,15 +1,6 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::serde_error;
-use crate::types::block::consensus::{BeaconBlockHeader, BEACON_BLOCK_HEADER_BYTES_LEN};
-use crate::types::block::execution::{
-    ExecutionBlockHeader, ExecutionBranch, EXECUTION_HEADER_BASE_BYTES_LEN, EXECUTION_PROOF_SIZE,
-};
-use crate::types::error::TypesError;
-use crate::types::utils::OFFSET_BYTE_LENGTH;
-use crate::types::BYTES_32_LEN;
-
 //! # Block module
 //!
 //! This module contains the data structures used by the Light Client to store block-related
@@ -22,6 +13,15 @@ use crate::types::BYTES_32_LEN;
 //! - `execution`: This module contains the data structures related to execution-related blocks.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
+
+use crate::serde_error;
+use crate::types::block::consensus::{BeaconBlockHeader, BEACON_BLOCK_HEADER_BYTES_LEN};
+use crate::types::block::execution::{
+    ExecutionBlockHeader, ExecutionBranch, EXECUTION_HEADER_BASE_BYTES_LEN, EXECUTION_PROOF_SIZE,
+};
+use crate::types::error::TypesError;
+use crate::types::utils::OFFSET_BYTE_LENGTH;
+use crate::types::BYTES_32_LEN;
 
 pub mod consensus;
 pub mod execution;

@@ -32,6 +32,8 @@ pub const EXECUTION_HEADER_BASE_BYTES_LEN: usize =
 pub const MAX_EXTRA_DATA_BYTES_LEN: usize = BYTES_32_LEN;
 
 /// `ExecutionBlockHeader` represents the header of an execution block.
+///
+/// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/beacon-chain.md#executionpayloadheader).
 #[derive(Debug, Clone)]
 pub struct ExecutionBlockHeader {
     parent_hash: Bytes32,

@@ -10,7 +10,7 @@
 //!
 //! - `crypto`: This sub-module contains the cryptographic utilities used by the Light Client.
 //! - `types`: This sub-module contains the types and utilities necessary to prove sync committee changes
-//! and value inclusion in the state of the chain.
+//!   and value inclusion in the state of the chain.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
 

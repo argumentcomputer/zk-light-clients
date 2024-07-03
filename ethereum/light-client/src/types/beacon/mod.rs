@@ -9,7 +9,7 @@
 //! ## Sub-modules
 //!
 //! - `bootstrap`: This module contains the data structures available for a Light Client to bootstrap
-//! to the network.
+//!   to the network.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
 pub mod bootstrap;

@@ -9,7 +9,7 @@
 //! ## Sub-modules
 //!
 //! - `beacon`: The Beacon Client is responsible for fetching the data necessary to prove sync committee changes
-//! and value inclusion in the state of the Ethereum network.
+//!   and value inclusion in the state of the Ethereum network.
 //! - `checkpoint`: The Checkpoint Client is responsible for fetching the data of the latest finalized block root.
 
 use crate::client::beacon::BeaconClient;
