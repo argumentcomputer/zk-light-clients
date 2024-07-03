@@ -26,7 +26,6 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
-          token: ${{ secrets.REPO_TOKEN }}
           filters: |
             aptos:
               - 'aptos/**'
@@ -56,15 +55,11 @@ jobs:
       # make sure benches don't bit-rot
       - name: build benches
         run: |
-          cargo check --benches --features aptos
+          cargo check --benches --all-features
         working-directory: ${{ github.workspace }}/${{ matrix.package }}/light-client
       - name: Run cargo test in workspace
         run: |
           cargo nextest run --workspace --release --profile ci --all-features
-        working-directory: ${{ github.workspace }}/${{ matrix.package }}
-      - name: Doctests
-        run: |
-          cargo test --doc
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
   clippy:
@@ -92,6 +87,10 @@ jobs:
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
       - name: cargo clippy
         run: cargo xclippy -D warnings
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}
+      - name: Doctests
+        run: |
+          cargo test --doc
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
   solidity-unit-tests:
