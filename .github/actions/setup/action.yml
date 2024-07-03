@@ -16,6 +16,7 @@ runs:
       run: |
         echo "RUSTFLAGS=${{env.RUSTFLAGS}} --cfg tokio_unstable -C opt-level=3" | tee -a $GITHUB_ENV
         echo "RUST_LOG=info" | tee -a $GITHUB_ENV
+        echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" | tee -a $GITHUB_ENV
     - uses: actions/setup-go@v5
       with:
         go-version: '1.22'
@@ -25,7 +26,9 @@ runs:
         toolchain: nightly-2024-05-31
     - uses: Swatinem/rust-cache@v2
       with:
-        workspaces: "aptos -> target"
+        workspaces: |
+          aptos -> target
+          ethereum -> target
     - uses: taiki-e/install-action@nextest
     - name: Install deps
       shell: bash
