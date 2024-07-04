@@ -1,8 +1,8 @@
 module plonk_verifier_addr::plonk_verifier {
     use std::vector;
     use std::hash::{ sha2_256 };
-    use plonk_verifier_addr::utilities::{append_constant, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256};
-    use std::bn254_algebra::{Fr, FormatFrMsb};
+    use plonk_verifier_addr::utilities::{append_value, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256, u256_to_bytes};
+    use std::bn254_algebra::{FormatFrMsb, Fr};
     use std::vector::{length, push_back, trim, reverse, pop_back};
     use aptos_std::crypto_algebra::{add, Element, mul, one, zero, deserialize, serialize};
     #[test_only]
@@ -174,84 +174,87 @@ module plonk_verifier_addr::plonk_verifier {
         assert!(zeta == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
 
         let zeta_bytes = vector::empty<u8>();
-        append_constant(&mut zeta_bytes, zeta, true, 32);
+        append_value(&mut zeta_bytes, zeta, true, 32);
         let zeta_fr = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&zeta_bytes));
         let r_mod_minus_one_bytes = vector::empty<u8>();
-        append_constant(&mut r_mod_minus_one_bytes, R_MOD_MINUS_ONE, true, 32);
+        append_value(&mut r_mod_minus_one_bytes, R_MOD_MINUS_ONE, true, 32);
         let r_mod_minus_one_fr = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&r_mod_minus_one_bytes));
         let zeta_power_n_minus_one = add(&r_mod_minus_one_fr, &powSmall(zeta_fr, VK_DOMAIN_SIZE));
 
         assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&zeta_power_n_minus_one)) == 0x0183624d8a1f2df2d1bc0ea04c97a743b1031835afb4fc9fb25e88f37780deb7, 2);
 
         let pic = compute_public_inputs_contribution(u256_to_fr(zeta), zeta_power_n_minus_one, public_inputs);
-        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&pic)) == 0x196d1aee13f8d282bf445d393e9ef0f5d6d2eccdb97fbc2696f7b73878552b01, 3)
+        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&pic)) == 0x196d1aee13f8d282bf445d393e9ef0f5d6d2eccdb97fbc2696f7b73878552b01, 3);
+
+        let pic_custom_gates = compute_public_inputs_contribution_from_custom_gates(proof, u256_to_fr(zeta), zeta_power_n_minus_one, (length(&public_inputs) as u256));
+        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&pic_custom_gates)) == 0x0de62ecfdd3191e71fb9a52bfbefd0ff1182e916b8d9264e96e2279a1171fd03, 4);
 
         // TODO adding rest of verification logic ...
     }
 
     public fun derive_gamma(proof: vector<u256>, vk: u256, public_inputs_digest: u256): u256 {
         let preimage = vector::empty<u8>();
-        append_constant(&mut preimage, FS_GAMMA, true, 5);
-        append_constant(&mut preimage, VK_S1_COM_X, true, 32);
-        append_constant(&mut preimage, VK_S1_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_S2_COM_X, true, 32);
-        append_constant(&mut preimage, VK_S2_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_S3_COM_X, true, 32);
-        append_constant(&mut preimage, VK_S3_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_QL_COM_X, true, 32);
-        append_constant(&mut preimage, VK_QL_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_QR_COM_X, true, 32);
-        append_constant(&mut preimage, VK_QR_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_QM_COM_X, true, 32);
-        append_constant(&mut preimage, VK_QM_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_QO_COM_X, true, 32);
-        append_constant(&mut preimage, VK_QO_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_QK_COM_X, true, 32);
-        append_constant(&mut preimage, VK_QK_COM_Y, true, 32);
-        append_constant(&mut preimage, VK_QCP_0_X, true, 32);
-        append_constant(&mut preimage, VK_QCP_0_Y, true, 32);
-        append_constant(&mut preimage, vk, true, 32);
-        append_constant(&mut preimage, public_inputs_digest, true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 0), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 1), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 2), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 3), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 4), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 5), true, 32);
+        append_value(&mut preimage, FS_GAMMA, true, 5);
+        append_value(&mut preimage, VK_S1_COM_X, true, 32);
+        append_value(&mut preimage, VK_S1_COM_Y, true, 32);
+        append_value(&mut preimage, VK_S2_COM_X, true, 32);
+        append_value(&mut preimage, VK_S2_COM_Y, true, 32);
+        append_value(&mut preimage, VK_S3_COM_X, true, 32);
+        append_value(&mut preimage, VK_S3_COM_Y, true, 32);
+        append_value(&mut preimage, VK_QL_COM_X, true, 32);
+        append_value(&mut preimage, VK_QL_COM_Y, true, 32);
+        append_value(&mut preimage, VK_QR_COM_X, true, 32);
+        append_value(&mut preimage, VK_QR_COM_Y, true, 32);
+        append_value(&mut preimage, VK_QM_COM_X, true, 32);
+        append_value(&mut preimage, VK_QM_COM_Y, true, 32);
+        append_value(&mut preimage, VK_QO_COM_X, true, 32);
+        append_value(&mut preimage, VK_QO_COM_Y, true, 32);
+        append_value(&mut preimage, VK_QK_COM_X, true, 32);
+        append_value(&mut preimage, VK_QK_COM_Y, true, 32);
+        append_value(&mut preimage, VK_QCP_0_X, true, 32);
+        append_value(&mut preimage, VK_QCP_0_Y, true, 32);
+        append_value(&mut preimage, vk, true, 32);
+        append_value(&mut preimage, public_inputs_digest, true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 0), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 1), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 2), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 3), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 4), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 5), true, 32);
         bytes_to_uint256(sha2_256(preimage))
     }
 
     public fun derive_beta(gamma_not_reduced: u256): u256 {
         let preimage = vector::empty<u8>();
-        append_constant(&mut preimage, FS_BETA, true, 4);
-        append_constant(&mut preimage, gamma_not_reduced, true, 32);
+        append_value(&mut preimage, FS_BETA, true, 4);
+        append_value(&mut preimage, gamma_not_reduced, true, 32);
         bytes_to_uint256(sha2_256(preimage))
     }
 
     public fun derive_alpha(proof: vector<u256>, beta_not_reduced: u256): u256 {
         let preimage = vector::empty<u8>();
-        append_constant(&mut preimage, FS_ALPHA, true, 5);
-        append_constant(&mut preimage, beta_not_reduced, true, 32);
+        append_value(&mut preimage, FS_ALPHA, true, 5);
+        append_value(&mut preimage, beta_not_reduced, true, 32);
         // Bsb22Commitments
-        append_constant(&mut preimage, *vector::borrow(&proof, 25), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 26), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 25), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 26), true, 32);
         // [Z], the commitment to the grand product polynomial
-        append_constant(&mut preimage, *vector::borrow(&proof, 17), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 18), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 17), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 18), true, 32);
         bytes_to_uint256(sha2_256(preimage))
     }
 
     public fun derive_zeta(proof: vector<u256>, alpha_not_reduced: u256): u256 {
         let preimage = vector::empty<u8>();
-        append_constant(&mut preimage, FS_ZETA, true, 4);
-        append_constant(&mut preimage, alpha_not_reduced, true, 32);
+        append_value(&mut preimage, FS_ZETA, true, 4);
+        append_value(&mut preimage, alpha_not_reduced, true, 32);
         // commitment to the quotient polynomial h
-        append_constant(&mut preimage, *vector::borrow(&proof, 6), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 7), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 8), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 9), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 10), true, 32);
-        append_constant(&mut preimage, *vector::borrow(&proof, 11), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 6), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 7), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 8), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 9), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 10), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 11), true, 32);
         bytes_to_uint256(sha2_256(preimage))
     }
 
@@ -331,10 +334,10 @@ module plonk_verifier_addr::plonk_verifier {
         };
 
         let i = 0;
-        let tmp = zero<Fr>();
+        let tmp;
         let pi_wo_commit = zero<Fr>();
-        let left = zero<Fr>();
-        let right = zero<Fr>();
+        let left;
+        let right;
         while (i < n) {
             left = *vector::borrow(&li, i);
             right = u256_to_fr(*vector::borrow(&ins, i));
@@ -344,6 +347,83 @@ module plonk_verifier_addr::plonk_verifier {
             i = i + 1
         };
         pi_wo_commit
+    }
+
+    public fun compute_public_inputs_contribution_from_custom_gates(proof: vector<u256>, zeta: Element<Fr>, zeta_power_n_minus_one: Element<Fr>, nb_public_inputs: u256): Element<Fr> {
+        let i = nb_public_inputs + VK_INDEX_COMMIT_API_0;
+
+        let w = powSmall(u256_to_fr(VK_OMEGA), i);
+        let i = add(&zeta, &u256_to_fr(R_MOD - fr_to_u256(w)));
+        let w = mul(&w, &u256_to_fr(VK_INV_DOMAIN_SIZE));
+        let i = powSmall(i, R_MOD - 2);
+        let w = mul(&w, &i);
+        let ith_lagrange = mul(&w, &zeta_power_n_minus_one);
+
+        let calldataload_p: u256 = *vector::borrow(&proof, 25);
+        let calldataload_p_32: u256 = *vector::borrow(&proof, 26);
+
+        let preimage = vector::empty<u8>();
+        append_value(&mut preimage, HASH_FR_ZERO_UINT256, true, 32);
+        append_value(&mut preimage, HASH_FR_ZERO_UINT256, true, 32);
+        append_value(&mut preimage, calldataload_p, true, 32);
+        append_value(&mut preimage, calldataload_p_32, true, 32);
+        append_value(&mut preimage, 0, true, 1);
+        append_value(&mut preimage, (HASH_FR_LEN_IN_BYTES as u256), true, 1);
+        append_value(&mut preimage, 0, true, 1);
+        append_value(&mut preimage, 0x42, true, 1);
+        append_value(&mut preimage, 0x53, true, 1);
+        append_value(&mut preimage, 0x42, true, 1);
+        append_value(&mut preimage, 0x32, true, 1);
+        append_value(&mut preimage, 0x32, true, 1);
+        append_value(&mut preimage, 0x2d, true, 1);
+        append_value(&mut preimage, 0x50, true, 1);
+        append_value(&mut preimage, 0x6c, true, 1);
+        append_value(&mut preimage, 0x6f, true, 1);
+        append_value(&mut preimage, 0x6e, true, 1);
+        append_value(&mut preimage, 0x6b, true, 1);
+        append_value(&mut preimage, (HASH_FR_SIZE_DOMAIN as u256), true, 1);
+        let b0 = sha2_256(preimage);
+
+        preimage = vector::empty<u8>();
+        append_value(&mut preimage, bytes_to_uint256(b0), true, 32);
+        append_value(&mut preimage, (HASH_FR_ONE as u256), true, 1);
+        append_value(&mut preimage, 0x42, true, 1);
+        append_value(&mut preimage, 0x53, true, 1);
+        append_value(&mut preimage, 0x42, true, 1);
+        append_value(&mut preimage, 0x32, true, 1);
+        append_value(&mut preimage, 0x32, true, 1);
+        append_value(&mut preimage, 0x2d, true, 1);
+        append_value(&mut preimage, 0x50, true, 1);
+        append_value(&mut preimage, 0x6c, true, 1);
+        append_value(&mut preimage, 0x6f, true, 1);
+        append_value(&mut preimage, 0x6e, true, 1);
+        append_value(&mut preimage, 0x6b, true, 1);
+        append_value(&mut preimage, (HASH_FR_SIZE_DOMAIN as u256), true, 1);
+        let b1 = sha2_256(preimage);
+
+        let preimage = vector::empty<u8>();
+        append_value(&mut preimage, bytes_to_uint256(b0) ^ bytes_to_uint256(b1), true, 32);
+        append_value(&mut preimage, (HASH_FR_TWO as u256), true, 1);
+        append_value(&mut preimage, 0x42, true, 1);
+        append_value(&mut preimage, 0x53, true, 1);
+        append_value(&mut preimage, 0x42, true, 1);
+        append_value(&mut preimage, 0x32, true, 1);
+        append_value(&mut preimage, 0x32, true, 1);
+        append_value(&mut preimage, 0x2d, true, 1);
+        append_value(&mut preimage, 0x50, true, 1);
+        append_value(&mut preimage, 0x6c, true, 1);
+        append_value(&mut preimage, 0x6f, true, 1);
+        append_value(&mut preimage, 0x6e, true, 1);
+        append_value(&mut preimage, 0x6b, true, 1);
+        append_value(&mut preimage, (HASH_FR_SIZE_DOMAIN as u256), true, 1);
+        let hash = sha2_256(preimage);
+
+        let b1_fr = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&u256_to_bytes(bytes_to_uint256(b1) % R_MOD)));
+        let res = mul(&b1_fr, &u256_to_fr(HASH_FR_BB));
+        let hash_shifted = bytes_to_uint256(hash) >> 128;
+        let hash_fr = add(&res, &u256_to_fr(hash_shifted));
+        let pi_commit = mul(&hash_fr, &ith_lagrange);
+        pi_commit
     }
 
     #[test]

@@ -37,8 +37,14 @@ module plonk_verifier_addr::utilities {
         assert!(input < 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001, ERROR_U256_TO_FR);
 
         let output_bytes = vector::empty<u8>();
-        append_constant(&mut output_bytes, input, true, 32);
+        append_value(&mut output_bytes, input, true, 32);
         let output = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&output_bytes));
+        output
+    }
+
+    public fun u256_to_bytes(input: u256): vector<u8> {
+        let output = vector::empty<u8>();
+        append_value(&mut output, input, true, 32);
         output
     }
 
@@ -91,7 +97,7 @@ module plonk_verifier_addr::utilities {
         result
     }
 
-    public fun append_constant(preimage: &mut vector<u8>, constant_value: u256, use_reverse: bool, num_bytes_to_append: u64) {
+    public fun append_value(preimage: &mut vector<u8>, constant_value: u256, use_reverse: bool, num_bytes_to_append: u64) {
         let v = vector::empty<u8>();
         push_back(&mut v, ((0x00000000000000000000000000000000000000000000000000000000000000ff & constant_value) as u8));
         push_back(&mut v, ((0x000000000000000000000000000000000000000000000000000000000000ff00 & constant_value) >> 8 as u8));
@@ -275,10 +281,10 @@ module plonk_verifier_addr::utilities {
     #[test]
     public fun test_sha256_move_eth_precompile_compatibility() {
         let expected = vector::empty<u8>();
-        append_constant(&mut expected, 0xdfcbe3edc0a05d7193fd50b1f4f4216d51e1468886834251204283f93278b675, true, 32);
+        append_value(&mut expected, 0xdfcbe3edc0a05d7193fd50b1f4f4216d51e1468886834251204283f93278b675, true, 32);
 
         let preimage = vector::empty<u8>();
-        append_constant(&mut preimage, 0x67616d6d61, true, 32);
+        append_value(&mut preimage, 0x67616d6d61, true, 32);
 
         assert!(expected == sha2_256(preimage), 1);
     }
