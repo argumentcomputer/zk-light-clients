@@ -8,10 +8,12 @@
 //!
 //! ## Sub-modules
 //!
+//! - `hash`: This sub-module contains the `Hash` structure and its associated methods.
 //! - `sig`: This sub-module contains the `Signature` and `PublicKey` structures and their associated methods.
 //! - `error`: This sub-module contains the ``CryptoError` error type used throughout the `crypto` module.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
 
 pub mod error;
+pub mod hash;
 pub mod sig;

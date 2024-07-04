@@ -11,4 +11,6 @@ pub enum CryptoError {
         #[source]
         source: Box<dyn std::error::Error + Sync + Send>,
     },
+    #[error("Signature verification failed")]
+    SignatureVerificationFailed,
 }
