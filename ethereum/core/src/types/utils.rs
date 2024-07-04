@@ -37,7 +37,7 @@ pub fn extract_fixed_bytes<const N: usize>(
     Ok((cursor + N, result))
 }
 
-/// Utility method to extract a u64 from a byte array at a given cursor.
+/// Utility method to extract a u64 from a little-endian byte array at a given cursor.
 ///
 /// # Arguments
 ///
@@ -65,7 +65,7 @@ pub fn extract_u64(
     Ok((cursor + U64_LEN, result))
 }
 
-/// Utility method to extract a u32 from a byte array at a given cursor.
+/// Utility method to extract a u32 from a little-endian byte array at a given cursor.
 ///
 /// # Arguments
 ///
