@@ -11,7 +11,7 @@ use ethereum_lc_core::serde_error;
 use ethereum_lc_core::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use ethereum_lc_core::types::committee::{
     SyncAggregate, SyncCommittee, SyncCommitteeBranch, SYNC_AGGREGATE_BYTES_LEN,
-    SYNC_COMMITTEE_BYTES_LEN, SYNC_COMMITTEE_PROOF_SIZE,
+    SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS, SYNC_COMMITTEE_BYTES_LEN,
 };
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::utils::{extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
@@ -43,7 +43,7 @@ impl Update {
         // Serialize offset for the attested header
         let attested_header_offset = OFFSET_BYTE_LENGTH * 2
             + SYNC_COMMITTEE_BYTES_LEN
-            + SYNC_COMMITTEE_PROOF_SIZE * BYTES_32_LEN
+            + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
             + FINALIZED_CHECKPOINT_PROOF_SIZE * BYTES_32_LEN
             + SYNC_AGGREGATE_BYTES_LEN
             + U64_LEN;
@@ -85,7 +85,7 @@ impl Update {
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let expected_len = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
             + SYNC_COMMITTEE_BYTES_LEN
-            + SYNC_COMMITTEE_PROOF_SIZE * BYTES_32_LEN
+            + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
             + FINALIZED_CHECKPOINT_PROOF_SIZE * BYTES_32_LEN
             + SYNC_AGGREGATE_BYTES_LEN
             + U64_LEN;
@@ -109,7 +109,7 @@ impl Update {
 
         // Deserialize `SyncCommitteeBranch`
         let cursor = cursor + SYNC_COMMITTEE_BYTES_LEN;
-        let current_sync_committee_branch = (0..SYNC_COMMITTEE_PROOF_SIZE)
+        let current_sync_committee_branch = (0..SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS)
             .map(|i| {
                 let start = cursor + i * BYTES_32_LEN;
                 let end = start + BYTES_32_LEN;
@@ -125,7 +125,7 @@ impl Update {
             })?;
 
         // Deserialize `LightClientHeader` offset
-        let cursor = cursor + SYNC_COMMITTEE_PROOF_SIZE * BYTES_32_LEN;
+        let cursor = cursor + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
         let (cursor, offset_finalized_header) = extract_u32("Update", bytes, cursor)?;
 
         // Deserialize `FinalizedRootBranch`
