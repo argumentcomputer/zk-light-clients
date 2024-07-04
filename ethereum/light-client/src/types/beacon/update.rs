@@ -16,9 +16,48 @@ use ethereum_lc_core::types::committee::{
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::utils::{extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{
-    FinalizedRootBranch, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS, U64_LEN,
+    FinalizedRootBranch, ForkDigest, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS, U64_LEN,
 };
 use getset::Getters;
+
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
+pub struct UpdateResponse {
+    updates: Vec<UpdateItem>,
+}
+
+impl UpdateResponse {
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<UpdateResponse, TypesError> {
+        let mut cursor = 0;
+        let mut updates = vec![];
+
+        while cursor != bytes.len() {
+            let size = u64::from_le_bytes(bytes[cursor..cursor + U64_LEN].try_into().unwrap());
+            cursor += U64_LEN;
+
+            let fork_digest: [u8; 4] = bytes[cursor..cursor + 4].try_into().unwrap();
+
+            let update = Update::from_ssz_bytes(&bytes[cursor + 4..cursor + size as usize])?;
+            cursor += size as usize;
+            dbg!(&cursor);
+            updates.push(UpdateItem {
+                size,
+                fork_digest,
+                update,
+            });
+        }
+
+        Ok(UpdateResponse { updates })
+    }
+}
+
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
+pub struct UpdateItem {
+    size: u64,
+    fork_digest: ForkDigest,
+    update: Update,
+}
 
 /// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/light-client/sync-protocol.md#lightclientupdate).
 #[derive(Debug, Clone, Getters)]

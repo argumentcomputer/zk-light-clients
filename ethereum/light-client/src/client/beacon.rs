@@ -10,6 +10,7 @@
 
 use crate::client::error::ClientError;
 use crate::types::beacon::bootstrap::Bootstrap;
+use crate::types::beacon::update::{Update, UpdateResponse};
 use getset::Getters;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
@@ -100,5 +101,61 @@ impl BeaconClient {
             })?;
 
         Ok(bootstrap)
+    }
+
+    pub(crate) async fn get_update_data(
+        &self,
+        start_period: u64,
+        count: u8,
+    ) -> Result<UpdateResponse, ClientError> {
+        // Format the endpoint for the call
+        let url = format!(
+            "{}/eth/v1/beacon/light_client/updates?start_period={}&count={}",
+            self.beacon_node_address, 1151, count
+        );
+
+        // Send the HTTP request
+        let response = self
+            .inner
+            .get(&url)
+            .header(ACCEPT, "application/octet-stream")
+            .send()
+            .await
+            .map_err(|err| ClientError::Request {
+                endpoint: url.clone(),
+                source: Box::new(err),
+            })?;
+
+        if !response.status().is_success() {
+            return Err(ClientError::Request {
+                endpoint: url,
+                source: format!(
+                    "Request not successful, got HTTP code {}",
+                    response.status().as_str()
+                )
+                .into(),
+            });
+        }
+
+        // Deserialize the response
+        let bytes = response.bytes().await.map_err(|err| ClientError::Request {
+            endpoint: url.clone(),
+            source: err.into(),
+        })?;
+
+        let joined = bytes
+            .iter()
+            .map(|i| i.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        println!("{}", joined);
+
+        let update_response: UpdateResponse = UpdateResponse::from_ssz_bytes(bytes.as_ref())
+            .map_err(|err| ClientError::Request {
+                endpoint: url,
+                source: err.into(),
+            })?;
+
+        Ok(update_response)
     }
 }

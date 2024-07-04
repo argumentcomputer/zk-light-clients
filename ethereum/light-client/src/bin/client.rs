@@ -2,10 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use ethereum_lc::client::utils::calc_sync_period;
 use log::info;
 
 pub const BEACON_NODE_ADDRESS: &str = "https://www.lightclientdata.org";
 pub const CHECKPOINT_SERVICE_ADDRESS: &str = "https://sync-mainnet.beaconcha.in";
+
+/// The maximum number of light client updates that can be requested.
+///
+/// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/p2p-interface.md#configuration).
+pub const MAX_REQUEST_LIGHT_CLIENT_UPDATES: u8 = 128;
 
 /// The CLI for the light client.
 #[derive(Parser)]
@@ -59,5 +65,10 @@ async fn main() {
         .await
         .expect("Failed to fetch bootstrap data");
 
-    info!("Bootstrap data: {:?}", bootstrap);
+    let sync_period = calc_sync_period(bootstrap.header().beacon().slot());
+
+    let update = client
+        .get_update_data(sync_period, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
+        .await
+        .expect("Failed to fetch update data");
 }
