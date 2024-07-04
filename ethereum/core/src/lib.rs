@@ -15,4 +15,5 @@
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
 
 pub mod crypto;
+pub mod merkle;
 pub mod types;

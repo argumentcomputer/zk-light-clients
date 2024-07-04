@@ -12,10 +12,14 @@
 //! For more information about the sync committee you can refer [to the Eth2 book](https://eth2book.info/capella/part2/building_blocks/committees/)
 //! by Ben Edgington.
 
-use crate::crypto::sig::{PublicKey, Signature, PUB_KEY_LEN, SIG_LEN};
+use crate::crypto::error::CryptoError;
+use crate::crypto::hash::{sha2_hash_concat, HashValue};
+use crate::crypto::sig::{PublicKey, PUB_KEY_LEN};
+use crate::merkle::utils::{merkle_root, DataType};
+use crate::merkle::Merkleized;
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::utils::{extract_fixed_bytes, pack_bits, unpack_bits};
+use crate::types::utils::extract_fixed_bytes;
 use crate::types::Bytes32;
 use getset::Getters;
 
@@ -34,8 +38,11 @@ pub type SyncCommitteeBranch = [Bytes32; SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS];
 /// Length of the serialized `SyncCommittee` in bytes.
 pub const SYNC_COMMITTEE_BYTES_LEN: usize = SYNC_COMMITTEE_SIZE * PUB_KEY_LEN + PUB_KEY_LEN;
 
-/// Position in the merkle tree for the next sync committee.
-pub const NEXT_SYNC_COMMITTEE_INDEX: usize = 55;
+/// The [generalized Merkle tree index](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/ssz/merkle-proofs.md#generalized-merkle-tree-index)
+/// for the next sync committee.
+///
+/// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/altair/light-client/sync-protocol.md#constants).
+pub const NEXT_SYNC_COMMITTEE_GENERALIZED_INDEX: usize = 55;
 
 /// `SyncCommittee` is a committee of validators that are responsible for attesting to the latest
 /// block. The sync committee is a subset of the full validator set.
@@ -127,87 +134,32 @@ impl SyncCommittee {
     }
 }
 
-/// Size in SSZ serialized bytes for a [`SyncAggregate`].
-pub const SYNC_AGGREGATE_BYTES_LEN: usize = SYNC_COMMITTEE_SIZE / 8 + SIG_LEN;
+impl Merkleized for SyncCommittee {
+    fn hash_tree_root(&self) -> Result<HashValue, CryptoError> {
+        // Get root value for the public key list
+        let pubkeys_roots: Vec<HashValue> = self
+            .pubkeys
+            .iter()
+            .map(|pubkey| pubkey.hash_tree_root())
+            .collect::<Result<Vec<_>, _>>()?;
 
-/// Structure that represents an aggregated signature on the Beacon chain. It contains the validator
-/// index who signed the message as bits and the actual signature.
-///
-/// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/beacon-chain.md#syncaggregate).
-#[derive(Debug, Clone, Getters)]
-#[getset(get = "pub")]
-pub struct SyncAggregate {
-    sync_committee_bits: [u8; SYNC_COMMITTEE_SIZE],
-    sync_committee_signature: Signature,
-}
+        let pubkeys_root = merkle_root(DataType::List(pubkeys_roots))?;
 
-impl SyncAggregate {
-    /// Serialize a `SyncAggregate` data structure to an SSZ formatted vector of bytes.
-    ///
-    /// # Returns
-    ///
-    /// A `Vec<u8>` containing the SSZ serialized `SyncAggregate` data structure.
-    pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
-        let mut bytes = Vec::new();
+        // Get aggregated public key root value
+        let aggregate_pubkey_root = self.aggregate_pubkey.hash_tree_root()?;
 
-        // Serialize sync_committee_bits as a packed bit array
-        let packed_bits = pack_bits(&self.sync_committee_bits)
-            .map_err(|e| serde_error!("SyncAggregate", format!("Could not pack bits: {:?}", e)))?;
-        bytes.extend_from_slice(&packed_bits);
-
-        // Serialize sync_committee_signature
-        bytes.extend_from_slice(&self.sync_committee_signature.to_ssz_bytes());
-
-        Ok(bytes)
-    }
-
-    /// Deserialize a `SyncAggregate` data structure from SSZ formatted bytes.
-    ///
-    /// # Arguments
-    ///
-    /// * `bytes` - The SSZ formatted bytes to deserialize the `SyncAggregate` data structure from.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing either the deserialized `SyncAggregate` data structure or a `TypesError`.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `TypesError` if the bytes are not long enough to create a `SyncAggregate` or if the deserialization of internal types throws an error.
-    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        if bytes.len() != SYNC_AGGREGATE_BYTES_LEN {
-            return Err(TypesError::InvalidLength {
-                structure: "SyncAggregate".into(),
-                expected: SYNC_AGGREGATE_BYTES_LEN,
-                actual: bytes.len(),
-            });
-        }
-
-        // Deserialize sync_committee_bits as a bit array
-        let sync_committee_bits =
-            unpack_bits(&bytes[0..SYNC_COMMITTEE_SIZE / 8], SYNC_COMMITTEE_SIZE)
-                .try_into()
-                .map_err(|_| {
-                    serde_error!("SyncAggregate", "Could not deserialize sync_committee_bits")
-                })?;
-
-        // Deserialize sync_committee_signature
-        let sync_committee_signature: Signature =
-            Signature::from_ssz_bytes(&bytes[SYNC_COMMITTEE_SIZE / 8..])?;
-
-        Ok(Self {
-            sync_committee_bits,
-            sync_committee_signature,
-        })
+        // Combine the root of the public key Merkle tree with the aggregated public key root
+        sha2_hash_concat(&pubkeys_root, &aggregate_pubkey_root)
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use ssz_types::FixedVector;
     use std::env::current_dir;
     use std::fs;
-
+    use tree_hash::TreeHash;
     #[test]
     fn test_ssz_serde_sync_committee() {
         let test_asset_path = current_dir()
@@ -216,25 +168,47 @@ mod test {
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
-        let execution_block_header = SyncCommittee::from_ssz_bytes(&test_bytes).unwrap();
+        let sync_committee = SyncCommittee::from_ssz_bytes(&test_bytes).unwrap();
 
-        let ssz_bytes = execution_block_header.to_ssz_bytes();
+        let ssz_bytes = sync_committee.to_ssz_bytes();
 
         assert_eq!(ssz_bytes, test_bytes);
     }
 
     #[test]
-    fn test_ssz_serde_sync_aggregate() {
+    fn test_sync_committee_hash_tree_root() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/SyncAggregateDeneb.ssz");
+            .join("../test-assets/SyncCommitteeDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
-        let execution_block_header = SyncAggregate::from_ssz_bytes(&test_bytes).unwrap();
+        let sync_committee = SyncCommittee::from_ssz_bytes(&test_bytes).unwrap();
 
-        let ssz_bytes = execution_block_header.to_ssz_bytes().unwrap();
+        // Hash for custom implementation
+        let hash_tree_root = sync_committee.hash_tree_root().unwrap();
 
-        assert_eq!(ssz_bytes, test_bytes);
+        // Following section mimics derivation of `TreeHash` trait for `SyncCommittee` struct
+        // In Lighthouse: https://github.com/sigp/lighthouse/blob/stable/consensus/types/src/sync_committee.rs#L27-L44
+
+        // Pubkey vector hash from `treehash`
+        let fixed_vector_pubkeys: FixedVector<PublicKey, ssz_types::typenum::U512> =
+            FixedVector::new(sync_committee.pubkeys.to_vec()).unwrap();
+        let hash_fixed_vector = fixed_vector_pubkeys.tree_hash_root();
+
+        // Aggregate pubkey hash from `treehash`
+        let hash_aggregate_pubkey = sync_committee.aggregate_pubkey.tree_hash_root();
+
+        // `SyncCommittee` hash product by `treehash`
+        let mut hasher = tree_hash::MerkleHasher::with_leaves(2);
+
+        hasher.write(hash_fixed_vector.as_bytes()).unwrap();
+        hasher.write(hash_aggregate_pubkey.as_bytes()).unwrap();
+
+        let expected_hash = hasher
+            .finish()
+            .expect("sync committee hash should not have a remaining buffer");
+
+        assert_eq!(&expected_hash.0, hash_tree_root.hash());
     }
 }

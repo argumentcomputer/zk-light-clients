@@ -5,10 +5,16 @@
 //!
 //! This module contains the types and utilities necessary to represent the data in an execution block.
 
+use crate::crypto::error::CryptoError;
 use crate::crypto::hash::{HashValue, HASH_LENGTH};
+use crate::merkle::utils::{merkle_root, mix_size, DataType};
+use crate::merkle::Merkleized;
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::utils::{extract_fixed_bytes, extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
+use crate::types::utils::{
+    bytes_array_to_bytes32, extract_fixed_bytes, extract_u32, extract_u64, u64_to_bytes32,
+    OFFSET_BYTE_LENGTH,
+};
 use crate::types::{Address, Bytes32, ADDRESS_BYTES_LEN, BYTES_32_LEN, U64_LEN};
 use getset::Getters;
 
@@ -60,6 +66,58 @@ pub struct ExecutionBlockHeader {
     withdrawals_root: Bytes32,
     blob_gas_used: u64,
     excess_blob_gas: u64,
+}
+
+impl Merkleized for ExecutionBlockHeader {
+    fn hash_tree_root(&self) -> Result<HashValue, CryptoError> {
+        let parent_hash_root = self.parent_hash;
+        let fee_recipient_root =
+            HashValue::from_slice(bytes_array_to_bytes32(&self.fee_recipient))?;
+        let state_root_root = HashValue::from_slice(self.state_root)?;
+        let receipts_root_root = HashValue::from_slice(self.receipts_root)?;
+
+        let logs_bloom_root = merkle_root(DataType::Bytes(self.logs_bloom.to_vec()))?;
+
+        let prev_randao_root = HashValue::from_slice(self.prev_randao)?;
+        let block_number_root = HashValue::new(u64_to_bytes32(self.block_number));
+        let gas_limit_root = HashValue::new(u64_to_bytes32(self.gas_limit));
+        let gas_used_root = HashValue::new(u64_to_bytes32(self.gas_used));
+        let timestamp_root = HashValue::new(u64_to_bytes32(self.timestamp));
+
+        let extra_data_root = mix_size(
+            &merkle_root(DataType::Bytes(self.extra_data.clone()))?,
+            self.extra_data.len(),
+        )?;
+
+        let base_fee_per_gas_root = HashValue::from_slice(self.base_fee_per_gas)?;
+        let block_hash_root = self.block_hash;
+        let transactions_root_root = HashValue::from_slice(self.transactions_root)?;
+        let withdrawals_root_root = HashValue::from_slice(self.withdrawals_root)?;
+        let blob_gas_used_root = HashValue::new(u64_to_bytes32(self.blob_gas_used));
+        let excess_blob_gas_root = HashValue::new(u64_to_bytes32(self.excess_blob_gas));
+
+        let leaves = vec![
+            parent_hash_root,
+            fee_recipient_root,
+            state_root_root,
+            receipts_root_root,
+            logs_bloom_root,
+            prev_randao_root,
+            block_number_root,
+            gas_limit_root,
+            gas_used_root,
+            timestamp_root,
+            extra_data_root,
+            base_fee_per_gas_root,
+            block_hash_root,
+            transactions_root_root,
+            withdrawals_root_root,
+            blob_gas_used_root,
+            excess_blob_gas_root,
+        ];
+
+        merkle_root(DataType::Struct(leaves))
+    }
 }
 
 impl ExecutionBlockHeader {
@@ -204,10 +262,63 @@ impl ExecutionBlockHeader {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::*;
+    use anyhow::anyhow;
+    use ethereum_types::H160;
+    use ssz_types::{FixedVector, VariableList};
     use std::env::current_dir;
     use std::fs;
+    use tree_hash::TreeHash;
+
+    // From https://github.com/sigp/lighthouse/blob/stable/consensus/types/src/execution_block_header.rs#L26-L54
+    #[derive(tree_hash_derive::TreeHash)]
+    pub(crate) struct ExecutionBlockHeaderTreeHash {
+        parent_hash: Bytes32,
+        fee_recipient: H160,
+        state_root: Bytes32,
+        receipts_root: Bytes32,
+        logs_bloom: FixedVector<u8, ssz_types::typenum::U256>,
+        prev_randao: Bytes32,
+        block_number: u64,
+        gas_limit: u64,
+        gas_used: u64,
+        timestamp: u64,
+        extra_data: VariableList<u8, ssz_types::typenum::U32>,
+        base_fee_per_gas: Bytes32,
+        block_hash: Bytes32,
+        transactions_root: Bytes32,
+        withdrawals_root: Bytes32,
+        blob_gas_used: u64,
+        excess_blob_gas: u64,
+    }
+
+    impl TryFrom<ExecutionBlockHeader> for ExecutionBlockHeaderTreeHash {
+        type Error = anyhow::Error;
+        fn try_from(header: ExecutionBlockHeader) -> Result<Self, Self::Error> {
+            Ok(Self {
+                parent_hash: *header.parent_hash.as_ref(),
+                fee_recipient: H160::from_slice(&header.fee_recipient),
+                state_root: header.state_root,
+                receipts_root: header.receipts_root,
+                logs_bloom: FixedVector::new(header.logs_bloom.to_vec())
+                    .map_err(|_| anyhow!("Failed to convert logs bloom"))?,
+                prev_randao: header.prev_randao,
+                block_number: header.block_number,
+                gas_limit: header.gas_limit,
+                gas_used: header.gas_used,
+                timestamp: header.timestamp,
+                extra_data: VariableList::new(header.extra_data)
+                    .map_err(|_| anyhow!("Failed to convert extra data"))?,
+                base_fee_per_gas: header.base_fee_per_gas,
+                block_hash: *header.block_hash.as_ref(),
+                transactions_root: header.transactions_root,
+                withdrawals_root: header.withdrawals_root,
+                blob_gas_used: header.blob_gas_used,
+                excess_blob_gas: header.excess_blob_gas,
+            })
+        }
+    }
 
     #[test]
     fn test_ssz_serde() {
@@ -222,5 +333,26 @@ mod test {
         let ssz_bytes = execution_block_header.to_ssz_bytes();
 
         assert_eq!(ssz_bytes, test_bytes);
+    }
+
+    #[test]
+    fn test_execution_block_hash_tree_root() {
+        let test_asset_path = current_dir()
+            .unwrap()
+            .join("../test-assets/ExecutionPayloadHeaderDeneb.ssz");
+
+        let test_bytes = fs::read(test_asset_path).unwrap();
+
+        let execution_block_header = ExecutionBlockHeader::from_ssz_bytes(&test_bytes).unwrap();
+
+        // Hash for custom implementation
+        let hash_tree_root = execution_block_header.hash_tree_root().unwrap();
+
+        // Hash for lighthouse implementation
+        let test_execution_block_header =
+            ExecutionBlockHeaderTreeHash::try_from(execution_block_header.clone()).unwrap();
+        let execution_block_header_tree_hash = test_execution_block_header.tree_hash_root();
+
+        assert_eq!(hash_tree_root.hash(), &execution_block_header_tree_hash.0);
     }
 }
