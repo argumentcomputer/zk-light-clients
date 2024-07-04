@@ -12,6 +12,7 @@ getset = "0.1.2"
 log = "0.4.22"
 reqwest = "0.12.5"
 serde = "1.0.203"
+sha2 = "0.9"
 thiserror = "1.0.61"
 tokio = "1.38.0"
 # Crypto dependencies

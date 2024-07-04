@@ -4,7 +4,8 @@
 use crate::crypto::error::CryptoError;
 use crate::types::error::TypesError;
 use anyhow::Result;
-use bls12_381::{multi_miller_loop, G1Affine, G2Affine, G2Prepared, Gt};
+use bls12_381::hash_to_curve::{ExpandMsgXmd, HashToCurve};
+use bls12_381::{multi_miller_loop, G1Affine, G2Affine, G2Prepared, G2Projective, Gt};
 use std::cell::OnceCell;
 
 /// Length of a public key in bytes.
@@ -12,6 +13,25 @@ pub const PUB_KEY_LEN: usize = 48;
 
 /// Length of a signature in bytes.
 pub const SIG_LEN: usize = 96;
+
+/// BLS DST for hashing to G2.
+pub const DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+
+/// Computes a hash of the given message to a `G2Projective` point.
+///
+/// This function uses the `HashToCurve` trait implemented for `G2Projective` to hash the message.
+///
+/// # Arguments
+///
+/// * `msg` - A byte slice representing the message to be hashed.
+///
+/// # Returns
+///
+/// A `G2Projective` point representing the hash of the message.
+#[must_use]
+pub fn hash(msg: &[u8]) -> G2Projective {
+    <G2Projective as HashToCurve<ExpandMsgXmd<sha2::Sha256>>>::hash_to_curve(msg, DST)
+}
 
 /// A structure representing a public key.
 ///
@@ -136,9 +156,8 @@ impl Signature {
     ///
     /// A `Result` which is `Ok` if the signature is valid. If the signature is invalid,
     /// the `Result` is `Err` with a `CryptoError`.
-    pub fn verify(&self, _msg: &[u8], pubkey: &PublicKey) -> Result<(), CryptoError> {
-        // TODO replace per the proper hash when implementing signature verification
-        let msg = G2Prepared::from(G2Affine::identity());
+    pub fn verify(&self, msg: &[u8], pubkey: &PublicKey) -> Result<(), CryptoError> {
+        let msg = G2Prepared::from(G2Affine::from(hash(msg)));
         let g1 = G1Affine::generator();
 
         let ml_terms = [(&-g1, &G2Prepared::from(self.sig)), (pubkey.pubkey(), &msg)];
