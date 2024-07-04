@@ -9,14 +9,15 @@ use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::{extract_fixed_bytes, extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
 use crate::types::{Address, Bytes32, ADDRESS_BYTES_LEN, BYTES_32_LEN, U64_LEN};
+use getset::Getters;
 
 /// Number of leaf values on a given execution path.
 ///
 /// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/light-client/sync-protocol.md#custom-types).
-pub const EXECUTION_PROOF_SIZE: usize = 4;
+pub const EXECUTION_BRANCH_NBR_SIBLINGS: usize = 4;
 
 /// Path in the tree to the execution payload in the beacon block body.
-pub type ExecutionBranch = [Bytes32; EXECUTION_PROOF_SIZE];
+pub type ExecutionBranch = [Bytes32; EXECUTION_BRANCH_NBR_SIBLINGS];
 
 /// Size of the logs bloom in an execution block header.
 pub const LOGS_BLOOM_BYTES_LEN: usize = 256;
@@ -34,7 +35,8 @@ pub const MAX_EXTRA_DATA_BYTES_LEN: usize = BYTES_32_LEN;
 /// `ExecutionBlockHeader` represents the header of an execution block.
 ///
 /// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/beacon-chain.md#executionpayloadheader).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct ExecutionBlockHeader {
     parent_hash: Bytes32,
     fee_recipient: Address,
@@ -155,6 +157,14 @@ impl ExecutionBlockHeader {
                 "ExecutionBlockHeader",
                 "Invalid offset for extra_data"
             ));
+        }
+
+        if cursor != EXECUTION_HEADER_BASE_BYTES_LEN {
+            return Err(TypesError::InvalidLength {
+                structure: "ExecutionBlockHeader".into(),
+                expected: EXECUTION_HEADER_BASE_BYTES_LEN,
+                actual: cursor,
+            });
         }
 
         let extra_data = bytes[cursor..].to_vec();

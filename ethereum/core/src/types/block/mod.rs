@@ -17,11 +17,13 @@
 use crate::serde_error;
 use crate::types::block::consensus::{BeaconBlockHeader, BEACON_BLOCK_HEADER_BYTES_LEN};
 use crate::types::block::execution::{
-    ExecutionBlockHeader, ExecutionBranch, EXECUTION_HEADER_BASE_BYTES_LEN, EXECUTION_PROOF_SIZE,
+    ExecutionBlockHeader, ExecutionBranch, EXECUTION_BRANCH_NBR_SIBLINGS,
+    EXECUTION_HEADER_BASE_BYTES_LEN,
 };
 use crate::types::error::TypesError;
 use crate::types::utils::extract_u32;
 use crate::types::BYTES_32_LEN;
+use getset::Getters;
 
 pub mod consensus;
 pub mod execution;
@@ -29,10 +31,11 @@ pub mod execution;
 /// Length in bytes of a LightClientHeader.
 pub const LIGHT_CLIENT_HEADER_BASE_BYTES_LEN: usize = BEACON_BLOCK_HEADER_BYTES_LEN
     + EXECUTION_HEADER_BASE_BYTES_LEN
-    + EXECUTION_PROOF_SIZE * BYTES_32_LEN;
+    + EXECUTION_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
 
 /// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/light-client/sync-protocol.md#modified-lightclientheader).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct LightClientHeader {
     beacon: BeaconBlockHeader,
     execution: ExecutionBlockHeader,
@@ -52,7 +55,8 @@ impl LightClientHeader {
         bytes.extend(self.beacon.to_ssz_bytes());
 
         // Set offset for execution block header
-        let offset = BEACON_BLOCK_HEADER_BYTES_LEN + 4 + EXECUTION_PROOF_SIZE * BYTES_32_LEN;
+        let offset =
+            BEACON_BLOCK_HEADER_BYTES_LEN + 4 + EXECUTION_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
         bytes.extend_from_slice(&(offset as u32).to_le_bytes());
 
         // Serialize the execution branch
@@ -101,7 +105,7 @@ impl LightClientHeader {
         let (cursor, offset) = extract_u32("LightClientHeader", bytes, cursor)?;
 
         // Deserialize the execution branch
-        let execution_branch = (0..EXECUTION_PROOF_SIZE)
+        let execution_branch = (0..EXECUTION_BRANCH_NBR_SIBLINGS)
             .map(|i| {
                 let start = cursor + i * BYTES_32_LEN;
                 let end = start + BYTES_32_LEN;
@@ -117,7 +121,7 @@ impl LightClientHeader {
                 )
             })?;
 
-        let cursor = cursor + EXECUTION_PROOF_SIZE * BYTES_32_LEN;
+        let cursor = cursor + EXECUTION_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
 
         // Check offset
         if cursor != offset as usize {
@@ -129,6 +133,17 @@ impl LightClientHeader {
 
         // Deserialize the execution block header
         let execution = ExecutionBlockHeader::from_ssz_bytes(&bytes[cursor..])?;
+
+        let deserialized_bytes_len =
+            cursor + EXECUTION_HEADER_BASE_BYTES_LEN + execution.extra_data().len();
+
+        if deserialized_bytes_len != bytes.len() {
+            return Err(TypesError::OverLength {
+                maximum: deserialized_bytes_len,
+                actual: bytes.len(),
+                structure: "LightClientHeader".into(),
+            });
+        }
 
         Ok(Self {
             beacon,

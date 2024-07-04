@@ -9,7 +9,8 @@
 use ethereum_lc_core::serde_error;
 use ethereum_lc_core::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use ethereum_lc_core::types::committee::{
-    SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BYTES_LEN, SYNC_COMMITTEE_PROOF_SIZE,
+    SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
+    SYNC_COMMITTEE_BYTES_LEN,
 };
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
@@ -39,7 +40,7 @@ impl Bootstrap {
         // Serialize header offset
         let offset = OFFSET_BYTE_LENGTH
             + SYNC_COMMITTEE_BYTES_LEN
-            + SYNC_COMMITTEE_PROOF_SIZE * BYTES_32_LEN;
+            + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
         bytes.extend_from_slice(&(offset as u32).to_le_bytes());
 
         // Serialize the current sync committee
@@ -72,7 +73,7 @@ impl Bootstrap {
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let expected_len = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN
             + SYNC_COMMITTEE_BYTES_LEN
-            + SYNC_COMMITTEE_PROOF_SIZE * BYTES_32_LEN;
+            + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
         if bytes.len() < expected_len {
             return Err(TypesError::UnderLength {
                 minimum: expected_len,
@@ -92,8 +93,8 @@ impl Bootstrap {
 
         // Deserialize `SyncCommitteeBranch`
         let cursor = cursor + SYNC_COMMITTEE_BYTES_LEN;
-        let current_sync_committee_branch: [Bytes32; SYNC_COMMITTEE_PROOF_SIZE] = (0
-            ..SYNC_COMMITTEE_PROOF_SIZE)
+        let current_sync_committee_branch: [Bytes32; SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS] = (0
+            ..SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS)
             .map(|i| {
                 let start = cursor + i * BYTES_32_LEN;
                 let end = start + BYTES_32_LEN;
@@ -115,13 +116,24 @@ impl Bootstrap {
             })?;
 
         // Check offset
-        let cursor = cursor + SYNC_COMMITTEE_PROOF_SIZE * BYTES_32_LEN;
+        let cursor = cursor + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
         if cursor != offset as usize {
             return Err(serde_error!("Bootstrap", "Invalid offset for header"));
         }
 
         // Deserialize `LightClientHeader`
         let header = LightClientHeader::from_ssz_bytes(&bytes[cursor..])?;
+
+        let deserialized_bytes_len =
+            cursor + LIGHT_CLIENT_HEADER_BASE_BYTES_LEN + header.execution().extra_data().len();
+
+        if deserialized_bytes_len != bytes.len() {
+            return Err(TypesError::OverLength {
+                maximum: deserialized_bytes_len,
+                actual: bytes.len(),
+                structure: "Bootstrap".into(),
+            });
+        }
 
         Ok(Self {
             header,

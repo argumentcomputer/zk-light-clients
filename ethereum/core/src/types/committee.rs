@@ -20,10 +20,10 @@ use crate::types::{Bytes32, SYNC_COMMITTEE_SIZE};
 use getset::Getters;
 
 /// Current size of a merkle proof for a sync committee.
-pub const SYNC_COMMITTEE_PROOF_SIZE: usize = 5;
+pub const SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS: usize = 5;
 
 /// Merkle proof for a sync committee.
-pub type SyncCommitteeBranch = [Bytes32; SYNC_COMMITTEE_PROOF_SIZE];
+pub type SyncCommitteeBranch = [Bytes32; SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS];
 
 /// Length of the serialized `SyncCommittee` in bytes.
 pub const SYNC_COMMITTEE_BYTES_LEN: usize = SYNC_COMMITTEE_SIZE * PUB_KEY_LEN + PUB_KEY_LEN;
@@ -100,8 +100,16 @@ impl SyncCommittee {
 
         let cursor = PUB_KEY_LEN * SYNC_COMMITTEE_SIZE;
 
-        let (_, aggregate_pubkey) =
+        let (cursor, aggregate_pubkey) =
             extract_fixed_bytes::<PUB_KEY_LEN>("SyncCommittee", bytes, cursor)?;
+
+        if cursor != bytes.len() {
+            return Err(TypesError::InvalidLength {
+                expected: expected_len,
+                actual: cursor,
+                structure: "SyncCommittee".into(),
+            });
+        }
 
         Ok(Self {
             pubkeys,

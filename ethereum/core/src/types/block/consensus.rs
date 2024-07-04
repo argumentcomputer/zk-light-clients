@@ -86,8 +86,16 @@ impl BeaconBlockHeader {
             extract_fixed_bytes::<BYTES_32_LEN>("BeaconBlockHeader", bytes, cursor)?;
         let (cursor, state_root) =
             extract_fixed_bytes::<BYTES_32_LEN>("BeaconBlockHeader", bytes, cursor)?;
-        let (_, body_root) =
+        let (cursor, body_root) =
             extract_fixed_bytes::<BYTES_32_LEN>("BeaconBlockHeader", bytes, cursor)?;
+
+        if cursor != BEACON_BLOCK_HEADER_BYTES_LEN {
+            return Err(TypesError::InvalidLength {
+                structure: "BeaconBlockHeader".into(),
+                expected: BEACON_BLOCK_HEADER_BYTES_LEN,
+                actual: cursor,
+            });
+        }
 
         Ok(Self {
             slot,
