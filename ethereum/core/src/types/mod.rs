@@ -20,9 +20,6 @@ pub mod committee;
 pub mod error;
 pub mod utils;
 
-/// Constant number of validators in the sync committee.
-pub const SYNC_COMMITTEE_SIZE: usize = 512;
-
 /// Length of a bytes32 array.
 pub const BYTES_32_LEN: usize = 32;
 
@@ -37,3 +34,12 @@ pub const ADDRESS_BYTES_LEN: usize = 20;
 
 /// An ethereum address.
 pub type Address = [u8; ADDRESS_BYTES_LEN];
+
+/// Number of siblings in a proof for a finalized block root in a merkle tree.
+///
+/// From [the Altaïr specifications](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md#lightclientupdate)
+/// and [the Lighthouse implementation](https://github.com/sigp/lighthouse/blob/v5.2.1/consensus/types/src/light_client_update.rs#L32).
+pub const FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS: usize = 6;
+
+/// Merkle proof for a finalized block root.
+pub type FinalizedRootBranch = [Bytes32; FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS];

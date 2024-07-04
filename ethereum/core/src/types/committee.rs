@@ -12,14 +12,20 @@
 //! For more information about the sync committee you can refer [to the Eth2 book](https://eth2book.info/capella/part2/building_blocks/committees/)
 //! by Ben Edgington.
 
-use crate::crypto::sig::{PublicKey, PUB_KEY_LEN};
+use crate::crypto::sig::{PublicKey, Signature, PUB_KEY_LEN, SIG_LEN};
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::utils::extract_fixed_bytes;
-use crate::types::{Bytes32, SYNC_COMMITTEE_SIZE};
+use crate::types::utils::{extract_fixed_bytes, pack_bits, unpack_bits};
+use crate::types::Bytes32;
 use getset::Getters;
 
+/// Constant number of validators in the sync committee.
+pub const SYNC_COMMITTEE_SIZE: usize = 512;
+
 /// Current size of a merkle proof for a sync committee.
+///
+/// From [the Lighthouse implementation](https://github.com/sigp/lighthouse/blob/v5.2.1/consensus/types/src/light_client_update.rs#L34)
+/// and [the Altaïr specifications](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md#lightclientupdate).
 pub const SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS: usize = 5;
 
 /// Merkle proof for a sync committee.
@@ -27,6 +33,9 @@ pub type SyncCommitteeBranch = [Bytes32; SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS];
 
 /// Length of the serialized `SyncCommittee` in bytes.
 pub const SYNC_COMMITTEE_BYTES_LEN: usize = SYNC_COMMITTEE_SIZE * PUB_KEY_LEN + PUB_KEY_LEN;
+
+/// Position in the merkle tree for the next sync committee.
+pub const NEXT_SYNC_COMMITTEE_INDEX: usize = 55;
 
 /// `SyncCommittee` is a committee of validators that are responsible for attesting to the latest
 /// block. The sync committee is a subset of the full validator set.
@@ -118,6 +127,81 @@ impl SyncCommittee {
     }
 }
 
+/// Size in SSZ serialized bytes for a [`SyncAggregate`].
+pub const SYNC_AGGREGATE_BYTES_LEN: usize = SYNC_COMMITTEE_SIZE / 8 + SIG_LEN;
+
+/// Structure that represents an aggregated signature on the Beacon chain. It contains the validator
+/// index who signed the message as bits and the actual signature.
+///
+/// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/beacon-chain.md#syncaggregate).
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
+pub struct SyncAggregate {
+    sync_committee_bits: [u8; SYNC_COMMITTEE_SIZE],
+    sync_committee_signature: Signature,
+}
+
+impl SyncAggregate {
+    /// Serialize a `SyncAggregate` data structure to an SSZ formatted vector of bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` containing the SSZ serialized `SyncAggregate` data structure.
+    pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
+        let mut bytes = Vec::new();
+
+        // Serialize sync_committee_bits as a packed bit array
+        let packed_bits = pack_bits(&self.sync_committee_bits)
+            .map_err(|e| serde_error!("SyncAggregate", format!("Could not pack bits: {:?}", e)))?;
+        bytes.extend_from_slice(&packed_bits);
+
+        // Serialize sync_committee_signature
+        bytes.extend_from_slice(&self.sync_committee_signature.to_ssz_bytes());
+
+        Ok(bytes)
+    }
+
+    /// Deserialize a `SyncAggregate` data structure from SSZ formatted bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ formatted bytes to deserialize the `SyncAggregate` data structure from.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing either the deserialized `SyncAggregate` data structure or a `TypesError`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TypesError` if the bytes are not long enough to create a `SyncAggregate` or if the deserialization of internal types throws an error.
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        if bytes.len() != SYNC_AGGREGATE_BYTES_LEN {
+            return Err(TypesError::InvalidLength {
+                structure: "SyncAggregate".into(),
+                expected: SYNC_AGGREGATE_BYTES_LEN,
+                actual: bytes.len(),
+            });
+        }
+
+        // Deserialize sync_committee_bits as a bit array
+        let sync_committee_bits =
+            unpack_bits(&bytes[0..SYNC_COMMITTEE_SIZE / 8], SYNC_COMMITTEE_SIZE)
+                .try_into()
+                .map_err(|_| {
+                    serde_error!("SyncAggregate", "Could not deserialize sync_committee_bits")
+                })?;
+
+        // Deserialize sync_committee_signature
+        let sync_committee_signature: Signature =
+            Signature::from_ssz_bytes(&bytes[SYNC_COMMITTEE_SIZE / 8..])?;
+
+        Ok(Self {
+            sync_committee_bits,
+            sync_committee_signature,
+        })
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -125,7 +209,7 @@ mod test {
     use std::fs;
 
     #[test]
-    fn test_ssz_serde() {
+    fn test_ssz_serde_sync_committee() {
         let test_asset_path = current_dir()
             .unwrap()
             .join("../test-assets/SyncCommitteeDeneb.ssz");
@@ -135,6 +219,21 @@ mod test {
         let execution_block_header = SyncCommittee::from_ssz_bytes(&test_bytes).unwrap();
 
         let ssz_bytes = execution_block_header.to_ssz_bytes();
+
+        assert_eq!(ssz_bytes, test_bytes);
+    }
+
+    #[test]
+    fn test_ssz_serde_sync_aggregate() {
+        let test_asset_path = current_dir()
+            .unwrap()
+            .join("../test-assets/SyncAggregateDeneb.ssz");
+
+        let test_bytes = fs::read(test_asset_path).unwrap();
+
+        let execution_block_header = SyncAggregate::from_ssz_bytes(&test_bytes).unwrap();
+
+        let ssz_bytes = execution_block_header.to_ssz_bytes().unwrap();
 
         assert_eq!(ssz_bytes, test_bytes);
     }
