@@ -1,10 +1,12 @@
 module plonk_verifier_addr::plonk_verifier {
     use std::vector;
     use std::hash::{ sha2_256 };
-    use plonk_verifier_addr::utilities::{append_constant, bytes_to_uint256};
+    use plonk_verifier_addr::utilities::{append_constant, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256};
+    use std::bn254_algebra::{Fr, FormatFrMsb};
+    use std::vector::{length, push_back, trim, reverse, pop_back};
+    use aptos_std::crypto_algebra::{add, Element, mul, one, zero, deserialize, serialize};
     #[test_only]
     use plonk_verifier_addr::utilities::{get_proof, get_public_inputs};
-    use std::vector::length;
 
     // TODO: cleanup following constants as some of them could be unnecessary in Move verifier
     const R_MOD: u256 = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
@@ -171,6 +173,19 @@ module plonk_verifier_addr::plonk_verifier {
 
         assert!(zeta == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
 
+        let zeta_bytes = vector::empty<u8>();
+        append_constant(&mut zeta_bytes, zeta, true, 32);
+        let zeta_fr = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&zeta_bytes));
+        let r_mod_minus_one_bytes = vector::empty<u8>();
+        append_constant(&mut r_mod_minus_one_bytes, R_MOD_MINUS_ONE, true, 32);
+        let r_mod_minus_one_fr = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&r_mod_minus_one_bytes));
+        let zeta_power_n_minus_one = add(&r_mod_minus_one_fr, &powSmall(zeta_fr, VK_DOMAIN_SIZE));
+
+        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&zeta_power_n_minus_one)) == 0x0183624d8a1f2df2d1bc0ea04c97a743b1031835afb4fc9fb25e88f37780deb7, 2);
+
+        let pic = compute_public_inputs_contribution(u256_to_fr(zeta), zeta_power_n_minus_one, public_inputs);
+        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&pic)) == 0x196d1aee13f8d282bf445d393e9ef0f5d6d2eccdb97fbc2696f7b73878552b01, 3)
+
         // TODO adding rest of verification logic ...
     }
 
@@ -240,6 +255,97 @@ module plonk_verifier_addr::plonk_verifier {
         bytes_to_uint256(sha2_256(preimage))
     }
 
+    // TODO: simplify this function by splitting onto isolated sub-funcitons
+    public fun compute_public_inputs_contribution(zeta: Element<Fr>, zeta_power_n_minus_one: Element<Fr>, public_inputs: vector<u256>): Element<Fr> {
+        // sum_pi_wo_api_commit function from Solidity contract
+        let ins = public_inputs;
+        let n = length(&ins);
+
+        // batch_compute_lagranges_at_z
+        let zn = mul(&zeta_power_n_minus_one, &u256_to_fr(VK_INV_DOMAIN_SIZE));
+        let _mPtr = vector::empty<Element<Fr>>();
+        let i = 0;
+        let w = one<Fr>();
+        let tmp: u256;
+        let tmp_fr: Element<Fr>;
+        while (i < n) {
+            tmp = R_MOD - fr_to_u256(w);
+            tmp_fr = add(&zeta, &u256_to_fr(tmp));
+            push_back(&mut _mPtr, tmp_fr);
+
+            w = mul(&w, &u256_to_fr(VK_OMEGA));
+
+            i = i + 1
+        };
+        let ins_inner = copy _mPtr;
+
+        let new_len = length(&_mPtr) - 1;
+        trim(&mut _mPtr, new_len);
+
+        // batch_invert
+        push_back(&mut _mPtr, one<Fr>());
+
+        let mPtr_input = copy _mPtr;
+
+        reverse(&mut _mPtr);
+
+        let mPtr = vector::empty<Element<Fr>>();
+        let i = 0;
+        let tmp;
+        while (i < n) {
+            let prev = vector::borrow(&_mPtr, i);
+            let cur = vector::borrow(&ins_inner, i);
+            tmp = mul(prev, cur);
+            push_back(&mut mPtr, tmp);
+
+            i = i + 1;
+        };
+
+        let inv = powSmall(pop_back(&mut mPtr), R_MOD - 2);
+
+        reverse(&mut ins_inner);
+
+        let ins_ = vector::empty<Element<Fr>>();
+        let i = 0;
+        let cur;
+        while (i < n) {
+            cur = mul(&inv, vector::borrow(&mPtr_input, i));
+            push_back(&mut ins_, cur);
+
+            inv = mul(&inv, vector::borrow(&ins_inner, i));
+            i = i + 1;
+        };
+
+        reverse(&mut ins_);
+
+        let li = vector::empty<Element<Fr>>();
+        let i = 0;
+        let tmp_fr;
+        let w = one<Fr>();
+        while (i < n) {
+            tmp_fr = mul(&w, &mul(vector::borrow(&ins_, i), &zn));
+            push_back(&mut li, tmp_fr);
+            w = mul(&w, &u256_to_fr(VK_OMEGA));
+
+            i = i + 1
+        };
+
+        let i = 0;
+        let tmp = zero<Fr>();
+        let pi_wo_commit = zero<Fr>();
+        let left = zero<Fr>();
+        let right = zero<Fr>();
+        while (i < n) {
+            left = *vector::borrow(&li, i);
+            right = u256_to_fr(*vector::borrow(&ins, i));
+            tmp = mul(&left, &right);
+            pi_wo_commit = add(&pi_wo_commit, &tmp);
+
+            i = i + 1
+        };
+        pi_wo_commit
+    }
+
     #[test]
     public fun test_derive_gamma() {
         let proof = get_proof();
@@ -266,8 +372,16 @@ module plonk_verifier_addr::plonk_verifier {
     public fun test_derive_zeta() {
         let proof = get_proof();
         let alpha = 0x9deb5bee532ca79e9560d86926c70bd8fd8a727cc24a38a0c6c977542cd1db00;
-        let alpha = derive_zeta(proof, alpha);
-        assert!(alpha == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
+        let zeta = derive_zeta(proof, alpha);
+        assert!(zeta == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
+    }
+
+    #[test]
+    public fun test_compute_zeta_power_r_minus_one() {
+        let zeta = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&x"16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a"));
+        let r_mod_minus_one_element = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&x"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000"));
+        let zeta_power_n_minus_one = add(&r_mod_minus_one_element, &powSmall(zeta, VK_DOMAIN_SIZE));
+        assert!(&serialize<Fr, FormatFrMsb>(&zeta_power_n_minus_one) == &x"0183624d8a1f2df2d1bc0ea04c97a743b1031835afb4fc9fb25e88f37780deb7", 1);
     }
 }
 

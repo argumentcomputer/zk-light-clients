@@ -1,15 +1,17 @@
 module plonk_verifier_addr::utilities {
-    use aptos_std::crypto_algebra::{Element, one, mul};
-    use std::bn254_algebra::Fr;
+    use aptos_std::crypto_algebra::{Element, one, mul, deserialize, serialize};
+    use std::bn254_algebra::{Fr, FormatFrMsb};
     use std::vector::{length, push_back, append, trim, reverse};
     use std::vector;
 
     #[test_only]
-    use aptos_std::crypto_algebra::{deserialize, scalar_mul, add, eq};
+    use aptos_std::crypto_algebra::{scalar_mul, add, eq};
     #[test_only]
     use std::hash::sha2_256;
     #[test_only]
-    use std::bn254_algebra::{FormatFrMsb, FormatG1Uncompr, G1};
+    use std::bn254_algebra::{FormatG1Uncompr, G1};
+
+    const ERROR_U256_TO_FR: u64 = 2001;
 
     public fun powSmall(base: Element<Fr>, exponent: u256): Element<Fr> {
         let result = one<Fr>();
@@ -24,6 +26,20 @@ module plonk_verifier_addr::utilities {
             count = count + count;
         };
         result
+    }
+
+    public fun fr_to_u256(input: Element<Fr>): u256 {
+        bytes_to_uint256(serialize<Fr, FormatFrMsb>(&input))
+    }
+
+    public fun u256_to_fr(input: u256): Element<Fr> {
+        // input needs to be smaller than R_MOD of Bn254 field
+        assert!(input < 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001, ERROR_U256_TO_FR);
+
+        let output_bytes = vector::empty<u8>();
+        append_constant(&mut output_bytes, input, true, 32);
+        let output = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&output_bytes));
+        output
     }
 
     public fun bytes_to_uint256(input: vector<u8>): u256 {
