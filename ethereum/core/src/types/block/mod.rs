@@ -21,7 +21,7 @@ use crate::types::block::execution::{
     EXECUTION_HEADER_BASE_BYTES_LEN,
 };
 use crate::types::error::TypesError;
-use crate::types::utils::extract_u32;
+use crate::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
 use crate::types::BYTES_32_LEN;
 use getset::Getters;
 
@@ -30,6 +30,7 @@ pub mod execution;
 
 /// Length in bytes of a LightClientHeader.
 pub const LIGHT_CLIENT_HEADER_BASE_BYTES_LEN: usize = BEACON_BLOCK_HEADER_BYTES_LEN
+    + OFFSET_BYTE_LENGTH
     + EXECUTION_HEADER_BASE_BYTES_LEN
     + EXECUTION_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
 
