@@ -16,7 +16,8 @@ use ethereum_lc_core::types::committee::{
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::utils::{extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{
-    FinalizedRootBranch, ForkDigest, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS, U64_LEN,
+    FinalizedRootBranch, ForkDigest, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS,
+    U64_LEN,
 };
 use getset::Getters;
 
