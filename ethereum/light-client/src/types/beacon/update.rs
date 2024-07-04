@@ -16,12 +16,9 @@ use ethereum_lc_core::types::committee::{
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::utils::{extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{
-    FinalizedRootBranch, BYTES_32_LEN, FINALIZED_CHECKPOINT_PROOF_SIZE, U64_LEN,
+    FinalizedRootBranch, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS, U64_LEN,
 };
 use getset::Getters;
-
-/// Offset for the attested header in the `Update` struct.
-pub const ATTESTED_HEADER_OFFSET: u32 = 25152;
 
 /// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/light-client/sync-protocol.md#lightclientupdate).
 #[derive(Debug, Clone, Getters)]
@@ -37,14 +34,14 @@ pub struct Update {
 }
 
 impl Update {
-    pub fn to_ssz_bytes(&self) -> Vec<u8> {
+    pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
         let mut bytes = vec![];
 
         // Serialize offset for the attested header
         let attested_header_offset = OFFSET_BYTE_LENGTH * 2
             + SYNC_COMMITTEE_BYTES_LEN
             + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
-            + FINALIZED_CHECKPOINT_PROOF_SIZE * BYTES_32_LEN
+            + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
             + SYNC_AGGREGATE_BYTES_LEN
             + U64_LEN;
         bytes.extend_from_slice(&(attested_header_offset as u32).to_le_bytes());
@@ -68,7 +65,7 @@ impl Update {
         }
 
         // Serialize the sync aggregate
-        bytes.extend(self.sync_aggregate.to_ssz_bytes());
+        bytes.extend(self.sync_aggregate.to_ssz_bytes()?);
 
         // Serialize the signature slot
         bytes.extend_from_slice(&self.signature_slot.to_le_bytes());
@@ -79,14 +76,14 @@ impl Update {
         // Serialize the finalized header
         bytes.extend(self.finalized_header.to_ssz_bytes());
 
-        bytes
+        Ok(bytes)
     }
 
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         let expected_len = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
             + SYNC_COMMITTEE_BYTES_LEN
             + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
-            + FINALIZED_CHECKPOINT_PROOF_SIZE * BYTES_32_LEN
+            + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
             + SYNC_AGGREGATE_BYTES_LEN
             + U64_LEN;
 
@@ -129,7 +126,7 @@ impl Update {
         let (cursor, offset_finalized_header) = extract_u32("Update", bytes, cursor)?;
 
         // Deserialize `FinalizedRootBranch`
-        let finality_branch = (0..FINALIZED_CHECKPOINT_PROOF_SIZE)
+        let finality_branch = (0..FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS)
             .map(|i| {
                 let start = cursor + i * BYTES_32_LEN;
                 let end = start + BYTES_32_LEN;
@@ -145,7 +142,7 @@ impl Update {
             })?;
 
         // Deserialize `SyncAggregate`
-        let cursor = cursor + FINALIZED_CHECKPOINT_PROOF_SIZE * BYTES_32_LEN;
+        let cursor = cursor + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
         let sync_aggregate =
             SyncAggregate::from_ssz_bytes(&bytes[cursor..cursor + SYNC_AGGREGATE_BYTES_LEN])?;
 
@@ -201,7 +198,7 @@ mod test {
 
         let execution_block_header = Update::from_ssz_bytes(&test_bytes).unwrap();
 
-        let ssz_bytes = execution_block_header.to_ssz_bytes();
+        let ssz_bytes = execution_block_header.to_ssz_bytes().unwrap();
 
         assert_eq!(ssz_bytes, test_bytes);
     }

@@ -4,6 +4,7 @@
 use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::U64_LEN;
+use anyhow::anyhow;
 
 /// Bytes length of an offset encoded for variable length fields in SSZ.
 pub const OFFSET_BYTE_LENGTH: usize = 4;
@@ -102,15 +103,23 @@ pub fn extract_u32(
 /// # Returns
 ///
 /// A vector of bytes.
-pub fn pack_bits(bits: &[u8]) -> Vec<u8> {
-    bits.chunks(8)
-        .map(|chunk| {
-            chunk
-                .iter()
-                .enumerate()
-                .fold(0, |byte, (i, &bit)| byte | ((bit & 1) << i))
-        })
-        .collect()
+pub fn pack_bits(bits: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+    let mut bytes = Vec::new();
+    for chunk in bits.chunks(8) {
+        let mut byte = 0;
+        for (i, &bit) in chunk.iter().enumerate() {
+            match bit {
+                0 | 1 => byte |= bit << i,
+                _ => {
+                    return Err(anyhow!(
+                        "Input array contains values other than 0 or 1".to_string()
+                    ))
+                }
+            }
+        }
+        bytes.push(byte);
+    }
+    Ok(bytes)
 }
 
 /// Utility to convert a slice of bytes into a slice of bits.

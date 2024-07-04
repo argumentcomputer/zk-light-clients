@@ -39,7 +39,7 @@ pub type Address = [u8; ADDRESS_BYTES_LEN];
 ///
 /// From [the Altaïr specifications](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md#lightclientupdate)
 /// and [the Lighthouse implementation](https://github.com/sigp/lighthouse/blob/v5.2.1/consensus/types/src/light_client_update.rs#L32).
-pub const FINALIZED_CHECKPOINT_PROOF_SIZE: usize = 6;
+pub const FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS: usize = 6;
 
 /// Merkle proof for a finalized block root.
-pub type FinalizedRootBranch = [Bytes32; FINALIZED_CHECKPOINT_PROOF_SIZE];
+pub type FinalizedRootBranch = [Bytes32; FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS];

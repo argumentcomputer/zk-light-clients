@@ -147,17 +147,18 @@ impl SyncAggregate {
     /// # Returns
     ///
     /// A `Vec<u8>` containing the SSZ serialized `SyncAggregate` data structure.
-    pub fn to_ssz_bytes(&self) -> Vec<u8> {
+    pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
         let mut bytes = Vec::new();
 
         // Serialize sync_committee_bits as a packed bit array
-        let packed_bits = pack_bits(&self.sync_committee_bits);
+        let packed_bits = pack_bits(&self.sync_committee_bits)
+            .map_err(|e| serde_error!("SyncAggregate", format!("Could not pack bits: {:?}", e)))?;
         bytes.extend_from_slice(&packed_bits);
 
         // Serialize sync_committee_signature
         bytes.extend_from_slice(&self.sync_committee_signature.to_ssz_bytes());
 
-        bytes
+        Ok(bytes)
     }
 
     /// Deserialize a `SyncAggregate` data structure from SSZ formatted bytes.
@@ -191,9 +192,8 @@ impl SyncAggregate {
                 })?;
 
         // Deserialize sync_committee_signature
-        let sync_committee_signature: Signature = Signature::from_ssz_bytes(
-            &bytes[SYNC_COMMITTEE_SIZE / 8..SYNC_COMMITTEE_SIZE / 8 + SIG_LEN],
-        )?;
+        let sync_committee_signature: Signature =
+            Signature::from_ssz_bytes(&bytes[SYNC_COMMITTEE_SIZE / 8..])?;
 
         Ok(Self {
             sync_committee_bits,
@@ -233,7 +233,7 @@ mod test {
 
         let execution_block_header = SyncAggregate::from_ssz_bytes(&test_bytes).unwrap();
 
-        let ssz_bytes = execution_block_header.to_ssz_bytes();
+        let ssz_bytes = execution_block_header.to_ssz_bytes().unwrap();
 
         assert_eq!(ssz_bytes, test_bytes);
     }
