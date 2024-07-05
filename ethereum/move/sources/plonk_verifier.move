@@ -1,10 +1,11 @@
 module plonk_verifier_addr::plonk_verifier {
     use std::vector;
     use std::hash::{ sha2_256 };
-    use plonk_verifier_addr::utilities::{append_value, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256, u256_to_bytes};
-    use std::bn254_algebra::{FormatFrMsb, Fr};
+    use plonk_verifier_addr::utilities::{append_value, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256, u256_to_bytes, new_g1, new_g2};
+    use std::bn254_algebra::{FormatFrMsb, Fr, G1, G2, Gt};
     use std::vector::{length, push_back, trim, reverse, pop_back};
-    use aptos_std::crypto_algebra::{add, Element, mul, one, zero, deserialize, serialize};
+    use aptos_std::crypto_algebra::{add, serialize, deserialize, Element, mul, one, zero, multi_pairing, eq};
+
     #[test_only]
     use plonk_verifier_addr::utilities::{get_proof, get_public_inputs};
 
@@ -135,6 +136,7 @@ module plonk_verifier_addr::plonk_verifier {
     const ERROR_PROOF_SIZE: u64 = 1003;
     const ERROR_PROOF_OPENING_SIZE: u64 = 1004;
     const ERROR_UNEXPECTED_VK_NB_CUSTOM_GATES_AMOUNT: u64 = 1005;
+    const ERROR_PAIRING_KZG_CHECK: u64 = 1006;
 
     #[test]
     public fun test_verify() {
@@ -516,6 +518,46 @@ module plonk_verifier_addr::plonk_verifier {
         let hash = sha2_256(preimage);
         let hash_reduced = bytes_to_uint256(hash) % R_MOD;
         hash_reduced
+    }
+
+    public fun check_pairing_kzg(folded_digests_x: u256, folded_digests_y: u256, folded_quotients_x: u256, folded_quotients_y: u256) {
+        // G1
+        let pairing_input_0: u256 = folded_digests_x;
+        let pairing_input_1: u256 = folded_digests_y;
+        // G2
+        let pairing_input_2: u256 = G2_SRS_0_X_0;
+        let pairing_input_3: u256 = G2_SRS_0_X_1;
+        let pairing_input_4: u256 = G2_SRS_0_Y_0;
+        let pairing_input_5: u256 = G2_SRS_0_Y_1;
+        // G1
+        let pairing_input_6: u256 = folded_quotients_x;
+        let pairing_input_7: u256 = folded_quotients_y;
+        // G2
+        let pairing_input_8: u256 = G2_SRS_1_X_0;
+        let pairing_input_9: u256 = G2_SRS_1_X_1;
+        let pairing_input_10: u256 = G2_SRS_1_Y_0;
+        let pairing_input_11: u256 = G2_SRS_1_Y_1;
+
+        let g1_elements = vector::empty<Element<G1>>();
+        push_back(&mut g1_elements, new_g1(pairing_input_0, pairing_input_1));
+        push_back(&mut g1_elements, new_g1(pairing_input_6, pairing_input_7));
+
+        let g2_elements = vector::empty<Element<G2>>();
+        push_back(&mut g2_elements, new_g2(pairing_input_2, pairing_input_3, pairing_input_4, pairing_input_5));
+        push_back(&mut g2_elements, new_g2(pairing_input_8, pairing_input_9, pairing_input_10, pairing_input_11));
+        let gt_element = multi_pairing<G1, G2, Gt>(&g1_elements, &g2_elements);
+        assert!(eq(&gt_element, &zero<Gt>()), ERROR_PAIRING_KZG_CHECK);
+    }
+
+    #[test]
+    public fun test_pairing_kzg_check() {
+        let folded_digests_x: u256 = 0x08b99791fe52556d6763cc2ef120620e81e6403dc1aea7b14be1d96f1f53cb57;
+        let folded_digests_y: u256 = 0x0bb5831359b594a93730d4fcd7ce5bf1e89c589f0c230465e5dc993694c5cda3;
+
+        let folded_quotients_x: u256 = 0x1372be68afe235fcad22b0f5bbee8120b4144cf12e8be05e0fee58b2edaefb99;
+        let folded_quotients_y: u256 = 0x009eed110f00d9b208e8a9b6fd71e471e6180c17fb58a9b09693da3c0b7a8872;
+
+        check_pairing_kzg(folded_digests_x, folded_digests_y, folded_quotients_x, folded_quotients_y);
     }
 
     #[test]

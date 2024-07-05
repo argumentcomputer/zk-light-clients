@@ -1,6 +1,6 @@
 module plonk_verifier_addr::utilities {
     use aptos_std::crypto_algebra::{Element, one, mul, deserialize, serialize};
-    use std::bn254_algebra::{Fr, FormatFrMsb};
+    use std::bn254_algebra::{Fr, FormatFrMsb, G1, FormatG1Uncompr, G2, FormatG2Uncompr};
     use std::vector::{length, push_back, append, trim, reverse};
     use std::vector;
 
@@ -8,8 +8,6 @@ module plonk_verifier_addr::utilities {
     use aptos_std::crypto_algebra::{scalar_mul, add, eq};
     #[test_only]
     use std::hash::sha2_256;
-    #[test_only]
-    use std::bn254_algebra::{FormatG1Uncompr, G1};
 
     const ERROR_U256_TO_FR: u64 = 2001;
 
@@ -45,6 +43,27 @@ module plonk_verifier_addr::utilities {
     public fun u256_to_bytes(input: u256): vector<u8> {
         let output = vector::empty<u8>();
         append_value(&mut output, input, true, 32);
+        output
+    }
+
+    public fun new_g1(x: u256, y: u256): Element<G1> {
+        let output = vector::empty<u8>();
+        append_value(&mut output, x, false, 32);
+        append_value(&mut output, y, false, 32);
+        let output = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&output));
+        output
+    }
+
+    // Considering Ethereum pairing (0x08) precompile format input [a, b, c, d]
+    // (see https://gist.github.com/chriseth/f9be9d9391efc5beb9704255a8e2989d#file-snarktest-solidity-L27)
+    // in Aptos it should be [b, a, d, c].
+    public fun new_g2(a: u256, b: u256, c: u256, d: u256): Element<G2> {
+        let output = vector::empty<u8>();
+        append_value(&mut output, b, false, 32);
+        append_value(&mut output, a, false, 32);
+        append_value(&mut output, d, false, 32);
+        append_value(&mut output, c, false, 32);
+        let output = std::option::extract(&mut deserialize<G2, FormatG2Uncompr>(&output));
         output
     }
 
