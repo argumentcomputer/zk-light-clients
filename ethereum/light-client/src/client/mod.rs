@@ -16,11 +16,13 @@ use crate::client::beacon::BeaconClient;
 use crate::client::checkpoint::CheckpointClient;
 use crate::client::error::ClientError;
 use crate::types::beacon::bootstrap::Bootstrap;
+use crate::types::beacon::update::UpdateResponse;
 use crate::types::checkpoint::Checkpoint;
 
 pub(crate) mod beacon;
 pub(crate) mod checkpoint;
 pub mod error;
+pub mod utils;
 
 /// The client for the light client. It is the entrypoint for any needed remote call.
 #[derive(Debug, Clone)]
@@ -80,5 +82,13 @@ impl Client {
     /// Returns an error if the request fails or the response is not successful or properly formatted.
     pub async fn get_checkpoint(&self, slot: Option<u64>) -> Result<Checkpoint, ClientError> {
         self.checkpoint_client.get_checkpoint(slot).await
+    }
+
+    pub async fn get_update_data(
+        &self,
+        sync_period: u64,
+        max: u8,
+    ) -> Result<UpdateResponse, ClientError> {
+        self.beacon_client.get_update_data(sync_period, max).await
     }
 }

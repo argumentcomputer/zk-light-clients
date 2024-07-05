@@ -16,10 +16,87 @@ use ethereum_lc_core::types::committee::{
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::utils::{extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{
-    FinalizedRootBranch, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS, U64_LEN,
+    FinalizedRootBranch, ForkDigest, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS,
+    U64_LEN,
 };
 use getset::Getters;
 
+/// Base length of a `Update` struct in bytes.
+pub const UPDATE_BASE_BYTES_LEN: usize = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
+    + SYNC_COMMITTEE_BYTES_LEN
+    + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
+    + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
+    + SYNC_AGGREGATE_BYTES_LEN
+    + U64_LEN;
+
+/// Payload received from the Beacon Node when fetching updates starting at a given period.
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
+pub struct UpdateResponse {
+    updates: Vec<UpdateItem>,
+}
+
+impl UpdateResponse {
+    /// Deserialize a `UpdateResponse` from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ encoded bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `UpdateResponse` or a `TypesError`.
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<UpdateResponse, TypesError> {
+        let mut cursor = 0;
+        let mut updates = vec![];
+
+        while cursor < bytes.len() {
+            if cursor + U64_LEN >= bytes.len() {
+                return Err(TypesError::UnderLength {
+                    minimum: U64_LEN + 4 + UPDATE_BASE_BYTES_LEN,
+                    actual: bytes.len(),
+                    structure: "UpdateResponse".into(),
+                });
+            }
+
+            let size = u64::from_le_bytes(bytes[cursor..cursor + U64_LEN].try_into().unwrap());
+            cursor += U64_LEN;
+
+            if cursor + size as usize > bytes.len() {
+                return Err(TypesError::UnderLength {
+                    minimum: cursor + size as usize,
+                    actual: bytes.len(),
+                    structure: "UpdateResponse".into(),
+                });
+            }
+
+            let fork_digest: [u8; 4] = bytes[cursor..cursor + 4].try_into().unwrap();
+
+            let update = Update::from_ssz_bytes(&bytes[cursor + 4..cursor + size as usize])?;
+            cursor += size as usize;
+
+            updates.push(UpdateItem {
+                size,
+                fork_digest,
+                update,
+            });
+        }
+
+        Ok(UpdateResponse { updates })
+    }
+}
+
+/// An item in the `UpdateResponse` containing the size of the update, the fork digest and the update itself.
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
+pub struct UpdateItem {
+    size: u64,
+    fork_digest: ForkDigest,
+    update: Update,
+}
+
+/// A data structure containing the necessary data for a light client to update its state from the Beacon chain.
+///
 /// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/light-client/sync-protocol.md#lightclientupdate).
 #[derive(Debug, Clone, Getters)]
 #[getset(get = "pub")]
@@ -34,6 +111,11 @@ pub struct Update {
 }
 
 impl Update {
+    /// Serialize the `Update` struct to SSZ bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` containing the SSZ serialized `Update` struct.
     pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
         let mut bytes = vec![];
 
@@ -79,17 +161,19 @@ impl Update {
         Ok(bytes)
     }
 
+    /// Deserialize a `Update` struct from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ encoded bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `Update` struct or a `TypesError`.
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        let expected_len = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
-            + SYNC_COMMITTEE_BYTES_LEN
-            + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
-            + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
-            + SYNC_AGGREGATE_BYTES_LEN
-            + U64_LEN;
-
-        if bytes.len() < expected_len {
+        if bytes.len() < UPDATE_BASE_BYTES_LEN {
             return Err(TypesError::UnderLength {
-                minimum: expected_len,
+                minimum: UPDATE_BASE_BYTES_LEN,
                 actual: bytes.len(),
                 structure: "Update".into(),
             });

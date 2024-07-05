@@ -43,3 +43,8 @@ pub const FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS: usize = 6;
 
 /// Merkle proof for a finalized block root.
 pub type FinalizedRootBranch = [Bytes32; FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS];
+
+/// ForkDigest representing the fork the data originated from.
+///
+/// From [the phase0 specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0-beta.6/specs/phase0/beacon-chain.md#custom-types).
+pub type ForkDigest = [u8; 4];
