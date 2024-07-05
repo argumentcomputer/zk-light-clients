@@ -1,10 +1,10 @@
 module plonk_verifier_addr::plonk_verifier {
     use std::vector;
     use std::hash::{ sha2_256 };
-    use plonk_verifier_addr::utilities::{append_value, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256, u256_to_bytes, new_g1, new_g2};
+    use plonk_verifier_addr::utilities::{append_value, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256, u256_to_bytes, new_g1, new_g2, point_acc_mul, prepare_pairing_g1_input, fr_acc_mul, get_coordinates};
     use std::bn254_algebra::{FormatFrMsb, Fr, G1, G2, Gt};
     use std::vector::{length, push_back, trim, reverse, pop_back};
-    use aptos_std::crypto_algebra::{add, serialize, deserialize, Element, mul, one, zero, multi_pairing, eq};
+    use aptos_std::crypto_algebra::{add, serialize, deserialize, Element, mul, one, zero, multi_pairing, eq, scalar_mul};
 
     #[test_only]
     use plonk_verifier_addr::utilities::{get_proof, get_public_inputs};
@@ -209,13 +209,24 @@ module plonk_verifier_addr::plonk_verifier {
         let opening_linearized_polynomial_zeta = verify_opening_linearized_polynomial(proof, beta, gamma, alpha, alpha_square_lagrange_0, l_pi);
         assert!(opening_linearized_polynomial_zeta == 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9, 7);
 
+        // TODO folding stuff
+        let state_folded_digest_x: u256 = 0x101b42e285f51c7865c0de9e80baf88f27968bfd0996898217514839998e4055;
+        let state_folded_digest_y: u256 = 0x1e5fc59354f785f77dd3baad2cd6f2e29826046cab1885def6732254a2e454be;
+        let state_folded_claimed_evals: u256 = 0x1e599360ddb54b11753655d2bd2189b3d498c256e8b45d2c1595bc1e1a7dc610;
+
         // TODO adding computation of linearized polynomial
+
         let linearized_polynomial_x = 0x13e5b420a81184cc432f863784d667a183a6a0352aba9c04a28ea4d27a2fe235;
         let linearized_polynomial_y = 0x1d247f83ce0b12465c66efd5c68cf00fdba90b274f3dc94515787b9b5c013b8a;
+
         let gamma_kzg = compute_gamma_kzg(proof, zeta, linearized_polynomial_x, linearized_polynomial_y, opening_linearized_polynomial_zeta);
         assert!(gamma_kzg == 0x27d3410c7afdd4967e71d28cb34b5595eca2614e3c0a7601891c3554b7568241, 8);
 
-        // TODO adding rest of verification logic ...
+        let (folded_digests, folded_qoutients) = batch_verify_multi_points(proof, zeta, gamma_kzg, state_folded_digest_x, state_folded_digest_y, state_folded_claimed_evals);
+        let (fd_x, fd_y) = get_coordinates(folded_digests);
+        let (fq_x, fq_y) = get_coordinates(folded_qoutients);
+
+        check_pairing_kzg(fd_x, fd_y, fq_x, fq_y);
     }
 
     public fun derive_gamma(proof: vector<u256>, vk: u256, public_inputs_digest: u256): u256 {
@@ -547,6 +558,61 @@ module plonk_verifier_addr::plonk_verifier {
         push_back(&mut g2_elements, new_g2(pairing_input_8, pairing_input_9, pairing_input_10, pairing_input_11));
         let gt_element = multi_pairing<G1, G2, Gt>(&g1_elements, &g2_elements);
         assert!(eq(&gt_element, &zero<Gt>()), ERROR_PAIRING_KZG_CHECK);
+    }
+
+    // TODO: validate verificaion on various proofs since there are places where arithmetic overflow may happen
+    public fun batch_verify_multi_points(proof: vector<u256>, zeta: u256, gamma_kzg: u256, state_folded_digest_x: u256, state_folded_digest_y: u256, state_folded_claimed_evals: u256): (Element<G1>, Element<G1>) {
+        let proof_batch_opening_at_zeta_x: u256 = *vector::borrow(&proof, 20);
+        let proof_batch_opening_at_zeta_y: u256 = *vector::borrow(&proof, 21);
+        let proof_grand_product_commitment_x: u256 = *vector::borrow(&proof, 17);
+        let proof_grand_product_commitment_y: u256 = *vector::borrow(&proof, 18);
+        let proof_opening_at_zeta_omega_x: u256 = *vector::borrow(&proof, 22);
+        let proof_opening_at_zeta_omega_y: u256 = *vector::borrow(&proof, 23);
+        let proof_grand_product_at_zeta_omega: u256 = *vector::borrow(&proof, 19);
+
+        let preimage = vector::empty<u8>();
+        append_value(&mut preimage, state_folded_digest_x, true, 32);
+        append_value(&mut preimage, state_folded_digest_y, true, 32);
+        append_value(&mut preimage, proof_batch_opening_at_zeta_x, true, 32);
+        append_value(&mut preimage, proof_batch_opening_at_zeta_y, true, 32);
+        append_value(&mut preimage, proof_grand_product_commitment_x, true, 32);
+        append_value(&mut preimage, proof_grand_product_commitment_y, true, 32);
+        append_value(&mut preimage, proof_opening_at_zeta_omega_x, true, 32);
+        append_value(&mut preimage, proof_opening_at_zeta_omega_y, true, 32);
+        append_value(&mut preimage, zeta, true, 32);
+        append_value(&mut preimage, gamma_kzg, true, 32);
+
+        let hash = sha2_256(preimage);
+        let random = bytes_to_uint256(hash) % R_MOD;
+
+        let proof_opening_at_zeta_omega = new_g1(proof_opening_at_zeta_omega_x, proof_opening_at_zeta_omega_y);
+        let proof_batch_opening_at_zeta = new_g1(proof_batch_opening_at_zeta_x, proof_batch_opening_at_zeta_y);
+        let folded_quotients = point_acc_mul(proof_opening_at_zeta_omega, u256_to_fr(random), proof_batch_opening_at_zeta);
+        let folded_quotients = prepare_pairing_g1_input(folded_quotients, P_MOD);
+
+        let proof_grand_product_commitment = new_g1(proof_grand_product_commitment_x, proof_grand_product_commitment_y);
+        let state_folded_digests = new_g1(state_folded_digest_x, state_folded_digest_y);
+        let folded_digests = point_acc_mul(proof_grand_product_commitment, u256_to_fr(random), state_folded_digests);
+
+        let folded_evals = fr_acc_mul(state_folded_claimed_evals, proof_grand_product_at_zeta_omega, random);
+
+        let g1_srs = new_g1(G1_SRS_X, G1_SRS_Y);
+        let folded_evals_commit = scalar_mul(&g1_srs, &folded_evals);
+
+        let folded_evals_commit = prepare_pairing_g1_input(folded_evals_commit, P_MOD);
+
+        let folded_digests = add(&folded_digests, &folded_evals_commit);
+
+        let folded_points_quotients = scalar_mul(&new_g1(proof_batch_opening_at_zeta_x, proof_batch_opening_at_zeta_y), &u256_to_fr(zeta));
+
+        let zeta_omega = mul(&u256_to_fr(zeta), &u256_to_fr(VK_OMEGA));
+        let random = mul(&u256_to_fr(random), &zeta_omega);
+
+        let folded_points_quotients = point_acc_mul(proof_opening_at_zeta_omega, random, folded_points_quotients);
+
+        let folded_digests = add(&folded_digests, &folded_points_quotients);
+
+        (folded_digests, folded_quotients)
     }
 
     #[test]

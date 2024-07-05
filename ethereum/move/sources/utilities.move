@@ -1,11 +1,11 @@
 module plonk_verifier_addr::utilities {
-    use aptos_std::crypto_algebra::{Element, one, mul, deserialize, serialize};
+    use aptos_std::crypto_algebra::{Element, one, mul, deserialize, serialize, scalar_mul, add};
     use std::bn254_algebra::{Fr, FormatFrMsb, G1, FormatG1Uncompr, G2, FormatG2Uncompr};
-    use std::vector::{length, push_back, append, trim, reverse};
+    use std::vector::{length, push_back, append, trim, reverse, slice};
     use std::vector;
 
     #[test_only]
-    use aptos_std::crypto_algebra::{scalar_mul, add, eq};
+    use aptos_std::crypto_algebra::{eq};
     #[test_only]
     use std::hash::sha2_256;
 
@@ -65,6 +65,35 @@ module plonk_verifier_addr::utilities {
         append_value(&mut output, c, false, 32);
         let output = std::option::extract(&mut deserialize<G2, FormatG2Uncompr>(&output));
         output
+    }
+
+    public fun point_acc_mul(g1_mul: Element<G1>, scalar: Element<Fr>, g1_add: Element<G1>): Element<G1> {
+        let scalar_multiplication = scalar_mul(&g1_mul, &scalar);
+        add(&scalar_multiplication, &g1_add)
+    }
+
+    public fun fr_acc_mul(dst: u256, src: u256, scalar: u256): Element<Fr>{
+        let tmp = mul(&u256_to_fr(src), &u256_to_fr(scalar));
+        let output = add(&tmp, &u256_to_fr(dst));
+        output
+    }
+
+    public fun get_coordinates(input: Element<G1>): (u256, u256) {
+        let input_bytes = serialize<G1, FormatG1Uncompr>(&input);
+        let input_x = slice(&input_bytes, 0, 32);
+        reverse(&mut input_x);
+        let input_y = slice(&input_bytes, 32, 64);
+        reverse(&mut input_y);
+
+        (bytes_to_uint256(input_x), bytes_to_uint256(input_y))
+    }
+
+    public fun prepare_pairing_g1_input(input: Element<G1>, p_mod: u256): Element<G1> {
+        let (x, y) = get_coordinates(input);
+        let y = (y & 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff as u256);
+        let y = p_mod - y;
+
+        new_g1(x, y)
     }
 
     public fun bytes_to_uint256(input: vector<u8>): u256 {
@@ -236,6 +265,16 @@ module plonk_verifier_addr::utilities {
         push_back(&mut public_inputs, SphinxInclusionProofVk);
         push_back(&mut public_inputs, SphinxPublicValuesHash);
         public_inputs
+    }
+
+    #[test]
+    public fun test_point_acc_mul() {
+        let g1_mul = new_g1(0x143856445caa26db7923454b0352aa2856a40426a61344a62063e2a155a36e90, 0x2602c5e130d1246cbbc88c26b74ea864dcb1dc94bc8128faa4e39fd81ab64e64);
+        let scalar = u256_to_fr(0x227968b6d1ad8c5e5098ebdcda749f7ea276621c56e733010a3a0e464f1f8957);
+        let g1_add = new_g1(0x1f201aede6e12b30bc9cf21d5e92534ef76d84e88e95eeb772f5a59f65ac7ea1, 0x28f2b25c8172a777d706196a470e604c650372818f2f514efff1e7e76d413a8e);
+
+        let result = point_acc_mul(g1_mul, scalar, g1_add);
+        assert!(eq(&result, &new_g1(0x1372be68afe235fcad22b0f5bbee8120b4144cf12e8be05e0fee58b2edaefb99, 0xafc56161d230c677af679bff840f73ebb1695e796d1920dca58cb1dacd0274d5)), 1);
     }
 
     #[test]
