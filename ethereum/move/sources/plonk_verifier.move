@@ -134,6 +134,7 @@ module plonk_verifier_addr::plonk_verifier {
     const ERROR_INPUTS_SIZE: u64 = 1002;
     const ERROR_PROOF_SIZE: u64 = 1003;
     const ERROR_PROOF_OPENING_SIZE: u64 = 1004;
+    const ERROR_UNEXPECTED_VK_NB_CUSTOM_GATES_AMOUNT: u64 = 1005;
 
     #[test]
     public fun test_verify() {
@@ -143,6 +144,9 @@ module plonk_verifier_addr::plonk_verifier {
     }
 
     public fun verify(proof: vector<u256>, public_inputs: vector<u256>) {
+        // technical assert to ensure that VK_NB_CUSTOM_GATES constant has not been changed
+        assert!(VK_NB_CUSTOM_GATES == 1, ERROR_UNEXPECTED_VK_NB_CUSTOM_GATES_AMOUNT);
+
         // check number of public inputs
         assert!(length(&public_inputs) == VK_NB_PUBLIC_INPUTS, ERROR_NB_PUBLIC_INPUTS);
 
@@ -202,6 +206,12 @@ module plonk_verifier_addr::plonk_verifier {
 
         let opening_linearized_polynomial_zeta = verify_opening_linearized_polynomial(proof, beta, gamma, alpha, alpha_square_lagrange_0, l_pi);
         assert!(opening_linearized_polynomial_zeta == 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9, 7);
+
+        // TODO adding computation of linearized polynomial
+        let linearized_polynomial_x = 0x13e5b420a81184cc432f863784d667a183a6a0352aba9c04a28ea4d27a2fe235;
+        let linearized_polynomial_y = 0x1d247f83ce0b12465c66efd5c68cf00fdba90b274f3dc94515787b9b5c013b8a;
+        let gamma_kzg = compute_gamma_kzg(proof, zeta, linearized_polynomial_x, linearized_polynomial_y, opening_linearized_polynomial_zeta);
+        assert!(gamma_kzg == 0x27d3410c7afdd4967e71d28cb34b5595eca2614e3c0a7601891c3554b7568241, 8);
 
         // TODO adding rest of verification logic ...
     }
@@ -472,6 +482,40 @@ module plonk_verifier_addr::plonk_verifier {
         let s1 = (R_MOD - fr_to_u256(s1)) % R_MOD;
 
         s1
+    }
+
+    public fun compute_gamma_kzg(proof: vector<u256>, zeta: u256, linearized_polynomial_x: u256, linearized_polynomial_y: u256, opening_linearized_polynomial_zeta: u256): u256  {
+        let preimage = vector::empty<u8>();
+        append_value(&mut preimage, FS_GAMMA_KZG, true, 5);
+        append_value(&mut preimage, zeta, true, 32);
+        append_value(&mut preimage, linearized_polynomial_x, true, 32);
+        append_value(&mut preimage, linearized_polynomial_y, true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 0), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 1), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 2), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 3), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 4), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 5), true, 32);
+        append_value(&mut preimage, VK_S1_COM_X, true, 32);
+        append_value(&mut preimage, VK_S1_COM_Y, true, 32);
+        append_value(&mut preimage, VK_S2_COM_X, true, 32);
+        append_value(&mut preimage, VK_S2_COM_Y, true, 32);
+        append_value(&mut preimage, VK_QCP_0_X, true, 32);
+        append_value(&mut preimage, VK_QCP_0_Y, true, 32);
+        append_value(&mut preimage, opening_linearized_polynomial_zeta, true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 12), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 13), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 14), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 15), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 16), true, 32);
+        // Breaking change happens if VK_NB_CUSTOM_GATES != 1.
+        // In original Solidity contract the number of proof chunks appended is computed as VK_NB_CUSTOM_GATES * 32)
+        append_value(&mut preimage, *vector::borrow(&proof, 24), true, 32);
+        append_value(&mut preimage, *vector::borrow(&proof, 19), true, 32);
+
+        let hash = sha2_256(preimage);
+        let hash_reduced = bytes_to_uint256(hash) % R_MOD;
+        hash_reduced
     }
 
     #[test]
