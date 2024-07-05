@@ -166,12 +166,17 @@ module plonk_verifier_addr::plonk_verifier {
         let vk = *vector::borrow(&public_inputs, 0);
         let public_inputs_digest = *vector::borrow(&public_inputs, 1);
 
-        let gamma = derive_gamma(proof, vk, public_inputs_digest);
-        let beta = derive_beta(gamma);
-        let alpha = derive_alpha(proof, beta);
-        let zeta = derive_zeta(proof, alpha);
+        let gamma_non_reduced = derive_gamma(proof, vk, public_inputs_digest);
+        let beta_non_reduced = derive_beta(gamma_non_reduced);
+        let alpha_non_reduced = derive_alpha(proof, beta_non_reduced);
+        let zeta_non_reduced = derive_zeta(proof, alpha_non_reduced);
 
-        assert!(zeta == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
+        assert!(zeta_non_reduced == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
+
+        let gamma = gamma_non_reduced % R_MOD;
+        let beta = beta_non_reduced % R_MOD;
+        let alpha = alpha_non_reduced % R_MOD;
+        let zeta = zeta_non_reduced % R_MOD;
 
         let zeta_bytes = vector::empty<u8>();
         append_value(&mut zeta_bytes, zeta, true, 32);
@@ -188,6 +193,15 @@ module plonk_verifier_addr::plonk_verifier {
 
         let pic_custom_gates = compute_public_inputs_contribution_from_custom_gates(proof, u256_to_fr(zeta), zeta_power_n_minus_one, (length(&public_inputs) as u256));
         assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&pic_custom_gates)) == 0x0de62ecfdd3191e71fb9a52bfbefd0ff1182e916b8d9264e96e2279a1171fd03, 4);
+
+        let l_pi = add(&pic, &pic_custom_gates);
+        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&l_pi)) == 0x275349bdf12a6469defe02653a8ec1f4e855d5e47258e2752dd9ded289c72804, 5);
+
+        let alpha_square_lagrange_0 = compute_alpha_square_lagrange_0(zeta, zeta_power_n_minus_one, alpha);
+        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&alpha_square_lagrange_0)) == 0x1e5753617012c75058de839245263e8b961d4742abf030d3d44ada59d6211299, 6);
+
+        //let opening_linearized_polynomial_zeta = verify_opening_linearized_polynomial(proof, beta, gamma, alpha, alpha_square_lagrange_0, l_pi);
+        //assert!(opening_linearized_polynomial_zeta == 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9, 7);
 
         // TODO adding rest of verification logic ...
     }
@@ -425,6 +439,40 @@ module plonk_verifier_addr::plonk_verifier {
         let pi_commit = mul(&hash_fr, &ith_lagrange);
         pi_commit
     }
+
+    public fun compute_alpha_square_lagrange_0(zeta: u256, zeta_power_n_minus_one: Element<Fr>, alpha: u256): Element<Fr> {
+        let den = add(&u256_to_fr(zeta), &u256_to_fr(R_MOD_MINUS_ONE));
+        let den = powSmall(den, R_MOD - 2);
+        let den = mul(&den, &u256_to_fr(VK_INV_DOMAIN_SIZE));
+        let res = mul(&den, &zeta_power_n_minus_one);
+        let res = mul(&res, &u256_to_fr(alpha));
+        let alpha_square_lagrange_0 = mul(&res, &u256_to_fr(alpha));
+        alpha_square_lagrange_0
+    }
+
+    /*public fun verify_opening_linearized_polynomial(proof: vector<u256>, beta: u256, gamma: u256, alpha: u256, alpha_square_lagrange_0: Element<Fr>, pic: Element<Fr>): u256 {
+        let s1 = mul(&u256_to_fr(*vector::borrow(&proof, 15)), &u256_to_fr(beta));
+        let s1 = add(&s1, &u256_to_fr(gamma));
+        let s1 = add(&s1, &u256_to_fr(*vector::borrow(&proof, 12)));
+
+        let s2 = mul(&u256_to_fr(*vector::borrow(&proof, 16)), &u256_to_fr(beta));
+        let s2 = add(&s2, &u256_to_fr(gamma));
+        let s2 = add(&s2, &u256_to_fr(*vector::borrow(&proof, 13)));
+
+        let o = add(&u256_to_fr(*vector::borrow(&proof, 14)), &u256_to_fr(gamma));
+
+        let s1 = mul(&s1, &s2);
+        let s1 = mul(&s1, &o);
+        let s1 = mul(&s1, &u256_to_fr(alpha));
+        let s1 = mul(&s1, &u256_to_fr(*vector::borrow(&proof, 19)));
+
+        let s1 = add(&s1, &pic);
+        let s2 = (R_MOD - fr_to_u256(alpha_square_lagrange_0)) % R_MOD;
+        let s1 = add(&s1, &u256_to_fr(s2));
+        let s1 = (R_MOD - fr_to_u256(s1)) % R_MOD;
+
+        s1
+    }*/
 
     #[test]
     public fun test_derive_gamma() {
