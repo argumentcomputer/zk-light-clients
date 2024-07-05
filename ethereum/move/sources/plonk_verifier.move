@@ -200,8 +200,8 @@ module plonk_verifier_addr::plonk_verifier {
         let alpha_square_lagrange_0 = compute_alpha_square_lagrange_0(zeta, zeta_power_n_minus_one, alpha);
         assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&alpha_square_lagrange_0)) == 0x1e5753617012c75058de839245263e8b961d4742abf030d3d44ada59d6211299, 6);
 
-        //let opening_linearized_polynomial_zeta = verify_opening_linearized_polynomial(proof, beta, gamma, alpha, alpha_square_lagrange_0, l_pi);
-        //assert!(opening_linearized_polynomial_zeta == 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9, 7);
+        let opening_linearized_polynomial_zeta = verify_opening_linearized_polynomial(proof, beta, gamma, alpha, alpha_square_lagrange_0, l_pi);
+        assert!(opening_linearized_polynomial_zeta == 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9, 7);
 
         // TODO adding rest of verification logic ...
     }
@@ -450,7 +450,7 @@ module plonk_verifier_addr::plonk_verifier {
         alpha_square_lagrange_0
     }
 
-    /*public fun verify_opening_linearized_polynomial(proof: vector<u256>, beta: u256, gamma: u256, alpha: u256, alpha_square_lagrange_0: Element<Fr>, pic: Element<Fr>): u256 {
+    public fun verify_opening_linearized_polynomial(proof: vector<u256>, beta: u256, gamma: u256, alpha: u256, alpha_square_lagrange_0: Element<Fr>, pic: Element<Fr>): u256 {
         let s1 = mul(&u256_to_fr(*vector::borrow(&proof, 15)), &u256_to_fr(beta));
         let s1 = add(&s1, &u256_to_fr(gamma));
         let s1 = add(&s1, &u256_to_fr(*vector::borrow(&proof, 12)));
@@ -472,7 +472,7 @@ module plonk_verifier_addr::plonk_verifier {
         let s1 = (R_MOD - fr_to_u256(s1)) % R_MOD;
 
         s1
-    }*/
+    }
 
     #[test]
     public fun test_derive_gamma() {
