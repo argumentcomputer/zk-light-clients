@@ -21,6 +21,14 @@ use ethereum_lc_core::types::{
 };
 use getset::Getters;
 
+/// Base length of a `Update` struct in bytes.
+pub const UPDATE_BASE_BYTES_LEN: usize = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
+    + SYNC_COMMITTEE_BYTES_LEN
+    + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
+    + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
+    + SYNC_AGGREGATE_BYTES_LEN
+    + U64_LEN;
+
 /// Payload received from the Beacon Node when fetching updates starting at a given period.
 #[derive(Debug, Clone, Getters)]
 #[getset(get = "pub")]
@@ -42,9 +50,25 @@ impl UpdateResponse {
         let mut cursor = 0;
         let mut updates = vec![];
 
-        while cursor != bytes.len() {
+        while cursor < bytes.len() {
+            if cursor + U64_LEN >= bytes.len() {
+                return Err(TypesError::UnderLength {
+                    minimum: U64_LEN + 4 + UPDATE_BASE_BYTES_LEN,
+                    actual: bytes.len(),
+                    structure: "UpdateResponse".into(),
+                });
+            }
+
             let size = u64::from_le_bytes(bytes[cursor..cursor + U64_LEN].try_into().unwrap());
             cursor += U64_LEN;
+
+            if cursor + size as usize > bytes.len() {
+                return Err(TypesError::UnderLength {
+                    minimum: cursor + size as usize,
+                    actual: bytes.len(),
+                    structure: "UpdateResponse".into(),
+                });
+            }
 
             let fork_digest: [u8; 4] = bytes[cursor..cursor + 4].try_into().unwrap();
 
@@ -147,16 +171,9 @@ impl Update {
     ///
     /// A `Result` containing the deserialized `Update` struct or a `TypesError`.
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        let expected_len = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
-            + SYNC_COMMITTEE_BYTES_LEN
-            + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
-            + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
-            + SYNC_AGGREGATE_BYTES_LEN
-            + U64_LEN;
-
-        if bytes.len() < expected_len {
+        if bytes.len() < UPDATE_BASE_BYTES_LEN {
             return Err(TypesError::UnderLength {
-                minimum: expected_len,
+                minimum: UPDATE_BASE_BYTES_LEN,
                 actual: bytes.len(),
                 structure: "Update".into(),
             });

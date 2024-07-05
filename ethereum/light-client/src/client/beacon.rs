@@ -103,7 +103,9 @@ impl BeaconClient {
         Ok(bootstrap)
     }
 
-    /// `get_update_data` makes an HTTP request to the Beacon Node API to get the update data.
+    /// `get_update_data` makes an HTTP request to the Beacon Node API to get the update data. It fetches
+    /// the update data starting at a given sync committee period and count. A sync committee period
+    /// can be calculated from a given slot with the [`crate::client::utils::calc_sync_period`] function.
     ///
     /// # Arguments
     ///
