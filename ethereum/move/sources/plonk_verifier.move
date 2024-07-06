@@ -209,10 +209,8 @@ module plonk_verifier_addr::plonk_verifier {
         let opening_linearized_polynomial_zeta = verify_opening_linearized_polynomial(proof, beta, gamma, alpha, alpha_square_lagrange_0, l_pi);
         assert!(opening_linearized_polynomial_zeta == 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9, 7);
 
-        // TODO folding stuff
-        let state_folded_digest_x: u256 = 0x101b42e285f51c7865c0de9e80baf88f27968bfd0996898217514839998e4055;
-        let state_folded_digest_y: u256 = 0x1e5fc59354f785f77dd3baad2cd6f2e29826046cab1885def6732254a2e454be;
-        let state_folded_claimed_evals: u256 = 0x1e599360ddb54b11753655d2bd2189b3d498c256e8b45d2c1595bc1e1a7dc610;
+        let folded_h = fold_h(proof, zeta, fr_to_u256(zeta_power_n_minus_one));
+        assert!(eq(&folded_h, &new_g1(0x1a6bd6b3722270cea97cba68003aecc4fcc92fb1b94239af9813f596f6012081, 0xab7daef9480103a165ebc13407344ee31147cfcb7d1d417c4a951a7ac4a59f14)), 8);
 
         // TODO adding computation of linearized polynomial
 
@@ -221,6 +219,16 @@ module plonk_verifier_addr::plonk_verifier {
 
         let gamma_kzg = compute_gamma_kzg(proof, zeta, linearized_polynomial_x, linearized_polynomial_y, opening_linearized_polynomial_zeta);
         assert!(gamma_kzg == 0x27d3410c7afdd4967e71d28cb34b5595eca2614e3c0a7601891c3554b7568241, 8);
+
+
+        let state_folded_digest_x = 0x13e5b420a81184cc432f863784d667a183a6a0352aba9c04a28ea4d27a2fe235;
+        let state_folded_digest_y = 0x1d247f83ce0b12465c66efd5c68cf00fdba90b274f3dc94515787b9b5c013b8a;
+        let state_folded_claimed_values = 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9;
+
+        let (state_folded_digest_x, state_folded_digest_y, state_folded_claimed_evals) = fold_state(proof, gamma_kzg, state_folded_digest_x, state_folded_digest_y, state_folded_claimed_values);
+        assert!(state_folded_digest_x == 0x101b42e285f51c7865c0de9e80baf88f27968bfd0996898217514839998e4055, 9);
+        assert!(state_folded_digest_y == 0x9e5fc59354f785f77dd3baad2cd6f2e29826046cab1885def6732254a2e454be, 10); // 0x1e5fc59354f785f77dd3baad2cd6f2e29826046cab1885def6732254a2e454be in Ethereum
+        assert!(state_folded_claimed_evals == 0x1e599360ddb54b11753655d2bd2189b3d498c256e8b45d2c1595bc1e1a7dc610, 11);
 
         let (folded_digests, folded_qoutients) = batch_verify_multi_points(proof, zeta, gamma_kzg, state_folded_digest_x, state_folded_digest_y, state_folded_claimed_evals);
         let (fd_x, fd_y) = get_coordinates(folded_digests);
@@ -613,6 +621,79 @@ module plonk_verifier_addr::plonk_verifier {
         let folded_digests = add(&folded_digests, &folded_points_quotients);
 
         (folded_digests, folded_quotients)
+    }
+
+    public fun fold_h(proof: vector<u256>, zeta: u256, zeta_power_n_minus_one: u256): Element<G1> {
+        let n_plus_two = VK_DOMAIN_SIZE + 2;
+        let proof_h_2_x: u256 = *vector::borrow(&proof, 10);
+        let proof_h_2_y: u256 = *vector::borrow(&proof, 11);
+        let proof_h_1_x: u256 = *vector::borrow(&proof, 8);
+        let proof_h_1_y: u256 = *vector::borrow(&proof, 9);
+        let proof_h_0_x: u256 = *vector::borrow(&proof, 6);
+        let proof_h_0_y: u256 = *vector::borrow(&proof, 7);
+
+        let zeta_power_n_plus_two = powSmall(u256_to_fr(zeta), n_plus_two);
+        let folded_h = scalar_mul(&new_g1(proof_h_2_x, proof_h_2_y), &zeta_power_n_plus_two);
+        let folded_h = add(&folded_h, &new_g1(proof_h_1_x, proof_h_1_y));
+        let folded_h = scalar_mul(&folded_h, &zeta_power_n_plus_two);
+        let folded_h = add(&folded_h, &new_g1(proof_h_0_x, proof_h_0_y));
+        let folded_h = scalar_mul(&folded_h, &u256_to_fr(zeta_power_n_minus_one));
+        let folded_h = prepare_pairing_g1_input(folded_h, P_MOD);
+        folded_h
+    }
+
+    public fun fold_state(proof: vector<u256>, gamma_kzg: u256, state_folded_digest_x: u256, state_folded_digest_y: u256, state_folded_claimed_values: u256): (u256, u256, u256) {
+        let proof_l_com_x: u256 = *vector::borrow(&proof, 0);
+        let proof_l_com_y: u256 = *vector::borrow(&proof, 1);
+        let proof_l_at_zeta: u256 = *vector::borrow(&proof, 12);
+        let proof_r_at_zeta: u256 = *vector::borrow(&proof, 13);
+        let proof_o_at_zeta: u256 = *vector::borrow(&proof, 14);
+        let proof_s1_at_zeta: u256 = *vector::borrow(&proof, 15);
+        let proof_s2_at_zeta: u256 = *vector::borrow(&proof, 16);
+        let proof_opening_qcp_at_zeta: u256 = *vector::borrow(&proof, 24);
+
+        let proof_r_com_x: u256 = *vector::borrow(&proof, 2);
+        let proof_r_com_y: u256 = *vector::borrow(&proof, 3);
+        let proof_o_com_x: u256 = *vector::borrow(&proof, 4);
+        let proof_o_com_y: u256 = *vector::borrow(&proof, 5);
+
+        let state_folded_digest = point_acc_mul(new_g1(proof_l_com_x, proof_l_com_y), u256_to_fr(gamma_kzg), new_g1(state_folded_digest_x, state_folded_digest_y));
+
+        let state_folded_claimed_values = fr_acc_mul(state_folded_claimed_values, proof_l_at_zeta, gamma_kzg);
+
+        let acc_gamma = mul(&u256_to_fr(gamma_kzg), &u256_to_fr(gamma_kzg));
+
+        let state_folded_digest = point_acc_mul(new_g1(proof_r_com_x, proof_r_com_y), acc_gamma, state_folded_digest);
+
+        let state_folded_claimed_values = fr_acc_mul(fr_to_u256(state_folded_claimed_values), proof_r_at_zeta, fr_to_u256(acc_gamma));
+
+        let acc_gamma = mul(&acc_gamma, &u256_to_fr(gamma_kzg));
+
+        let state_folded_digest = point_acc_mul(new_g1(proof_o_com_x, proof_o_com_y), acc_gamma, state_folded_digest);
+
+        let state_folded_claimed_values = fr_acc_mul(fr_to_u256(state_folded_claimed_values), proof_o_at_zeta, fr_to_u256(acc_gamma));
+
+        let acc_gamma = mul(&acc_gamma, &u256_to_fr(gamma_kzg));
+
+        let state_folded_digest = point_acc_mul(new_g1(VK_S1_COM_X, VK_S1_COM_Y), acc_gamma, state_folded_digest);
+
+        let state_folded_claimed_values = fr_acc_mul(fr_to_u256(state_folded_claimed_values), proof_s1_at_zeta, fr_to_u256(acc_gamma));
+
+        let acc_gamma = mul(&acc_gamma, &u256_to_fr(gamma_kzg));
+
+        let state_folded_digest = point_acc_mul(new_g1(VK_S2_COM_X, VK_S2_COM_Y), acc_gamma, state_folded_digest);
+
+        let state_folded_claimed_values = fr_acc_mul(fr_to_u256(state_folded_claimed_values), proof_s2_at_zeta, fr_to_u256(acc_gamma));
+
+        let acc_gamma = mul(&acc_gamma, &u256_to_fr(gamma_kzg));
+
+        let state_folded_digest = point_acc_mul(new_g1(VK_QCP_0_X, VK_QCP_0_Y), acc_gamma, state_folded_digest);
+
+        let state_folded_claimed_values = fr_acc_mul(fr_to_u256(state_folded_claimed_values), proof_opening_qcp_at_zeta, fr_to_u256(acc_gamma));
+
+        let (a, b) = get_coordinates(state_folded_digest);
+
+        (a, b, fr_to_u256(state_folded_claimed_values))
     }
 
     #[test]
