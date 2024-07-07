@@ -84,15 +84,18 @@ module plonk_verifier_addr::utilities {
         reverse(&mut input_x);
         let input_y = slice(&input_bytes, 32, 64);
         reverse(&mut input_y);
-
         (bytes_to_uint256(input_x), bytes_to_uint256(input_y))
     }
 
-    public fun prepare_pairing_g1_input(input: Element<G1>, p_mod: u256): Element<G1> {
-        let (x, y) = get_coordinates(input);
-        let y = (y & 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff as u256);
-        let y = p_mod - y;
+    public fun unset_first_bit(input: u256): u256 {
+        input & 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    }
 
+    public fun prepare_pairing_g1_input(input: Element<G1>, p_modulus: u256): Element<G1> {
+        let (x, y) = get_coordinates(input);
+        let x = unset_first_bit(x);
+        let y = unset_first_bit(y);
+        let y = p_modulus - y;
         new_g1(x, y)
     }
 
