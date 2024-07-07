@@ -4,15 +4,16 @@ module plonk_verifier_addr::plonk_verifier {
     use plonk_verifier_addr::utilities::{append_value, bytes_to_uint256, powSmall, u256_to_fr, fr_to_u256, u256_to_bytes, new_g1, new_g2, point_acc_mul, prepare_pairing_g1_input, fr_acc_mul, get_coordinates, unset_first_bit};
     use std::bn254_algebra::{FormatFrMsb, Fr, G1, G2, Gt};
     use std::vector::{length, push_back, trim, reverse, pop_back};
-    use aptos_std::crypto_algebra::{add, serialize, deserialize, Element, mul, one, zero, multi_pairing, eq, scalar_mul};
-
+    use aptos_std::crypto_algebra::{add, deserialize, Element, mul, one, zero, multi_pairing, eq, scalar_mul};
     #[test_only]
-    use plonk_verifier_addr::utilities::{get_proof, get_public_inputs};
+    use aptos_std::crypto_algebra::serialize;
 
-    // TODO: cleanup following constants as some of them could be unnecessary in Move verifier
+    // BN254 curve constants
     const R_MOD: u256 = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
     const R_MOD_MINUS_ONE: u256 = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000;
     const P_MOD: u256 = 0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47;
+
+    // Aztec SRS constants
     const G2_SRS_0_X_0: u256 = 0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2;
     const G2_SRS_0_X_1: u256 = 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed;
     const G2_SRS_0_Y_0: u256 = 0x090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b;
@@ -23,7 +24,8 @@ module plonk_verifier_addr::plonk_verifier {
     const G2_SRS_1_Y_1: u256 = 0x0efd30ac7b6f8d0d3ccbc2207587c2acbad1532dc0293f0d034cf8258cd428b3;
     const G1_SRS_X: u256 = 0x1fa4be93b5e7f7e674d5059b63554fab99638b304ed8310e9fa44c281ac9b03b;
     const G1_SRS_Y: u256 = 0x1a01ae7fac6228e39d3cb5a5e71fd31160f3241e79a5f48ffb3737e6c389b721;
-    // ----------------------- vk ---------------------
+
+    // Plonk verifier key constants
     const VK_NB_PUBLIC_INPUTS: u64 = 2;
     const VK_DOMAIN_SIZE: u256 = 67108864;
     const VK_INV_DOMAIN_SIZE: u256 = 0x30644e66c81e03716be83b486d6feabcc7ddd0fe6cbf5e72d585d142f7829b05;
@@ -49,101 +51,29 @@ module plonk_verifier_addr::plonk_verifier {
     const VK_QCP_0_Y: u256 = 0x0525090d2e5e3c446a811ba313f3425326375032a51d287315e681f8bd886694;
     const VK_INDEX_COMMIT_API_0: u256 = 0x0000000000000000000000000000000000000000000000000000000001bdf707;
     const VK_NB_CUSTOM_GATES: u64 = 1;
-    // ------------------------------------------------
-    // offset proof
-    const PROOF_L_COM_X: u256 = 0x0;
-    const PROOF_L_COM_Y: u256 = 0x20;
-    const PROOF_R_COM_X: u256 = 0x40;
-    const PROOF_R_COM_Y: u256 = 0x60;
-    const PROOF_O_COM_X: u256 = 0x80;
-    const PROOF_O_COM_Y: u256 = 0xa0;
-    // h = h_0 + x^{n+2}h_1 + x^{2(n+2)}h_2
-    const PROOF_H_0_X: u256 = 0xc0;
-    const PROOF_H_0_Y: u256 = 0xe0;
-    const PROOF_H_1_X: u256 = 0x100;
-    const PROOF_H_1_Y: u256 = 0x120;
-    const PROOF_H_2_X: u256 = 0x140;
-    const PROOF_H_2_Y: u256 = 0x160;
-    // wire values at zeta
-    const PROOF_L_AT_ZETA: u256 = 0x180;
-    const PROOF_R_AT_ZETA: u256 = 0x1a0;
-    const PROOF_O_AT_ZETA: u256 = 0x1c0;
-    // S1(zeta),S2(zeta)
-    const PROOF_S1_AT_ZETA: u256 = 0x1e0;
-    const PROOF_S2_AT_ZETA: u256 = 0x200;
-    // [Z]
-    const PROOF_GRAND_PRODUCT_COMMITMENT_X: u256 = 0x220;
-    const PROOF_GRAND_PRODUCT_COMMITMENT_Y: u256 = 0x240;
-    const PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA: u256 = 0x260; // z(w*zeta)
-    // Folded proof for the opening of linearised poly, l, r, o, s_1, s_2, qcp
-    const PROOF_BATCH_OPENING_AT_ZETA_X: u256 = 0x280;
-    const PROOF_BATCH_OPENING_AT_ZETA_Y: u256 = 0x2a0;
-    const PROOF_OPENING_AT_ZETA_OMEGA_X: u256 = 0x2c0;
-    const PROOF_OPENING_AT_ZETA_OMEGA_Y: u256 = 0x2e0;
-    const PROOF_OPENING_QCP_AT_ZETA: u256 = 0x300;
-    const PROOF_BSB_COMMITMENTS: u256 = 0x320;
-    // -> next part of proof is
-    // [ openings_selector_commits || commitments_wires_commit_api]
-    // -------- offset state
-    // challenges to check the claimed quotient
-    const STATE_ALPHA: u256 = 0x0;
-    const STATE_BETA: u256 = 0x20;
-    const STATE_GAMMA: u256 = 0x40;
-    const STATE_ZETA: u256 = 0x60;
-    const STATE_ALPHA_SQUARE_LAGRANGE_0: u256 = 0x80;
-    const STATE_FOLDED_H_X: u256 = 0xa0;
-    const STATE_FOLDED_H_Y: u256 = 0xc0;
-    const STATE_LINEARISED_POLYNOMIAL_X: u256 = 0xe0;
-    const STATE_LINEARISED_POLYNOMIAL_Y: u256 = 0x100;
-    const STATE_OPENING_LINEARISED_POLYNOMIAL_ZETA: u256 = 0x120;
-    const STATE_FOLDED_CLAIMED_VALUES: u256 = 0x140; // Folded proof for the opening of H, linearised poly, l, r, o, s_1, s_2, qcp
-    const STATE_FOLDED_DIGESTS_X: u256 = 0x160; // folded digests of H, linearised poly, l, r, o, s_1, s_2, qcp
-    const STATE_FOLDED_DIGESTS_Y: u256 = 0x180;
-    const STATE_PI: u256 = 0x1a0;
-    const STATE_ZETA_POWER_N_MINUS_ONE: u256 = 0x1c0;
-    const STATE_GAMMA_KZG: u256 = 0x1e0;
-    const STATE_SUCCESS: u256 = 0x200;
-    const STATE_CHECK_VAR: u256 = 0x220; // /!\ this slot is used for debugging only
-    const STATE_LAST_MEM: u256 = 0x240;
-    // -------- utils (for Fiat Shamir)
-    const FS_ALPHA: u256 = 0x616C706861; // "alpha"
-    const FS_BETA: u256 = 0x62657461; // "beta"
-    const FS_GAMMA: u256 = 0x67616d6d61; // "gamma"
-    const FS_ZETA: u256 = 0x7a657461; // "zeta"
-    const FS_GAMMA_KZG: u256 = 0x67616d6d61; // "gamma"
-    // -------- errors
-    const ERROR_STRING_ID: u256 = 0x08c379a000000000000000000000000000000000000000000000000000000000; // selector for function Error(string)
-    // -------- utils (for hash_fr)
+
+    // Utils for Fiat Shamir
+    const FS_ALPHA: u256 = 0x616C706861;
+    const FS_BETA: u256 = 0x62657461;
+    const FS_GAMMA: u256 = 0x67616d6d61;
+    const FS_ZETA: u256 = 0x7a657461;
+    const FS_GAMMA_KZG: u256 = 0x67616d6d61;
+
+    // Utils for hash_fr
     const HASH_FR_BB: u256 = 0x0000000000000000000000000000000100000000000000000000000000000000; // 2**128
     const HASH_FR_ZERO_UINT256: u256 = 0;
     const HASH_FR_LEN_IN_BYTES: u8 = 48;
     const HASH_FR_SIZE_DOMAIN: u8 = 11;
     const HASH_FR_ONE: u8 = 1;
     const HASH_FR_TWO: u8 = 2;
-    // -------- precompiles
-    const MOD_EXP: u8 = 0x5;
-    const EC_ADD: u8 = 0x6;
-    const EC_MUL: u8 = 0x7;
-    const EC_PAIR: u8 = 0x8;
 
-    // TODO: add function for computing this digest based on the SphinxVerifier.sol contract
-    const SphinxPublicValuesHash: u256 = 0x1b73d6e73d3224150622f22a8c18740efc94af34d45500eaf658a389935513ad;
-    const SphinxInclusionProofVk: u256 = 0x00edc477759b49c9f16fa0fae93b11dcde295121eda80472196c13cf4b6d079f;
-
-
+    // Move verifier errors
     const ERROR_NB_PUBLIC_INPUTS: u64 = 1001;
     const ERROR_INPUTS_SIZE: u64 = 1002;
     const ERROR_PROOF_SIZE: u64 = 1003;
     const ERROR_PROOF_OPENING_SIZE: u64 = 1004;
     const ERROR_UNEXPECTED_VK_NB_CUSTOM_GATES_AMOUNT: u64 = 1005;
     const ERROR_PAIRING_KZG_CHECK: u64 = 1006;
-
-    #[test]
-    public fun test_verify() {
-        let proof = get_proof();
-        let public_inputs = get_public_inputs();
-        verify(proof, public_inputs);
-    }
 
     public fun verify(proof: vector<u256>, public_inputs: vector<u256>) {
         // technical assert to ensure that VK_NB_CUSTOM_GATES constant has not been changed
@@ -177,8 +107,6 @@ module plonk_verifier_addr::plonk_verifier {
         let alpha_non_reduced = derive_alpha(proof, beta_non_reduced);
         let zeta_non_reduced = derive_zeta(proof, alpha_non_reduced);
 
-        assert!(zeta_non_reduced == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
-
         let gamma = gamma_non_reduced % R_MOD;
         let beta = beta_non_reduced % R_MOD;
         let alpha = alpha_non_reduced % R_MOD;
@@ -192,37 +120,23 @@ module plonk_verifier_addr::plonk_verifier {
         let r_mod_minus_one_fr = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&r_mod_minus_one_bytes));
         let zeta_power_n_minus_one = add(&r_mod_minus_one_fr, &powSmall(zeta_fr, VK_DOMAIN_SIZE));
 
-        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&zeta_power_n_minus_one)) == 0x0183624d8a1f2df2d1bc0ea04c97a743b1031835afb4fc9fb25e88f37780deb7, 2);
-
         let pic = compute_public_inputs_contribution(u256_to_fr(zeta), zeta_power_n_minus_one, public_inputs);
-        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&pic)) == 0x196d1aee13f8d282bf445d393e9ef0f5d6d2eccdb97fbc2696f7b73878552b01, 3);
 
         let pic_custom_gates = compute_public_inputs_contribution_from_custom_gates(proof, u256_to_fr(zeta), zeta_power_n_minus_one, (length(&public_inputs) as u256));
-        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&pic_custom_gates)) == 0x0de62ecfdd3191e71fb9a52bfbefd0ff1182e916b8d9264e96e2279a1171fd03, 4);
 
         let l_pi = add(&pic, &pic_custom_gates);
-        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&l_pi)) == 0x275349bdf12a6469defe02653a8ec1f4e855d5e47258e2752dd9ded289c72804, 5);
 
         let alpha_square_lagrange_0 = compute_alpha_square_lagrange_0(zeta, zeta_power_n_minus_one, alpha);
-        assert!(bytes_to_uint256(serialize<Fr, FormatFrMsb>(&alpha_square_lagrange_0)) == 0x1e5753617012c75058de839245263e8b961d4742abf030d3d44ada59d6211299, 6);
 
         let opening_linearized_polynomial_zeta = verify_opening_linearized_polynomial(proof, beta, gamma, alpha, alpha_square_lagrange_0, l_pi);
-        assert!(opening_linearized_polynomial_zeta == 0x148dee9d4e089cd0abea3cc2fd889ceb0f54a8456de664ed8ad905a13ea764e9, 7);
 
         let folded_h = fold_h(proof, zeta, fr_to_u256(zeta_power_n_minus_one));
-        assert!(eq(&folded_h, &new_g1(0x1a6bd6b3722270cea97cba68003aecc4fcc92fb1b94239af9813f596f6012081, 0xab7daef9480103a165ebc13407344ee31147cfcb7d1d417c4a951a7ac4a59f14)), 8);
 
         let (linearized_polynomial_x, linearized_polynomial_y) = compute_commitment_linearized_polynomial(proof, beta, gamma, alpha, zeta, alpha_square_lagrange_0, folded_h);
-        assert!(linearized_polynomial_x == 0x13e5b420a81184cc432f863784d667a183a6a0352aba9c04a28ea4d27a2fe235, 9);
-        assert!(linearized_polynomial_y == 0x1d247f83ce0b12465c66efd5c68cf00fdba90b274f3dc94515787b9b5c013b8a, 10);
 
         let gamma_kzg = compute_gamma_kzg(proof, zeta, linearized_polynomial_x, linearized_polynomial_y, opening_linearized_polynomial_zeta);
-        assert!(gamma_kzg == 0x27d3410c7afdd4967e71d28cb34b5595eca2614e3c0a7601891c3554b7568241, 11);
 
         let (state_folded_digest_x, state_folded_digest_y, state_folded_claimed_evals) = fold_state(proof, gamma_kzg, linearized_polynomial_x, linearized_polynomial_y, opening_linearized_polynomial_zeta);
-        assert!(state_folded_digest_x == 0x101b42e285f51c7865c0de9e80baf88f27968bfd0996898217514839998e4055, 12);
-        assert!(state_folded_digest_y == 0x9e5fc59354f785f77dd3baad2cd6f2e29826046cab1885def6732254a2e454be, 13); // 0x1e5fc59354f785f77dd3baad2cd6f2e29826046cab1885def6732254a2e454be in Ethereum
-        assert!(state_folded_claimed_evals == 0x1e599360ddb54b11753655d2bd2189b3d498c256e8b45d2c1595bc1e1a7dc610, 14);
 
         let (folded_digests, folded_qoutients) = batch_verify_multi_points(proof, zeta, gamma_kzg, state_folded_digest_x, state_folded_digest_y, state_folded_claimed_evals);
         let (fd_x, fd_y) = get_coordinates(folded_digests);
@@ -824,5 +738,85 @@ module plonk_verifier_addr::plonk_verifier {
         let zeta_power_n_minus_one = add(&r_mod_minus_one_element, &powSmall(zeta, VK_DOMAIN_SIZE));
         assert!(&serialize<Fr, FormatFrMsb>(&zeta_power_n_minus_one) == &x"0183624d8a1f2df2d1bc0ea04c97a743b1031835afb4fc9fb25e88f37780deb7", 1);
     }
-}
 
+    #[test]
+    public fun test_verify() {
+        let proof = get_proof();
+        let public_inputs = get_public_inputs();
+
+        verify(proof, public_inputs);
+    }
+
+    // Actual valid proof instance data generated by Sphinx using inclusion program
+    // (from inclusion_fixture.json)
+    const Proof_chunk_0: u256 = 0x22260e22daca34e1068152746ae216a2576089f90a3b8d07831b364e1e0ea6f7;
+    const Proof_chunk_1: u256 = 0x20ca2f29609382c698b2c89310ae12c0480f85850d514fe8b0de8b0122ccac20;
+    const Proof_chunk_2: u256 = 0x083abde04f1ad3b0e3de4a757bfd265c95813964c59cca3d4e8649283879bff2;
+    const Proof_chunk_3: u256 = 0x1a84b386c065f769074e7702e3fe905ed017140dac90f890628fcac0b1668a8b;
+    const Proof_chunk_4: u256 = 0x0071cf52b558d58c3ef27c152e933775e0fc9153c63294af6f18567da2029669;
+    const Proof_chunk_5: u256 = 0x2198dceeda96b8b0d9059ac0c95fea33c7cbaa544e9ffcd3e23f5f14c2b9d379;
+    const Proof_chunk_6: u256 = 0x02ae25ae6dd5ddf546536b49f5a95ab8f1d62638078ced7ae27a74db063e4eaf;
+    const Proof_chunk_7: u256 = 0x17fe58c15400e3a138143be59e573202e5b0ede42340b4bb3fdf5b9a60ab1d46;
+    const Proof_chunk_8: u256 = 0x301376093bd4af6c89aa43fb90b08623c1cce6810f469b863a808bd8c8fa5bff;
+    const Proof_chunk_9: u256 = 0x16aa37fb247c92f9d17eb9b1d8d89724269e14af43f719d53a8766006f7de93e;
+    const Proof_chunk_10: u256 = 0x076d1faac1fa4b235ffc8802522a3e9b9601e23f011dfa6c8e5c15ecd8f6913c;
+    const Proof_chunk_11: u256 = 0x0fca1f8b773e831881d70e907f8453946fd9af1e80b1b3e2a15c766732840904;
+    const Proof_chunk_12: u256 = 0x2acb8ea1cc325082dc7d9255302747046ff7665978deb49f4d918056183e6439;
+    const Proof_chunk_13: u256 = 0x27755b2b9ffdff73ac96803106da5245baa3a1af4db5d4c54461076a91c9f3f3;
+    const Proof_chunk_14: u256 = 0x24c4593c2e883ebea49825e3f9d8c128bd28e44f4ccee8084a3276d5a7703b82;
+    const Proof_chunk_15: u256 = 0x0f5a3f27fdd4168c1143bc700cf648863406021f45aa0dca338e3a175a4c309a;
+    const Proof_chunk_16: u256 = 0x0535bd79d2cd0a7048e0984f79d0d342dd5c3b0bf354f20d447fcb6731d2ee65;
+    const Proof_chunk_17: u256 = 0x01f755ec65481149faa10ce77989f2dcf0fac47c4eac553b157c757f3337ff04;
+    const Proof_chunk_18: u256 = 0x052f9ae5a78abb78689c2ca378af86afa180c683aefde3ed835a42960314fa2f;
+    const Proof_chunk_19: u256 = 0x1ae1fd74ea330416d0fa891250535dd7deac3b8e98338c5bb21a168116cd014f;
+    const Proof_chunk_20: u256 = 0x1f201aede6e12b30bc9cf21d5e92534ef76d84e88e95eeb772f5a59f65ac7ea1;
+    const Proof_chunk_21: u256 = 0x28f2b25c8172a777d706196a470e604c650372818f2f514efff1e7e76d413a8e;
+    const Proof_chunk_22: u256 = 0x143856445caa26db7923454b0352aa2856a40426a61344a62063e2a155a36e90;
+    const Proof_chunk_23: u256 = 0x2602c5e130d1246cbbc88c26b74ea864dcb1dc94bc8128faa4e39fd81ab64e64;
+    const Proof_chunk_24: u256 = 0x0665cd62153ce455e65dd02ba8422717c862f179ec17d03918dd5dab88e602dc;
+    const Proof_chunk_25: u256 = 0x2d108e2f617641e1148229ee62332ae0841bc704a7614924c780ae62119e771a;
+    const Proof_chunk_26: u256 = 0x26659d75a98e0401e8f60968dd55c96ad5d8044942b15d75fe53efb24e01d0b7;
+
+    public fun get_proof(): vector<u256> {
+        let proof = vector::empty<u256>();
+        push_back(&mut proof, Proof_chunk_0);
+        push_back(&mut proof, Proof_chunk_1);
+        push_back(&mut proof, Proof_chunk_2);
+        push_back(&mut proof, Proof_chunk_3);
+        push_back(&mut proof, Proof_chunk_4);
+        push_back(&mut proof, Proof_chunk_5);
+        push_back(&mut proof, Proof_chunk_6);
+        push_back(&mut proof, Proof_chunk_7);
+        push_back(&mut proof, Proof_chunk_8);
+        push_back(&mut proof, Proof_chunk_9);
+        push_back(&mut proof, Proof_chunk_10);
+        push_back(&mut proof, Proof_chunk_11);
+        push_back(&mut proof, Proof_chunk_12);
+        push_back(&mut proof, Proof_chunk_13);
+        push_back(&mut proof, Proof_chunk_14);
+        push_back(&mut proof, Proof_chunk_15);
+        push_back(&mut proof, Proof_chunk_16);
+        push_back(&mut proof, Proof_chunk_17);
+        push_back(&mut proof, Proof_chunk_18);
+        push_back(&mut proof, Proof_chunk_19);
+        push_back(&mut proof, Proof_chunk_20);
+        push_back(&mut proof, Proof_chunk_21);
+        push_back(&mut proof, Proof_chunk_22);
+        push_back(&mut proof, Proof_chunk_23);
+        push_back(&mut proof, Proof_chunk_24);
+        push_back(&mut proof, Proof_chunk_25);
+        push_back(&mut proof, Proof_chunk_26);
+        proof
+    }
+
+    // TODO: add function for computing this digest based on the SphinxVerifier.sol contract
+    const SphinxPublicValuesHash: u256 = 0x1b73d6e73d3224150622f22a8c18740efc94af34d45500eaf658a389935513ad;
+    const SphinxInclusionProofVk: u256 = 0x00edc477759b49c9f16fa0fae93b11dcde295121eda80472196c13cf4b6d079f;
+
+    public fun get_public_inputs(): vector<u256> {
+        let public_inputs = vector::empty<u256>();
+        push_back(&mut public_inputs, SphinxInclusionProofVk);
+        push_back(&mut public_inputs, SphinxPublicValuesHash);
+        public_inputs
+    }
+}
