@@ -84,46 +84,21 @@ jobs:
         uses: ./.github/actions/setup
         with:
           pull_token: ${{ secrets.REPO_TOKEN }}
-     # # See '.cargo/config' for list of enabled/disabled clippy lints
-     # - name: rustfmt
-     #   run: cargo fmt --all --check
-     #   working-directory: ${{ github.workspace }}/${{ matrix.package }}
-     # - name: cargo clippy
-     #   run: cargo xclippy -D warnings
-     #   working-directory: ${{ github.workspace }}/${{ matrix.package }}
-     # - name: Doctests
-     #   run: |
-     #     cargo test --doc
-     #   working-directory: ${{ github.workspace }}/${{ matrix.package }}
-      #- name: Github SSH key setup
-      #  uses: shimataro/ssh-key-action@v2
-      #  with:
-      #    key: ${{ secrets.REPO_TOKEN }}
-      #    name: id_rsa
-      #    known_hosts: github.com
-      #- name: Add GitHub to known hosts
-      #  run: ssh-keyscan github.com >> ~/.ssh/known_hosts
-      #- name: Debug SSH configuration
-      #  run: |
-      #    eval $(ssh-agent -s)
-      #    ssh-add ~/.ssh/id_rsa
-      #    ssh-add -L
-      #    ssh -T git@github.com
-      #- uses: webfactory/ssh-agent@v0.9.0
-      #  with:
-      #      ssh-private-key: ${{ secrets.REPO_TOKEN }}
+      # See '.cargo/config' for list of enabled/disabled clippy lints
+      - name: rustfmt
+        run: cargo fmt --all --check
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}
+      - name: cargo clippy
+        run: cargo xclippy -D warnings
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}
+      - name: Doctests
+        run: |
+          cargo test --doc
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}
       - run: cargo install --locked cargo-deny
       - name: Cargo-deny check
         run: |
           cargo deny --manifest-path ${{ matrix.package }}/Cargo.toml check
-        ## The `ssh-key` input was added in https://github.com/EmbarkStudios/cargo-deny-action/pull/78,
-        ## which hasn't yet been released, so the action is pinned to that commit for now
-        #uses: EmbarkStudios/cargo-deny-action@3f8dc3eed75398519a06f6a0b9dd5db5f833dd74
-        #with:
-        #  manifest-path: ${{ matrix.package }}/Cargo.toml
-        #  ssh-key: ${{ secrets.REPO_TOKEN }}
-        #  ssh-known-hosts: github.com
-        #  use-git-cli: true
 
   solidity-unit-tests:
     needs: changes

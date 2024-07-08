@@ -73,8 +73,17 @@ yanked = "warn"
 notice = "warn"
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
+# These vulnerabilities are all from `aptos-lab/aptos-core` dependencies, which means we are unable to patch them here
 ignore = [
-    #"RUSTSEC-0000-0000",
+    # curve25519-dalek
+    "RUSTSEC-2024-0344",
+    # ed25519-dalek
+    "RUSTSEC-2022-0093",
+    # libgit2-sys
+    "RUSTSEC-2024-0013",
+    # rsa
+    # This vulnerability has not yet been patched
+    "RUSTSEC-2023-0071",
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
 # lower than the range specified will be ignored. Note that ignored advisories
