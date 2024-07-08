@@ -77,6 +77,9 @@ jobs:
           repository: lurk-lab/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.REPO_TOKEN }}
       - name: Setup CI
         uses: ./.github/actions/setup
         with:
@@ -92,8 +95,10 @@ jobs:
         run: |
           cargo test --doc
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
-      - name: Cargo-deny
+      - name: Cargo-deny check
         uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          manifest-path: ${{ matrix.package }}/Cargo.toml
 
   solidity-unit-tests:
     needs: changes
