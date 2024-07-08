@@ -153,6 +153,8 @@ exceptions = [
     { allow = ["BUSL-1.1"], crate = "aptos-programs" },
     { allow = ["BUSL-1.1"], crate = "fixture-generator" },
     { allow = ["BUSL-1.1"], crate = "proof-server" },
+    # Remove as soon as https://github.com/aptos-labs/aptos-core/issues/13931 is fixed
+    { allow = ["GPL-3.0"], crate = "number_range"},
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
