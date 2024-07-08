@@ -1,10 +1,9 @@
 [package]
 name = "aptos-lc-core"
 version = "1.0.0"
-edition = "2021"
-license-file = "../LICENSE.md"
-homepage = "https://github.com/wormhole-foundation/example-zk-light-clients"
-repository = "https://github.com/wormhole-foundation/example-zk-light-clients"
+edition = { workspace = true }
+repository = { workspace = true }
+license = "BUSL-1.1"
 
 [dependencies]
 anyhow = { workspace = true }

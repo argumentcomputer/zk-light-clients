@@ -1,8 +1,9 @@
 [package]
 name = "aptos-programs"
 version = "1.0.0"
-edition = "2021"
-license-file = "../LICENSE.md"
+edition = { workspace = true }
+repository = { workspace = true }
+license = "BUSL-1.1"
 
 [build-dependencies]
 glob = { workspace = true }

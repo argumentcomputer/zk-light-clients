@@ -9,8 +9,9 @@ members = [
     "solidity/fixture-generator",
 ]
 
-[workspace.license]
-license-file = "../LICENSE.md"
+[workspace.package]
+edition = "2021"
+repository = "https://github.com/lurk-lab/zk-light-clients"
 
 [workspace.dependencies]
 anyhow = "1.0.79"
@@ -56,6 +57,8 @@ sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
 sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
 tokio = "1.37"
 tokio-stream = "0.1"
+alloy-sol-types = "0.7.2"
+tracing = "0.1.40"
 
 # Match the forks used by the aptos crates
 [patch.crates-io]
