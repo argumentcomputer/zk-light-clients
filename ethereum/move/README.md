@@ -6,7 +6,7 @@ In order to install Aptos CLI, follow [this](https://aptos.dev/en/build/cli) ins
 
 ```
 cd ethereum/move
-aptos test
+aptos move test
 ```
 
 This module is configured using setup from [this](https://aptos.dev/en/build/guides/build-e2e-dapp/1-create-smart-contract) tutorial.
