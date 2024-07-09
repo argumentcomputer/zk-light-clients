@@ -1,9 +1,9 @@
 [workspace]
 [package]
-version = "1.1.0"
+version = "1.0.0"
 name = "epoch-change-program"
 edition = "2021"
-license = "BUSL-1.1"
+license-file = "../../LICENSE.md"
 
 [dependencies]
 aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }

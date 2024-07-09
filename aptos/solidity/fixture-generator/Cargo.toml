@@ -1,0 +1,21 @@
+[package]
+version = "1.0.0"
+name = "fixture-generator"
+edition = { workspace = true }
+license = "BUSL-1.1"
+repository = { workspace = true }
+
+
+[[bin]]
+name = "generate-fixture"
+path = "src/bin/main.rs"
+
+[dependencies]
+sphinx-sdk = { workspace = true }
+sphinx-prover = {workspace = true }
+aptos-lc = { path = "../../light-client", features = ["aptos"] }
+serde_json = { workspace = true, features = ["alloc"] }
+serde = { workspace = true, features = ["derive"] }
+clap = { workspace = true, features = ["derive", "env"] }
+tracing = { workspace = true }
+alloy-sol-types = { workspace = true }
