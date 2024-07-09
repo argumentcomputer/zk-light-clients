@@ -113,10 +113,6 @@ jobs:
         with:
           submodules: recursive
           token: ${{ secrets.REPO_TOKEN }}
-      - name: Setup CI
-        uses: ./.github/actions/setup
-        with:
-          pull_token: ${{ secrets.REPO_TOKEN }}
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -134,6 +130,33 @@ jobs:
         run: |
           forge test
         working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+
+  move-unit-tests:
+    needs: changes
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    if: needs.changes.outputs.ethereum == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lurk-lab/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.REPO_TOKEN }}
+      - name: Install Move
+        run: |
+          python3 --version
+          curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+          echo "PATH=$HOME/.local/bin:$PATH" | tee -a $GITHUB_ENV
+      - name: Compile verifier contract
+        run: |
+          aptos move compile
+        working-directory: ${{ github.workspace }}/ethereum/move
+      - name: Run Move tests
+        run: |
+          aptos move test
+        working-directory: ${{ github.workspace }}/ethereum/move
 
   cycle-count-regression:
     needs: changes
