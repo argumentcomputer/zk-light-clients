@@ -1,10 +1,9 @@
 [package]
 name = "aptos-lc-core"
 version = "1.0.0"
-edition = "2021"
-license = "MIT OR Apache-2.0"
-homepage = "https://github.com/wormhole-foundation/example-zk-light-clients"
-repository = "https://github.com/wormhole-foundation/example-zk-light-clients"
+edition = { workspace = true }
+repository = { workspace = true }
+license = "BUSL-1.1"
 
 [dependencies]
 anyhow = { workspace = true }
@@ -31,7 +30,6 @@ aptos-temppath = { workspace = true, optional = true }
 aptos-types = { workspace = true, optional = true }
 aptos-vm = { workspace = true, optional = true }
 aptos-vm-genesis = { workspace = true, optional = true }
-move-core-types = { workspace = true, optional = true }
 # Versions to fit aptos crate
 rand = { workspace = true, optional = true }
 rand_core = { workspace = true, optional = true }
@@ -39,7 +37,6 @@ rand_core = { workspace = true, optional = true }
 [dev-dependencies]
 cfg-if = { workspace = true }
 proptest = { workspace = true }
-reqwest = { workspace = true, features = ["blocking"] }
 
 [features]
 default = []
@@ -54,7 +51,6 @@ aptos = [
     "dep:aptos-types",
     "dep:aptos-vm",
     "dep:aptos-vm-genesis",
-    "dep:move-core-types",
     "dep:rand",
     "dep:rand_core"
 ]

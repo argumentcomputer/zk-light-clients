@@ -3,6 +3,7 @@
 name = "inclusion-program"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
 
 [dependencies]
 ethereum-lc-core = { path = "../../core", package = "ethereum-lc-core", default-features = false }
