@@ -99,6 +99,9 @@ jobs:
       - name: Cargo-deny check
         run: |
           cargo deny --manifest-path ${{ matrix.package }}/Cargo.toml check
+      - name: Cargo-deny check programs
+        run: |
+          find ${{ matrix.package }}/programs -type d -name "target" -prune -o -type f -name "Cargo.toml" -exec cargo deny --manifest-path {} check \;
 
   solidity-unit-tests:
     needs: changes

@@ -1,10 +1,10 @@
 [package]
 name = "ethereum-lc-core"
 version = "0.1.0"
-edition = "2021"
-license = "Apache-2.0"
+edition = { workspace = true }
+repository = { workspace = true }
+license = { workspace = true }
 homepage = "https://github.com/wormhole-foundation/example-zk-light-clients"
-repository = "https://github.com/wormhole-foundation/example-zk-light-clients"
 
 [dependencies]
 anyhow = { workspace = true }
