@@ -8,44 +8,40 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
-env:
-  CARGO_TERM_COLOR: always
-  # Disable incremental compilation.
-  #
-  # Incremental compilation is useful as part of an edit-build-test-edit cycle,
-  # as it lets the compiler avoid recompiling code that hasn't changed. However,
-  # on CI, we're not making small edits; we're almost always building the entire
-  # project from scratch. Thus, incremental compilation on CI actually
-  # introduces *additional* overhead to support making future builds
-  # faster...but no future builds will ever occur in any given CI environment.
-  #
-  # See https://matklad.github.io/2021/09/04/fast-rust-builds.html#ci-workflow
-  # for details.
-  CARGO_INCREMENTAL: 0
-  # Allow more retries for network requests in cargo (downloading crates) and
-  # rustup (installing toolchains). This should help to reduce flaky CI failures
-  # from transient network timeouts or other issues.
-  CARGO_NET_RETRY: 10
-  RUSTUP_MAX_RETRIES: 10
-  # Don't emit giant backtraces in the CI logs.
-  RUST_BACKTRACE: short
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
+  # Detect changes in each light client crate
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      # Expose matched filters as job 'packages' output variable
+      packages: ${{ steps.filter.outputs.changes }}
+      aptos: ${{ steps.filter.outputs.aptos }}
+      ethereum: ${{ steps.filter.outputs.ethereum }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            aptos:
+              - 'aptos/**'
+            ethereum:
+              - 'ethereum/**'
+
   test:
-    runs-on: ${{ matrix.os }}
+    needs: changes
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       matrix:
-        os:
-          - buildjet-16vcpu-ubuntu-2204
-        package:
-          - "aptos"
+        # Parse JSON array containing names of all changed light client packages
+        # e.g. ['aptos', 'ethereum'] if both directories contain changes
+        package: ${{ fromJSON(needs.changes.outputs.packages) }}
       fail-fast: false
-    env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,33 +55,31 @@ jobs:
       # make sure benches don't bit-rot
       - name: build benches
         run: |
-          cargo check --benches --features aptos
+          cargo check --benches --all-features
         working-directory: ${{ github.workspace }}/${{ matrix.package }}/light-client
       - name: Run cargo test in workspace
         run: |
           cargo nextest run --workspace --release --profile ci --all-features
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
-      - name: Doctests
-        run: |
-          cargo test --doc
-        env:
-          RUSTFLAGS: "--cfg tokio_unstable"
-        working-directory: ${{ github.workspace }}/${{ matrix.package }}
 
   clippy:
+    needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       matrix:
-        package:
-          - "aptos"
-    env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+        # Parse JSON array containing names of all changed light client packages
+        # e.g. ['aptos', 'ethereum'] if both directories contain changes
+        package: ${{ fromJSON(needs.changes.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
           repository: lurk-lab/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.REPO_TOKEN }}
       - name: Setup CI
         uses: ./.github/actions/setup
         with:
@@ -97,9 +91,19 @@ jobs:
       - name: cargo clippy
         run: cargo xclippy -D warnings
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
+      - name: Doctests
+        run: |
+          cargo test --doc
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}
+      - run: cargo install --locked cargo-deny
+      - name: Cargo-deny check
+        run: |
+          cargo deny --manifest-path ${{ matrix.package }}/Cargo.toml check
 
   solidity-unit-tests:
+    needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
+    if: needs.changes.outputs.aptos == 'true'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -132,7 +136,14 @@ jobs:
         working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
 
   cycle-count-regression:
+    needs: changes
     runs-on: warp-ubuntu-latest-x64-32x
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
+    strategy:
+      matrix:
+        # Parse JSON array containing names of all changed light client packages
+        # e.g. ['aptos', 'ethereum'] if both directories contain changes
+        package: ${{ fromJSON(needs.changes.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -143,22 +154,34 @@ jobs:
         uses: ./.github/actions/setup
         with:
           pull_token: ${{ secrets.REPO_TOKEN }}
+      - name: Set env
+        run: |
+          if [[ "${{ matrix.package }}" == "aptos" ]]; then
+            # TODO: Remove hardcoded test names
+            TESTS="test_execute_inclusion test_execute_epoch_change test_execute_sig"
+            FEATURES="--features aptos"
+          elif [[ "${{ matrix.package }}" == "ethereum" ]]; then
+            # TODO: Add execution tests
+            TESTS=""
+            FEATURES=""
+          fi
+          echo "TESTS=$TESTS" | tee -a $GITHUB_ENV
+          echo "FEATURES=$FEATURES" | tee -a $GITHUB_ENV
       - name: Get cycle counts for PR
         id: get_cycles_pr
         run: |
           CYCLE_COUNTS='[]'
           set -o pipefail
 
-          # TODO: Remove hardcoded test names
-          for test_name in "test_execute_inclusion" "test_execute_epoch_change" "test_execute_sig"; do
-            cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture -E "test($test_name)" 2>&1 | tee out.txt
+          for test_name in ${{ env.TESTS }}; do
+            cargo nextest run --verbose --release --profile ci ${{ env.FEATURES }} --package ${{ matrix.package }}-lc --no-capture -E "test($test_name)" 2>&1 | tee out.txt
             num_cycles=$(cat out.txt | grep -o 'finished execution clk = [0-9]\+' | awk -F'= ' '{ print $2 }')
             CYCLE_COUNTS=$(echo $CYCLE_COUNTS | jq -c ". += [{\"${test_name}\": \"$num_cycles\"}]")
           done
 
           set +o pipefail
           echo "CYCLE_COUNTS=$CYCLE_COUNTS" | tee -a "$GITHUB_OUTPUT"
-        working-directory: ${{ github.workspace }}/aptos/light-client
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/light-client
         env:
           RUST_LOG: debug
       - uses: actions/checkout@v4
@@ -175,8 +198,8 @@ jobs:
           set -o pipefail
 
           # TODO: Remove hardcoded test names
-          for test_name in "test_execute_inclusion" "test_execute_epoch_change" "test_execute_sig"; do
-            cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture -E "test($test_name)" 2>&1 | tee out.txt
+          for test_name in ${{ env.TESTS }}; do
+            cargo nextest run --verbose --release --profile ci ${{ env.FEATURES }} --package ${{ matrix.package }}-lc --no-capture -E "test($test_name)" 2>&1 | tee out.txt
             num_cycles_base=$(cat out.txt | grep -o 'finished execution clk = [0-9]\+' | awk -F'= ' '{ print $2 }')
             num_cycles_pr=$(echo "$CYCLE_COUNTS" | jq ".[$counter] | to_entries | .[0].value")
             echo "$test_name summary"
@@ -197,7 +220,7 @@ jobs:
           echo -e "$FAILING_TESTS" | tee -a $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           echo "WORKFLOW_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a $GITHUB_ENV
-        working-directory: ${{ github.workspace }}/aptos/light-client
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/light-client
         env:
           RUST_LOG: debug
       - uses: actions/checkout@v4
