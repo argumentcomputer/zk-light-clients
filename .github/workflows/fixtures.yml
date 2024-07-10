@@ -5,9 +5,6 @@
 name: Update fixtures
 
 on:
-  push:
-    branches:
-      - "ci-fixtures"
   workflow_dispatch: {}
   # Once per day at 00:00 UTC
   schedule:
