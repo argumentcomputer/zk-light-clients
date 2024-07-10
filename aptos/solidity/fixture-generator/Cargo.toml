@@ -2,7 +2,7 @@
 version = "1.0.0"
 name = "fixture-generator"
 edition = { workspace = true }
-license = "BUSL-1.1"
+license = { workspace = true }
 repository = { workspace = true }
 
 

@@ -4303,20 +4303,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
 
 [[package]]
-name = "fixture-generator"
-version = "1.0.0"
-dependencies = [
- "alloy-sol-types",
- "aptos-lc",
- "clap 4.5.7",
- "serde",
- "serde_json",
- "sphinx-prover",
- "sphinx-sdk",
- "tracing",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
