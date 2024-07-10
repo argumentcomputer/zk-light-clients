@@ -3,6 +3,11 @@ resolver = "2"
 
 members = ["core", "ethereum-programs", "light-client"]
 
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/lurk-lab/zk-light-clients"
+
 [workspace.dependencies]
 anyhow = "1.0.86"
 clap = "4.5.8"

@@ -22,6 +22,11 @@ jobs:
         run: |
           cp .github/workflows/assets/APACHE.md aptos/LICENSE.md
 
+      - name: Replace Cargo.toml licenses
+        run: |
+          sed -i 's/license = "BUSL-1.1"/license = "Apache-2.0"/g' "aptos/Cargo.toml"
+          find aptos/programs -type d -name "target" -prune -o -type f -name "Cargo.toml" -exec sed -i 's/license = "BUSL-1.1"/license = "Apache-2.0"/g' {} \;
+
       - name: Replace SPDX license headers
         run: |
           find aptos -type f -exec sed -i 's|// SPDX-License-Identifier: BUSL-1.1|// SPDX-License-Identifier: Apache-2.0, MIT|g' {} \;
@@ -36,7 +41,7 @@ jobs:
         run: |
           {
             echo 'PR_BODY<<EOF'
-            This is an automated PR to update our licenses to Apache2.0.
+            This is an automated PR to update the Aptos licenses to Apache 2.0.
           
             [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             EOF

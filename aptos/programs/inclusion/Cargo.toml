@@ -3,7 +3,7 @@
 version = "1.0.0"
 name = "inclusion-program"
 edition = "2021"
-license-file = "../../LICENSE.md"
+license = "BUSL-1.1"
 
 [dependencies]
 aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }
