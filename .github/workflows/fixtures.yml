@@ -35,8 +35,7 @@ jobs:
           pull_token: ${{ secrets.REPO_TOKEN }}
       - name: Generate Solidity `inclusion` fixtures
         run: |
-          # Temporarily unsetting `-D warnings`
-          RUSTFLAGS="--cfg tokio_unstable -C opt-level=3" cargo run --release -- --program ${{ matrix.fixture }}
+          cargo run --release -- --program ${{ matrix.fixture }}
         working-directory: ${{ github.workspace }}/aptos/solidity/fixture-generator
       - name: Check for diff
         run: git diff
