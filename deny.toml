@@ -162,6 +162,9 @@ exceptions = [
     { allow = ["BUSL-1.1"], crate = "aptos-programs" },
     { allow = ["BUSL-1.1"], crate = "fixture-generator" },
     { allow = ["BUSL-1.1"], crate = "proof-server" },
+    { allow = ["BUSL-1.1"], crate = "signature-verification-program" },
+    { allow = ["BUSL-1.1"], crate = "epoch-change-program" },
+    { allow = ["BUSL-1.1"], crate = "inclusion-program" },
     # Remove as soon as https://github.com/aptos-labs/aptos-core/issues/13931 is fixed
     { allow = ["GPL-3.0"], crate = "number_range"},
 ]

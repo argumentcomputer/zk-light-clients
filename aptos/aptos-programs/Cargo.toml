@@ -3,7 +3,7 @@ name = "aptos-programs"
 version = "1.0.1"
 edition = { workspace = true }
 repository = { workspace = true }
-license = "BUSL-1.1"
+license = { workspace = true }
 
 [build-dependencies]
 glob = { workspace = true }
