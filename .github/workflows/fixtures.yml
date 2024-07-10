@@ -1,5 +1,7 @@
 # Rebuilds proof fixtures for Solidity and Move (TBD) for smart contract verification tests
 # The fixtures are located in `aptos/solidity/contracts/src/plonk_fixtures`
+# Then opens a pull request with the changes
+# Note: This workflow takes over 30 minutes due to parallel E2E proof generation for `inclusion` and `epoch_change`
 name: Update fixtures
 
 on:
@@ -16,8 +18,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  fixtures:
+  generate-fixtures:
     runs-on: warp-ubuntu-latest-x64-32x
+    strategy:
+      matrix:
+        fixture: [inclusion, epoch_change]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,16 +35,40 @@ jobs:
           pull_token: ${{ secrets.REPO_TOKEN }}
       - name: Generate Solidity `inclusion` fixtures
         run: |
-          cargo run --release -- --program inclusion
+          # Temporarily unsetting `-D warnings`
+          RUSTFLAGS="--cfg tokio_unstable -C opt-level=3" cargo run --release -- --program ${{ matrix.fixture }}
         working-directory: ${{ github.workspace }}/aptos/solidity/fixture-generator
-      - name: Generate Solidity `epoch_change` fixtures
-        run: |
-          cargo run --release -- --program epoch_change
-        working-directory: ${{ github.workspace }}/aptos/solidity/fixture-generator
-      #- name: Create Pull Request
-      #  uses: peter-evans/create-pull-request@v6
-      #  with:
-      #    branch: "ci-update-fixtures"
-      #    title: "chore: Update fixtures"
-      #    commit-message: "chore: Update fixtures"
-      #    labels: "automated-issue"
+      - name: Check for diff
+        run: git diff
+      - name: Upload fixture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.fixture }}_fixture
+          path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/${{ matrix.fixture }}_fixture.json
+          if-no-files-found: error
+          overwrite: true
+
+  create-pull-request:
+    needs: generate-fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download inclusion fixture
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/
+          pattern: "*_fixture"
+          merge-multiple: true
+      - name: Check for diff
+        run: git diff
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: "ci-update-fixtures"
+          title: "chore: Update fixtures"
+          commit-message: "chore: Update fixtures"
+          labels: "automated-issue"
+          body: |
+            This is an automated PR updating the proof fixtures for Solidity and Move (TBD), which are used for smart contract verification tests.
+
+            Workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

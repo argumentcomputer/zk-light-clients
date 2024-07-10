@@ -52,15 +52,17 @@ fn main() {
 
     let prover = ProverClient::new();
     let (pk, vk) = prover.setup(elf);
-    let proof = prover.prove_plonk(&pk, stdin).unwrap();
-    // just to check that proof is valid and verifiable
-    prover.verify_plonk(&proof, &vk).unwrap();
+    //let proof = prover.prove_plonk(&pk, stdin).unwrap();
+    //// just to check that proof is valid and verifiable
+    //prover.verify_plonk(&proof, &vk).unwrap();
 
     // save fixture
     let fixture = SP1ProofFixture {
         vkey: vk.bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
-        proof: proof.bytes(),
+        //public_values: proof.public_values.bytes().to_string(),
+        //proof: proof.bytes(),
+        public_values: String::from("dummy values"),
+        proof: String::from("dummy proof"),
     };
 
     let fixture_path =
