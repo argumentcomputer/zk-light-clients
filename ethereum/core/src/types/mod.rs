@@ -10,7 +10,13 @@
 //! ## Sub-modules
 //!
 //! - `block`: This sub-module contains all the structures related to block data on the Beacon chain.
+//! - `bootstrap`: This module contains the data structures available for a Light Client to bootstrap
+//!   to the network.
 //! - `committee`: This sub-module contains all the structures related to committees on the Beacon chain.
+//! - `signing_data`: This sub-module contains the data structure that represents the message signed
+//!    by Validators on the Beacon chain.
+//! - `store`: This sub-module contains the data structure representing a Light Client Store containing
+//!    the necessary data to verify the consensus.
 //! - `update`: This module contains the data structures available for a Light Client to update its
 //     state.
 //!
@@ -18,16 +24,16 @@
 //! documentation for each sub-module.
 
 pub mod block;
+pub mod bootstrap;
 pub mod committee;
 pub mod error;
+pub mod signing_data;
+pub mod store;
 pub mod update;
 pub mod utils;
 
 /// Length of a bytes32 array.
 pub const BYTES_32_LEN: usize = 32;
-
-/// Length of u64 in bytes.
-pub const U64_LEN: usize = (u64::BITS / 8) as usize;
 
 /// A 32-byte array.
 pub type Bytes32 = [u8; BYTES_32_LEN];

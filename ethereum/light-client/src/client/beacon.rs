@@ -9,8 +9,8 @@
 //! It maintains an internal HTTP client to handle communication with the Beacon Node.
 
 use crate::client::error::ClientError;
-use crate::types::beacon::bootstrap::Bootstrap;
 use crate::types::beacon::update::UpdateResponse;
+use ethereum_lc_core::types::bootstrap::Bootstrap;
 use getset::Getters;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
@@ -105,7 +105,7 @@ impl BeaconClient {
 
     /// `get_update_data` makes an HTTP request to the Beacon Node API to get the update data. It fetches
     /// the update data starting at a given sync committee period and count. A sync committee period
-    /// can be calculated from a given slot with the [`crate::client::utils::calc_sync_period`] function.
+    /// can be calculated from a given slot with the [`ethereum_lc_core::types::utils::calc_sync_period`] function.
     ///
     /// # Arguments
     ///

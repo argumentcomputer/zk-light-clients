@@ -122,7 +122,7 @@ impl PublicKey {
     ///
     /// A `Result` which is `Ok` if the public keys could be aggregated successfully. If the aggregation fails,
     /// the `Result` is `Err` with an error message.
-    pub fn aggregate(pubkeys: &[&Self]) -> Result<PublicKey, CryptoError> {
+    pub fn aggregate(pubkeys: &[Self]) -> Result<Self, CryptoError> {
         let aggregate = pubkeys
             .iter()
             .fold(G1Affine::identity(), |acc, pk| acc.add_affine(pk.pubkey()));

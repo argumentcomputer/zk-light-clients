@@ -15,10 +15,8 @@ use crate::types::committee::{
     SYNC_COMMITTEE_BYTES_LEN,
 };
 use crate::types::error::TypesError;
-use crate::types::utils::{extract_u32, extract_u64, OFFSET_BYTE_LENGTH};
-use crate::types::{
-    FinalizedRootBranch, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS, U64_LEN,
-};
+use crate::types::utils::{extract_u32, extract_u64, OFFSET_BYTE_LENGTH, U64_LEN};
+use crate::types::{FinalizedRootBranch, BYTES_32_LEN, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS};
 use getset::Getters;
 
 /// Base length of a `Update` struct in bytes.

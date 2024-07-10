@@ -39,6 +39,12 @@ pub type SyncCommitteeBranch = [Bytes32; SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS];
 pub const SYNC_COMMITTEE_BYTES_LEN: usize = SYNC_COMMITTEE_SIZE * PUB_KEY_LEN + PUB_KEY_LEN;
 
 /// The [generalized Merkle tree index](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/ssz/merkle-proofs.md#generalized-merkle-tree-index)
+/// for the current sync committee.
+///
+/// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/altair/light-client/sync-protocol.md#constants).
+pub const CURRENT_SYNC_COMMITTEE_GENERALIZED_INDEX: usize = 54;
+
+/// The [generalized Merkle tree index](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/ssz/merkle-proofs.md#generalized-merkle-tree-index)
 /// for the next sync committee.
 ///
 /// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/altair/light-client/sync-protocol.md#constants).
@@ -131,6 +137,18 @@ impl SyncCommittee {
             pubkeys,
             aggregate_pubkey: PublicKey::from_ssz_bytes(&aggregate_pubkey)?,
         })
+    }
+
+    pub fn get_participant_pubkeys(&self, bitfield: &[u8; 512]) -> Vec<PublicKey> {
+        let mut pks: Vec<PublicKey> = Vec::new();
+        bitfield.iter().enumerate().for_each(|(i, bit)| {
+            if *bit == 1 {
+                let pk = self.pubkeys[i].clone();
+                pks.push(pk);
+            }
+        });
+
+        pks
     }
 }
 

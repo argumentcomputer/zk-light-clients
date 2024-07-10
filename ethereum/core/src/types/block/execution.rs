@@ -13,9 +13,9 @@ use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::{
     bytes_array_to_bytes32, extract_fixed_bytes, extract_u32, extract_u64, u64_to_bytes32,
-    OFFSET_BYTE_LENGTH,
+    OFFSET_BYTE_LENGTH, U64_LEN,
 };
-use crate::types::{Address, Bytes32, ADDRESS_BYTES_LEN, BYTES_32_LEN, U64_LEN};
+use crate::types::{Address, Bytes32, ADDRESS_BYTES_LEN, BYTES_32_LEN};
 use getset::Getters;
 
 /// Number of leaf values on a given execution path.
