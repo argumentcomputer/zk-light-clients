@@ -43,6 +43,7 @@ jobs:
           path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/${{ matrix.fixture }}_fixture.json
           if-no-files-found: error
           overwrite: true
+          retention-days: 1
 
   create-pull-request:
     needs: generate-fixtures
