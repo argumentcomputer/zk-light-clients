@@ -23,10 +23,12 @@
 //! The library provides the types and utilities necessary to interact build the binaries of the light
 //! client. It has the following modules:
 //! - [`client`] : The client that can be used to coordinate data fetching from the remote services.
+//! - [`proofs`]: The utilities to generate and verify proofs for the light client.
 //! - [`types`]: Types and utilities to leverage data from the remote services.
 //!
 //! For more detailed information, users should refer to the specific documentation for each
 //! sub-module.
 
 pub mod client;
+pub mod proofs;
 pub mod types;

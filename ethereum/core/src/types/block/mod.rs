@@ -16,9 +16,9 @@
 
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::HashValue;
+use crate::deserialization_error;
 use crate::merkle::utils::{merkle_root, DataType};
 use crate::merkle::Merkleized;
-use crate::serde_error;
 use crate::types::block::consensus::{BeaconBlockHeader, BEACON_BLOCK_HEADER_BYTES_LEN};
 use crate::types::block::execution::{
     ExecutionBlockHeader, ExecutionBranch, EXECUTION_BRANCH_NBR_SIBLINGS,
@@ -39,7 +39,7 @@ pub const LIGHT_CLIENT_HEADER_BASE_BYTES_LEN: usize = BEACON_BLOCK_HEADER_BYTES_
     + EXECUTION_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
 
 /// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/light-client/sync-protocol.md#modified-lightclientheader).
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct LightClientHeader {
     beacon: BeaconBlockHeader,
@@ -137,10 +137,10 @@ impl LightClientHeader {
                 bytes[start..end].try_into()
             })
             .collect::<Result<Vec<[u8; 32]>, _>>()
-            .map_err(|err| serde_error!("LightClientHeader", err))?
+            .map_err(|err| deserialization_error!("LightClientHeader", err))?
             .try_into()
             .map_err(|_| {
-                serde_error!(
+                deserialization_error!(
                     "LightClientHeader",
                     "Could not convert the execution branches to a slice of 4 elements"
                 )
@@ -150,7 +150,7 @@ impl LightClientHeader {
 
         // Check offset
         if cursor != offset as usize {
-            return Err(serde_error!(
+            return Err(deserialization_error!(
                 "LightClientHeader",
                 "Invalid offset for execution"
             ));
@@ -242,6 +242,6 @@ pub(crate) mod test {
             .unwrap()
             .tree_hash_root();
 
-        assert_eq!(hash_tree_root.as_ref(), &tree_hash_root.0);
+        assert_eq!(hash_tree_root.hash(), tree_hash_root.0);
     }
 }

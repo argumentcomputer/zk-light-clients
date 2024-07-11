@@ -15,9 +15,9 @@
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::{sha2_hash_concat, HashValue};
 use crate::crypto::sig::{PublicKey, PUB_KEY_LEN};
+use crate::deserialization_error;
 use crate::merkle::utils::{merkle_root, DataType};
 use crate::merkle::Merkleized;
-use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::extract_fixed_bytes;
 use crate::types::Bytes32;
@@ -54,7 +54,7 @@ pub const NEXT_SYNC_COMMITTEE_GENERALIZED_INDEX: usize = 55;
 /// block. The sync committee is a subset of the full validator set.
 ///
 /// From [the Altair upgrade specifications](https://github.com/ethereum/consensus-specs/blob/v1.3.0/specs/altair/beacon-chain.md#synccommittee).
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct SyncCommittee {
     pubkeys: [PublicKey; SYNC_COMMITTEE_SIZE],
@@ -114,7 +114,7 @@ impl SyncCommittee {
             .collect::<Result<Vec<_>, _>>()?
             .try_into()
             .map_err(|_| {
-                serde_error!(
+                deserialization_error!(
                     "SyncCommittee",
                     "Could not convert the public keys to a slice of 512 elements"
                 )
@@ -172,12 +172,42 @@ impl Merkleized for SyncCommittee {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::*;
+    use anyhow::anyhow;
     use ssz_types::FixedVector;
     use std::env::current_dir;
     use std::fs;
     use tree_hash::TreeHash;
+    use tree_hash_derive::TreeHash;
+
+    #[derive(TreeHash)]
+    pub(crate) struct SyncCommitteeTreeHash {
+        pubkeys: FixedVector<[u8; PUB_KEY_LEN], ssz_types::typenum::U512>,
+        aggregate_pubkey: [u8; PUB_KEY_LEN],
+    }
+
+    impl TryFrom<SyncCommittee> for SyncCommitteeTreeHash {
+        type Error = anyhow::Error;
+        fn try_from(sync_committee: SyncCommittee) -> Result<Self, Self::Error> {
+            let pubkeys: FixedVector<[u8; PUB_KEY_LEN], ssz_types::typenum::U512> =
+                FixedVector::new(
+                    sync_committee
+                        .pubkeys
+                        .iter()
+                        .map(|pk| *pk.compressed_pubkey())
+                        .collect::<Vec<_>>(),
+                )
+                .map_err(|_| anyhow!("Failed to convert public keys"))?;
+            let aggregate_pubkey = *sync_committee.aggregate_pubkey.compressed_pubkey();
+
+            Ok(Self {
+                pubkeys,
+                aggregate_pubkey,
+            })
+        }
+    }
+
     #[test]
     fn test_ssz_serde_sync_committee() {
         let test_asset_path = current_dir()
@@ -206,27 +236,11 @@ mod test {
         // Hash for custom implementation
         let hash_tree_root = sync_committee.hash_tree_root().unwrap();
 
-        // Following section mimics derivation of `TreeHash` trait for `SyncCommittee` struct
-        // In Lighthouse: https://github.com/sigp/lighthouse/blob/stable/consensus/types/src/sync_committee.rs#L27-L44
+        let syn_committee_tree_hash = SyncCommitteeTreeHash::try_from(sync_committee).unwrap();
 
-        // Pubkey vector hash from `treehash`
-        let fixed_vector_pubkeys: FixedVector<PublicKey, ssz_types::typenum::U512> =
-            FixedVector::new(sync_committee.pubkeys.to_vec()).unwrap();
-        let hash_fixed_vector = fixed_vector_pubkeys.tree_hash_root();
-
-        // Aggregate pubkey hash from `treehash`
-        let hash_aggregate_pubkey = sync_committee.aggregate_pubkey.tree_hash_root();
-
-        // `SyncCommittee` hash product by `treehash`
-        let mut hasher = tree_hash::MerkleHasher::with_leaves(2);
-
-        hasher.write(hash_fixed_vector.as_bytes()).unwrap();
-        hasher.write(hash_aggregate_pubkey.as_bytes()).unwrap();
-
-        let expected_hash = hasher
-            .finish()
-            .expect("sync committee hash should not have a remaining buffer");
-
-        assert_eq!(&expected_hash.0, hash_tree_root.hash());
+        assert_eq!(
+            syn_committee_tree_hash.tree_hash_root().0,
+            hash_tree_root.hash()
+        );
     }
 }

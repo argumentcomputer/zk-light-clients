@@ -4,10 +4,10 @@
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::{sha2_hash, HashValue, HASH_LENGTH};
 use crate::merkle::Merkleized;
-use crate::serde_error;
 use crate::types::committee::SYNC_COMMITTEE_SIZE;
 use crate::types::error::TypesError;
 use crate::types::utils::{pack_bits, unpack_bits};
+use crate::{deserialization_error, serialization_error};
 use anyhow::Result;
 use bls12_381::hash_to_curve::{ExpandMsgXmd, HashToCurve};
 use bls12_381::{multi_miller_loop, G1Affine, G2Affine, G2Prepared, G2Projective, Gt};
@@ -248,14 +248,14 @@ impl Signature {
         // Decompress G2 point
         let decompressed =
             G2Affine::from_compressed_unchecked(&bytes.try_into().map_err(|_| {
-                serde_error!(
+                deserialization_error!(
                     "Signature",
                     "Could not convert the received bytes in G2 point compressed shape"
                 )
             })?);
 
         if decompressed.is_none().into() {
-            return Err(serde_error!(
+            return Err(deserialization_error!(
                 "Signature",
                 "G2Affine::from_compressed returned None"
             ));
@@ -291,8 +291,9 @@ impl SyncAggregate {
         let mut bytes = Vec::new();
 
         // Serialize sync_committee_bits as a packed bit array
-        let packed_bits = pack_bits(&self.sync_committee_bits)
-            .map_err(|e| serde_error!("SyncAggregate", format!("Could not pack bits: {:?}", e)))?;
+        let packed_bits = pack_bits(&self.sync_committee_bits).map_err(|e| {
+            serialization_error!("SyncAggregate", format!("Could not pack bits: {:?}", e))
+        })?;
         bytes.extend_from_slice(&packed_bits);
 
         // Serialize sync_committee_signature
@@ -328,7 +329,10 @@ impl SyncAggregate {
             unpack_bits(&bytes[0..SYNC_COMMITTEE_SIZE / 8], SYNC_COMMITTEE_SIZE)
                 .try_into()
                 .map_err(|_| {
-                    serde_error!("SyncAggregate", "Could not deserialize sync_committee_bits")
+                    deserialization_error!(
+                        "SyncAggregate",
+                        "Could not deserialize sync_committee_bits"
+                    )
                 })?;
 
         // Deserialize sync_committee_signature

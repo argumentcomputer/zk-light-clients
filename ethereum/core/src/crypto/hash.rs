@@ -4,16 +4,17 @@
 use crate::crypto::error::CryptoError;
 use crate::types::Bytes32;
 use anyhow::Result;
-use getset::Getters;
+use getset::CopyGetters;
 use sha2::{Digest, Sha256};
+use tiny_keccak::{Hasher, Keccak};
 
 /// Length of hash digests in bytes.
 pub const HASH_LENGTH: usize = 32;
 
 /// A structure representing a hash value.
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Getters, Hash)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, CopyGetters, Hash)]
 pub struct HashValue {
-    #[getset(get = "pub(crate)")]
+    #[getset(get_copy = "pub")]
     hash: [u8; HASH_LENGTH],
 }
 
@@ -95,4 +96,15 @@ pub fn sha2_hash_concat(a: &HashValue, b: &HashValue) -> Result<HashValue, Crypt
     hasher.update(a.as_ref());
     hasher.update(b.as_ref());
     HashValue::from_slice(hasher.finalize())
+}
+
+pub fn keccak256_hash(input: &[u8]) -> Result<HashValue, CryptoError> {
+    let mut hasher = Keccak::v256();
+
+    let mut output = [0u8; HASH_LENGTH];
+
+    hasher.update(input);
+    hasher.finalize(&mut output);
+
+    HashValue::from_slice(output)
 }
