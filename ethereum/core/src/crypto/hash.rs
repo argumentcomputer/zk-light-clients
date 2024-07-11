@@ -94,8 +94,5 @@ pub fn sha2_hash_concat(a: &HashValue, b: &HashValue) -> Result<HashValue, Crypt
     let mut hasher = Sha256::new();
     hasher.update(a.as_ref());
     hasher.update(b.as_ref());
-    let result = hasher.finalize();
-    let mut hash = [0; 32];
-    hash.copy_from_slice(&result);
-    HashValue::from_slice(hash)
+    HashValue::from_slice(hasher.finalize())
 }
