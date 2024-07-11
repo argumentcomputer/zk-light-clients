@@ -12,3 +12,9 @@ bls12_381 = { workspace = true, features = ["experimental"] }
 getset = { workspace = true }
 sha2 = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+ethereum-types = { workspace = true }
+ssz_types = { workspace = true, features = ["arbitrary"] }
+tree_hash = { workspace = true }
+tree_hash_derive = { workspace = true }

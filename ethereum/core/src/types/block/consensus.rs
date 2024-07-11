@@ -8,8 +8,12 @@
 //!
 //! It mainly contains the `BeaconBlockHeader` data structure, which represent the header of a beacon block.
 
+use crate::crypto::error::CryptoError;
+use crate::crypto::hash::HashValue;
+use crate::merkle::utils::{merkle_root, DataType};
+use crate::merkle::Merkleized;
 use crate::types::error::TypesError;
-use crate::types::utils::{extract_fixed_bytes, extract_u64};
+use crate::types::utils::{extract_fixed_bytes, extract_u64, u64_to_bytes32};
 use crate::types::{Bytes32, BYTES_32_LEN, U64_LEN};
 use getset::Getters;
 
@@ -107,11 +111,58 @@ impl BeaconBlockHeader {
     }
 }
 
+impl Merkleized for BeaconBlockHeader {
+    fn hash_tree_root(&self) -> Result<HashValue, CryptoError> {
+        let slot_root = HashValue::new(u64_to_bytes32(self.slot));
+
+        let proposer_index_root = HashValue::new(u64_to_bytes32(self.proposer_index));
+
+        let parent_root = HashValue::new(self.parent_root);
+
+        let state_root = HashValue::new(self.state_root);
+
+        let body_root = HashValue::new(self.body_root);
+
+        let leaves = vec![
+            slot_root,
+            proposer_index_root,
+            parent_root,
+            state_root,
+            body_root,
+        ];
+
+        merkle_root(DataType::Struct(leaves))
+    }
+}
+
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::*;
     use std::env::current_dir;
     use std::fs;
+    use tree_hash::TreeHash;
+    use tree_hash_derive::TreeHash;
+
+    #[derive(TreeHash)]
+    pub(crate) struct BeaconBlockHeaderTreeHash {
+        slot: u64,
+        proposer_index: u64,
+        parent_root: Bytes32,
+        state_root: Bytes32,
+        body_root: Bytes32,
+    }
+
+    impl From<BeaconBlockHeader> for BeaconBlockHeaderTreeHash {
+        fn from(header: BeaconBlockHeader) -> Self {
+            Self {
+                slot: header.slot,
+                proposer_index: header.proposer_index,
+                parent_root: header.parent_root,
+                state_root: header.state_root,
+                body_root: header.body_root,
+            }
+        }
+    }
 
     #[test]
     fn test_ssz_serde() {
@@ -126,5 +177,25 @@ mod test {
         let ssz_bytes = beacon_block_header.to_ssz_bytes();
 
         assert_eq!(ssz_bytes, test_bytes);
+    }
+
+    #[test]
+    fn test_beacon_block_hash_tree_root() {
+        let test_asset_path = current_dir()
+            .unwrap()
+            .join("../test-assets/BeaconBlockHeaderDeneb.ssz");
+
+        let test_bytes = fs::read(test_asset_path).unwrap();
+
+        let beacon_block_header = BeaconBlockHeader::from_ssz_bytes(&test_bytes).unwrap();
+
+        // Hash for custom implementation
+        let hash_tree_root = beacon_block_header.hash_tree_root().unwrap();
+
+        // Hash for lighthouse implementation
+        let beacon_block_header_tree_hash =
+            BeaconBlockHeaderTreeHash::from(beacon_block_header).tree_hash_root();
+
+        assert_eq!(hash_tree_root.hash(), &beacon_block_header_tree_hash.0);
     }
 }

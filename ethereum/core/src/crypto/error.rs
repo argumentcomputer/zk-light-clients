@@ -13,4 +13,6 @@ pub enum CryptoError {
     },
     #[error("Signature verification failed")]
     SignatureVerificationFailed,
+    #[error("Invalid digest length: expected {expected}, got {actual}")]
+    DigestLength { expected: usize, actual: usize },
 }

@@ -11,6 +11,8 @@
 //!
 //! - `block`: This sub-module contains all the structures related to block data on the Beacon chain.
 //! - `committee`: This sub-module contains all the structures related to committees on the Beacon chain.
+//! - `update`: This module contains the data structures available for a Light Client to update its
+//     state.
 //!
 //! For more detailed information, users should refer to the specific
 //! documentation for each sub-module.
@@ -18,6 +20,7 @@
 pub mod block;
 pub mod committee;
 pub mod error;
+pub mod update;
 pub mod utils;
 
 /// Length of a bytes32 array.
@@ -34,6 +37,13 @@ pub const ADDRESS_BYTES_LEN: usize = 20;
 
 /// An ethereum address.
 pub type Address = [u8; ADDRESS_BYTES_LEN];
+
+/// The [generalized Merkle tree index](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/ssz/merkle-proofs.md#generalized-merkle-tree-index)
+/// for finalized block.
+///
+///
+/// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#constants).
+pub const FINALIZED_ROOT_GENERALIZED_INDEX: usize = 105;
 
 /// Number of siblings in a proof for a finalized block root in a merkle tree.
 ///

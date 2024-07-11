@@ -3,8 +3,9 @@
 
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::U64_LEN;
+use crate::types::{BYTES_32_LEN, U64_LEN};
 use anyhow::anyhow;
+use std::cmp;
 
 /// Bytes length of an offset encoded for variable length fields in SSZ.
 pub const OFFSET_BYTE_LENGTH: usize = 4;
@@ -136,4 +137,38 @@ pub fn unpack_bits(bytes: &[u8], num_bits: usize) -> Vec<u8> {
     (0..num_bits)
         .map(|i| (bytes[i / 8] >> (i % 8)) & 1)
         .collect()
+}
+
+/// Utility to convert a slice of bytes into an array of 32 bytes.
+///
+/// # Arguments
+///
+/// * `bytes` - The slice of bytes to convert.
+///
+/// # Returns
+///
+/// An array of 32 bytes.
+pub fn u64_to_bytes32(u: u64) -> [u8; BYTES_32_LEN] {
+    let mut bytes = [0; BYTES_32_LEN];
+    bytes[0..8].copy_from_slice(&u.to_le_bytes());
+    bytes
+}
+
+/// Utility to convert a slice of bytes into an array of 32 bytes.
+///
+/// # Arguments
+///
+/// * `bytes` - The slice of bytes to convert.
+///
+/// # Returns
+///
+/// An array of 32 bytes.
+///
+/// # Notes
+///
+/// If the input slice is longer than 32 bytes, the output will be truncated.
+pub fn bytes_array_to_bytes32(bytes: &[u8]) -> [u8; BYTES_32_LEN] {
+    let mut padded = [0; BYTES_32_LEN];
+    padded[..cmp::min(bytes.len(), BYTES_32_LEN)].copy_from_slice(bytes);
+    padded
 }

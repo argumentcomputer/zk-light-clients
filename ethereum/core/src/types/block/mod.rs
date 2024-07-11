@@ -14,6 +14,10 @@
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
 
+use crate::crypto::error::CryptoError;
+use crate::crypto::hash::HashValue;
+use crate::merkle::utils::{merkle_root, DataType};
+use crate::merkle::Merkleized;
 use crate::serde_error;
 use crate::types::block::consensus::{BeaconBlockHeader, BEACON_BLOCK_HEADER_BYTES_LEN};
 use crate::types::block::execution::{
@@ -41,6 +45,26 @@ pub struct LightClientHeader {
     beacon: BeaconBlockHeader,
     execution: ExecutionBlockHeader,
     execution_branch: ExecutionBranch,
+}
+
+impl Merkleized for LightClientHeader {
+    fn hash_tree_root(&self) -> Result<HashValue, CryptoError> {
+        let beacon_root = self.beacon.hash_tree_root()?;
+        let execution_root = self.execution.hash_tree_root()?;
+
+        let leaves = self
+            .execution_branch
+            .iter()
+            .map(HashValue::from_slice)
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Compute the root of the Merkle tree
+        let execution_branch_root = merkle_root(DataType::List(leaves))?;
+
+        let leaves = vec![beacon_root, execution_root, execution_branch_root];
+
+        merkle_root(DataType::Struct(leaves))
+    }
 }
 
 impl LightClientHeader {
@@ -155,10 +179,37 @@ impl LightClientHeader {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::*;
+    use crate::types::block::consensus::test::BeaconBlockHeaderTreeHash;
+    use crate::types::block::execution::test::ExecutionBlockHeaderTreeHash;
+    use anyhow::anyhow;
+    use ssz_types::FixedVector;
     use std::env::current_dir;
     use std::fs;
+    use tree_hash::TreeHash;
+    use tree_hash_derive::TreeHash;
+
+    // From https://github.com/sigp/lighthouse/blob/stable/consensus/types/src/light_client_header.rs#L47-L66
+    #[derive(TreeHash)]
+    pub(crate) struct LightClientHeaderTreeHash {
+        beacon: BeaconBlockHeaderTreeHash,
+        execution: ExecutionBlockHeaderTreeHash,
+        execution_branch: FixedVector<[u8; 32], ssz_types::typenum::U4>,
+    }
+
+    impl TryFrom<LightClientHeader> for LightClientHeaderTreeHash {
+        type Error = anyhow::Error;
+
+        fn try_from(header: LightClientHeader) -> Result<Self, Self::Error> {
+            Ok(Self {
+                beacon: header.beacon.into(),
+                execution: header.execution.try_into()?,
+                execution_branch: FixedVector::new(header.execution_branch.to_vec())
+                    .map_err(|_| anyhow!("Failed to convert execution branch"))?,
+            })
+        }
+    }
 
     #[test]
     fn test_ssz_serde() {
@@ -168,10 +219,29 @@ mod test {
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
-        let beacon_block_header = LightClientHeader::from_ssz_bytes(&test_bytes).unwrap();
+        let light_client_header = LightClientHeader::from_ssz_bytes(&test_bytes).unwrap();
 
-        let ssz_bytes = beacon_block_header.to_ssz_bytes();
+        let ssz_bytes = light_client_header.to_ssz_bytes();
 
         assert_eq!(ssz_bytes, test_bytes);
+    }
+
+    #[test]
+    fn test_light_client_header_hash_tree_root() {
+        let test_asset_path = current_dir()
+            .unwrap()
+            .join("../test-assets/LightClientHeaderDeneb.ssz");
+
+        let test_bytes = fs::read(test_asset_path).unwrap();
+
+        let light_client_header = LightClientHeader::from_ssz_bytes(&test_bytes).unwrap();
+
+        let hash_tree_root = light_client_header.hash_tree_root().unwrap();
+
+        let tree_hash_root = LightClientHeaderTreeHash::try_from(light_client_header)
+            .unwrap()
+            .tree_hash_root();
+
+        assert_eq!(hash_tree_root.as_ref(), &tree_hash_root.0);
     }
 }
