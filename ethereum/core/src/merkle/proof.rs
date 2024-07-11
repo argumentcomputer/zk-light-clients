@@ -8,8 +8,8 @@ use crate::merkle::Merkleized;
 use crate::types::block::consensus::BeaconBlockHeader;
 use crate::types::block::LightClientHeader;
 use crate::types::committee::{
-    SyncCommittee, SyncCommitteeBranch, NEXT_SYNC_COMMITTEE_GENERALIZED_INDEX,
-    SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
+    SyncCommittee, SyncCommitteeBranch, CURRENT_SYNC_COMMITTEE_GENERALIZED_INDEX,
+    NEXT_SYNC_COMMITTEE_GENERALIZED_INDEX, SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
 };
 use crate::types::{
     Bytes32, FinalizedRootBranch, FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS,
@@ -63,6 +63,31 @@ pub fn is_next_committee_proof_valid(
         next_committee_branch,
         SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
         NEXT_SYNC_COMMITTEE_GENERALIZED_INDEX,
+    )
+}
+
+/// Verifies the validity of a current committee proof received in a [`crate::types::bootstrap::Bootstrap`] message.
+///
+/// # Arguments
+///
+/// * `bootstrap_header` - The header of the block that the bootstrap is attesting to.
+/// * `current_committee` - The current sync committee that the bootstrap is attesting to.
+/// * `current_committee_branch` - The branch of the Merkle tree that proves the current committee of the block.
+///
+/// # Returns
+///
+/// A `bool` indicating whether the current committee proof is valid.
+pub fn is_current_committee_proof_valid(
+    bootstrap_header: &LightClientHeader,
+    current_committee: &mut SyncCommittee,
+    current_committee_branch: &SyncCommitteeBranch,
+) -> Result<bool, MerkleError> {
+    is_proof_valid(
+        bootstrap_header,
+        current_committee,
+        current_committee_branch,
+        SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
+        CURRENT_SYNC_COMMITTEE_GENERALIZED_INDEX,
     )
 }
 

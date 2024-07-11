@@ -16,15 +16,15 @@
 //! fetch some consensus data for the given checkpoint, such as the sync committee. This allows the Light
 //! Client to start validating the consensus from the given checkpoint to the latest state.
 
-use ethereum_lc_core::serde_error;
-use ethereum_lc_core::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
-use ethereum_lc_core::types::committee::{
+use crate::serde_error;
+use crate::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
+use crate::types::committee::{
     SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
     SYNC_COMMITTEE_BYTES_LEN,
 };
-use ethereum_lc_core::types::error::TypesError;
-use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
-use ethereum_lc_core::types::BYTES_32_LEN;
+use crate::types::error::TypesError;
+use crate::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
+use crate::types::BYTES_32_LEN;
 use getset::Getters;
 
 /// `Bootstrap` represents the bootstrap data for the light client.
@@ -166,9 +166,9 @@ mod test {
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
-        let execution_block_header = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
+        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
 
-        let ssz_bytes = execution_block_header.to_ssz_bytes();
+        let ssz_bytes = bootstrap.to_ssz_bytes();
 
         assert_eq!(ssz_bytes, test_bytes);
     }

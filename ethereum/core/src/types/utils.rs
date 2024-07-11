@@ -3,12 +3,26 @@
 
 use crate::serde_error;
 use crate::types::error::TypesError;
-use crate::types::{BYTES_32_LEN, U64_LEN};
+use crate::types::{Bytes32, BYTES_32_LEN};
 use anyhow::anyhow;
 use std::cmp;
 
 /// Bytes length of an offset encoded for variable length fields in SSZ.
 pub const OFFSET_BYTE_LENGTH: usize = 4;
+
+/// Length of u64 in bytes.
+pub const U64_LEN: usize = (u64::BITS / 8) as usize;
+
+/// Genesis root of the Beacon chain.
+pub const GENESIS_ROOT: Bytes32 = [
+    75, 54, 61, 185, 78, 40, 97, 32, 215, 110, 185, 5, 52, 15, 221, 78, 84, 191, 233, 240, 107,
+    243, 63, 246, 207, 90, 210, 127, 81, 27, 254, 149,
+];
+/// Domain type for the Beacon chain.
+pub const DOMAIN_BEACON_DENEB: Bytes32 = [
+    7, 0, 0, 0, 106, 149, 161, 169, 103, 133, 93, 103, 109, 72, 190, 105, 136, 59, 113, 38, 7, 249,
+    82, 213, 25, 141, 15, 86, 119, 86, 70, 54,
+];
 
 /// Utility method to extract the N bytes at a given cursor from a byte array.
 ///
@@ -171,4 +185,18 @@ pub fn bytes_array_to_bytes32(bytes: &[u8]) -> [u8; BYTES_32_LEN] {
     let mut padded = [0; BYTES_32_LEN];
     padded[..cmp::min(bytes.len(), BYTES_32_LEN)].copy_from_slice(bytes);
     padded
+}
+
+/// Calculate the sync period for a given slot number.
+///
+/// # Arguments
+///
+/// * `slot` - The slot number.
+///
+/// # Returns
+///
+/// The sync period.
+pub fn calc_sync_period(slot: &u64) -> u64 {
+    let epoch = slot / 32; // 32 slots per epoch
+    epoch / 256 // 256 epochs per sync committee
 }

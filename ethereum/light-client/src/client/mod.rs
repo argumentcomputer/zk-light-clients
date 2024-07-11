@@ -15,14 +15,13 @@
 use crate::client::beacon::BeaconClient;
 use crate::client::checkpoint::CheckpointClient;
 use crate::client::error::ClientError;
-use crate::types::beacon::bootstrap::Bootstrap;
 use crate::types::beacon::update::UpdateResponse;
 use crate::types::checkpoint::Checkpoint;
+use ethereum_lc_core::types::bootstrap::Bootstrap;
 
 pub(crate) mod beacon;
 pub(crate) mod checkpoint;
 pub mod error;
-pub mod utils;
 
 /// The client for the light client. It is the entrypoint for any needed remote call.
 #[derive(Debug, Clone)]

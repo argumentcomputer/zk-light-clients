@@ -14,10 +14,8 @@
 //!
 //! - `beacon`: This sub-module contains the data structures used by the Beacon Node.
 //! - `checkpoint`: This sub-module contains the data structures used by the Checkpoint service.
-//! - `snapshot`: This sub-module contains the data structure representing a Light Client Snapshot.
 //!
 //! For more detailed information, users should refer to the specific documentation for each sub-module.
 
 pub mod beacon;
 pub mod checkpoint;
-pub mod snapshot;

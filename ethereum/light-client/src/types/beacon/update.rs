@@ -3,7 +3,8 @@
 
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::update::{Update, UPDATE_BASE_BYTES_LEN};
-use ethereum_lc_core::types::{ForkDigest, U64_LEN};
+use ethereum_lc_core::types::utils::U64_LEN;
+use ethereum_lc_core::types::ForkDigest;
 use getset::Getters;
 
 /// Payload received from the Beacon Node when fetching updates starting at a given period.

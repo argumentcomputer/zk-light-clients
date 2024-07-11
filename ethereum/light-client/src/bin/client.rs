@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use ethereum_lc::client::utils::calc_sync_period;
+use ethereum_lc_core::merkle::Merkleized;
+use ethereum_lc_core::types::store::LightClientStore;
+use ethereum_lc_core::types::utils::calc_sync_period;
 use log::info;
 
 /// The maximum number of light client updates that can be requested.
@@ -62,14 +64,80 @@ async fn main() {
         .await
         .expect("Failed to fetch bootstrap data");
 
+    info!(
+        "Initializing Light Client store at checkpoint: {:?}",
+        checkpoint_block_root
+    );
+
+    // Initialize store
+    let trusted_block_root = hex::decode(
+        checkpoint_block_root
+            .strip_prefix("0x")
+            .expect("Checkpoint should start with \"0x\""),
+    )
+    .expect("Failed to decode checkpoint block root")
+    .try_into()
+    .expect("Failed to convert checkpoint bytes to Bytes32");
+
+    let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap)
+        .expect("Could not initialize the store based on bootstrap data");
+
+    info!("Fetching updates...");
+
+    // Fetch updates
     let sync_period = calc_sync_period(bootstrap.header().beacon().slot());
 
-    let update = client
+    let update_response = client
         .get_update_data(sync_period, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
         .await
         .expect("Failed to fetch update data");
 
-    println!("Update: {:?}", update);
+    info!(
+        "Got {} updates, starting processing...",
+        update_response.updates().len()
+    );
 
-    // TODO verify the updates against the bootstrap checkpoint
+    for update in update_response.updates() {
+        info!(
+            "Processing update at slot: {:?}",
+            update.update().attested_header().beacon().slot()
+        );
+
+        if calc_sync_period(bootstrap.header().beacon().slot())
+            != calc_sync_period(update.update().attested_header().beacon().slot())
+        {
+            info!("Sync period changed, updating store...");
+        }
+
+        store
+            .process_light_client_update(update.update())
+            .expect("Failed to process update");
+
+        assert_eq!(
+            store
+                .next_sync_committee()
+                .clone()
+                .unwrap()
+                .hash_tree_root()
+                .unwrap(),
+            update
+                .update()
+                .next_sync_committee()
+                .hash_tree_root()
+                .unwrap()
+        );
+
+        if calc_sync_period(bootstrap.header().beacon().slot())
+            != calc_sync_period(update.update().attested_header().beacon().slot())
+        {
+            assert_eq!(
+                store.finalized_header().hash_tree_root().unwrap(),
+                update.update().finalized_header().hash_tree_root().unwrap()
+            );
+            assert_eq!(
+                store.optimistic_header().hash_tree_root().unwrap(),
+                update.update().finalized_header().hash_tree_root().unwrap()
+            )
+        }
+    }
 }

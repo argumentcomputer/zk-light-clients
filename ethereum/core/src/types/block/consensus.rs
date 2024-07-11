@@ -13,8 +13,8 @@ use crate::crypto::hash::HashValue;
 use crate::merkle::utils::{merkle_root, DataType};
 use crate::merkle::Merkleized;
 use crate::types::error::TypesError;
-use crate::types::utils::{extract_fixed_bytes, extract_u64, u64_to_bytes32};
-use crate::types::{Bytes32, BYTES_32_LEN, U64_LEN};
+use crate::types::utils::{extract_fixed_bytes, extract_u64, u64_to_bytes32, U64_LEN};
+use crate::types::{Bytes32, BYTES_32_LEN};
 use getset::Getters;
 
 /// Length in bytes of a serialized `BeaconBlockHeader`.
