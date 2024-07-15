@@ -1,7 +1,7 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::serde_error;
+use crate::deserialization_error;
 use crate::types::error::TypesError;
 use crate::types::{Bytes32, BYTES_32_LEN};
 use anyhow::anyhow;
@@ -41,14 +41,14 @@ pub fn extract_fixed_bytes<const N: usize>(
     cursor: usize,
 ) -> Result<(usize, [u8; N]), TypesError> {
     if cursor + N > bytes.len() {
-        return Err(serde_error!(
+        return Err(deserialization_error!(
             structure,
             "Not enough bytes to extract fixed bytes"
         ));
     }
     let result = bytes[cursor..cursor + N]
         .try_into()
-        .map_err(|_| serde_error!(structure, "Invalid fixed bytes"))?;
+        .map_err(|_| deserialization_error!(structure, "Invalid fixed bytes"))?;
 
     Ok((cursor + N, result))
 }
@@ -70,12 +70,15 @@ pub fn extract_u64(
     cursor: usize,
 ) -> Result<(usize, u64), TypesError> {
     if cursor + U64_LEN > bytes.len() {
-        return Err(serde_error!(structure, "Not enough bytes to extract u64"));
+        return Err(deserialization_error!(
+            structure,
+            "Not enough bytes to extract u64"
+        ));
     }
     let result = u64::from_le_bytes(
         bytes[cursor..cursor + U64_LEN]
             .try_into()
-            .map_err(|_| serde_error!(structure, "Invalid u64 bytes"))?,
+            .map_err(|_| deserialization_error!(structure, "Invalid u64 bytes"))?,
     );
 
     Ok((cursor + U64_LEN, result))
@@ -98,12 +101,15 @@ pub fn extract_u32(
     cursor: usize,
 ) -> Result<(usize, u32), TypesError> {
     if cursor + OFFSET_BYTE_LENGTH > bytes.len() {
-        return Err(serde_error!(structure, "Not enough bytes to extract u32"));
+        return Err(deserialization_error!(
+            structure,
+            "Not enough bytes to extract u32"
+        ));
     }
     let result = u32::from_le_bytes(
         bytes[cursor..cursor + OFFSET_BYTE_LENGTH]
             .try_into()
-            .map_err(|_| serde_error!(structure, "Invalid u32 bytes"))?,
+            .map_err(|_| deserialization_error!(structure, "Invalid u32 bytes"))?,
     );
 
     Ok((cursor + OFFSET_BYTE_LENGTH, result))

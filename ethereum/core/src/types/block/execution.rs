@@ -7,9 +7,9 @@
 
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::{HashValue, HASH_LENGTH};
+use crate::deserialization_error;
 use crate::merkle::utils::{merkle_root, mix_size, DataType};
 use crate::merkle::Merkleized;
-use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::utils::{
     bytes_array_to_bytes32, extract_fixed_bytes, extract_u32, extract_u64, u64_to_bytes32,
@@ -46,7 +46,7 @@ pub const MAX_EXTRA_DATA_BYTES_LEN: usize = BYTES_32_LEN;
 /// `ExecutionBlockHeader` represents the header of an execution block.
 ///
 /// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/beacon-chain.md#executionpayloadheader).
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct ExecutionBlockHeader {
     parent_hash: HashValue,
@@ -128,7 +128,7 @@ impl ExecutionBlockHeader {
     /// A `Vec<u8>` containing the SSZ serialized `ExecutionBlockHeader` data structure.
     pub fn to_ssz_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(self.parent_hash.hash());
+        bytes.extend_from_slice(self.parent_hash.as_ref());
         bytes.extend_from_slice(&self.fee_recipient);
         bytes.extend_from_slice(&self.state_root);
         bytes.extend_from_slice(&self.receipts_root);
@@ -143,7 +143,7 @@ impl ExecutionBlockHeader {
         bytes.extend_from_slice(&(offset as u32).to_le_bytes());
 
         bytes.extend_from_slice(&self.base_fee_per_gas);
-        bytes.extend_from_slice(self.block_hash.hash());
+        bytes.extend_from_slice(self.block_hash.as_ref());
         bytes.extend_from_slice(&self.transactions_root);
         bytes.extend_from_slice(&self.withdrawals_root);
         bytes.extend_from_slice(&self.blob_gas_used.to_le_bytes());
@@ -216,7 +216,7 @@ impl ExecutionBlockHeader {
         let (cursor, excess_blob_gas) = extract_u64("ExecutionBlockHeader", bytes, cursor)?;
 
         if cursor != offset as usize {
-            return Err(serde_error!(
+            return Err(deserialization_error!(
                 "ExecutionBlockHeader",
                 "Invalid offset for extra_data"
             ));
@@ -233,7 +233,7 @@ impl ExecutionBlockHeader {
         let extra_data = bytes[cursor..].to_vec();
 
         if extra_data.len() > MAX_EXTRA_DATA_BYTES_LEN {
-            return Err(serde_error!(
+            return Err(deserialization_error!(
                 "ExecutionBlockHeader",
                 "Extra data exceeds maximum length"
             ));
@@ -297,7 +297,7 @@ pub(crate) mod test {
         type Error = anyhow::Error;
         fn try_from(header: ExecutionBlockHeader) -> Result<Self, Self::Error> {
             Ok(Self {
-                parent_hash: *header.parent_hash.as_ref(),
+                parent_hash: header.parent_hash.hash(),
                 fee_recipient: H160::from_slice(&header.fee_recipient),
                 state_root: header.state_root,
                 receipts_root: header.receipts_root,
@@ -311,7 +311,7 @@ pub(crate) mod test {
                 extra_data: VariableList::new(header.extra_data)
                     .map_err(|_| anyhow!("Failed to convert extra data"))?,
                 base_fee_per_gas: header.base_fee_per_gas,
-                block_hash: *header.block_hash.as_ref(),
+                block_hash: header.block_hash.hash(),
                 transactions_root: header.transactions_root,
                 withdrawals_root: header.withdrawals_root,
                 blob_gas_used: header.blob_gas_used,
@@ -353,6 +353,6 @@ pub(crate) mod test {
             ExecutionBlockHeaderTreeHash::try_from(execution_block_header.clone()).unwrap();
         let execution_block_header_tree_hash = test_execution_block_header.tree_hash_root();
 
-        assert_eq!(hash_tree_root.hash(), &execution_block_header_tree_hash.0);
+        assert_eq!(hash_tree_root.hash(), execution_block_header_tree_hash.0);
     }
 }

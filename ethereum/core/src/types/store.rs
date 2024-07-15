@@ -15,20 +15,32 @@ use crate::merkle::proof::{
     is_current_committee_proof_valid, is_finality_proof_valid, is_next_committee_proof_valid,
 };
 use crate::merkle::Merkleized;
-use crate::types::block::LightClientHeader;
+use crate::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use crate::types::bootstrap::Bootstrap;
-use crate::types::committee::SyncCommittee;
-use crate::types::error::{ConsensusError, StoreError};
+use crate::types::committee::{SyncCommittee, SYNC_COMMITTEE_BYTES_LEN};
+use crate::types::error::{ConsensusError, StoreError, TypesError};
 use crate::types::signing_data::SigningData;
 use crate::types::update::Update;
-use crate::types::utils::{calc_sync_period, DOMAIN_BEACON_DENEB};
+use crate::types::utils::{
+    calc_sync_period, extract_u32, extract_u64, DOMAIN_BEACON_DENEB, OFFSET_BYTE_LENGTH, U64_LEN,
+};
 use crate::types::Bytes32;
+use crate::{deserialization_error, serialization_error};
 use anyhow::Result;
 use getset::Getters;
 
+pub const LIGHT_CLIENT_STORE_BASE_LENGTH: usize =
+    LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2 + SYNC_COMMITTEE_BYTES_LEN + U64_LEN * 2 + 1;
+
+pub const FINALIZED_HEADER_OFFSET: usize = OFFSET_BYTE_LENGTH
+    + SYNC_COMMITTEE_BYTES_LEN
+    + OFFSET_BYTE_LENGTH
+    + OFFSET_BYTE_LENGTH
+    + U64_LEN * 2;
+
 /// The `LightClientStore` represents the fill state for our Light Client. It includes the necessary
 /// data to be maintained to verify the consensus rules in future updates.
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct LightClientStore {
     finalized_header: LightClientHeader,
@@ -60,7 +72,7 @@ impl LightClientStore {
             .beacon()
             .hash_tree_root()
             .map_err(|err| StoreError::MerkleError { source: err.into() })?;
-        if &trusted_block_root != bootstrap_block_root.as_ref() {
+        if trusted_block_root != bootstrap_block_root.hash() {
             return Err(StoreError::InvalidBootstrap {
                 expected: format!("0x{}", hex::encode(trusted_block_root)),
                 actual: format!("0x{}", hex::encode(bootstrap_block_root.as_ref())),
@@ -239,9 +251,9 @@ impl LightClientStore {
 
         // Verify signature on the received data
         let sync_committee = if update_sig_period == store_period {
-            self.current_sync_committee()
+            self.current_sync_committee().clone()
         } else {
-            &self.next_sync_committee().clone().unwrap()
+            self.next_sync_committee().clone().unwrap()
         };
 
         let pks =
@@ -253,7 +265,7 @@ impl LightClientStore {
             .hash_tree_root()
             .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
 
-        let signing_data = SigningData::new(*header_root.as_ref(), DOMAIN_BEACON_DENEB);
+        let signing_data = SigningData::new(header_root.hash(), DOMAIN_BEACON_DENEB);
 
         let signing_root = signing_data
             .hash_tree_root()
@@ -265,7 +277,7 @@ impl LightClientStore {
         update
             .sync_aggregate()
             .sync_committee_signature()
-            .verify(signing_root.hash(), &aggregated_pubkey)
+            .verify(signing_root.as_ref(), &aggregated_pubkey)
             .map_err(|err| ConsensusError::SignatureError { source: err.into() })
     }
 
@@ -314,6 +326,148 @@ impl LightClientStore {
             self.current_max_active_participants,
         ) / 2
     }
+
+    pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
+        let mut bytes = Vec::new();
+
+        // Serialize the finalized header offset
+        let finalized_header_bytes = self.finalized_header.to_ssz_bytes();
+        bytes.extend_from_slice(&(FINALIZED_HEADER_OFFSET as u32).to_le_bytes());
+
+        // Serialize the current sync committee
+        let current_sync_committee_bytes = self.current_sync_committee.to_ssz_bytes();
+        bytes.extend_from_slice(&current_sync_committee_bytes);
+
+        // Serialize the next sync committee offset
+        let next_sync_committee_offset = FINALIZED_HEADER_OFFSET + finalized_header_bytes.len();
+        let next_sync_committee_bytes: Vec<u8> = if self.next_sync_committee.is_none() {
+            vec![0]
+        } else {
+            let mut next_sync_committee_bytes = vec![1];
+            next_sync_committee_bytes
+                .extend_from_slice(&self.next_sync_committee.clone().unwrap().to_ssz_bytes());
+            next_sync_committee_bytes
+        };
+        bytes.extend_from_slice(&(next_sync_committee_offset as u32).to_le_bytes());
+
+        // Serialize optimistic header offset
+        let optimistic_header_offset = next_sync_committee_offset + next_sync_committee_bytes.len();
+        let optimistic_header_bytes = self.optimistic_header.to_ssz_bytes();
+        bytes.extend_from_slice(&(optimistic_header_offset as u32).to_le_bytes());
+
+        // Serialize previous max active participants
+        bytes.extend_from_slice(&self.previous_max_active_participants.to_le_bytes());
+
+        // Serialize current max active participants
+        bytes.extend_from_slice(&self.current_max_active_participants.to_le_bytes());
+
+        if bytes.len() != FINALIZED_HEADER_OFFSET {
+            return Err(serialization_error!(
+                "LightClientStore",
+                "Invalid offset for finalized_header"
+            ));
+        }
+
+        // Serialize the finalized header
+        bytes.extend_from_slice(&finalized_header_bytes);
+
+        if bytes.len() != next_sync_committee_offset {
+            return Err(serialization_error!(
+                "LightClientStore",
+                "Invalid offset for next_sync_committee"
+            ));
+        }
+
+        // Serialize the next sync committee
+        bytes.extend_from_slice(&next_sync_committee_bytes);
+
+        if bytes.len() != optimistic_header_offset {
+            return Err(serialization_error!(
+                "LightClientStore",
+                "Invalid offset for optimistic_header"
+            ));
+        }
+
+        // Serialize the optimistic header
+        bytes.extend_from_slice(&optimistic_header_bytes);
+
+        Ok(bytes)
+    }
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        if bytes.len() < LIGHT_CLIENT_STORE_BASE_LENGTH {
+            return Err(TypesError::UnderLength {
+                minimum: LIGHT_CLIENT_STORE_BASE_LENGTH,
+                actual: bytes.len(),
+                structure: "LightClientStore".into(),
+            });
+        }
+
+        // Deserialize the finalized header offset
+        let cursor = 0;
+        let (cursor, finalized_header_offset) = extract_u32("LightClientStore", bytes, cursor)?;
+
+        // Deserialize current sync committee
+        let current_sync_committee =
+            SyncCommittee::from_ssz_bytes(&bytes[cursor..cursor + SYNC_COMMITTEE_BYTES_LEN])?;
+
+        // Deserialize the next sync committee offset
+        let cursor = cursor + SYNC_COMMITTEE_BYTES_LEN;
+        let (cursor, next_sync_committee_offset) = extract_u32("LightClientStore", bytes, cursor)?;
+
+        // Deserialize the optimistic header offset
+        let (cursor, optimistic_header_offset) = extract_u32("LightClientStore", bytes, cursor)?;
+
+        // Deserialize the previous max active participants
+        let (cursor, previous_max_active_participants) =
+            extract_u64("LightClientStore", bytes, cursor)?;
+
+        // Deserialize the current max active participants
+        let (cursor, current_max_active_participants) =
+            extract_u64("LightClientStore", bytes, cursor)?;
+
+        // Deserialize the finalized header
+        if cursor != finalized_header_offset as usize {
+            return Err(deserialization_error!(
+                "LightClientStore",
+                "Invalid offset for finalized_header"
+            ));
+        }
+
+        let finalized_header =
+            LightClientHeader::from_ssz_bytes(&bytes[cursor..next_sync_committee_offset as usize])?;
+
+        // Deserialize the next sync committee
+        let (cursor, next_sync_committee) = if bytes[next_sync_committee_offset as usize] == 0 {
+            (next_sync_committee_offset as usize + 1, None)
+        } else {
+            (
+                optimistic_header_offset as usize,
+                Some(SyncCommittee::from_ssz_bytes(
+                    &bytes[next_sync_committee_offset as usize + 1
+                        ..optimistic_header_offset as usize],
+                )?),
+            )
+        };
+
+        // Deserialize the optimistic header
+        if cursor != optimistic_header_offset as usize {
+            return Err(deserialization_error!(
+                "LightClientStore",
+                "Invalid offset for optimistic_header"
+            ));
+        }
+
+        let optimistic_header = LightClientHeader::from_ssz_bytes(&bytes[cursor..])?;
+
+        Ok(Self {
+            finalized_header,
+            current_sync_committee,
+            next_sync_committee,
+            optimistic_header,
+            previous_max_active_participants,
+            current_max_active_participants,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -325,50 +479,13 @@ mod test {
     use std::env::current_dir;
     use std::fs;
 
-    #[test]
-    fn test_simple_validate_and_apply_update() {
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/LightClientBootstrapDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
-
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/LightClientUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        let checkpoint = "0xefb4338d596b9d335b2da176dc85ee97469fc80c7e2d35b9b9c1558b4602077a";
-        let trusted_block_root = hex::decode(checkpoint.strip_prefix("0x").unwrap())
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
-
-        store.validate_light_client_update(&update).unwrap();
-
-        // Apply the update, this should only update the next_sync_committee value
-        store.apply_light_client_update(&update);
-
-        assert_eq!(
-            store
-                .next_sync_committee()
-                .clone()
-                .unwrap()
-                .hash_tree_root()
-                .unwrap(),
-            update.next_sync_committee().hash_tree_root().unwrap()
-        )
+    struct TestAssets {
+        store: LightClientStore,
+        update: Update,
+        update_new_period: Update,
     }
 
-    #[test]
-    fn test_process_update() {
+    fn generate_test_assets() -> TestAssets {
         // Instantiate bootstrap data
         let test_asset_path = current_dir()
             .unwrap()
@@ -403,53 +520,125 @@ mod test {
             .try_into()
             .unwrap();
 
-        let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
+        let store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
 
-        // Note: The data is not passed through process_light_client_update as the update is never applied because quorum is not met on the static data
+        TestAssets {
+            store,
+            update,
+            update_new_period,
+        }
+    }
 
-        // Validate base update for next sync committee
-        store.process_light_client_update(&update).unwrap();
+    #[test]
+    fn test_simple_validate_and_apply_update() {
+        let mut test_assets = generate_test_assets();
 
-        let tmp_next_sync_committee = store.next_sync_committee().clone().unwrap();
-
-        // Validate base update for new period
-        store
-            .process_light_client_update(&update_new_period)
+        test_assets
+            .store
+            .validate_light_client_update(&test_assets.update)
             .unwrap();
 
-        // Current sync committee should have taken the value of the next sync committee
+        // Apply the update, this should only update the next_sync_committee value
+        test_assets
+            .store
+            .apply_light_client_update(&test_assets.update);
+
         assert_eq!(
-            store.current_sync_committee().hash_tree_root().unwrap(),
-            tmp_next_sync_committee.hash_tree_root().unwrap()
-        );
-        // Next sync committee should have taken the value of the update
-        assert_eq!(
-            store
+            test_assets
+                .store
                 .next_sync_committee()
                 .clone()
                 .unwrap()
                 .hash_tree_root()
                 .unwrap(),
-            update_new_period
+            test_assets
+                .update
+                .next_sync_committee()
+                .hash_tree_root()
+                .unwrap()
+        )
+    }
+
+    #[test]
+    fn test_process_update() {
+        let mut test_assets = generate_test_assets();
+
+        // Note: The data is not passed through process_light_client_update as the update is never applied because quorum is not met on the static data
+
+        // Validate base update for next sync committee
+        test_assets
+            .store
+            .process_light_client_update(&test_assets.update)
+            .unwrap();
+
+        let tmp_next_sync_committee = test_assets.store.next_sync_committee().clone().unwrap();
+
+        // Validate base update for new period
+        test_assets
+            .store
+            .process_light_client_update(&test_assets.update_new_period)
+            .unwrap();
+
+        // Current sync committee should have taken the value of the next sync committee
+        assert_eq!(
+            test_assets
+                .store
+                .current_sync_committee()
+                .hash_tree_root()
+                .unwrap(),
+            tmp_next_sync_committee.hash_tree_root().unwrap()
+        );
+        // Next sync committee should have taken the value of the update
+        assert_eq!(
+            test_assets
+                .store
+                .next_sync_committee()
+                .clone()
+                .unwrap()
+                .hash_tree_root()
+                .unwrap(),
+            test_assets
+                .update_new_period
                 .next_sync_committee()
                 .hash_tree_root()
                 .unwrap()
         );
         // Finalized header should have taken the value of the update finalized header
         assert_eq!(
-            store.finalized_header().hash_tree_root().unwrap(),
-            update_new_period
+            test_assets
+                .store
+                .finalized_header()
+                .hash_tree_root()
+                .unwrap(),
+            test_assets
+                .update_new_period
                 .finalized_header()
                 .hash_tree_root()
                 .unwrap()
         );
         // Optimistic header should have taken the value of the update attested header
         assert_eq!(
-            store.optimistic_header().hash_tree_root().unwrap(),
-            update_new_period
+            test_assets
+                .store
+                .optimistic_header()
+                .hash_tree_root()
+                .unwrap(),
+            test_assets
+                .update_new_period
                 .attested_header()
                 .hash_tree_root()
                 .unwrap()
         )
+    }
+
+    #[test]
+    fn test_ssz_serde() {
+        let test_assets = generate_test_assets();
+
+        let bytes = test_assets.store.to_ssz_bytes().unwrap();
+
+        let deserialized_store = LightClientStore::from_ssz_bytes(&bytes);
+
+        assert_eq!(test_assets.store, deserialized_store.unwrap());
     }
 }

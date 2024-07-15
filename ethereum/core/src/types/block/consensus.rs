@@ -23,7 +23,7 @@ pub const BEACON_BLOCK_HEADER_BYTES_LEN: usize = BYTES_32_LEN * 3 + U64_LEN * 2;
 /// `BeaconBlockHeader` represents the header of a beacon block.
 ///
 /// From [the CL specifications](https://github.com/ethereum/consensus-specs/blob/v1.3.0/specs/phase0/beacon-chain.md#beaconblockheader).
-#[derive(Debug, Default, Clone, Getters)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct BeaconBlockHeader {
     slot: u64,
@@ -196,6 +196,6 @@ pub(crate) mod test {
         let beacon_block_header_tree_hash =
             BeaconBlockHeaderTreeHash::from(beacon_block_header).tree_hash_root();
 
-        assert_eq!(hash_tree_root.hash(), &beacon_block_header_tree_hash.0);
+        assert_eq!(hash_tree_root.hash(), beacon_block_header_tree_hash.0);
     }
 }

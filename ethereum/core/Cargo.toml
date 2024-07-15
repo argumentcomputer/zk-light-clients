@@ -13,6 +13,7 @@ hex = { workspace = true }
 getset = { workspace = true }
 sha2 = { workspace = true }
 thiserror = { workspace = true }
+tiny-keccak = { workspace = true, features = ["keccak"] }
 
 [dev-dependencies]
 ethereum-types = { workspace = true }

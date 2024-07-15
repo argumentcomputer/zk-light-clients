@@ -8,7 +8,7 @@
 //! information about block header signature and sync committee changes.
 
 use crate::crypto::sig::{SyncAggregate, SYNC_AGGREGATE_BYTES_LEN};
-use crate::serde_error;
+use crate::deserialization_error;
 use crate::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use crate::types::committee::{
     SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
@@ -128,13 +128,16 @@ impl Update {
                 let end = start + BYTES_32_LEN;
                 let returned_bytes = &bytes[start..end];
                 returned_bytes.try_into().map_err(|_| {
-                    serde_error!("Update", "Failed to convert bytes into SyncCommitteeBranch")
+                    deserialization_error!(
+                        "Update",
+                        "Failed to convert bytes into SyncCommitteeBranch"
+                    )
                 })
             })
             .collect::<Result<Vec<[u8; BYTES_32_LEN]>, _>>()?
             .try_into()
             .map_err(|_| {
-                serde_error!("Update", "Failed to convert bytes into SyncCommitteeBranch")
+                deserialization_error!("Update", "Failed to convert bytes into SyncCommitteeBranch")
             })?;
 
         // Deserialize `LightClientHeader` offset
@@ -148,13 +151,16 @@ impl Update {
                 let end = start + BYTES_32_LEN;
                 let returned_bytes = &bytes[start..end];
                 returned_bytes.try_into().map_err(|_| {
-                    serde_error!("Update", "Failed to convert bytes into FinalizedRootBranch")
+                    deserialization_error!(
+                        "Update",
+                        "Failed to convert bytes into FinalizedRootBranch"
+                    )
                 })
             })
             .collect::<Result<Vec<[u8; BYTES_32_LEN]>, _>>()?
             .try_into()
             .map_err(|_| {
-                serde_error!("Update", "Failed to convert bytes into FinalizedRootBranch")
+                deserialization_error!("Update", "Failed to convert bytes into FinalizedRootBranch")
             })?;
 
         // Deserialize `SyncAggregate`
@@ -168,7 +174,10 @@ impl Update {
 
         // Deserialize attested `LightClientHeader`
         if cursor != offset_attested_header as usize {
-            return Err(serde_error!("Update", "Invalid offset for attested header"));
+            return Err(deserialization_error!(
+                "Update",
+                "Invalid offset for attested header"
+            ));
         }
         let attested_header = LightClientHeader::from_ssz_bytes(
             &bytes[cursor
@@ -178,7 +187,7 @@ impl Update {
         // Deserialize finalized `LightClientHeader`
         let cursor = cursor + offset_finalized_header as usize - offset_attested_header as usize;
         if cursor != offset_finalized_header as usize {
-            return Err(serde_error!(
+            return Err(deserialization_error!(
                 "Update",
                 "Invalid offset for finalized header"
             ));

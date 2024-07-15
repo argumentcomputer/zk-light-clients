@@ -19,6 +19,11 @@ tokio = { workspace = true, features = ["full"] }
 # LC crates
 ethereum-lc-core = { path = "../core" }
 ethereum-programs = { path = "../ethereum-programs" }
+# Sphinx crates
+sphinx-sdk = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
 
 [[bin]]
 name = "client"
@@ -31,3 +36,7 @@ path = "src/bin/server_primary.rs"
 [[bin]]
 name = "server_secondary"
 path = "src/bin/server_secondary.rs"
+
+[[bench]]
+name = "committee_change"
+harness = false

@@ -16,7 +16,7 @@
 //! fetch some consensus data for the given checkpoint, such as the sync committee. This allows the Light
 //! Client to start validating the consensus from the given checkpoint to the latest state.
 
-use crate::serde_error;
+use crate::deserialization_error;
 use crate::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use crate::types::committee::{
     SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
@@ -109,7 +109,7 @@ impl Bootstrap {
                 let end = start + BYTES_32_LEN;
                 let returned_bytes = &bytes[start..end];
                 returned_bytes.try_into().map_err(|_| {
-                    serde_error!(
+                    deserialization_error!(
                         "Bootstrap",
                         "Failed to convert bytes into SyncCommitteeBranch"
                     )
@@ -118,7 +118,7 @@ impl Bootstrap {
             .collect::<Result<Vec<[u8; BYTES_32_LEN]>, _>>()?
             .try_into()
             .map_err(|_| {
-                serde_error!(
+                deserialization_error!(
                     "Bootstrap",
                     "Failed to convert bytes into SyncCommitteeBranch"
                 )
@@ -127,7 +127,10 @@ impl Bootstrap {
         // Check offset
         let cursor = cursor + SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS * BYTES_32_LEN;
         if cursor != offset as usize {
-            return Err(serde_error!("Bootstrap", "Invalid offset for header"));
+            return Err(deserialization_error!(
+                "Bootstrap",
+                "Invalid offset for header"
+            ));
         }
 
         // Deserialize `LightClientHeader`
