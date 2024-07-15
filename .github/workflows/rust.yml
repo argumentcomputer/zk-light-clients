@@ -154,14 +154,14 @@ jobs:
           echo "PATH=$HOME/.local/bin:$PATH" | tee -a $GITHUB_ENV
       - name: Run unit tests
         run: |
-          aptos move test
+          aptos move test --named-addresses plonk_verifier_addr=devnet
         working-directory: ${{ github.workspace }}/ethereum/move
       - name: Test verifier contract
         run: |
-          aptos move compile
+          aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile devnet --seed $(openssl rand -hex 32) --assume-yes
 
           for file in $(find "sources/fixtures" -name "fixture_*.json"); do
-            aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file $file --local >> out.txt
+            aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file $file --profile devnet --local --assume-yes >> out.txt
           done
 
           for outcome in $(grep "success" out.txt | awk '{ print $2 }'); do
