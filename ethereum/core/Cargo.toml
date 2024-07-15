@@ -11,6 +11,7 @@ anyhow = { workspace = true }
 bls12_381 = { workspace = true, features = ["experimental"] }
 hex = { workspace = true }
 getset = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 sha2 = { workspace = true }
 thiserror = { workspace = true }
 tiny-keccak = { workspace = true, features = ["keccak"] }

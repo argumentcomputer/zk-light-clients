@@ -1,11 +1,14 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
 use clap::Parser;
-use ethereum_lc_core::merkle::Merkleized;
+use ethereum_lc::client::Client;
+use ethereum_lc::proofs::ProvingMode;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::utils::calc_sync_period;
 use log::info;
+use std::sync::Arc;
 
 /// The maximum number of light client updates that can be requested.
 ///
@@ -26,6 +29,15 @@ struct Cli {
     /// It is recommended to use https://www.lightclientdata.org
     #[arg(short, long)]
     beacon_node_address: String,
+
+    /// The address of the proof server
+    #[arg(short, long)]
+    proof_server_address: String,
+}
+
+pub struct ClientState {
+    client: Client,
+    store: LightClientStore,
 }
 
 #[tokio::main]
@@ -33,15 +45,36 @@ async fn main() {
     let Cli {
         checkpoint_provider_address,
         beacon_node_address,
+        proof_server_address,
         ..
     } = Cli::parse();
 
     // Initialize the logger.
     env_logger::init();
 
+    let checkpoint_provider_address = Arc::new(checkpoint_provider_address);
+    let beacon_node_address = Arc::new(beacon_node_address);
+    let proof_server_address = Arc::new(proof_server_address);
+
+    let _state = initialize_light_client(
+        checkpoint_provider_address,
+        beacon_node_address,
+        proof_server_address,
+    )
+    .await;
+}
+
+async fn initialize_light_client(
+    checkpoint_provider_address: Arc<String>,
+    beacon_node_address: Arc<String>,
+    proof_server_address: Arc<String>,
+) -> Result<ClientState> {
     // Instantiate client.
-    let client =
-        ethereum_lc::client::Client::new(&checkpoint_provider_address, &beacon_node_address);
+    let client = Client::new(
+        &checkpoint_provider_address,
+        &beacon_node_address,
+        &proof_server_address,
+    );
 
     info!("Fetching latest state checkpoint and bootstrap data...");
 
@@ -79,15 +112,18 @@ async fn main() {
     .try_into()
     .expect("Failed to convert checkpoint bytes to Bytes32");
 
-    let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap)
+    let store = LightClientStore::initialize(trusted_block_root, &bootstrap)
         .expect("Could not initialize the store based on bootstrap data");
+
+    let mut client_state = ClientState { client, store };
 
     info!("Fetching updates...");
 
     // Fetch updates
     let sync_period = calc_sync_period(bootstrap.header().beacon().slot());
 
-    let update_response = client
+    let update_response = client_state
+        .client
         .get_update_data(sync_period, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
         .await
         .expect("Failed to fetch update data");
@@ -109,35 +145,24 @@ async fn main() {
             info!("Sync period changed, updating store...");
         }
 
-        store
+        let proof = client_state
+            .client
+            .prove_committee_change(ProvingMode::STARK, &client_state.store, update.update())
+            .await
+            .expect("Failed to prove committee change");
+
+        client_state
+            .client
+            .verify_committee_change(proof.clone())
+            .await
+            .expect("Failed to prove committee change");
+
+        // TODO this is redundant, to simplify
+        client_state
+            .store
             .process_light_client_update(update.update())
-            .expect("Failed to process update");
-
-        assert_eq!(
-            store
-                .next_sync_committee()
-                .clone()
-                .unwrap()
-                .hash_tree_root()
-                .unwrap(),
-            update
-                .update()
-                .next_sync_committee()
-                .hash_tree_root()
-                .unwrap()
-        );
-
-        if calc_sync_period(bootstrap.header().beacon().slot())
-            != calc_sync_period(update.update().attested_header().beacon().slot())
-        {
-            assert_eq!(
-                store.finalized_header().hash_tree_root().unwrap(),
-                update.update().finalized_header().hash_tree_root().unwrap()
-            );
-            assert_eq!(
-                store.optimistic_header().hash_tree_root().unwrap(),
-                update.update().finalized_header().hash_tree_root().unwrap()
-            )
-        }
+            .unwrap()
     }
+
+    Ok(client_state)
 }

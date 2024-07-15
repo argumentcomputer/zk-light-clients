@@ -10,8 +10,11 @@ use crate::proofs::error::ProverError;
 use crate::proofs::{ProofType, Prover, ProvingMode};
 use anyhow::Result;
 use ethereum_lc_core::crypto::hash::HashValue;
+use ethereum_lc_core::deserialization_error;
+use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
+use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
 use ethereum_programs::COMMITTEE_CHANGE_PROGRAM;
 use sphinx_sdk::{ProverClient, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
 
@@ -42,7 +45,7 @@ impl CommitteeChangeProver {
 }
 
 /// The input for the sync committee change proof.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CommitteeChangeIn {
     store: LightClientStore,
     update: Update,
@@ -61,6 +64,57 @@ impl CommitteeChangeIn {
     /// A new `CommitteeChangeIn`.
     pub const fn new(store: LightClientStore, update: Update) -> Self {
         Self { store, update }
+    }
+
+    /// Serialize the `CommitteeChangeIn` struct to SSZ bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` containing the SSZ serialized `CommitteeChangeIn` struct.
+    pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
+        let mut bytes = vec![];
+
+        let store_offset: u32 = (OFFSET_BYTE_LENGTH * 2) as u32;
+        let store_bytes = self.store.to_ssz_bytes()?;
+        bytes.extend_from_slice(&store_offset.to_le_bytes());
+
+        let update_offset = store_offset + store_bytes.len() as u32;
+        let update_bytes = self.update.to_ssz_bytes()?;
+        bytes.extend_from_slice(&update_offset.to_le_bytes());
+
+        bytes.extend_from_slice(&store_bytes);
+        bytes.extend_from_slice(&update_bytes);
+
+        Ok(bytes)
+    }
+
+    /// Deserialize a `CommitteeChangeIn` struct from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ encoded bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing either the deserialized `CommitteeChangeIn` struct or a `TypesError`.
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        let cursor = 0;
+        let (cursor, store_offset) = extract_u32("CommmitteeChangeIn", bytes, cursor)?;
+        let (cursor, update_offset) = extract_u32("CommmitteeChangeIn", bytes, cursor)?;
+
+        // Deserialize the Light Client store
+        if cursor != store_offset as usize {
+            return Err(deserialization_error!(
+                "CommmitteeChangeIn",
+                "Invalid offset for store"
+            ));
+        }
+        let store = LightClientStore::from_ssz_bytes(&bytes[cursor..update_offset as usize])?;
+
+        // Deserialize the Update
+        let update = Update::from_ssz_bytes(&bytes[update_offset as usize..])?;
+
+        Ok(Self { store, update })
     }
 }
 
@@ -115,8 +169,6 @@ impl Prover for CommitteeChangeProver {
     }
 
     fn prove(&self, inputs: Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
-        sphinx_sdk::utils::setup_logger();
-
         let stdin = self.generate_sphinx_stdin(inputs)?;
 
         match mode {
