@@ -18,8 +18,10 @@ examples).
 To run Move script that executes verification code using JSON fixture (running locally, simulating real transaction):
 
 ```
+aptos account fund-with-faucet --account 0x4207422239492c11a6499620c869fe2248c7fe52c05ca1c443bffe8a8878d32 --profile devnet
 aptos move compile
-aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/fixture_1.json --local
+aptos move publish --profile devnet
+aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/fixture_1.json --profile devnet --local
 ```
 
 You should see tentatively following result if verification passed:
