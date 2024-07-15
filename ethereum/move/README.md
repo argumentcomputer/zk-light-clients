@@ -39,3 +39,5 @@ You should see tentatively following result if verification passed:
   }
 }
 ```
+
+It is known that verification doesn't work with testnet due to serialisation issue of Bn254 field element. This might be fixed with eventual testnet upgrades on Aptos side.
