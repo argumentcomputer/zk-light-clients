@@ -50,7 +50,7 @@ impl StorageClient {
     }
 
     /// `get_proof` makes an HTTP request to the RPC Provider API to get the proof of inclusion
-    /// for the specified address.
+    /// for the specified address and specified storage keys.
     ///
     /// # Arguments
     ///
@@ -66,6 +66,7 @@ impl StorageClient {
     pub(crate) async fn get_proof(
         &self,
         address: &str,
+        storage_keys: &[String],
     ) -> Result<EIP1186ProofResponse, ClientError> {
         let address = address.to_string();
         // Generate body
@@ -75,7 +76,7 @@ impl StorageClient {
                 "jsonrpc": "2.0",
                 "method": "eth_getProof",
                 "id": 1,
-                "params": [address, [], "latest"]
+                "params": [address, storage_keys, "latest"]
             })
         );
 

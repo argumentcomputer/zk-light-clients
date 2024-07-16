@@ -80,9 +80,11 @@ async fn main() {
 
     let inclusion_merkle_proof = state
         .client
-        .get_proof(ADDRESS)
+        .get_proof(ADDRESS, &[])
         .await
         .expect("Failed to fetch storage inclusion proof");
+
+    println!("Proof of storage inclusion: {:?}", inclusion_merkle_proof);
 }
 
 async fn initialize_light_client(

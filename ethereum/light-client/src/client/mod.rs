@@ -174,6 +174,7 @@ impl Client {
     /// # Arguments
     ///
     /// * `address` - The address to get the proof for.
+    /// * `storage_keys` - The storage keys to get the proof for.
     ///
     /// # Returns
     ///
@@ -182,7 +183,11 @@ impl Client {
     /// # Errors
     ///
     /// Returns an error if the request fails or the response is not successful or properly formatted.
-    pub async fn get_proof(&self, address: &str) -> Result<EIP1186ProofResponse, ClientError> {
-        self.storage_client.get_proof(address).await
+    pub async fn get_proof(
+        &self,
+        address: &str,
+        storage_keys: &[String],
+    ) -> Result<EIP1186ProofResponse, ClientError> {
+        self.storage_client.get_proof(address, storage_keys).await
     }
 }
