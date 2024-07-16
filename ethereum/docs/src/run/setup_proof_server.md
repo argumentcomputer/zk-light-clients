@@ -17,8 +17,6 @@ Make sure to finish the [initial configuration](./configuration.md) first.
     - `-C target-cpu=native`: This will ensure that the binary is optimized
       for the CPU it is running on. This is very important
       for [plonky3](https://github.com/plonky3/plonky3?tab=readme-ov-file#cpu-features) performance.
-    - `--cfg tokio_unstable`: This will enable the unstable features of the
-      Tokio runtime. This is necessary for aptos dependencies.
     - `-C opt-level=3`: This turns on the maximum level of compiler optimizations.
     - This can also be configured in `~/.cargo/config.toml` instead by adding:
         ```toml
