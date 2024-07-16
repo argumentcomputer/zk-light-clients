@@ -16,7 +16,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct GetProofResponse {
+struct GetProofResponse {
     id: u64,
     jsonrpc: String,
     result: EIP1186ProofResponse,
@@ -78,7 +78,6 @@ impl StorageClient {
                 "params": [address, [], "latest"]
             })
         );
-        dbg!(&body);
 
         // Send the HTTP request
         let response = self

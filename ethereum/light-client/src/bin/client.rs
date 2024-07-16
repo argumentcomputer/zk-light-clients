@@ -83,8 +83,6 @@ async fn main() {
         .get_proof(ADDRESS)
         .await
         .expect("Failed to fetch storage inclusion proof");
-
-    dbg!(inclusion_merkle_proof);
 }
 
 async fn initialize_light_client(
