@@ -1415,6 +1415,7 @@ dependencies = [
  "env_logger",
  "ethereum-lc-core",
  "ethereum-programs",
+ "ethers-core",
  "getset",
  "hex",
  "log",

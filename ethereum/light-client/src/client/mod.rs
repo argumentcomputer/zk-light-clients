@@ -16,17 +16,20 @@ use crate::client::beacon::BeaconClient;
 use crate::client::checkpoint::CheckpointClient;
 use crate::client::error::ClientError;
 use crate::client::proof_server::ProofServerClient;
+use crate::client::storage::StorageClient;
 use crate::proofs::{ProofType, ProvingMode};
 use crate::types::beacon::update::UpdateResponse;
 use crate::types::checkpoint::Checkpoint;
 use ethereum_lc_core::types::bootstrap::Bootstrap;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
+use ethers_core::types::EIP1186ProofResponse;
 
 pub(crate) mod beacon;
 pub(crate) mod checkpoint;
 pub mod error;
 mod proof_server;
+mod storage;
 
 /// The client for the light client. It is the entrypoint for any needed remote call.
 #[derive(Debug, Clone)]
@@ -34,6 +37,7 @@ pub struct Client {
     beacon_client: BeaconClient,
     checkpoint_client: CheckpointClient,
     proof_server_client: ProofServerClient,
+    storage_client: StorageClient,
 }
 
 impl Client {
@@ -43,6 +47,8 @@ impl Client {
     ///
     /// * `checkpoint_provider_address` - The address of the Checkpoint Provider API.
     /// * `beacon_node_address` - The address of the Beacon Node API.
+    /// * `proof_server_address` - The address of the Proof Server API.
+    /// * `storage_provider_address` - The address of the RPC Provider API.
     ///
     /// # Returns
     ///
@@ -51,11 +57,13 @@ impl Client {
         checkpoint_provider_address: &str,
         beacon_node_address: &str,
         proof_server_address: &str,
+        storage_provider_address: &str,
     ) -> Self {
         Self {
             beacon_client: BeaconClient::new(beacon_node_address),
             checkpoint_client: CheckpointClient::new(checkpoint_provider_address),
             proof_server_client: ProofServerClient::new(proof_server_address),
+            storage_client: StorageClient::new(storage_provider_address),
         }
     }
 
@@ -159,5 +167,22 @@ impl Client {
         self.proof_server_client
             .verify_committee_change(proof)
             .await
+    }
+
+    /// `get_proof` makes an HTTP request to the RPC Provider API to get the proof of a storage inclusion.
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - The address to get the proof for.
+    ///
+    /// # Returns
+    ///
+    /// The proof of the storage inclusion.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails or the response is not successful or properly formatted.
+    pub async fn get_proof(&self, address: &str) -> Result<EIP1186ProofResponse, ClientError> {
+        self.storage_client.get_proof(address).await
     }
 }
