@@ -21,7 +21,7 @@ Make sure to finish the [initial configuration](./configuration.md) first.
     - This can also be configured in `~/.cargo/config.toml` instead by adding:
         ```toml
         [target.'cfg(all())']
-        rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native", "-C", "opt-level=3"]
+        rustflags = ["-C", "target-cpu=native", "-C", "opt-level=3"]
         ```
 
 Make sure to launch the proof servers with `cargo +nightly-2024-05-31`.
@@ -38,5 +38,5 @@ Finally, once the primary server is configured in the same fashion, run it:
 ```bash
 git clone git@github.com:lurk-lab/zk-light-clients.git && \
   cd zk-light-clients/ethereum/light-client && \
-  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
+  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```
