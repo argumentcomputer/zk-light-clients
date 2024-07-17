@@ -13,7 +13,7 @@ Make sure to finish the [initial configuration](./configuration.md) first.
 
 ## Environment variables
 
-- `RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3"`:
+- `RUSTFLAGS="-C target-cpu=native -C opt-level=3"`:
     - `-C target-cpu=native`: This will ensure that the binary is optimized
       for the CPU it is running on. This is very important
       for [plonky3](https://github.com/plonky3/plonky3?tab=readme-ov-file#cpu-features) performance.
