@@ -65,6 +65,7 @@ jobs:
           title: "chore: Update fixtures"
           commit-message: "chore: Update fixtures"
           labels: "automated-issue"
+          reviewers: "tchataigner, storojs72, wwared, huitseeker, samuelburnham"
           body: |
             This is an automated PR updating the proof fixtures for Solidity and Move (TBD), which are used for smart contract verification tests.
 
