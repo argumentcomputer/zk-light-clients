@@ -274,7 +274,7 @@ pub const SYNC_AGGREGATE_BYTES_LEN: usize = SYNC_COMMITTEE_SIZE / 8 + SIG_LEN;
 /// index who signed the message as bits and the actual signature.
 ///
 /// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/beacon-chain.md#syncaggregate).
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct SyncAggregate {
     sync_committee_bits: [u8; SYNC_COMMITTEE_SIZE],

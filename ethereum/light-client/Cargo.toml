@@ -14,6 +14,7 @@ hex = { workspace = true }
 log = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 # LC crates
@@ -21,9 +22,6 @@ ethereum-lc-core = { path = "../core" }
 ethereum-programs = { path = "../ethereum-programs" }
 # Sphinx crates
 sphinx-sdk = { workspace = true }
-
-[dev-dependencies]
-serde_json = { workspace = true }
 
 [[bin]]
 name = "client"

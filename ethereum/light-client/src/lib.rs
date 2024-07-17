@@ -32,3 +32,4 @@
 pub mod client;
 pub mod proofs;
 pub mod types;
+pub mod utils;

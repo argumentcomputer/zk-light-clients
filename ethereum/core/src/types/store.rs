@@ -180,7 +180,8 @@ impl LightClientStore {
             .sync_aggregate()
             .sync_committee_bits()
             .iter()
-            .sum::<u8>()
+            .map(|&bit| u64::from(bit))
+            .sum::<u64>()
             < 1
         {
             return Err(ConsensusError::InsufficientSigners);

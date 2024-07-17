@@ -30,7 +30,7 @@ pub const UPDATE_BASE_BYTES_LEN: usize = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
 /// A data structure containing the necessary data for a light client to update its state from the Beacon chain.
 ///
 /// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/specs/altair/light-client/sync-protocol.md#lightclientupdate).
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct Update {
     attested_header: LightClientHeader,

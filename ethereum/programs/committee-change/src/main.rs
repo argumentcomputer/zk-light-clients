@@ -80,7 +80,13 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: hash_new_sync_committee");
     }
+    let next_sync_committee_hash = keccak256_hash(&store.next_sync_committee().as_ref().expect("Store should have a next sync committee after processing update").to_ssz_bytes())
+        .expect("LightClientStore::current_sync_committee: could not hash committee after processing update");
+    sphinx_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-end: hash_new_sync_committee");
+    }
     // Commit the two hashes
     sphinx_zkvm::io::commit(&old_sync_committee_hash.hash());
     sphinx_zkvm::io::commit(&updated_sync_committee_hash.hash());
+    sphinx_zkvm::io::commit(&next_sync_committee_hash.hash());
 }

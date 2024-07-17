@@ -195,6 +195,7 @@ dependencies = [
  "bls12_381",
  "getset",
  "hex",
+ "serde",
  "sha2 0.9.9",
  "thiserror",
  "tiny-keccak",
