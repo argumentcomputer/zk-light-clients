@@ -7,6 +7,12 @@
 //! for storage inclusion proof.
 //!
 //! It maintains an internal HTTP client to handle communication with the RPC Provider API.
+//!
+//! ## Storage provider address
+//!
+//! The storage client expects an address that contains an API key, which identifies an account at
+//! those RPC partners (e.g.:https://mainnet.infura.io/v3/YOUR-API-KEY). The API key is used to
+//! authenticate the client with the RPC provider.
 
 use crate::client::error::ClientError;
 use ethers_core::types::EIP1186ProofResponse;

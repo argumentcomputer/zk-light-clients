@@ -15,8 +15,14 @@ use std::sync::Arc;
 /// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/p2p-interface.md#configuration).
 pub const MAX_REQUEST_LIGHT_CLIENT_UPDATES: u8 = 128;
 
-/// Address for which we fetch proof of inclusion
-pub const ADDRESS: &str = "0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97";
+/// Address for which we fetch the proof of storage.
+/// From [the Uniswap v2 documentation](https://docs.uniswap.org/contracts/v2/reference/smart-contracts/v2-deployments).
+pub const UNISWAP_V2_ADDRESS: &str = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
+
+/// Storage key corresponding to [the `allPairs` mapping](https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Factory.sol#L11) in the Uniswap v2 contract.
+/// Calculated with `keccak256(abi.encodePacked(uint256(2)))`.
+pub const ALL_PAIRS_STORAGE_KEY: &str =
+    "0x290decd9548b62a8ef0d3e6ac11e2d7b95a49e22ecf57fc6044b6f007ca2b2ba";
 
 /// The CLI for the light client.
 #[derive(Parser)]
@@ -80,7 +86,7 @@ async fn main() {
 
     let inclusion_merkle_proof = state
         .client
-        .get_proof(ADDRESS, &[])
+        .get_proof(UNISWAP_V2_ADDRESS, &[String::from(ALL_PAIRS_STORAGE_KEY)])
         .await
         .expect("Failed to fetch storage inclusion proof");
 
