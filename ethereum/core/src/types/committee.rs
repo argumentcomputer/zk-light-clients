@@ -61,6 +61,20 @@ pub struct SyncCommittee {
     aggregate_pubkey: PublicKey,
 }
 
+impl Default for SyncCommittee {
+    fn default() -> Self {
+        let pubkeys: [PublicKey; SYNC_COMMITTEE_SIZE] = std::iter::repeat_with(PublicKey::default)
+            .take(SYNC_COMMITTEE_SIZE)
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("Incorrect length");
+        Self {
+            pubkeys,
+            aggregate_pubkey: PublicKey::default(),
+        }
+    }
+}
+
 impl SyncCommittee {
     /// Serialize a `SyncCommittee` data structure to an SSZ formatted vector of bytes.
     ///

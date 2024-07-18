@@ -5,6 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use ethereum_lc::client::Client;
 use ethereum_lc::proofs::ProvingMode;
+use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::utils::calc_sync_period;
 use log::info;
@@ -84,13 +85,46 @@ async fn main() {
 
     info!("Fetching proof of storage inclusion for the latest block...");
 
+    // Check signature
+    // Use execution branch to check finalkized exectuion properly in finalized header
+    // Use finalized branch to check finalized block is properly in attested block
+    // Check the proof of storage inclusion
+
+    let finality_update = state
+        .client
+        .get_finality_update()
+        .await
+        .expect("Failed to fetch finality update");
+
+    println!("Finality update: {:?}", finality_update);
+
     let inclusion_merkle_proof = state
         .client
-        .get_proof(UNISWAP_V2_ADDRESS, &[String::from(ALL_PAIRS_STORAGE_KEY)])
+        .get_proof(
+            UNISWAP_V2_ADDRESS,
+            &[String::from(ALL_PAIRS_STORAGE_KEY)],
+            &format!(
+                "0x{}",
+                hex::encode(
+                    finality_update
+                        .finalized_header()
+                        .execution()
+                        .block_hash()
+                        .as_ref()
+                )
+            ),
+        )
         .await
         .expect("Failed to fetch storage inclusion proof");
 
-    println!("Proof of storage inclusion: {:?}", inclusion_merkle_proof);
+    let light_client_internal =
+        EIP1186Proof::try_from(inclusion_merkle_proof).expect("Failed to convert to EIP1186Proof");
+
+    println!("Proof of storage inclusion: {:?}", &light_client_internal);
+
+    light_client_internal
+        .verify(finality_update.finalized_header().execution().state_root())
+        .expect("Failed to verify proof");
 }
 
 async fn initialize_light_client(

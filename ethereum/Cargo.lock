@@ -1434,6 +1434,7 @@ dependencies = [
  "anyhow",
  "bls12_381 0.8.0",
  "ethereum-types",
+ "ethers-core",
  "getset",
  "hex",
  "serde",

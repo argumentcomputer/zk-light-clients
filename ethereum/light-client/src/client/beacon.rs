@@ -11,6 +11,7 @@
 use crate::client::error::ClientError;
 use crate::types::beacon::update::UpdateResponse;
 use ethereum_lc_core::types::bootstrap::Bootstrap;
+use ethereum_lc_core::types::update::FinalityUpdate;
 use getset::Getters;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
@@ -162,5 +163,60 @@ impl BeaconClient {
             })?;
 
         Ok(update_response)
+    }
+
+    /// `get_finality_update` makes an HTTP request to the Beacon Node API to get the finality update.
+    /// It fetches the finality update for the latest finalized header.
+    ///
+    /// # Returns
+    ///
+    /// The finality update.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails or the response is not successful or properly formatted.
+    pub(crate) async fn get_finality_update(&self) -> Result<FinalityUpdate, ClientError> {
+        // Format the endpoint for the call
+        let url = format!(
+            "{}/eth/v1/beacon/light_client/finality_update",
+            self.beacon_node_address
+        );
+
+        // Send the HTTP request
+        let response = self
+            .inner
+            .get(&url)
+            .header(ACCEPT, "application/octet-stream")
+            .send()
+            .await
+            .map_err(|err| ClientError::Request {
+                endpoint: url.clone(),
+                source: Box::new(err),
+            })?;
+
+        if !response.status().is_success() {
+            return Err(ClientError::Request {
+                endpoint: url,
+                source: format!(
+                    "Request not successful, got HTTP code {}",
+                    response.status().as_str()
+                )
+                .into(),
+            });
+        }
+
+        // Deserialize the response
+        let bytes = response.bytes().await.map_err(|err| ClientError::Request {
+            endpoint: url.clone(),
+            source: err.into(),
+        })?;
+
+        let finality_update: FinalityUpdate = FinalityUpdate::from_ssz_bytes(bytes.as_ref())
+            .map_err(|err| ClientError::Request {
+                endpoint: url,
+                source: err.into(),
+            })?;
+
+        Ok(finality_update)
     }
 }

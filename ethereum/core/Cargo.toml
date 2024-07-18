@@ -9,6 +9,7 @@ homepage = "https://github.com/wormhole-foundation/example-zk-light-clients"
 [dependencies]
 anyhow = { workspace = true }
 bls12_381 = { workspace = true, features = ["experimental"] }
+ethers-core = { workspace = true }
 hex = { workspace = true }
 getset = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

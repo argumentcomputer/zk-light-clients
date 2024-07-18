@@ -12,13 +12,17 @@
 //!
 //! - `error`: This sub-module contains the error types that can be returned by the Merkle Tree
 //!   utilities.
-//! - `proof`: This sub-module contains the utilities to verify Merkle Proofs.
+//! - `storage_proof` This sub-module contains the necessary types to represent the data received from
+//!   a `eth_getProof` call on a Beacon Node and verify the proofs.
+//! - `update_proofs`: This sub-module contains the utilities to verify Merkle Proofs received by a Beacon
+//!   Node when querying Light Client updates?
 //! - `utils`: This sub-module contains the utilities to manipulate the Merkle Tree.
 
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::HashValue;
 pub mod error;
-pub mod proof;
+pub mod storage_proofs;
+pub mod update_proofs;
 pub mod utils;
 
 /// The `Merkleized` trait is implemented by types that can be hashed and represented as a single

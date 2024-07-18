@@ -38,6 +38,8 @@ pub enum TypesError {
         minimum: usize,
         actual: usize,
     },
+    #[error("Error while converting hexadecimal value to a fixed-size array")]
+    InvalidHexadecimal,
 }
 
 /// Errors possible while manipulating the Light Client store.
@@ -84,6 +86,10 @@ pub enum ConsensusError {
     },
     #[error("Insufficient signers for the update to be valid. Expected at least one, got 0")]
     InsufficientSigners,
+    #[error(
+        "Expected to receive a Finality update, but received a value for the next sync committee"
+    )]
+    ExpectedFinalityUpdate,
 }
 
 /// Macro to create a `TypesError::DeserializationError` with the given structure and source.
