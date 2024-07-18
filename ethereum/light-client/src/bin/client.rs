@@ -15,6 +15,15 @@ use std::sync::Arc;
 /// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/p2p-interface.md#configuration).
 pub const MAX_REQUEST_LIGHT_CLIENT_UPDATES: u8 = 128;
 
+/// Address for which we fetch the proof of storage.
+/// From [the Uniswap v2 documentation](https://docs.uniswap.org/contracts/v2/reference/smart-contracts/v2-deployments).
+pub const UNISWAP_V2_ADDRESS: &str = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
+
+/// Storage key corresponding to [the `allPairs` mapping](https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Factory.sol#L11) in the Uniswap v2 contract.
+/// Calculated with `keccak256(abi.encodePacked(uint256(2)))`.
+pub const ALL_PAIRS_STORAGE_KEY: &str =
+    "0x290decd9548b62a8ef0d3e6ac11e2d7b95a49e22ecf57fc6044b6f007ca2b2ba";
+
 /// The CLI for the light client.
 #[derive(Parser)]
 struct Cli {
@@ -33,6 +42,10 @@ struct Cli {
     /// The address of the proof server
     #[arg(short, long)]
     proof_server_address: String,
+
+    /// The address of the RPC provider
+    #[arg(short, long)]
+    rpc_provider_address: String,
 }
 
 pub struct ClientState {
@@ -46,6 +59,7 @@ async fn main() {
         checkpoint_provider_address,
         beacon_node_address,
         proof_server_address,
+        rpc_provider_address,
         ..
     } = Cli::parse();
 
@@ -55,25 +69,42 @@ async fn main() {
     let checkpoint_provider_address = Arc::new(checkpoint_provider_address);
     let beacon_node_address = Arc::new(beacon_node_address);
     let proof_server_address = Arc::new(proof_server_address);
+    let rpc_provider_address = Arc::new(rpc_provider_address);
 
-    let _state = initialize_light_client(
+    let state = initialize_light_client(
         checkpoint_provider_address,
         beacon_node_address,
         proof_server_address,
+        rpc_provider_address,
     )
-    .await;
+    .await
+    .expect("Failed to initialize light client");
+
+    info!("Light client initialized successfully");
+
+    info!("Fetching proof of storage inclusion for the latest block...");
+
+    let inclusion_merkle_proof = state
+        .client
+        .get_proof(UNISWAP_V2_ADDRESS, &[String::from(ALL_PAIRS_STORAGE_KEY)])
+        .await
+        .expect("Failed to fetch storage inclusion proof");
+
+    println!("Proof of storage inclusion: {:?}", inclusion_merkle_proof);
 }
 
 async fn initialize_light_client(
     checkpoint_provider_address: Arc<String>,
     beacon_node_address: Arc<String>,
     proof_server_address: Arc<String>,
+    rpc_provider_address: Arc<String>,
 ) -> Result<ClientState> {
     // Instantiate client.
     let client = Client::new(
         &checkpoint_provider_address,
         &beacon_node_address,
         &proof_server_address,
+        &rpc_provider_address,
     );
 
     info!("Fetching latest state checkpoint and bootstrap data...");

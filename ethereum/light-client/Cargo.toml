@@ -9,6 +9,7 @@ license = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 env_logger = { workspace = true }
+ethers-core = { workspace = true }
 getset = { workspace = true }
 hex = { workspace = true }
 log = { workspace = true }

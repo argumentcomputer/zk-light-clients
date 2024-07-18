@@ -43,4 +43,12 @@ in [the `BeaconClient` file](https://github.com/lurk-lab/zk-light-clients/tree/d
 
 ## Execution RPC Endpoint
 
-// TODO
+The Execution RPC endpoint is responsible for providing the Light Client with the necessary data to prove value
+inclusion
+in the state of the chain. The Light Client needs to connect to an Ethereum node that exposes the necessary RPC
+endpoints.
+
+The RPC endpoint to be used to fetch this data is [`eth_getProof`](https://eips.ethereum.org/EIPS/eip-1186). This RPC
+endpoint can be access through various RPC provider such
+as [Infura](https://docs.infura.io/api/networks/polygon-pos/json-rpc-methods/eth_getproof)
+or [Chainstack](https://docs.chainstack.com/reference/getproof).
