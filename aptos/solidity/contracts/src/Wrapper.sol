@@ -2,6 +2,7 @@ pragma solidity ^0.8.25;
 
 import {console} from "forge-std/Test.sol";
 import {SphinxVerifier as SphinxPlonkVerifier} from "sphinx-contracts/SphinxVerifier.sol";
+import "openzeppelin/access/Ownable.sol";
 
 struct SphinxProofFixture {
     bytes proof;
@@ -20,7 +21,7 @@ struct EpochChangeProofFixture {
     SphinxProofFixture sphinxFixture;
 }
 
-contract Wrapper is SphinxPlonkVerifier {
+contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
     error ErrorUnexpectedSignerHash();
 
     bytes32 private signerHash;
@@ -29,11 +30,11 @@ contract Wrapper is SphinxPlonkVerifier {
         signerHash = signerHash_;
     }
 
-    function setSignerHash(bytes32 newSignerHash) public {
+    function setSignerHash(bytes32 newSignerHash) public onlyOwner {
         signerHash = newSignerHash;
     }
 
-    function getSignerHash() public view returns (bytes32) {
+    function getSignerHash() public returns (bytes32) {
         return signerHash;
     }
 

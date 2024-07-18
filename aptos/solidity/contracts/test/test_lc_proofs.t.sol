@@ -40,7 +40,7 @@ contract SolidityVerificationTest is Test {
         return abi.decode(jsonBytes, (SphinxProofFixture));
     }
 
-    function testValidInclusionProofPlonk() public {
+    function testValidInclusionProofPlonk() public view {
         SphinxProofFixture memory fixture = loadPlonkInclusionFixture();
         uint256 gasCost = gasleft();
         wrapper.verifyInclusion(
@@ -62,7 +62,7 @@ contract SolidityVerificationTest is Test {
     }
 
     // Negative tests with a fake proof
-    function testFail_FakeProofInclusion() public {
+    function testFail_FakeProofInclusion() public view {
         SphinxProofFixture memory fixture = loadPlonkInclusionFixture();
         bytes memory fakeProof = new bytes(fixture.proof.length);
         fixture.proof = fakeProof;
@@ -81,7 +81,7 @@ contract SolidityVerificationTest is Test {
     }
 
     // Negative tests with a fake public values (currently failing, need to be enabled if porting v1.0.7-testnet contracts of SP1 to Sphinx)
-    function _testFail_FakePublicValuesInclusion() public {
+    function _testFail_FakePublicValuesInclusion() public view {
         SphinxProofFixture memory fixture = loadPlonkInclusionFixture();
         bytes memory fakePublicValues = new bytes(fixture.proof.length + 100);
         fixture.publicValues = fakePublicValues;
@@ -100,7 +100,7 @@ contract SolidityVerificationTest is Test {
     }
 
     // Negative tests with a wrong vk (currently failing, need to be enabled if porting v1.0.7-testnet contracts of SP1 to Sphinx)
-    function _testFail_WrongVkValuesInclusion() public {
+    function _testFail_WrongVkValuesInclusion() public view {
         SphinxProofFixture memory epochChangeFixture = loadPlonkEpochChangeFixture();
         SphinxProofFixture memory inclusionFixture = loadPlonkInclusionFixture();
         SphinxProofFixture memory inner = inclusionFixture;
@@ -120,7 +120,7 @@ contract SolidityVerificationTest is Test {
         wrapper.verifyEpochChange(EpochChangeProofFixture(inner));
     }
 
-    function testFailInvalidSignerHashInclusion() public {
+    function testFailInvalidSignerHashInclusion() public view {
         SphinxProofFixture memory fixture = loadPlonkInclusionFixture();
         wrapper.verifyInclusion(
             InclusionProofFixture(
