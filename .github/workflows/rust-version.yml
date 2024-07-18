@@ -2,9 +2,6 @@
 name: Rust Version Check
 
 on:
-  push:
-    branches:
-      - "ci-rust-version"
   workflow_dispatch:
   schedule:
     - cron:  '0 0 1,15 * *'
@@ -42,10 +39,10 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           branch: "ci-update-rust-version-${{ matrix.package }}"
-          title: "chore: Update `${{ matrix.package }}` Rust version to nightly-${{ env.RUST_VERSION }}"
-          commit-message: "chore: Update `${{ matrix.package }}` Rust version to nightly-${{ env.RUST_VERSION }}"
+          title: "chore: Update `${{ matrix.package }}` Rust version to `nightly-${{ env.RUST_VERSION }}`"
+          commit-message: "chore: Update `${{ matrix.package }}` Rust version to `nightly-${{ env.RUST_VERSION }}`"
           labels: "automated-issue"
-          #reviewers: "tchataigner, wwared, storojs72, huitseeker, samuelburnham"
+          reviewers: "tchataigner, wwared, storojs72, huitseeker, samuelburnham"
           body: |
             This is an automated PR updating the `${{ matrix.package }}` Rust version from `nightly-${{ env.TOOLCHAIN_VERSION }}` to `nightly-${{ env.RUST_VERSION }}`
 
