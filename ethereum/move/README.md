@@ -15,13 +15,11 @@ It is also possible to run verification over custom JSON fixtures via Move scrip
 verification key are passed via arguments to Move script. Note, that fixture should have Aptos-specific format (see `/move/sources/fixtures` for
 examples).
 
-To run Move script that executes verification code using JSON fixture (running locally, simulating real transaction):
+To run Move script that executes verification code using JSON fixture (running on Aptos `testnet`):
 
 ```
-aptos account fund-with-faucet --account 0x4207422239492c11a6499620c869fe2248c7fe52c05ca1c443bffe8a8878d32 --profile devnet
-aptos move compile
-aptos move publish --profile devnet
-aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/fixture_1.json --profile devnet --local
+aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile testnet --seed $(openssl rand -hex 32) --assume-yes
+aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/fixture_1.json --profile testnet --assume-yes
 ```
 
 You should see tentatively following result if verification passed:
@@ -40,5 +38,3 @@ You should see tentatively following result if verification passed:
 }
 ```
 It is possible to run Move verification flow locally. This requires running Aptos node locally using Docker (see [this](https://aptos.dev/en/build/cli/running-a-local-network) tutorial for more details).
-
-It is known that verification doesn't work with testnet due to serialisation issue of Bn254 field element. This might be fixed with eventual testnet upgrades on Aptos side.

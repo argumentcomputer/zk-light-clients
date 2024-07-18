@@ -158,10 +158,10 @@ jobs:
         working-directory: ${{ github.workspace }}/ethereum/move
       - name: Test verifier contract
         run: |
-          aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile devnet --seed $(openssl rand -hex 32) --assume-yes
+          aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile testnet --seed $(openssl rand -hex 32) --assume-yes
 
           for file in $(find "sources/fixtures" -name "fixture_*.json"); do
-            aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file $file --profile devnet --local --assume-yes >> out.txt
+            aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file $file --profile testnet --local --assume-yes >> out.txt
           done
 
           for outcome in $(grep "success" out.txt | awk '{ print $2 }'); do
