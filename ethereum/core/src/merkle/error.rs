@@ -41,4 +41,9 @@ pub enum RlpError {
     },
     #[error("Leftover data after decoding the RLP item. Expected 0 bytes, got {actual} bytes")]
     LeftoverData { expected: usize, actual: usize },
+    #[error("Error while decoding hexadecimal value")]
+    HexDecodeError {
+        #[source]
+        source: Box<dyn std::error::Error + Sync + Send>,
+    },
 }

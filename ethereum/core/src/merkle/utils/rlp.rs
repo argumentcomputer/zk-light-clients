@@ -3,7 +3,7 @@
 
 use crate::merkle::error::RlpError;
 use crate::merkle::utils::get_nibble;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use ethers_core::types::EIP1186ProofResponse;
 use ethers_core::utils::rlp::RlpStream;
 
@@ -59,11 +59,7 @@ pub fn rlp_encode_account(proof: &EIP1186ProofResponse) -> Vec<u8> {
 ///
 /// The integer representation of the byte slice.
 fn to_integer(input: &[u8]) -> usize {
-    if input.is_empty() {
-        return 0;
-    }
-    let result = input.iter().fold(0, |acc, &b| acc * 256 + b as usize);
-    result
+    input.iter().fold(0, |acc, &b| acc * 256 + b as usize)
 }
 
 /// Decodes an RLP encoded item.
@@ -184,55 +180,6 @@ pub fn decode_list(input: &[u8]) -> Result<Vec<Vec<u8>>, RlpError> {
     }
 
     Ok(items)
-}
-
-/// Checks if an RLP-encoded value corresponds to an empty account.
-///
-/// # Arguments
-///
-/// * `value` - The RLP-encoded value.
-///
-/// # Returns
-///
-/// `true` if the value corresponds to an empty account, `false` otherwise.
-pub fn is_empty_value(value: &[u8]) -> Result<bool> {
-    let mut empty_account = vec![];
-
-    // Begin list with 4 items (0xc0 + 4 = 0xc4)
-    empty_account.push(0xc4);
-
-    // Append two empty data items (0x80)
-    empty_account.push(SINGLE_BYTE_LIMIT);
-    empty_account.push(SINGLE_BYTE_LIMIT);
-
-    // Append empty storage hash
-    let empty_storage_hash = EMPTY_STORAGE_ROOT;
-    empty_account.extend_from_slice(&hex_decode(empty_storage_hash)?);
-
-    // Append empty code hash
-    let empty_code_hash = NO_CODE_KECCAK_HASH;
-    empty_account.extend_from_slice(&hex_decode(empty_code_hash)?);
-
-    let is_empty_slot = value.len() == 1 && value[0] == 0x80;
-    let is_empty_account = value == empty_account;
-    Ok(is_empty_slot || is_empty_account)
-}
-
-/// Decodes a hexadecimal string into a byte vector.
-///
-/// # Arguments
-///
-/// * `s` - The hexadecimal string.
-///
-/// # Returns
-///
-/// The byte vector.
-fn hex_decode(s: &str) -> Result<Vec<u8>> {
-    (0..s.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|err| anyhow!(err.to_string()))
 }
 
 /// Checks if two paths match.
