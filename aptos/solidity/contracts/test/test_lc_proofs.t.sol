@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {Wrapper, SphinxProofFixture, InclusionProofFixture, EpochChangeProofFixture} from "../src/Wrapper.sol";
 

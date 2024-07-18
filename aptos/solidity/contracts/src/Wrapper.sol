@@ -33,11 +33,11 @@ contract Wrapper is SphinxPlonkVerifier {
         signerHash = newSignerHash;
     }
 
-    function getSignerHash() public returns (bytes32) {
+    function getSignerHash() public view returns (bytes32) {
         return signerHash;
     }
 
-    function verifyInclusion(InclusionProofFixture memory fixture) public {
+    function verifyInclusion(InclusionProofFixture memory fixture) public view {
         // it reverts execution if core verification fails, so no special handing is required
         this.verifyProof(fixture.sphinxFixture.vkey, fixture.sphinxFixture.publicValues, fixture.sphinxFixture.proof);
         if (signerHash != fixture.signerHash) {
