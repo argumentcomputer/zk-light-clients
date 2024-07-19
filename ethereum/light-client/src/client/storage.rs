@@ -15,18 +15,11 @@
 //! authenticate the client with the RPC provider.
 
 use crate::client::error::ClientError;
+use crate::types::storage::GetProofResponse;
 use ethers_core::types::EIP1186ProofResponse;
 use getset::Getters;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize)]
-struct GetProofResponse {
-    id: u64,
-    jsonrpc: String,
-    result: EIP1186ProofResponse,
-}
 
 /// An internal client to handle communication with the RPC Provider.
 #[derive(Debug, Clone, Getters)]
@@ -120,6 +113,6 @@ impl StorageClient {
                 source: err.into(),
             })?;
 
-        Ok(deserialized.result)
+        Ok(deserialized.result().clone())
     }
 }

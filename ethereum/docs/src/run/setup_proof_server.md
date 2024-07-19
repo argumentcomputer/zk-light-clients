@@ -31,6 +31,16 @@ Make sure to launch the proof servers with `cargo +nightly-2024-05-31`.
 > One can also set the `RUST_LOG` environment variable to `debug` to get more information
 > about the execution of the server.
 
+## Deploy the secondary server
+
+Now that our deployment machine is properly configured, we can run the secondary server.
+
+```bash
+git clone git@github.com:lurk-lab/zk-light-clients.git && \
+  cd zk-light-clients/aptos/proof-server && \
+  SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_secondary -- -a <NETWORK_ADDRESS>
+```
+
 ## Deploy the primary server
 
 Finally, once the primary server is configured in the same fashion, run it:
@@ -38,5 +48,5 @@ Finally, once the primary server is configured in the same fashion, run it:
 ```bash
 git clone git@github.com:lurk-lab/zk-light-clients.git && \
   cd zk-light-clients/ethereum/light-client && \
-  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
+  SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```

@@ -168,7 +168,7 @@ pub(crate) mod test {
     fn test_ssz_serde() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/BeaconBlockHeaderDeneb.ssz");
+            .join("../test-assets/committee-change/BeaconBlockHeaderDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -183,7 +183,7 @@ pub(crate) mod test {
     fn test_beacon_block_hash_tree_root() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/BeaconBlockHeaderDeneb.ssz");
+            .join("../test-assets/committee-change/BeaconBlockHeaderDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 

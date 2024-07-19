@@ -174,7 +174,7 @@ impl LightClientStore {
     /// # Notes
     ///
     /// From [the Altaïr specifications](https://github.com/ethereum/consensus-specs/blob/5cce790decfb362bef300a4ca9f8075b1699ccb1/specs/altair/light-client/sync-protocol.md#validate_light_client_update).
-    fn validate_light_client_update(&self, update: &Update) -> Result<(), ConsensusError> {
+    pub fn validate_light_client_update(&self, update: &Update) -> Result<(), ConsensusError> {
         // Ensure we at least have 1 signer
         if update
             .sync_aggregate()
@@ -496,7 +496,7 @@ mod test {
         // Instantiate bootstrap data
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/LightClientBootstrapDeneb.ssz");
+            .join("../test-assets/committee-change/LightClientBootstrapDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -505,7 +505,7 @@ mod test {
         // Instantiate Update data
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/LightClientUpdateDeneb.ssz");
+            .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -514,7 +514,7 @@ mod test {
         // Instantiate new period Update data
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/LightClientUpdateNewPeriodDeneb.ssz");
+            .join("../test-assets/committee-change/LightClientUpdateNewPeriodDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 

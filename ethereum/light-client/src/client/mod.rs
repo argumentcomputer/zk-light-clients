@@ -20,6 +20,7 @@ use crate::client::storage::StorageClient;
 use crate::proofs::{ProofType, ProvingMode};
 use crate::types::beacon::update::UpdateResponse;
 use crate::types::checkpoint::Checkpoint;
+use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::bootstrap::Bootstrap;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::{FinalityUpdate, Update};
@@ -28,8 +29,8 @@ use ethers_core::types::EIP1186ProofResponse;
 pub(crate) mod beacon;
 pub(crate) mod checkpoint;
 pub mod error;
-mod proof_server;
-mod storage;
+pub(crate) mod proof_server;
+pub mod storage;
 
 /// The client for the light client. It is the entrypoint for any needed remote call.
 #[derive(Debug, Clone)]
@@ -205,6 +206,53 @@ impl Client {
     ) -> Result<EIP1186ProofResponse, ClientError> {
         self.storage_client
             .get_proof(address, storage_keys, block_hash)
+            .await
+    }
+
+    /// `prove_storage_inclusion` makes a request to the Proof Server API to generate the proof of a storage inclusion.
+    ///
+    /// # Arguments
+    ///
+    /// * `proving_mode` - The proving mode, either STARK or SNARK.
+    /// * `store` - The light client store.
+    /// * `update` - The update data.
+    /// * `eip1186_proof` - The EIP1186 proof.
+    ///
+    /// # Returns
+    ///
+    /// The proof of the storage inclusion.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails or the response is not successful or properly formatted.
+    pub async fn prove_storage_inclusion(
+        &self,
+        proving_mode: ProvingMode,
+        store: &LightClientStore,
+        update: &Update,
+        eip1186_proof: &EIP1186Proof,
+    ) -> Result<ProofType, ClientError> {
+        self.proof_server_client
+            .prove_storage_inclusion(proving_mode, store, update, eip1186_proof)
+            .await
+    }
+
+    /// `verify_storage_inclusion` makes a request to the Proof Server API to verify the proof of a storage inclusion.
+    ///
+    /// # Arguments
+    ///
+    /// * `proof` - The proof of the storage inclusion.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating whether the proof is valid.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails or the response is not successful or properly formatted.
+    pub async fn verify_storage_inclusion(&self, proof: ProofType) -> Result<bool, ClientError> {
+        self.proof_server_client
+            .verify_storage_inclusion(proof)
             .await
     }
 }

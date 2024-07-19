@@ -39,3 +39,7 @@ path = "src/bin/server_secondary.rs"
 [[bench]]
 name = "committee_change"
 harness = false
+
+[[bench]]
+name = "inclusion"
+harness = false

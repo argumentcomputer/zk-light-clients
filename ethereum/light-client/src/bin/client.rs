@@ -7,6 +7,7 @@ use ethereum_lc::client::Client;
 use ethereum_lc::proofs::ProvingMode;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
+use ethereum_lc_core::types::update::Update;
 use ethereum_lc_core::types::utils::calc_sync_period;
 use log::info;
 use std::sync::Arc;
@@ -96,8 +97,6 @@ async fn main() {
         .await
         .expect("Failed to fetch finality update");
 
-    println!("Finality update: {:?}", finality_update);
-
     let inclusion_merkle_proof = state
         .client
         .get_proof(
@@ -120,11 +119,27 @@ async fn main() {
     let light_client_internal =
         EIP1186Proof::try_from(inclusion_merkle_proof).expect("Failed to convert to EIP1186Proof");
 
-    println!("Proof of storage inclusion: {:?}", &light_client_internal);
+    info!("Generating proof of inclusion...");
+    let proof = state
+        .client
+        .prove_storage_inclusion(
+            ProvingMode::STARK,
+            &state.store,
+            &Update::from(finality_update),
+            &light_client_internal,
+        )
+        .await
+        .expect("Failed to prove storage inclusion");
+    info!("Proof of storage inclusion generated successfully");
 
-    light_client_internal
-        .verify(finality_update.finalized_header().execution().state_root())
-        .expect("Failed to verify proof");
+    // Verify the proof of storage inclusion
+    info!("Verifying proof of storage inclusion...");
+    state
+        .client
+        .verify_storage_inclusion(proof)
+        .await
+        .expect("Failed to verify storage inclusion proof");
+    info!("Proof of storage inclusion verified successfully");
 }
 
 async fn initialize_light_client(

@@ -24,7 +24,8 @@ use serde::{Deserialize, Serialize};
 use sphinx_sdk::{SphinxPlonkBn254Proof, SphinxProof, SphinxProofWithPublicValues, SphinxStdin};
 
 pub mod committee_change;
-mod error;
+pub mod error;
+pub mod inclusion;
 
 /// The proving mode for the prover.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]

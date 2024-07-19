@@ -18,6 +18,8 @@ thiserror = { workspace = true }
 tiny-keccak = { workspace = true, features = ["keccak"] }
 
 [dev-dependencies]
+ethereum_ssz_derive = { workspace = true }
+ethereum_ssz = { workspace = true }
 ethereum-types = { workspace = true }
 ssz_types = { workspace = true, features = ["arbitrary"] }
 tree_hash = { workspace = true }

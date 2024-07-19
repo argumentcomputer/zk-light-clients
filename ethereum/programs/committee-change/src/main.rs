@@ -41,14 +41,14 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: old_sync_committee_ssz_ser");
     }
-    let old_sync_committee_bytes = store.current_sync_committee().to_ssz_bytes();
+    let signer_committee_bytes = store.current_sync_committee().to_ssz_bytes();
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: old_sync_committee_ssz_ser");
     }
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: hash_current_sync_committee");
     }
-    let old_sync_committee_hash = keccak256_hash(&old_sync_committee_bytes)
+    let signer_sync_committee_hash = keccak256_hash(&signer_committee_bytes)
         .expect("LightClientStore::current_sync_committee: could not hash committee");
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: hash_current_sync_committee");
@@ -85,8 +85,9 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: hash_new_sync_committee");
     }
-    // Commit the two hashes
-    sphinx_zkvm::io::commit(&old_sync_committee_hash.hash());
+    // Commit the signer hash, the current and next sync committee hashes, and the block height
+    sphinx_zkvm::io::commit(update.attested_header().beacon().slot());
+    sphinx_zkvm::io::commit(&signer_sync_committee_hash.hash());
     sphinx_zkvm::io::commit(&updated_sync_committee_hash.hash());
     sphinx_zkvm::io::commit(&next_sync_committee_hash.hash());
 }

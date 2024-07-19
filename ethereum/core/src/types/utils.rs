@@ -159,6 +159,101 @@ pub fn unpack_bits(bytes: &[u8], num_bits: usize) -> Vec<u8> {
         .collect()
 }
 
+/// Utility to convert a list of bytes slice to an SSZ encoded  object.
+///
+/// # Arguments
+///
+/// * `list` - The list of bytes to convert.
+///
+/// # Returns
+///
+/// A vector of bytes.
+pub fn ssz_encode_list_bytes(list: &[Vec<u8>]) -> Vec<u8> {
+    let mut bytes: Vec<u8> = vec![];
+
+    if list.is_empty() {
+        return bytes;
+    }
+
+    // First element offset
+    let mut element_offset = list.len() * OFFSET_BYTE_LENGTH;
+    bytes.extend_from_slice(&(element_offset as u32).to_le_bytes());
+
+    // Grow with offset and create the serialized element slice
+    let mut serialized_elements = vec![];
+
+    for (i, element) in list.iter().enumerate() {
+        if i < list.len() - 1 {
+            element_offset += element.len();
+            bytes.extend_from_slice(&(element_offset as u32).to_le_bytes());
+        }
+
+        serialized_elements.extend_from_slice(element);
+    }
+
+    // Finalize list bytes and extend final bytes
+    bytes.extend_from_slice(&serialized_elements);
+
+    bytes
+}
+
+/// Utility to convert a slice of bytes into a list of bytes.
+///
+/// # Arguments
+///
+/// * `bytes` - The slice of bytes to convert.
+///
+/// # Returns
+///
+/// A vector of bytes.
+pub fn ssz_decode_list_bytes(bytes: &[u8]) -> Result<Vec<Vec<u8>>, TypesError> {
+    let mut list_bytes = vec![];
+    if bytes.len() > OFFSET_BYTE_LENGTH {
+        let (mut cursor, mut offset) = extract_u32("StorageProof", bytes, 0)?;
+        let first_offset = offset as usize;
+
+        loop {
+            if cursor == first_offset {
+                break;
+            }
+
+            let (next_cursor, next_offset) = extract_u32("StorageProof", bytes, cursor)?;
+            list_bytes.push(
+                bytes
+                    .get(offset as usize..next_offset as usize)
+                    .ok_or_else(|| TypesError::OutOfBounds {
+                        structure: "StorageProof".into(),
+                        offset: next_offset as usize,
+                        length: bytes.len(),
+                    })?
+                    .to_vec(),
+            );
+
+            cursor = next_cursor;
+            offset = next_offset;
+        }
+
+        list_bytes.push(
+            bytes
+                .get(offset as usize..)
+                .ok_or_else(|| TypesError::OutOfBounds {
+                    structure: "StorageProof".into(),
+                    offset: offset as usize,
+                    length: bytes.len(),
+                })?
+                .to_vec(),
+        );
+    } else if !bytes.is_empty() {
+        return Err(TypesError::UnderLength {
+            structure: "StorageProof".into(),
+            minimum: OFFSET_BYTE_LENGTH,
+            actual: bytes.len(),
+        });
+    }
+
+    Ok(list_bytes)
+}
+
 /// Utility to convert a slice of bytes into an array of 32 bytes.
 ///
 /// # Arguments

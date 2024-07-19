@@ -38,6 +38,12 @@ pub enum TypesError {
         minimum: usize,
         actual: usize,
     },
+    #[error("Received data out of bounds for {structure}. Offset: {offset}, Length: {length}.")]
+    OutOfBounds {
+        structure: String,
+        offset: usize,
+        length: usize,
+    },
     #[error("Error while converting hexadecimal value to a fixed-size array")]
     InvalidHexadecimal,
 }
