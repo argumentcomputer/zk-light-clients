@@ -34,12 +34,17 @@ fn main() {
     match args.program.as_str() {
         "inclusion" => {
             elf = INCLUSION_ELF;
-            let (sparse_merkle_proof_assets, transaction_proof_assets, validator_verifier_assets) =
-                aptos_lc::inclusion::setup_assets();
+            let (
+                sparse_merkle_proof_assets,
+                transaction_proof_assets,
+                validator_verifier_assets,
+                block_id,
+            ) = aptos_lc::inclusion::setup_assets();
             stdin = aptos_lc::inclusion::generate_stdin(
                 &sparse_merkle_proof_assets,
                 &transaction_proof_assets,
                 &validator_verifier_assets,
+                block_id,
             );
         }
         "epoch_change" => {

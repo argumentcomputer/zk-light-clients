@@ -101,11 +101,13 @@ async fn main() -> Result<()> {
                         sparse_merkle_proof_assets,
                         transaction_proof_assets,
                         validator_verifier_assets,
+                        block_id,
                     } = inclusion_data;
                     let stdin = inclusion::generate_stdin(
                         &sparse_merkle_proof_assets,
                         &transaction_proof_assets,
                         &validator_verifier_assets,
+                        block_id,
                     );
                     info!("Start proving");
                     let proof_handle = spawn_blocking(move || prover_client.prove(&pk, stdin));
@@ -156,11 +158,13 @@ async fn main() -> Result<()> {
                         sparse_merkle_proof_assets,
                         transaction_proof_assets,
                         validator_verifier_assets,
+                        block_id,
                     } = inclusion_data;
                     let stdin = inclusion::generate_stdin(
                         &sparse_merkle_proof_assets,
                         &transaction_proof_assets,
                         &validator_verifier_assets,
+                        block_id,
                     );
                     info!("Start proving");
                     let proof_handle =

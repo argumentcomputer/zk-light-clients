@@ -10,19 +10,10 @@ struct SphinxProofFixture {
     bytes32 vkey;
 }
 
-struct InclusionProofFixture {
-    SphinxProofFixture sphinxFixture;
-    bytes32 signerHash;
-    bytes32 blockHeight;
-    bytes32 valueHash;
-}
-
-struct EpochChangeProofFixture {
-    SphinxProofFixture sphinxFixture;
-}
-
 contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
     error ErrorUnexpectedSignerHash();
+    error ErrorUnexpectedInclusionFixture();
+    error ErrorUnexpectedEpochChangeFixture();
 
     bytes32 private signerHash;
 
@@ -34,26 +25,69 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         signerHash = newSignerHash;
     }
 
-    function getSignerHash() public returns (bytes32) {
+    function getSignerHash() public view returns (bytes32) {
         return signerHash;
     }
 
-    function verifyInclusion(InclusionProofFixture memory fixture) public view {
-        // it reverts execution if core verification fails, so no special handing is required
-        this.verifyProof(fixture.sphinxFixture.vkey, fixture.sphinxFixture.publicValues, fixture.sphinxFixture.proof);
-        if (signerHash != fixture.signerHash) {
+    function verifyInclusion(SphinxProofFixture memory fixture) public view {
+        if (fixture.publicValues.length != 32 + 32 + 32 + 32 + 8) {
+            revert ErrorUnexpectedInclusionFixture();
+        }
+
+        // it reverts execution if core verification fails, so no special handling is required
+        this.verifyProof(fixture.vkey, fixture.publicValues, fixture.proof);
+
+        uint256 offset = 0;
+        uint256 i = 0;
+
+        bytes memory signerHashFixture = new bytes(32);
+        for (i = 0; i < 32; i++) {
+            signerHashFixture[i] = fixture.publicValues[i];
+        }
+        offset += 32;
+
+        bytes memory merkleRootHash = new bytes(32);
+        for (i = 0; i < 32; i++) {
+            merkleRootHash[i] = fixture.publicValues[i + offset];
+        }
+        offset += 32;
+
+        bytes memory blockId = new bytes(8);
+        for (i = 0; i < 8; i++) {
+            blockId[i] = fixture.publicValues[i + offset];
+        }
+        offset += 8;
+
+        bytes memory key = new bytes(32);
+        for (i = 0; i < 32; i++) {
+            key[i] = fixture.publicValues[i + offset];
+        }
+        offset += 32;
+
+        bytes memory value = new bytes(32);
+        for (i = 0; i < 32; i++) {
+            value[i] = fixture.publicValues[i + offset];
+        }
+
+        if (signerHash != bytes32(signerHashFixture)) {
             revert ErrorUnexpectedSignerHash();
         }
 
-        console.log("block height is: ", uint256(fixture.blockHeight));
-        console.log("value hash is: ", uint256(fixture.valueHash));
+        console.log("merkle root hash is: ", uint256(bytes32(merkleRootHash)));
+        console.log("block identifier is: ", uint256(bytes32(blockId)));
+        console.log("key is: ", uint256(bytes32(key)));
+        console.log("value is: ", uint256(bytes32(value)));
 
         // allow funds transfer
     }
 
-    function verifyEpochChange(EpochChangeProofFixture memory fixture) public {
+    function verifyEpochChange(SphinxProofFixture memory fixture) public {
+        if (fixture.publicValues.length != 64) {
+            revert ErrorUnexpectedEpochChangeFixture();
+        }
+
         // it reverts execution if core verification fails, so no special handling is required
-        this.verifyProof(fixture.sphinxFixture.vkey, fixture.sphinxFixture.publicValues, fixture.sphinxFixture.proof);
+        this.verifyProof(fixture.vkey, fixture.publicValues, fixture.proof);
 
         // extract previous and new signer hashes from public values (we are safe here as input validation is performed in the core contract)
         bytes memory prevSignerHash = new bytes(32);
@@ -61,8 +95,8 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         uint256 offset = 32;
         uint256 length = 32;
         for (uint8 i = 0; i < length; i++) {
-            prevSignerHash[i] = fixture.sphinxFixture.publicValues[i];
-            newSignerHash[i] = fixture.sphinxFixture.publicValues[i + offset];
+            prevSignerHash[i] = fixture.publicValues[i];
+            newSignerHash[i] = fixture.publicValues[i + offset];
         }
 
         if (signerHash != bytes32(prevSignerHash)) {

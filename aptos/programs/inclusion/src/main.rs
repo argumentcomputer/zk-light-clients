@@ -29,6 +29,10 @@ pub fn main() {
 
     // Latest verified validator verifier &  hash
     let verified_validator_verifier = sphinx_zkvm::io::read::<Vec<u8>>();
+
+    // Block identifier
+    let block_id = sphinx_zkvm::io::read::<[u8; 8]>();
+
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
@@ -100,4 +104,13 @@ pub fn main() {
 
     // Commit the state root hash
     sphinx_zkvm::io::commit(reconstructed_root_hash.as_ref());
+
+    // Commit current block id
+    sphinx_zkvm::io::commit(&block_id);
+
+    // Commit key
+    sphinx_zkvm::io::commit(&key);
+
+    // Commit leaf value hash
+    sphinx_zkvm::io::commit(&leaf_value_hash);
 }

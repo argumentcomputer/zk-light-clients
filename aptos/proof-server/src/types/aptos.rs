@@ -3,7 +3,7 @@
 
 use crate::types::proof_server::{EpochChangeData, InclusionData};
 use aptos_lc::inclusion::{
-    SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
+    BlockID, SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use aptos_lc_core::crypto::hash::HashValue;
 use aptos_lc_core::merkle::sparse_proof::SparseMerkleProof;
@@ -85,6 +85,8 @@ pub struct AccountInclusionProofResponse {
     ledger_info_v0: LedgerInfoWithSignatures,
     /// ValidatorVerifier valid for the proof
     validator_verifier: ValidatorVerifier,
+    /// Block id
+    block_id: BlockID,
 }
 
 impl From<AccountInclusionProofResponse> for InclusionData {
@@ -104,6 +106,7 @@ impl From<AccountInclusionProofResponse> for InclusionData {
             validator_verifier_assets: ValidatorVerifierAssets::new(
                 val.validator_verifier.to_bytes(),
             ),
+            block_id: val.block_id,
         }
     }
 }
