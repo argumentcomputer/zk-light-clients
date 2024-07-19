@@ -24,12 +24,6 @@ const LONG_STRING_LIMIT: u8 = 0xbf;
 /// From [the Ethereum documentation](https://ethereum.org/vi/developers/docs/data-structures-and-encoding/rlp/).
 const SHORT_LIST_LIMIT: u8 = 0xf7;
 
-/// Empty storage Merkle Patricia trie root hash.
-const EMPTY_STORAGE_ROOT: &str = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
-/// Empty string (no code) keccak256 hash.
-const NO_CODE_KECCAK_HASH: &str =
-    "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
-
 /// Encodes an EIP 1186 response into an RLP encoded account.
 ///
 /// # Arguments
