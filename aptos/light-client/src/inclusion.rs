@@ -157,6 +157,9 @@ pub fn generate_keys(client: &ProverClient) -> (SphinxProvingKey, SphinxVerifyin
 struct InclusionOutput {
     validator_verifier_hash: [u8; 32],
     state_hash: [u8; 32],
+    block_hash: [u8; 32],
+    key: [u8; 32],
+    value: [u8; 32],
 }
 
 #[allow(dead_code)]
@@ -185,12 +188,18 @@ fn prove_inclusion(
     // Read output.
     let validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
     let state_hash = proof.public_values.read::<[u8; 32]>();
+    let block_hash = proof.public_values.read::<[u8; 32]>();
+    let key = proof.public_values.read::<[u8; 32]>();
+    let value = proof.public_values.read::<[u8; 32]>();
 
     Ok((
         proof,
         InclusionOutput {
             validator_verifier_hash,
             state_hash,
+            block_hash,
+            key,
+            value,
         },
     ))
 }

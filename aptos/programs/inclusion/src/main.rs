@@ -29,6 +29,7 @@ pub fn main() {
 
     // Latest verified validator verifier &  hash
     let verified_validator_verifier = sphinx_zkvm::io::read::<Vec<u8>>();
+
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
@@ -49,13 +50,9 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: verify_transaction_inclusion");
     }
-    let expected_root_hash = HashValue::from_slice(
-        latest_li
-            .ledger_info()
-            .transaction_accumulator_hash()
-            .as_ref(),
-    )
-    .unwrap();
+
+    let expected_root_hash = latest_li.ledger_info().transaction_accumulator_hash();
+
     transaction_proof
         .verify(expected_root_hash, transaction_hash, transaction_index)
         .expect("verify: could not verify proof");
@@ -100,4 +97,14 @@ pub fn main() {
 
     // Commit the state root hash
     sphinx_zkvm::io::commit(reconstructed_root_hash.as_ref());
+
+    // Commit current block id
+    let block_hash = latest_li.ledger_info().block_id();
+    sphinx_zkvm::io::commit(block_hash.as_ref());
+
+    // Commit key
+    sphinx_zkvm::io::commit(&key);
+
+    // Commit leaf value hash
+    sphinx_zkvm::io::commit(&leaf_value_hash);
 }

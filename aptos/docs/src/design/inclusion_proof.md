@@ -43,3 +43,6 @@ end of this document):
 
 - **Current `ValidatorVerifier` Hash:** The current validator verifier hash, used to validate the incoming data.
 - **State Root Hash:** The root hash of the state, derived from the `TransactionInfo::state_checkpoint`.
+- **Unique Block Identifier:** The identifier of the current block.
+- **Merkle-tree key:** The key that identifies the place/position of the leaf being checked for in the merkle tree.
+- **Merkle-tree value:** The hash of the actual value at the position of the merkle tree leaf.

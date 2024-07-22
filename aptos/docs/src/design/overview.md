@@ -27,6 +27,6 @@ The current Verifying Key Hashes which uniquely identify the specific RISC-V bin
 [`aptos/aptos-programs/artifacts/`](https://github.com/lurk-lab/zk-light-clients/tree/dev/aptos/aptos-programs/artifacts)
 directory are:
 * `epoch_change`: `0x00eea0650222f7e5bb6a2fe57c0e0e504d1df8b3d848d5116174a8703d228c94`
-* `inclusion`: `0x00577bdce64983ba592ae451a43bf8bd57cc5f814df02e0ff0e2bb1c3c7c5af2`
+* `inclusion`: `0x00336c570224c00161ca7b3c275c24f3968aa09086c31d09d98691bce109f4f6`
 
 These values are also present in and used by the [solidity fixtures](../benchmark/on_chain.md).
