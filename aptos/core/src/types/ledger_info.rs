@@ -101,6 +101,10 @@ impl LedgerInfo {
         self.commit_info.executed_state_id()
     }
 
+    pub fn block_id(&self) -> HashValue {
+        self.commit_info.id()
+    }
+
     /// Returns the version of the `LedgerInfo`.
     ///
     /// # Returns
