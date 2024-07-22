@@ -5,6 +5,8 @@ use crate::crypto::error::CryptoError;
 use crate::crypto::hash::{sha2_hash, sha2_hash_concat, HashValue};
 use crate::types::BYTES_32_LEN;
 
+pub mod rlp;
+
 /// Returns the index of the subtree that a given generalized index belongs to. The generalized index
 /// is the index of a leaf in a binary tree where the leaves are numbered from left to right.
 ///
@@ -122,4 +124,15 @@ pub fn mix_size(base_hash: &HashValue, size: usize) -> Result<HashValue, CryptoE
     length_bytes[0..usize_len].copy_from_slice(&size.to_le_bytes());
 
     sha2_hash_concat(base_hash, &HashValue::new(length_bytes))
+}
+
+/// Returns the index of the subtree that a given generalized index belongs to. The generalized index
+/// is the index of a leaf in a binary tree where the leaves are numbered from left to right.
+pub const fn get_nibble(path: &[u8], offset: usize) -> u8 {
+    let byte = path[offset / 2];
+    if offset % 2 == 0 {
+        byte >> 4
+    } else {
+        byte & 0xF
+    }
 }

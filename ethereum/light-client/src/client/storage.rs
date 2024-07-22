@@ -61,6 +61,8 @@ impl StorageClient {
     /// # Arguments
     ///
     /// * `address` - The address to get the proof for.
+    /// * `storage_keys` - The storage keys to get the proof for.
+    /// * `block_hash` - The block hash to get the proof for.
     ///
     /// # Returns
     ///
@@ -73,6 +75,7 @@ impl StorageClient {
         &self,
         address: &str,
         storage_keys: &[String],
+        block_hash: &str,
     ) -> Result<EIP1186ProofResponse, ClientError> {
         let address = address.to_string();
         // Generate body
@@ -82,7 +85,7 @@ impl StorageClient {
                 "jsonrpc": "2.0",
                 "method": "eth_getProof",
                 "id": 1,
-                "params": [address, storage_keys, "latest"]
+                "params": [address, storage_keys, block_hash]
             })
         );
 

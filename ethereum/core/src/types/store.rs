@@ -11,13 +11,13 @@
 //! function. This function will process the given `Update` data and apply it to the `LightClientStore` if it is valid.
 
 use crate::crypto::sig::PublicKey;
-use crate::merkle::proof::{
+use crate::merkle::update_proofs::{
     is_current_committee_proof_valid, is_finality_proof_valid, is_next_committee_proof_valid,
 };
 use crate::merkle::Merkleized;
 use crate::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use crate::types::bootstrap::Bootstrap;
-use crate::types::committee::{SyncCommittee, SYNC_COMMITTEE_BYTES_LEN};
+use crate::types::committee::{SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BYTES_LEN};
 use crate::types::error::{ConsensusError, StoreError, TypesError};
 use crate::types::signing_data::SigningData;
 use crate::types::update::Update;
@@ -239,15 +239,21 @@ impl LightClientStore {
         }
 
         // Ensure that the next sync committee proof is valid
-        let is_valid = is_next_committee_proof_valid(
-            update.attested_header(),
-            &mut update.next_sync_committee().clone(),
-            update.next_sync_committee_branch(),
-        )
-        .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+        if update.next_sync_committee_branch() == &SyncCommitteeBranch::default() {
+            if update.next_sync_committee() != &SyncCommittee::default() {
+                return Err(ConsensusError::ExpectedFinalityUpdate);
+            }
+        } else {
+            let is_valid = is_next_committee_proof_valid(
+                update.attested_header(),
+                &mut update.next_sync_committee().clone(),
+                update.next_sync_committee_branch(),
+            )
+            .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
 
-        if !is_valid {
-            return Err(ConsensusError::InvalidNextSyncCommitteeProof);
+            if !is_valid {
+                return Err(ConsensusError::InvalidNextSyncCommitteeProof);
+            }
         }
 
         // Verify signature on the received data

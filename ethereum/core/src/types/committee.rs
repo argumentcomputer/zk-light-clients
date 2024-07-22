@@ -61,6 +61,17 @@ pub struct SyncCommittee {
     aggregate_pubkey: PublicKey,
 }
 
+impl Default for SyncCommittee {
+    fn default() -> Self {
+        let pubkeys = std::array::from_fn(|_| PublicKey::default());
+
+        Self {
+            pubkeys,
+            aggregate_pubkey: PublicKey::default(),
+        }
+    }
+}
+
 impl SyncCommittee {
     /// Serialize a `SyncCommittee` data structure to an SSZ formatted vector of bytes.
     ///

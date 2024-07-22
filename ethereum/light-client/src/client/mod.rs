@@ -22,7 +22,7 @@ use crate::types::beacon::update::UpdateResponse;
 use crate::types::checkpoint::Checkpoint;
 use ethereum_lc_core::types::bootstrap::Bootstrap;
 use ethereum_lc_core::types::store::LightClientStore;
-use ethereum_lc_core::types::update::Update;
+use ethereum_lc_core::types::update::{FinalityUpdate, Update};
 use ethers_core::types::EIP1186ProofResponse;
 
 pub(crate) mod beacon;
@@ -124,6 +124,19 @@ impl Client {
         self.beacon_client.get_update_data(sync_period, max).await
     }
 
+    /// `get_finality_update` makes an HTTP request to the Beacon Node API to get the finality update.
+    ///
+    /// # Returns
+    ///
+    /// The finality update.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails or the response is not successful or properly formatted.
+    pub async fn get_finality_update(&self) -> Result<FinalityUpdate, ClientError> {
+        self.beacon_client.get_finality_update().await
+    }
+
     /// `prove_committee_change` makes a request to the Proof Server API to generate the proof of a committee change.
     ///
     /// # Arguments
@@ -175,6 +188,7 @@ impl Client {
     ///
     /// * `address` - The address to get the proof for.
     /// * `storage_keys` - The storage keys to get the proof for.
+    /// * `block_hash` - The block hash to get the proof for.
     ///
     /// # Returns
     ///
@@ -187,7 +201,10 @@ impl Client {
         &self,
         address: &str,
         storage_keys: &[String],
+        block_hash: &str,
     ) -> Result<EIP1186ProofResponse, ClientError> {
-        self.storage_client.get_proof(address, storage_keys).await
+        self.storage_client
+            .get_proof(address, storage_keys, block_hash)
+            .await
     }
 }
