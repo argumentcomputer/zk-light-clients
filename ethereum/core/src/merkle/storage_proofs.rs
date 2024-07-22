@@ -19,6 +19,16 @@ use ethers_core::abi::AbiEncode;
 use ethers_core::types::EIP1186ProofResponse;
 use ethers_core::utils::rlp::encode;
 
+/// Length of a branch node in an Ethereum Patricia Merkle tree.
+///
+/// From [the Ethereum documentation](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/).
+const BRANCH_NODE_LENGTH: usize = 17;
+
+/// Length of a leaf or any extension node.
+///
+/// From [the Ethereum documentation](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/).
+const LEAF_EXTENSION_NODE_LENGTH: usize = 2;
+
 /// Data structure the data received from the `eth_getProof` RPC call.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EIP1186Proof {
@@ -125,7 +135,7 @@ impl TryFrom<ethers_core::types::StorageProof> for StorageProof {
 ///
 /// # Arguments
 ///
-/// * `proof` - The proof to verify, con.
+/// * `proof` - The proof to verify.
 /// * `root` - The root hash to verify the proof against.
 /// * `path` - The path to the value in the tree.
 /// * `value` - The value to verify.
@@ -154,11 +164,11 @@ fn verify_proof(
         let node_list = decode_list(node)
             .map_err(|err| MerkleError::ProofVerification { source: err.into() })?;
 
-        if node_list.len() == 17 {
+        if node_list.len() == BRANCH_NODE_LENGTH {
             let nibble = get_nibble(path, path_offset);
             expected_hash = node_list[nibble as usize].clone();
             path_offset += 1;
-        } else if node_list.len() == 2 {
+        } else if node_list.len() == LEAF_EXTENSION_NODE_LENGTH {
             if i == proof.len() - 1 && node_list[1] == value {
                 return Ok(paths_match(
                     &node_list[0],

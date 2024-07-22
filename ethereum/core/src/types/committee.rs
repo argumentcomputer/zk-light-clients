@@ -64,6 +64,7 @@ pub struct SyncCommittee {
 impl Default for SyncCommittee {
     fn default() -> Self {
         let pubkeys = std::array::from_fn(|_| PublicKey::default());
+
         Self {
             pubkeys,
             aggregate_pubkey: PublicKey::default(),

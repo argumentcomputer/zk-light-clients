@@ -13,9 +13,9 @@
 //! - `error`: This sub-module contains the error types that can be returned by the Merkle Tree
 //!   utilities.
 //! - `storage_proof` This sub-module contains the necessary types to represent the data received from
-//!   a `eth_getProof` call on a Beacon Node and verify the proofs.
+//!   a `eth_getProof` call on an Execution Node and verify the proofs.
 //! - `update_proofs`: This sub-module contains the utilities to verify Merkle Proofs received by a Beacon
-//!   Node when querying Light Client updates?
+//!   Node when querying Light Client updates
 //! - `utils`: This sub-module contains the utilities to manipulate the Merkle Tree.
 
 use crate::crypto::error::CryptoError;
