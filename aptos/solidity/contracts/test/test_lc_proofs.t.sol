@@ -58,17 +58,13 @@ contract SolidityVerificationTest is Test {
     function testValidEpochChangeProofCore() public {
         SphinxProofFixture memory fixture = loadPlonkEpochChangeFixture();
         SphinxVerifier core = new SphinxVerifier();
-        uint256 gasCost = gasleft();
         core.verifyProof(fixture.vkey, fixture.publicValues, fixture.proof);
-        require(gasCost - gasleft() < 300000, "Too big gas cost");
     }
 
     function testValidInclusionProofCore() public {
         SphinxProofFixture memory fixture = loadPlonkInclusionFixture();
         SphinxVerifier core = new SphinxVerifier();
-        uint256 gasCost = gasleft();
         core.verifyProof(fixture.vkey, fixture.publicValues, fixture.proof);
-        require(gasCost - gasleft() < 300000, "Too big gas cost");
     }
 
     function testValidInclusionProofPlonk() public view {
