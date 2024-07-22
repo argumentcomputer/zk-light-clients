@@ -22,6 +22,7 @@ use aptos_lc::inclusion::{
 };
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
+use aptos_lc_core::types::ledger_info::LedgerInfo;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
@@ -164,6 +165,29 @@ fn main() {
         assert_eq!(
             merkle_root_slice, proving_assets.state_checkpoint_hash,
             "Merkle root hash mismatch"
+        );
+
+        let block_hash: [u8; 32] = inclusion_proof.public_values.read();
+        let lates_li = proving_assets.transaction_proof_assets.latest_li();
+        let expected_block_id = LedgerInfo::from_bytes(lates_li).unwrap().block_id();
+        assert_eq!(
+            block_hash.to_vec(),
+            expected_block_id.to_vec(),
+            "Block hash mismatch"
+        );
+
+        let key: [u8; 32] = inclusion_proof.public_values.read();
+        assert_eq!(
+            key.to_vec(),
+            proving_assets.sparse_merkle_proof_assets.leaf_key(),
+            "Merkle tree key mismatch"
+        );
+
+        let value: [u8; 32] = inclusion_proof.public_values.read();
+        assert_eq!(
+            value.to_vec(),
+            proving_assets.sparse_merkle_proof_assets.leaf_hash(),
+            "Merkle tree value mismatch"
         );
 
         let start_verifying = Instant::now();

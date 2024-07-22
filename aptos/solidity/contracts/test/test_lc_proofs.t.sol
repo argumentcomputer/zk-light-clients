@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {Test} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {Wrapper, SphinxProofFixture} from "../src/Wrapper.sol";
+import {SphinxVerifier} from "sphinx-contracts/SphinxVerifier.sol";
 
 contract SolidityVerificationTest is Test {
     using stdJson for string;
@@ -52,6 +53,18 @@ contract SolidityVerificationTest is Test {
         string memory json = vm.readFile(path);
         bytes memory jsonBytes = json.parseRaw(".");
         return abi.decode(jsonBytes, (SphinxProofFixture));
+    }
+
+    function testValidEpochChangeProofCore() public {
+        SphinxProofFixture memory fixture = loadPlonkEpochChangeFixture();
+        SphinxVerifier core = new SphinxVerifier();
+        core.verifyProof(fixture.vkey, fixture.publicValues, fixture.proof);
+    }
+
+    function testValidInclusionProofCore() public {
+        SphinxProofFixture memory fixture = loadPlonkInclusionFixture();
+        SphinxVerifier core = new SphinxVerifier();
+        core.verifyProof(fixture.vkey, fixture.publicValues, fixture.proof);
     }
 
     function testValidInclusionProofPlonk() public view {

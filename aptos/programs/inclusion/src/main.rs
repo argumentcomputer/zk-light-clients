@@ -50,13 +50,8 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: verify_transaction_inclusion");
     }
-    let expected_root_hash = HashValue::from_slice(
-        latest_li
-            .ledger_info()
-            .transaction_accumulator_hash()
-            .as_ref(),
-    )
-    .unwrap();
+
+    let expected_root_hash = latest_li.ledger_info().transaction_accumulator_hash();
 
     transaction_proof
         .verify(expected_root_hash, transaction_hash, transaction_index)
@@ -104,14 +99,8 @@ pub fn main() {
     sphinx_zkvm::io::commit(reconstructed_root_hash.as_ref());
 
     // Commit current block id
-    let block_hash = HashValue::from_slice(
-        latest_li
-            .ledger_info()
-            .block_id()
-            .as_ref(),
-    )
-        .unwrap();
-    sphinx_zkvm::io::commit(&block_hash);
+    let block_hash = latest_li.ledger_info().block_id();
+    sphinx_zkvm::io::commit(block_hash.as_ref());
 
     // Commit key
     sphinx_zkvm::io::commit(&key);
