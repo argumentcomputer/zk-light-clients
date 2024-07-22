@@ -63,11 +63,7 @@ pub struct SyncCommittee {
 
 impl Default for SyncCommittee {
     fn default() -> Self {
-        let pubkeys: [PublicKey; SYNC_COMMITTEE_SIZE] = std::iter::repeat_with(PublicKey::default)
-            .take(SYNC_COMMITTEE_SIZE)
-            .collect::<Vec<_>>()
-            .try_into()
-            .expect("Incorrect length");
+        let pubkeys = std::array::from_fn(|_| PublicKey::default());
         Self {
             pubkeys,
             aggregate_pubkey: PublicKey::default(),

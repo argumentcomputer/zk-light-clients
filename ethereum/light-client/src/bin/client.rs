@@ -86,7 +86,7 @@ async fn main() {
     info!("Fetching proof of storage inclusion for the latest block...");
 
     // Check signature
-    // Use execution branch to check finalkized exectuion properly in finalized header
+    // Use execution branch to check finalized execution is properly in finalized header
     // Use finalized branch to check finalized block is properly in attested block
     // Check the proof of storage inclusion
 
