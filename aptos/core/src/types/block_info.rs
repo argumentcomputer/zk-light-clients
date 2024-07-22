@@ -34,6 +34,7 @@ pub struct BlockInfo {
     /// The consensus protocol is executed in rounds, which monotonically increase per epoch.
     round: Round,
     /// The identifier (hash) of the block.
+    #[getset(get_copy = "pub")]
     id: HashValue,
     /// The accumulator root hash after executing this block.
     #[getset(get_copy = "pub")]

@@ -8,9 +8,6 @@ use sphinx_sdk::{ProverClient, SphinxProof, SphinxProvingKey, SphinxStdin, Sphin
 
 use crate::error::LightClientError;
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct BlockID([u8; 8]);
-
 #[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 pub struct SparseMerkleProofAssets {
@@ -75,7 +72,6 @@ pub fn setup_assets() -> (
     SparseMerkleProofAssets,
     TransactionProofAssets,
     ValidatorVerifierAssets,
-    BlockID,
 ) {
     use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
     use aptos_lc_core::types::trusted_state::TrustedState;
@@ -126,7 +122,6 @@ pub fn setup_assets() -> (
         sparse_merkle_proof_assets,
         transaction_proof_assets,
         validator_verifier_assets,
-        BlockID(aptos_wrapper.get_block_id()),
     )
 }
 
@@ -134,7 +129,6 @@ pub fn generate_stdin(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-    block_id: BlockID,
 ) -> SphinxStdin {
     let mut stdin = SphinxStdin::new();
     // Account inclusion input
@@ -150,9 +144,6 @@ pub fn generate_stdin(
 
     // Validator verifier
     stdin.write(&validator_verifier_assets.validator_verifier);
-
-    // Block identifier
-    stdin.write(&block_id);
 
     stdin
 }
@@ -174,7 +165,6 @@ fn prove_inclusion(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-    block_id: BlockID,
 ) -> Result<(SphinxProof, InclusionOutput), LightClientError> {
     sphinx_sdk::utils::setup_logger();
 
@@ -182,7 +172,6 @@ fn prove_inclusion(
         sparse_merkle_proof_assets,
         transaction_proof_assets,
         validator_verifier_assets,
-        block_id,
     );
     let (pk, _) = generate_keys(client);
 
@@ -210,8 +199,7 @@ fn prove_inclusion(
 mod test {
     use crate::error::LightClientError;
     use crate::inclusion::{
-        setup_assets, BlockID, SparseMerkleProofAssets, TransactionProofAssets,
-        ValidatorVerifierAssets,
+        setup_assets, SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
     };
     use aptos_lc_core::types::validator::ValidatorVerifier;
     use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
@@ -222,7 +210,6 @@ mod test {
         sparse_merkle_proof_assets: &SparseMerkleProofAssets,
         transaction_proof_assets: &TransactionProofAssets,
         validator_verifier_assets: &ValidatorVerifierAssets,
-        block_id: BlockID,
     ) -> Result<(), LightClientError> {
         setup_logger();
 
@@ -242,9 +229,6 @@ mod test {
         // Validator verifier
         stdin.write(&validator_verifier_assets.validator_verifier);
 
-        // Block identifier
-        stdin.write(&block_id);
-
         let client = ProverClient::new();
         client
             .execute(aptos_programs::INCLUSION_PROGRAM, &stdin)
@@ -260,12 +244,8 @@ mod test {
     fn test_execute_inclusion() {
         use std::time::Instant;
 
-        let (
-            sparse_merkle_proof_assets,
-            transaction_proof_assets,
-            validator_verifier_assets,
-            block_id,
-        ) = setup_assets();
+        let (sparse_merkle_proof_assets, transaction_proof_assets, validator_verifier_assets) =
+            setup_assets();
 
         println!("Starting execution of inclusion...");
         let start = Instant::now();
@@ -273,7 +253,6 @@ mod test {
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
             &validator_verifier_assets,
-            block_id,
         )
         .unwrap();
         println!("Execution took {:?}", start.elapsed());
@@ -288,12 +267,8 @@ mod test {
         use std::time::Instant;
         let client = ProverClient::new();
 
-        let (
-            sparse_merkle_proof_assets,
-            transaction_proof_assets,
-            validator_verifier_assets,
-            block_id,
-        ) = setup_assets();
+        let (sparse_merkle_proof_assets, transaction_proof_assets, validator_verifier_assets) =
+            setup_assets();
 
         let start = Instant::now();
         println!("Starting generation of inclusion proof...");
@@ -302,7 +277,6 @@ mod test {
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
             &validator_verifier_assets,
-            block_id,
         )
         .unwrap();
 
@@ -335,18 +309,13 @@ mod test {
         let client = ProverClient::new();
         let (pk, vk) = client.setup(aptos_programs::INCLUSION_PROGRAM);
 
-        let (
-            sparse_merkle_proof_assets,
-            transaction_proof_assets,
-            validator_verifier_assets,
-            block_id,
-        ) = setup_assets();
+        let (sparse_merkle_proof_assets, transaction_proof_assets, validator_verifier_assets) =
+            setup_assets();
 
         let stdin = generate_stdin(
             &sparse_merkle_proof_assets,
             &transaction_proof_assets,
             &validator_verifier_assets,
-            block_id,
         );
 
         // Install PLONK artifacts.

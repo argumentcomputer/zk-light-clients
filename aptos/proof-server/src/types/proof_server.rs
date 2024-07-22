@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 use aptos_lc::inclusion::{
-    BlockID, SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
+    SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use serde::{Deserialize, Serialize};
 use sphinx_sdk::{SphinxPlonkBn254Proof, SphinxProof};
@@ -22,7 +22,6 @@ pub struct InclusionData {
     pub sparse_merkle_proof_assets: SparseMerkleProofAssets,
     pub transaction_proof_assets: TransactionProofAssets,
     pub validator_verifier_assets: ValidatorVerifierAssets,
-    pub block_id: BlockID,
 }
 
 /// Main request type for the proof server. It can be used to request both inclusion and epoch

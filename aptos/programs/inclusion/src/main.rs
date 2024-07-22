@@ -30,9 +30,6 @@ pub fn main() {
     // Latest verified validator verifier &  hash
     let verified_validator_verifier = sphinx_zkvm::io::read::<Vec<u8>>();
 
-    // Block identifier
-    let block_id = sphinx_zkvm::io::read::<[u8; 8]>();
-
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
@@ -60,6 +57,7 @@ pub fn main() {
             .as_ref(),
     )
     .unwrap();
+
     transaction_proof
         .verify(expected_root_hash, transaction_hash, transaction_index)
         .expect("verify: could not verify proof");
@@ -106,7 +104,14 @@ pub fn main() {
     sphinx_zkvm::io::commit(reconstructed_root_hash.as_ref());
 
     // Commit current block id
-    sphinx_zkvm::io::commit(&block_id);
+    let block_hash = HashValue::from_slice(
+        latest_li
+            .ledger_info()
+            .block_id()
+            .as_ref(),
+    )
+        .unwrap();
+    sphinx_zkvm::io::commit(&block_hash);
 
     // Commit key
     sphinx_zkvm::io::commit(&key);

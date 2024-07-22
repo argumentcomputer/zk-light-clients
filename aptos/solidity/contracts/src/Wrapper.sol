@@ -30,7 +30,7 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
     }
 
     function verifyInclusion(SphinxProofFixture memory fixture) public view {
-        if (fixture.publicValues.length != 32 + 32 + 32 + 32 + 8) {
+        if (fixture.publicValues.length != 32 + 32 + 32 + 32 + 32) {
             revert ErrorUnexpectedInclusionFixture();
         }
 
@@ -52,11 +52,11 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         }
         offset += 32;
 
-        bytes memory blockId = new bytes(8);
-        for (i = 0; i < 8; i++) {
+        bytes memory blockId = new bytes(32);
+        for (i = 0; i < 32; i++) {
             blockId[i] = fixture.publicValues[i + offset];
         }
-        offset += 8;
+        offset += 32;
 
         bytes memory key = new bytes(32);
         for (i = 0; i < 32; i++) {

@@ -557,21 +557,6 @@ impl AptosWrapper {
             transaction_version,
         })
     }
-
-    pub fn get_block_id(&self) -> [u8; 8] {
-        let value = self.current_block as u64;
-        let output = vec![
-            (0x00000000000000ff & value) as u8,
-            ((0x000000000000ff00 & value) >> 8) as u8,
-            ((0x0000000000ff0000 & value) >> 16) as u8,
-            ((0x00000000ff000000 & value) >> 24) as u8,
-            ((0x000000ff00000000 & value) >> 32) as u8,
-            ((0x0000ff0000000000 & value) >> 40) as u8,
-            ((0x00ff000000000000 & value) >> 48) as u8,
-            ((0xff00000000000000 & value) >> 56) as u8,
-        ];
-        output.try_into().unwrap()
-    }
 }
 
 /// Generates a specified number of local accounts.
