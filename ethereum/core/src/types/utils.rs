@@ -159,7 +159,7 @@ pub fn unpack_bits(bytes: &[u8], num_bits: usize) -> Vec<u8> {
         .collect()
 }
 
-/// Utility to convert a list of bytes slice to an SSZ encoded  object.
+/// Utility to convert a list of bytes slice to an SSZ encoded object.
 ///
 /// # Arguments
 ///
