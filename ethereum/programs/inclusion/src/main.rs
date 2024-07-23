@@ -7,6 +7,7 @@ use ethereum_lc_core::crypto::hash::keccak256_hash;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
+use ethereum_lc_core::types::utils::calc_sync_period;
 
 sphinx_zkvm::entrypoint!(main);
 
@@ -60,9 +61,16 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: output");
     }
-    let sync_committee_hash = keccak256_hash(&store.current_sync_committee().to_ssz_bytes())
+    let update_sig_period = calc_sync_period(update.signature_slot());
+    let store_period = calc_sync_period(store.finalized_header().beacon().slot());
+    let sync_committee = if update_sig_period == store_period {
+        store.current_sync_committee().clone()
+    } else {
+        store.next_sync_committee().clone().unwrap()
+    };
+    let sync_committee_hash = keccak256_hash(&sync_committee.to_ssz_bytes())
         .expect("LightClientStore::current_sync_committee: could not hash committee after inclusion proving");
-    sphinx_zkvm::io::commit(update.attested_header().beacon().slot());
+    sphinx_zkvm::io::commit(update.finalized_header().beacon().slot());
     sphinx_zkvm::io::commit(sync_committee_hash.as_ref());
     sphinx_zkvm::io::commit(
         eip1186_proof

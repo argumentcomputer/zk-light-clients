@@ -86,7 +86,7 @@ pub fn main() {
                 println!("cycle-tracker-end: hash_new_sync_committee");
     }
     // Commit the signer hash, the current and next sync committee hashes, and the block height
-    sphinx_zkvm::io::commit(update.attested_header().beacon().slot());
+    sphinx_zkvm::io::commit(update.finalized_header().beacon().slot());
     sphinx_zkvm::io::commit(&signer_sync_committee_hash.hash());
     sphinx_zkvm::io::commit(&updated_sync_committee_hash.hash());
     sphinx_zkvm::io::commit(&next_sync_committee_hash.hash());
