@@ -801,6 +801,7 @@ module plonk_verifier_addr::plonk_verifier {
     const Proof_chunk_25: u256 = 0x2d108e2f617641e1148229ee62332ae0841bc704a7614924c780ae62119e771a;
     const Proof_chunk_26: u256 = 0x26659d75a98e0401e8f60968dd55c96ad5d8044942b15d75fe53efb24e01d0b7;
 
+    #[test_only]
     public fun get_proof(): vector<u256> {
         let proof = vector::empty<u256>();
         push_back(&mut proof, Proof_chunk_0);
@@ -837,6 +838,7 @@ module plonk_verifier_addr::plonk_verifier {
     const SphinxPublicValuesHash: u256 = 0x1b73d6e73d3224150622f22a8c18740efc94af34d45500eaf658a389935513ad;
     const SphinxInclusionProofVk: u256 = 0x00edc477759b49c9f16fa0fae93b11dcde295121eda80472196c13cf4b6d079f;
 
+    #[test_only]
     public fun get_public_inputs(): vector<u256> {
         let public_inputs = vector::empty<u256>();
         push_back(&mut public_inputs, SphinxInclusionProofVk);
@@ -847,6 +849,7 @@ module plonk_verifier_addr::plonk_verifier {
     const PublicInputChunk0: u256 = 0x205829098a4c0273312e8bc4fdbde28fc12abdc540c88bdd9abeef0a85d706ec;
     const PublicInputChunk1: u256 = 0x4f76ef143d0388ab65a4cd568c05da10c070aefbfd385cc4824f5d71b009e962;
 
+    #[test_only]
     public fun get_raw_public_inputs(): vector<u256> {
         let public_inputs = vector::empty<u256>();
         push_back(&mut public_inputs, PublicInputChunk0);

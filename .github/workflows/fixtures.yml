@@ -45,19 +45,19 @@ jobs:
           overwrite: true
           retention-days: 1
       - name: Generate Move fixtures
-          run: |
-            cargo run --release -- --program ${{ matrix.fixture }} --language move
+        run: |
+          cargo run --release -- --program ${{ matrix.fixture }} --language move
           working-directory: ${{ github.workspace }}/ethereum/move/sources/fixtures
-        - name: Check for diff
-          run: git diff
-        - name: Upload fixture artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: ${{ matrix.fixture }}_fixture
-            path: ${{ github.workspace }}/ethereum/move/sources/fixtures/${{ matrix.fixture }}_fixture.json
-            if-no-files-found: error
-            overwrite: true
-            retention-days: 1
+      - name: Check for diff
+        run: git diff
+      - name: Upload fixture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.fixture }}_fixture
+          path: ${{ github.workspace }}/ethereum/move/sources/fixtures/${{ matrix.fixture }}_fixture.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
 
   create-pull-request:
     needs: generate-fixtures
