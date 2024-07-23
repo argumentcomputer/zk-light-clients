@@ -143,7 +143,7 @@ impl StorageInclusionIn {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct StorageInclusionOut {
-    attested_block_height: u64,
+    finalized_block_height: u64,
     sync_committee_hash: HashValue,
     eip1186_key_hash: HashValue,
 }
@@ -182,13 +182,13 @@ impl Prover for StorageInclusionProver {
             .execute(Self::PROGRAM, &stdin)
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
-        let attested_block_height = public_values.read::<u64>();
+        let finalized_block_height = public_values.read::<u64>();
         let sync_committee_hash = HashValue::new(public_values.read::<[u8; 32]>());
         let eip1186_key_hash = HashValue::new(public_values.read::<[u8; 32]>());
 
         Ok(StorageInclusionOut {
             sync_committee_hash,
-            attested_block_height,
+            finalized_block_height,
             eip1186_key_hash,
         })
     }
@@ -323,10 +323,10 @@ mod test {
             keccak256_hash(&test_assets.store.current_sync_committee().to_ssz_bytes()).unwrap()
         );
         assert_eq!(
-            &inclusion_output.attested_block_height,
+            &inclusion_output.finalized_block_height,
             test_assets
                 .finality_update
-                .attested_header()
+                .finalized_header()
                 .beacon()
                 .slot()
         );

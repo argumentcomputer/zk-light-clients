@@ -122,7 +122,7 @@ impl CommitteeChangeIn {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CommitteeChangeOut {
-    attested_block_height: u64,
+    finalized_block_height: u64,
     signer_sync_committee: HashValue,
     new_sync_committee: HashValue,
     new_next_sync_committee: HashValue,
@@ -161,13 +161,13 @@ impl Prover for CommitteeChangeProver {
             .execute(Self::PROGRAM, &stdin)
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
-        let attested_block_height = public_values.read::<u64>();
+        let finalized_block_height = public_values.read::<u64>();
         let signer_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
         let new_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
         let new_next_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
 
         Ok(CommitteeChangeOut {
-            attested_block_height,
+            finalized_block_height,
             signer_sync_committee,
             new_sync_committee,
             new_next_sync_committee,
@@ -292,10 +292,10 @@ mod test {
         let new_period_output = prover.execute(new_period_inputs).unwrap();
 
         assert_eq!(
-            &new_period_output.attested_block_height,
+            &new_period_output.finalized_block_height,
             test_assets
                 .update_new_period
-                .attested_header()
+                .finalized_header()
                 .beacon()
                 .slot()
         );
