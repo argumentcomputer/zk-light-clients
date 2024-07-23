@@ -426,7 +426,7 @@ dependencies = [
  "aptos-metrics-core",
  "aptos-types",
  "bcs 0.1.4",
- "clap 4.5.7",
+ "clap 4.5.9",
  "dashmap",
  "itertools 0.12.1",
  "jemallocator",
@@ -738,7 +738,7 @@ dependencies = [
  "aptos-types",
  "aptos-vm",
  "bcs 0.1.4",
- "clap 4.5.7",
+ "clap 4.5.9",
  "crossbeam-channel",
  "ctrlc",
  "dashmap",
@@ -831,7 +831,7 @@ dependencies = [
  "blake2-rfc",
  "bulletproofs",
  "byteorder",
- "clap 4.5.7",
+ "clap 4.5.9",
  "codespan-reporting",
  "curve25519-dalek-ng",
  "either",
@@ -1405,7 +1405,7 @@ dependencies = [
  "anyhow",
  "aptos-types",
  "bcs 0.1.4",
- "clap 4.5.7",
+ "clap 4.5.9",
  "heck 0.4.1",
  "move-core-types",
  "once_cell",
@@ -2903,9 +2903,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.7"
+version = "4.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5db83dced34638ad474f39f250d7fea9598bdd239eaced1bdf45d597da0f433f"
+checksum = "64acc1846d54c1fe936a78dc189c34e28d3f5afc348403f28ecf53660b9b8462"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -2913,9 +2913,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.7"
+version = "4.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7e204572485eb3fbf28f871612191521df159bc3e15a9f5064c66dba3a8c05f"
+checksum = "6fb8393d67ba2e7bfaf28a23458e4e2b543cc73a99595511eb207fdb8aede942"
 dependencies = [
  "anstream",
  "anstyle",
@@ -2925,9 +2925,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.5"
+version = "4.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c780290ccf4fb26629baa7a1081e68ced113f1d3ec302fa5948f1c381ebf06c6"
+checksum = "2bac35c6dafb060fd4d275d9a4ffae97917c13a6327903a8be2153cd964f7085"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -3961,6 +3961,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethereum-lc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.9",
+ "env_logger 0.11.3",
+ "ethereum-lc-core",
+ "ethereum-programs",
+ "ethers-core",
+ "getset",
+ "hex",
+ "log",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "sphinx-sdk",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "ethereum-lc-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bls12_381 0.8.0",
+ "ethers-core",
+ "getset",
+ "hex",
+ "serde",
+ "sha2 0.9.9",
+ "thiserror",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "ethereum-programs"
+version = "0.1.0"
+dependencies = [
+ "glob",
+ "sphinx-helper",
+]
+
+[[package]]
 name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4308,7 +4352,8 @@ version = "1.0.0"
 dependencies = [
  "alloy-sol-types",
  "aptos-lc",
- "clap 4.5.7",
+ "clap 4.5.9",
+ "ethereum-lc",
  "serde",
  "serde_json",
  "sphinx-prover",
@@ -5427,7 +5472,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "321f0f839cd44a4686e9504b0a62b4d69a50b62072144c71c68f5873c167b8d9"
 dependencies = [
  "ahash 0.8.11",
- "clap 4.5.7",
+ "clap 4.5.9",
  "crossbeam-channel",
  "crossbeam-utils",
  "dashmap",
@@ -5839,9 +5884,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.21"
+version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
+checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 dependencies = [
  "serde",
 ]
@@ -6058,7 +6103,7 @@ version = "0.1.0"
 source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#17cfcf956debafc24392dc47037109036ccdefb9"
 dependencies = [
  "anyhow",
- "clap 4.5.7",
+ "clap 4.5.9",
  "crossterm 0.26.1",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6073,7 +6118,7 @@ version = "0.1.0"
 source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#17cfcf956debafc24392dc47037109036ccdefb9"
 dependencies = [
  "anyhow",
- "clap 4.5.7",
+ "clap 4.5.9",
  "codespan-reporting",
  "colored",
  "move-binary-format",
@@ -6121,7 +6166,7 @@ source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#1
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.7",
+ "clap 4.5.9",
  "codespan-reporting",
  "hex",
  "move-binary-format",
@@ -6148,7 +6193,7 @@ dependencies = [
  "abstract-domain-derive",
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.7",
+ "clap 4.5.9",
  "codespan-reporting",
  "ethnum",
  "flexi_logger",
@@ -6202,7 +6247,7 @@ source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#1
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.7",
+ "clap 4.5.9",
  "codespan",
  "colored",
  "move-binary-format",
@@ -6220,7 +6265,7 @@ version = "0.1.0"
 source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#17cfcf956debafc24392dc47037109036ccdefb9"
 dependencies = [
  "anyhow",
- "clap 4.5.7",
+ "clap 4.5.9",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6268,7 +6313,7 @@ source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#1
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.7",
+ "clap 4.5.9",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-verifier",
@@ -6353,7 +6398,7 @@ version = "0.1.0"
 source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#17cfcf956debafc24392dc47037109036ccdefb9"
 dependencies = [
  "anyhow",
- "clap 4.5.7",
+ "clap 4.5.9",
  "colored",
  "itertools 0.12.1",
  "move-abigen",
@@ -6388,7 +6433,7 @@ source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#1
 dependencies = [
  "anyhow",
  "atty",
- "clap 4.5.7",
+ "clap 4.5.9",
  "codespan-reporting",
  "itertools 0.12.1",
  "log",
@@ -6540,7 +6585,7 @@ source = "git+https://github.com/aptos-labs/aptos-core/?tag=aptos-node-v1.14.0#1
 dependencies = [
  "anyhow",
  "better_any",
- "clap 4.5.7",
+ "clap 4.5.9",
  "codespan-reporting",
  "colored",
  "itertools 0.12.1",
@@ -8066,7 +8111,7 @@ dependencies = [
  "aptos-lc-core",
  "bcs 0.1.4",
  "chrono",
- "clap 4.5.7",
+ "clap 4.5.9",
  "env_logger 0.11.3",
  "log",
  "reqwest 0.12.5",
@@ -9162,9 +9207,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.117"
+version = "1.0.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "455182ea6142b14f93f4bc5320a2b31c1f266b66a4a5c858b013302a5d8cbfc3"
+checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
 dependencies = [
  "indexmap 2.2.6",
  "itoa",
@@ -9684,7 +9729,7 @@ dependencies = [
  "anyhow",
  "backtrace",
  "bincode",
- "clap 4.5.7",
+ "clap 4.5.9",
  "futures",
  "hex",
  "home",
