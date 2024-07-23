@@ -30,9 +30,9 @@ jobs:
         uses: ./.github/actions/setup
         with:
           pull_token: ${{ secrets.REPO_TOKEN }}
-      - name: Generate Solidity `inclusion` fixtures
+      - name: Generate Solidity fixtures
         run: |
-          cargo run --release -- --program ${{ matrix.fixture }}
+          cargo run --release -- --program ${{ matrix.fixture }} --language solidity
         working-directory: ${{ github.workspace }}/aptos/solidity/fixture-generator
       - name: Check for diff
         run: git diff
@@ -44,6 +44,20 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 1
+      - name: Generate Move fixtures
+          run: |
+            cargo run --release -- --program ${{ matrix.fixture }} --language move
+          working-directory: ${{ github.workspace }}/ethereum/move/sources/fixtures
+        - name: Check for diff
+          run: git diff
+        - name: Upload fixture artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: ${{ matrix.fixture }}_fixture
+            path: ${{ github.workspace }}/ethereum/move/sources/fixtures/${{ matrix.fixture }}_fixture.json
+            if-no-files-found: error
+            overwrite: true
+            retention-days: 1
 
   create-pull-request:
     needs: generate-fixtures
@@ -54,6 +68,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/
+          pattern: "*_fixture"
+          merge-multiple: true
+      - name: Download inclusion fixture
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ github.workspace }}/ethereum/move/sources/fixtures/
           pattern: "*_fixture"
           merge-multiple: true
       - name: Check for diff
