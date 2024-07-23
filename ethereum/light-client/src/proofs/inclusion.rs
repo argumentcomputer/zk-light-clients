@@ -9,13 +9,14 @@
 use crate::proofs::error::ProverError;
 use crate::proofs::{ProofType, Prover, ProvingMode};
 use anyhow::Result;
-use ethereum_lc_core::crypto::hash::HashValue;
+use ethereum_lc_core::crypto::hash::{HashValue, HASH_LENGTH};
 use ethereum_lc_core::deserialization_error;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
 use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
+use ethereum_lc_core::types::{Address, ADDRESS_BYTES_LEN};
 use ethereum_programs::INCLUSION_PROGRAM;
 use sphinx_sdk::{ProverClient, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
 
@@ -145,7 +146,9 @@ impl StorageInclusionIn {
 pub struct StorageInclusionOut {
     finalized_block_height: u64,
     sync_committee_hash: HashValue,
-    eip1186_key_hash: HashValue,
+    account_key: Address,
+    account_value: HashValue,
+    storage_key_value: Vec<(Vec<u8>, Vec<u8>)>,
 }
 
 impl Prover for StorageInclusionProver {
@@ -175,7 +178,7 @@ impl Prover for StorageInclusionProver {
     fn execute(&self, inputs: Self::StdIn) -> Result<Self::StdOut, Self::Error> {
         sphinx_sdk::utils::setup_logger();
 
-        let stdin = self.generate_sphinx_stdin(inputs)?;
+        let stdin = self.generate_sphinx_stdin(inputs.clone())?;
 
         let (mut public_values, _) = self
             .client
@@ -183,13 +186,24 @@ impl Prover for StorageInclusionProver {
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
         let finalized_block_height = public_values.read::<u64>();
-        let sync_committee_hash = HashValue::new(public_values.read::<[u8; 32]>());
-        let eip1186_key_hash = HashValue::new(public_values.read::<[u8; 32]>());
+        let sync_committee_hash = HashValue::new(public_values.read::<[u8; HASH_LENGTH]>());
+        let account_key = public_values.read::<[u8; ADDRESS_BYTES_LEN]>();
+        let account_value = HashValue::new(public_values.read::<[u8; HASH_LENGTH]>());
+
+        let mut storage_key_value = vec![];
+
+        for _ in 0..inputs.eip1186_proof.storage_proof.len() {
+            let key = public_values.read::<Vec<u8>>();
+            let value = public_values.read::<Vec<u8>>();
+            storage_key_value.push((key, value));
+        }
 
         Ok(StorageInclusionOut {
             sync_committee_hash,
             finalized_block_height,
-            eip1186_key_hash,
+            account_key,
+            account_value,
+            storage_key_value,
         })
     }
 
@@ -331,9 +345,20 @@ mod test {
                 .slot()
         );
         assert_eq!(
-            inclusion_output.eip1186_key_hash,
-            test_assets.eip1186_proof.key_hash().unwrap()
+            inclusion_output.account_value,
+            keccak256_hash(&test_assets.eip1186_proof.address)
+                .expect("could not hash account address")
         );
+        for i in 0..test_assets.eip1186_proof.storage_proof.len() {
+            assert_eq!(
+                inclusion_output.storage_key_value[i].0,
+                test_assets.eip1186_proof.storage_proof[i].key
+            );
+            assert_eq!(
+                inclusion_output.storage_key_value[i].1,
+                test_assets.eip1186_proof.storage_proof[i].value
+            );
+        }
     }
 
     #[test]

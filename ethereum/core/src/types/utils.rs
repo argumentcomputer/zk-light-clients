@@ -176,18 +176,14 @@ pub fn ssz_encode_list_bytes(list: &[Vec<u8>]) -> Vec<u8> {
     }
 
     // First element offset
-    let mut element_offset = list.len() * OFFSET_BYTE_LENGTH;
-    bytes.extend_from_slice(&(element_offset as u32).to_le_bytes());
+    let mut element_offset = (list.len() * OFFSET_BYTE_LENGTH) as u32;
 
     // Grow with offset and create the serialized element slice
     let mut serialized_elements = vec![];
 
-    for (i, element) in list.iter().enumerate() {
-        if i < list.len() - 1 {
-            element_offset += element.len();
-            bytes.extend_from_slice(&(element_offset as u32).to_le_bytes());
-        }
-
+    for element in list {
+        bytes.extend_from_slice(&element_offset.to_le_bytes());
+        element_offset += element.len() as u32;
         serialized_elements.extend_from_slice(element);
     }
 
@@ -208,48 +204,49 @@ pub fn ssz_encode_list_bytes(list: &[Vec<u8>]) -> Vec<u8> {
 /// A vector of bytes.
 pub fn ssz_decode_list_bytes(bytes: &[u8]) -> Result<Vec<Vec<u8>>, TypesError> {
     let mut list_bytes = vec![];
-    if bytes.len() > OFFSET_BYTE_LENGTH {
-        let (mut cursor, mut offset) = extract_u32("StorageProof", bytes, 0)?;
-        let first_offset = offset as usize;
 
-        loop {
-            if cursor == first_offset {
-                break;
-            }
+    if bytes.len() <= OFFSET_BYTE_LENGTH {
+        return if bytes.is_empty() {
+            Ok(list_bytes)
+        } else {
+            Err(TypesError::UnderLength {
+                structure: "StorageProof".into(),
+                minimum: OFFSET_BYTE_LENGTH,
+                actual: bytes.len(),
+            })
+        };
+    }
 
-            let (next_cursor, next_offset) = extract_u32("StorageProof", bytes, cursor)?;
-            list_bytes.push(
-                bytes
-                    .get(offset as usize..next_offset as usize)
-                    .ok_or_else(|| TypesError::OutOfBounds {
-                        structure: "StorageProof".into(),
-                        offset: next_offset as usize,
-                        length: bytes.len(),
-                    })?
-                    .to_vec(),
-            );
+    let (mut cursor, mut offset) = extract_u32("StorageProof", bytes, 0)?;
+    let first_offset = offset as usize;
 
-            cursor = next_cursor;
-            offset = next_offset;
-        }
-
+    while cursor < first_offset {
+        let (next_cursor, next_offset) = extract_u32("StorageProof", bytes, cursor)?;
         list_bytes.push(
             bytes
-                .get(offset as usize..)
+                .get(offset as usize..next_offset as usize)
                 .ok_or_else(|| TypesError::OutOfBounds {
                     structure: "StorageProof".into(),
-                    offset: offset as usize,
+                    offset: next_offset as usize,
                     length: bytes.len(),
                 })?
                 .to_vec(),
         );
-    } else if !bytes.is_empty() {
-        return Err(TypesError::UnderLength {
-            structure: "StorageProof".into(),
-            minimum: OFFSET_BYTE_LENGTH,
-            actual: bytes.len(),
-        });
+
+        cursor = next_cursor;
+        offset = next_offset;
     }
+
+    list_bytes.push(
+        bytes
+            .get(offset as usize..)
+            .ok_or_else(|| TypesError::OutOfBounds {
+                structure: "StorageProof".into(),
+                offset: offset as usize,
+                length: bytes.len(),
+            })?
+            .to_vec(),
+    );
 
     Ok(list_bytes)
 }

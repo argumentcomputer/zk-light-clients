@@ -72,12 +72,20 @@ pub fn main() {
         .expect("LightClientStore::current_sync_committee: could not hash committee after inclusion proving");
     sphinx_zkvm::io::commit(update.finalized_header().beacon().slot());
     sphinx_zkvm::io::commit(sync_committee_hash.as_ref());
+    // Account key
+    sphinx_zkvm::io::commit(&eip1186_proof.address);
+    // Account value
     sphinx_zkvm::io::commit(
-        eip1186_proof
-            .key_hash()
-            .expect("EIP1186Proof::key_hash: could not get key hash")
+        keccak256_hash(&eip1186_proof.address)
+            .expect("could not hash account address")
             .as_ref(),
     );
+    // Commit storage keys & values
+    for storage_proof in eip1186_proof.storage_proof().iter() {
+        sphinx_zkvm::io::commit(&storage_proof.key);
+        sphinx_zkvm::io::commit(&storage_proof.value);
+    }
+
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: output");
     }

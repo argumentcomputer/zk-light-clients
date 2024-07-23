@@ -9,7 +9,6 @@
 //!
 //! This module only handles inclusion proofs from the EIP1186.
 
-use crate::crypto::error::CryptoError;
 use crate::crypto::hash::{keccak256_hash, HashValue, HASH_LENGTH};
 use crate::deserialization_error;
 use crate::merkle::error::MerkleError;
@@ -24,6 +23,7 @@ use crate::types::{Address, Bytes32, ADDRESS_BYTES_LEN};
 use ethers_core::abi::AbiEncode;
 use ethers_core::types::EIP1186ProofResponse;
 use ethers_core::utils::rlp::encode;
+use getset::Getters;
 
 /// Bse byte length for the SSZ serialized `EIP1186Proof`.
 pub const EIP1186_PROOF_BASE_BYTE_LENGTH: usize =
@@ -40,7 +40,8 @@ const BRANCH_NODE_LENGTH: usize = 17;
 const LEAF_EXTENSION_NODE_LENGTH: usize = 2;
 
 /// Data structure the data received from the `eth_getProof` RPC call.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Getters)]
+#[getset(get = "pub")]
 pub struct EIP1186Proof {
     pub encoded_account: Vec<u8>,
     pub address: Address,
@@ -230,23 +231,6 @@ impl EIP1186Proof {
             account_proof,
             storage_proof,
         })
-    }
-
-    /// Computes a hash for the EIP1186 proof based on the account and storage keys used
-    /// to query the data.
-    ///
-    /// # Returns
-    ///
-    /// A `HashValue` representing the hash of the EIP1186 proof.
-    pub fn key_hash(&self) -> Result<HashValue, CryptoError> {
-        let mut message = vec![];
-
-        message.extend_from_slice(&self.address);
-        for storage_proof in &self.storage_proof {
-            message.extend_from_slice(&storage_proof.key);
-        }
-
-        keccak256_hash(&message)
     }
 }
 
