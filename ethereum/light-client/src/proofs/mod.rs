@@ -21,7 +21,10 @@
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use sphinx_sdk::{SphinxPlonkBn254Proof, SphinxProof, SphinxProofWithPublicValues, SphinxStdin};
+use sphinx_sdk::{
+    SphinxPlonkBn254Proof, SphinxProof, SphinxProofWithPublicValues, SphinxPublicValues,
+    SphinxStdin,
+};
 
 pub mod committee_change;
 pub mod error;
@@ -146,6 +149,18 @@ impl ProofType {
                 Ok(ProofType::SNARK(proof))
             }
             _ => Err(anyhow!("Invalid proof type")),
+        }
+    }
+
+    /// Returns the public values of the proof.
+    ///
+    /// # Returns
+    ///
+    /// The public values of the proof.
+    pub fn public_values(&self) -> SphinxPublicValues {
+        match self {
+            ProofType::STARK(proof) => proof.public_values.clone(),
+            ProofType::SNARK(proof) => proof.public_values.clone(),
         }
     }
 }

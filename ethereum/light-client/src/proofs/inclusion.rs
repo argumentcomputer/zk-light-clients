@@ -18,7 +18,10 @@ use ethereum_lc_core::types::update::Update;
 use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{Address, ADDRESS_BYTES_LEN};
 use ethereum_programs::INCLUSION_PROGRAM;
-use sphinx_sdk::{ProverClient, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
+use getset::{CopyGetters, Getters};
+use sphinx_sdk::{
+    ProverClient, SphinxProvingKey, SphinxPublicValues, SphinxStdin, SphinxVerifyingKey,
+};
 
 /// The prover for the storage inclusion proof.
 pub struct StorageInclusionProver {
@@ -150,24 +153,62 @@ impl StorageInclusionIn {
 }
 
 /// The output for the sync committee change proof.
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
+#[derive(Debug, Clone, CopyGetters, Getters)]
 pub struct StorageInclusionOut {
+    #[getset(get_copy = "pub")]
     finalized_block_height: u64,
+    #[getset(get_copy = "pub")]
     sync_committee_hash: HashValue,
+    #[getset(get_copy = "pub")]
     account_key: Address,
+    #[getset(get_copy = "pub")]
     account_value: HashValue,
+    #[getset(get_copy = "pub")]
     storage_key_value_len: u64,
+    #[getset(get = "pub")]
     storage_key_value: Vec<StorageKeyValue>,
 }
 
 /// Represents the triplet of values output for storage values
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct StorageKeyValue {
     key: Vec<u8>,
     value_len: u64,
     value: Vec<u8>,
+}
+
+impl From<&mut SphinxPublicValues> for StorageInclusionOut {
+    fn from(public_values: &mut SphinxPublicValues) -> Self {
+        let finalized_block_height = public_values.read::<u64>();
+        let sync_committee_hash = HashValue::new(public_values.read::<[u8; 32]>());
+        let account_key = public_values.read::<[u8; ADDRESS_BYTES_LEN]>();
+        let account_value = HashValue::new(public_values.read::<[u8; HASH_LENGTH]>());
+
+        let storage_key_value_len = public_values.read::<u64>();
+
+        let mut storage_key_value = vec![];
+
+        for _ in 0..storage_key_value_len {
+            let key = public_values.read::<Vec<u8>>();
+            let value_len = public_values.read::<u64>();
+            let value = public_values.read::<Vec<u8>>();
+            storage_key_value.push(StorageKeyValue {
+                key,
+                value_len,
+                value,
+            });
+        }
+
+        Self {
+            finalized_block_height,
+            sync_committee_hash,
+            account_key,
+            account_value,
+            storage_key_value_len,
+            storage_key_value,
+        }
+    }
 }
 
 impl Prover for StorageInclusionProver {
@@ -197,41 +238,14 @@ impl Prover for StorageInclusionProver {
     fn execute(&self, inputs: Self::StdIn) -> Result<Self::StdOut, Self::Error> {
         sphinx_sdk::utils::setup_logger();
 
-        let stdin = self.generate_sphinx_stdin(inputs.clone())?;
+        let stdin = self.generate_sphinx_stdin(inputs)?;
 
         let (mut public_values, _) = self
             .client
             .execute(Self::PROGRAM, &stdin)
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
-        let finalized_block_height = public_values.read::<u64>();
-        let sync_committee_hash = HashValue::new(public_values.read::<[u8; HASH_LENGTH]>());
-        let account_key = public_values.read::<[u8; ADDRESS_BYTES_LEN]>();
-        let account_value = HashValue::new(public_values.read::<[u8; HASH_LENGTH]>());
-
-        let storage_key_value_len = public_values.read::<u64>();
-
-        let mut storage_key_value = vec![];
-
-        for _ in 0..storage_key_value_len {
-            let key = public_values.read::<Vec<u8>>();
-            let value_len = public_values.read::<u64>();
-            let value = public_values.read::<Vec<u8>>();
-            storage_key_value.push(StorageKeyValue {
-                key,
-                value_len,
-                value,
-            });
-        }
-
-        Ok(StorageInclusionOut {
-            sync_committee_hash,
-            finalized_block_height,
-            account_key,
-            account_value,
-            storage_key_value_len,
-            storage_key_value,
-        })
+        Ok(StorageInclusionOut::from(&mut public_values))
     }
 
     fn prove(&self, inputs: Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {

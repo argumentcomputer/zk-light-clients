@@ -12,9 +12,8 @@ use anyhow::Result;
 use bls12_381::hash_to_curve::{ExpandMsgXmd, HashToCurve};
 use bls12_381::{multi_miller_loop, G1Affine, G2Affine, G2Prepared, G2Projective, Gt};
 use getset::Getters;
-use std::cell::OnceCell;
 use std::result;
-
+use std::sync::OnceLock;
 #[cfg(test)]
 use tree_hash::{TreeHash, TreeHashType};
 
@@ -51,14 +50,14 @@ pub fn hash(msg: &[u8]) -> G2Projective {
 pub struct PublicKey {
     #[getset(get = "pub")]
     compressed_pubkey: [u8; PUB_KEY_LEN],
-    pubkey: OnceCell<G1Affine>,
+    pubkey: OnceLock<G1Affine>,
 }
 
 impl Default for PublicKey {
     fn default() -> Self {
         Self {
             compressed_pubkey: [0u8; PUB_KEY_LEN],
-            pubkey: OnceCell::new(),
+            pubkey: OnceLock::new(),
         }
     }
 }
@@ -127,7 +126,7 @@ impl PublicKey {
             .iter()
             .fold(G1Affine::identity(), |acc, pk| acc.add_affine(pk.pubkey()));
 
-        let pubkey = OnceCell::new();
+        let pubkey = OnceLock::new();
         pubkey.set(aggregate).map_err(|_| CryptoError::Internal {
             source: "Failed to set the aggregate public key value in the cell.".into(),
         })?;
@@ -174,7 +173,7 @@ impl PublicKey {
 
         Ok(Self {
             compressed_pubkey,
-            pubkey: OnceCell::new(),
+            pubkey: OnceLock::new(),
         })
     }
 }
