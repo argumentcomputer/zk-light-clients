@@ -12,9 +12,9 @@ use ethereum_lc::proofs::inclusion::{
 use ethereum_lc::proofs::{ProofType, Prover, ProvingMode};
 
 pub const APTOS_INCLUSION_ELF: &[u8] =
-    include_bytes!("../../../../aptos-programs/artifacts/inclusion-program");
+    include_bytes!("../../../aptos/aptos-programs/artifacts/inclusion-program");
 pub const APTOS_EPOCH_CHANGE_ELF: &[u8] =
-    include_bytes!("../../../../aptos-programs/artifacts/epoch-change-program");
+    include_bytes!("../../../aptos/aptos-programs/artifacts/epoch-change-program");
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

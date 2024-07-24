@@ -6,7 +6,6 @@ members = [
     "light-client",
     "aptos-programs",
     "proof-server",
-    "solidity/fixture-generator",
 ]
 
 [workspace.package]

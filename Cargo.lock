@@ -1030,10 +1030,8 @@ dependencies = [
  "aptos-lc-core",
  "aptos-programs",
  "bcs 0.1.4",
- "cfg-if",
  "getset",
  "serde",
- "serde_json",
  "sphinx-sdk",
  "thiserror",
 ]
@@ -1059,7 +1057,6 @@ dependencies = [
  "cfg-if",
  "getset",
  "hex",
- "proptest",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -3955,6 +3952,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethereum-lc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.10",
+ "env_logger",
+ "ethereum-lc-core",
+ "ethereum-programs",
+ "ethers-core",
+ "getset",
+ "hex",
+ "log",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "sphinx-sdk",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "ethereum-lc-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bls12_381 0.8.0",
+ "ethers-core",
+ "getset",
+ "hex",
+ "serde",
+ "sha2 0.9.9",
+ "thiserror",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "ethereum-programs"
+version = "0.1.0"
+dependencies = [
+ "glob",
+ "sphinx-helper",
+]
+
+[[package]]
 name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4295,6 +4336,21 @@ name = "fixedbitset"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
+
+[[package]]
+name = "fixture-generator"
+version = "1.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "aptos-lc",
+ "clap 4.5.10",
+ "ethereum-lc",
+ "serde",
+ "serde_json",
+ "sphinx-prover",
+ "sphinx-sdk",
+ "tracing",
+]
 
 [[package]]
 name = "flate2"
@@ -8047,27 +8103,6 @@ dependencies = [
  "memchr",
  "parking_lot",
  "thiserror",
-]
-
-[[package]]
-name = "proof-server"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "aptos-lc",
- "aptos-lc-core",
- "bcs 0.1.4",
- "chrono",
- "clap 4.5.10",
- "env_logger",
- "log",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "sphinx-sdk",
- "thiserror",
- "tokio",
- "url",
 ]
 
 [[package]]

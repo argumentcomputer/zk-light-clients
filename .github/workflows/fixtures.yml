@@ -5,8 +5,6 @@
 name: Update fixtures
 
 on:
-  pull_request:
-    types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch: {}
   # Once per day at 00:00 UTC
   schedule:
@@ -19,6 +17,7 @@ concurrency:
 jobs:
   generate-fixtures:
     runs-on: warp-ubuntu-latest-x64-32x
+    timeout-minutes: 90
     strategy:
       matrix:
         fixture: [inclusion, epoch_change]
@@ -35,7 +34,7 @@ jobs:
       - name: Generate Solidity fixtures
         run: |
           cargo run --release -- --program ${{ matrix.fixture }} --language solidity
-        working-directory: ${{ github.workspace }}/aptos/solidity/fixture-generator
+        working-directory: ${{ github.workspace }}/fixture-generator
       - name: Check for diff
         run: git diff
       - name: Upload fixture artifact
@@ -49,7 +48,7 @@ jobs:
       - name: Generate Move fixtures
         run: |
           cargo run --release -- --program ${{ matrix.fixture }} --language move
-        working-directory: ${{ github.workspace }}/ethereum/move/sources/fixtures
+        working-directory: ${{ github.workspace }}/fixture-generator
       - name: Check for diff
         run: git diff
       - name: Upload fixture artifact
