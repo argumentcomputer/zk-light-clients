@@ -5,6 +5,8 @@
 name: Update fixtures
 
 on:
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch: {}
   # Once per day at 00:00 UTC
   schedule:
@@ -47,7 +49,7 @@ jobs:
       - name: Generate Move fixtures
         run: |
           cargo run --release -- --program ${{ matrix.fixture }} --language move
-          working-directory: ${{ github.workspace }}/ethereum/move/sources/fixtures
+        working-directory: ${{ github.workspace }}/ethereum/move/sources/fixtures
       - name: Check for diff
         run: git diff
       - name: Upload fixture artifact
