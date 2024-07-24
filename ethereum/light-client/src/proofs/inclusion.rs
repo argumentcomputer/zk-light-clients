@@ -337,12 +337,11 @@ fn generate_test_assets() -> TestAssets {
 /// Exports 'StorageInclusionIn' instance used as input for 'StorageInclusionProver'
 pub fn generate_inclusion_proving_input_for_external_usage() -> StorageInclusionIn {
     let test_assets = generate_test_assets();
-    let inclusion_inputs = StorageInclusionIn {
+    StorageInclusionIn {
         store: test_assets.store.clone(),
         update: Update::from(test_assets.finality_update.clone()),
         eip1186_proof: test_assets.eip1186_proof.clone(),
-    };
-    inclusion_inputs
+    }
 }
 
 #[cfg(test)]
