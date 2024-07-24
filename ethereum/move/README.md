@@ -19,7 +19,7 @@ To run Move script that executes verification code using JSON fixture (running o
 
 ```
 aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile testnet --seed $(openssl rand -hex 32) --assume-yes
-aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/fixture_1.json --profile testnet --assume-yes
+aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/epoch_change_fixture.json --profile testnet --assume-yes
 ```
 
 You should see tentatively following result if verification passed:
