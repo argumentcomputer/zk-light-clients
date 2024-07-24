@@ -46,6 +46,11 @@ impl CommitteeChangeProver {
         Self { client, keys }
     }
 
+    /// Gets a `SphinxVerifyingKey`.
+    ///
+    /// # Returns
+    ///
+    /// A `SphinxVerifyingKey` that can be used for verifying the committee-change proof.
     pub fn get_vk(&self) -> SphinxVerifyingKey {
         self.keys.1.clone()
     }
@@ -235,8 +240,8 @@ fn generate_test_assets() -> TestAssets {
     let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
 
     // Instantiate Update data
-    let test_asset_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
+    let test_asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
 
     let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -266,6 +271,7 @@ fn generate_test_assets() -> TestAssets {
     }
 }
 
+/// Exports 'LightClientStore' and 'Upate' instances used as input for 'CommitteeChangeProver'
 pub fn generate_commitee_change_proving_input_for_external_usage() -> (LightClientStore, Update) {
     let mut test_assets = generate_test_assets();
     test_assets

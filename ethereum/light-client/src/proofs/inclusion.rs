@@ -8,17 +8,21 @@
 
 use crate::proofs::error::ProverError;
 use crate::proofs::{ProofType, Prover, ProvingMode};
+use crate::types::storage::GetProofResponse;
 use anyhow::Result;
 use ethereum_lc_core::crypto::hash::{HashValue, HASH_LENGTH};
 use ethereum_lc_core::deserialization_error;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
+use ethereum_lc_core::types::bootstrap::Bootstrap;
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::store::LightClientStore;
-use ethereum_lc_core::types::update::Update;
+use ethereum_lc_core::types::update::{FinalityUpdate, Update};
 use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{Address, ADDRESS_BYTES_LEN};
 use ethereum_programs::INCLUSION_PROGRAM;
 use sphinx_sdk::{ProverClient, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
+use std::fs;
+use std::path::PathBuf;
 
 /// The prover for the storage inclusion proof.
 pub struct StorageInclusionProver {
@@ -43,6 +47,15 @@ impl StorageInclusionProver {
         let keys = client.setup(INCLUSION_PROGRAM);
 
         Self { client, keys }
+    }
+
+    /// Gets a `SphinxVerifyingKey`.
+    ///
+    /// # Returns
+    ///
+    /// A `SphinxVerifyingKey` that can be used for verifying the inclusion proof.
+    pub fn get_vk(&self) -> SphinxVerifyingKey {
+        self.keys.1.clone()
     }
 }
 
@@ -264,77 +277,78 @@ impl Prover for StorageInclusionProver {
     }
 }
 
+struct TestAssets {
+    store: LightClientStore,
+    finality_update: FinalityUpdate,
+    eip1186_proof: EIP1186Proof,
+}
+
+fn generate_test_assets() -> TestAssets {
+    // Instantiate bootstrap data
+    let test_asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../test-assets/inclusion/LightClientBootstrapDeneb.ssz");
+
+    let test_bytes = fs::read(test_asset_path).unwrap();
+
+    let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
+
+    // Instantiate Update data
+    let test_asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../test-assets/inclusion/LightClientUpdateDeneb.ssz");
+
+    let test_bytes = fs::read(test_asset_path).unwrap();
+
+    let update = Update::from_ssz_bytes(&test_bytes).unwrap();
+
+    // Instantiate finality update data
+    let test_asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../test-assets/inclusion/LightClientFinalityUpdateDeneb.ssz");
+
+    let test_bytes = fs::read(test_asset_path).unwrap();
+
+    let finality_update = FinalityUpdate::from_ssz_bytes(&test_bytes).unwrap();
+
+    // Instantiate EIP1186 proof data
+    let test_asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../test-assets/inclusion/base-data/EthGetProof.json");
+
+    let test_bytes = fs::read(test_asset_path).unwrap();
+
+    let ethers_eip1186_proof: GetProofResponse = serde_json::from_slice(&test_bytes).unwrap();
+
+    // Initialize the LightClientStore
+    let checkpoint = "0xf783c545d2dd90cee6c4cb92a9324323ef397f6ec85e1a3d61c48cf6cfc979e2";
+    let trusted_block_root = hex::decode(checkpoint.strip_prefix("0x").unwrap())
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+    let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
+
+    store.process_light_client_update(&update).unwrap();
+
+    TestAssets {
+        store,
+        finality_update,
+        eip1186_proof: EIP1186Proof::try_from(ethers_eip1186_proof.result().clone()).unwrap(),
+    }
+}
+
+/// Exports 'StorageInclusionIn' instance used as input for 'StorageInclusionProver'
+pub fn generate_inclusion_proving_input_for_external_usage() -> StorageInclusionIn {
+    let test_assets = generate_test_assets();
+    let inclusion_inputs = StorageInclusionIn {
+        store: test_assets.store.clone(),
+        update: Update::from(test_assets.finality_update.clone()),
+        eip1186_proof: test_assets.eip1186_proof.clone(),
+    };
+    inclusion_inputs
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::types::storage::GetProofResponse;
     use ethereum_lc_core::crypto::hash::keccak256_hash;
-    use ethereum_lc_core::types::bootstrap::Bootstrap;
-    use ethereum_lc_core::types::store::LightClientStore;
-    use ethereum_lc_core::types::update::{FinalityUpdate, Update};
-    use std::env::current_dir;
-    use std::fs;
-
-    struct TestAssets {
-        store: LightClientStore,
-        finality_update: FinalityUpdate,
-        eip1186_proof: EIP1186Proof,
-    }
-
-    fn generate_test_assets() -> TestAssets {
-        // Instantiate bootstrap data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/LightClientBootstrapDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/LightClientUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate finality update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/LightClientFinalityUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let finality_update = FinalityUpdate::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate EIP1186 proof data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/base-data/EthGetProof.json");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let ethers_eip1186_proof: GetProofResponse = serde_json::from_slice(&test_bytes).unwrap();
-
-        // Initialize the LightClientStore
-        let checkpoint = "0xf783c545d2dd90cee6c4cb92a9324323ef397f6ec85e1a3d61c48cf6cfc979e2";
-        let trusted_block_root = hex::decode(checkpoint.strip_prefix("0x").unwrap())
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
-
-        store.process_light_client_update(&update).unwrap();
-
-        TestAssets {
-            store,
-            finality_update,
-            eip1186_proof: EIP1186Proof::try_from(ethers_eip1186_proof.result().clone()).unwrap(),
-        }
-    }
 
     #[test]
     fn test_execute_inclusion() {

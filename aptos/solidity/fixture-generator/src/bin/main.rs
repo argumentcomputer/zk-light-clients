@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use ethereum_lc::proofs::committee_change::generate_commitee_change_proving_input_for_external_usage;
 use ethereum_lc::proofs::committee_change::{CommitteeChangeIn, CommitteeChangeProver};
 use ethereum_lc::proofs::{ProofType, Prover, ProvingMode};
+use ethereum_lc::proofs::inclusion::{generate_inclusion_proving_input_for_external_usage, StorageInclusionProver};
 
 pub const APTOS_INCLUSION_ELF: &[u8] =
     include_bytes!("../../../../aptos-programs/artifacts/inclusion-program");
@@ -82,7 +83,55 @@ fn generate_fixture_inclusion_aptos_lc() {
 }
 
 fn generate_fixture_inclusion_ethereum_lc() {
-    unimplemented!();
+    tracing::info!(
+        "Generating inclusion fixture using Ethereum program (for Move verification)"
+    );
+
+    let prover = StorageInclusionProver::new();
+    let input = generate_inclusion_proving_input_for_external_usage();
+    let proof = match prover.prove(input, ProvingMode::SNARK).unwrap() {
+        ProofType::SNARK(inner_proof) => inner_proof,
+        _ => {
+            panic!("Unexpected proof")
+        }
+    };
+
+    // save fixture
+    let fixture = MoveFixture {
+        type_args: [
+            String::from("0x1::account::Account"),
+            String::from("0x1::chain_id::ChainId"),
+        ],
+        args: [
+            MoveArg {
+                // vk
+                type_: String::from("hex"),
+                value: prover.get_vk().bytes32().to_string(),
+            },
+            MoveArg {
+                // public values
+                type_: String::from("hex"),
+                value: proof.public_values.bytes().to_string(),
+            },
+            MoveArg {
+                // proof
+                type_: String::from("hex"),
+                value: proof.bytes(),
+            },
+        ],
+    };
+
+    let fixture_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../ethereum/move/sources/fixtures");
+    std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
+    let fixture_path = fixture_path.join("inclusion_fixture.json");
+    std::fs::write(
+        fixture_path.clone(),
+        serde_json::to_string_pretty(&fixture).unwrap(),
+    )
+        .expect("failed to write fixture");
+
+    tracing::info!("Fixture has been successfully saved to {:?}", fixture_path);
 }
 
 fn generate_fixture_epoch_change_aptos_lc() {
