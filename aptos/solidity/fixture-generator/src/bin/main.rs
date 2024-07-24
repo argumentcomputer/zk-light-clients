@@ -6,8 +6,10 @@ use std::path::PathBuf;
 
 use ethereum_lc::proofs::committee_change::generate_commitee_change_proving_input_for_external_usage;
 use ethereum_lc::proofs::committee_change::{CommitteeChangeIn, CommitteeChangeProver};
+use ethereum_lc::proofs::inclusion::{
+    generate_inclusion_proving_input_for_external_usage, StorageInclusionProver,
+};
 use ethereum_lc::proofs::{ProofType, Prover, ProvingMode};
-use ethereum_lc::proofs::inclusion::{generate_inclusion_proving_input_for_external_usage, StorageInclusionProver};
 
 pub const APTOS_INCLUSION_ELF: &[u8] =
     include_bytes!("../../../../aptos-programs/artifacts/inclusion-program");
@@ -83,9 +85,7 @@ fn generate_fixture_inclusion_aptos_lc() {
 }
 
 fn generate_fixture_inclusion_ethereum_lc() {
-    tracing::info!(
-        "Generating inclusion fixture using Ethereum program (for Move verification)"
-    );
+    tracing::info!("Generating inclusion fixture using Ethereum program (for Move verification)");
 
     let prover = StorageInclusionProver::new();
     let input = generate_inclusion_proving_input_for_external_usage();
@@ -95,6 +95,7 @@ fn generate_fixture_inclusion_ethereum_lc() {
             panic!("Unexpected proof")
         }
     };
+    prover.verify(&ProofType::SNARK(proof.clone())).unwrap();
 
     // save fixture
     let fixture = MoveFixture {
@@ -129,7 +130,7 @@ fn generate_fixture_inclusion_ethereum_lc() {
         fixture_path.clone(),
         serde_json::to_string_pretty(&fixture).unwrap(),
     )
-        .expect("failed to write fixture");
+    .expect("failed to write fixture");
 
     tracing::info!("Fixture has been successfully saved to {:?}", fixture_path);
 }
@@ -183,6 +184,7 @@ fn generate_fixture_epoch_change_ethereum_lc() {
             panic!("Unexpected proof")
         }
     };
+    prover.verify(&ProofType::SNARK(proof.clone())).unwrap();
 
     // save fixture
     let fixture = MoveFixture {

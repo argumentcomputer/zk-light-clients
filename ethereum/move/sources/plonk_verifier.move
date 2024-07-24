@@ -75,11 +75,14 @@ module plonk_verifier_addr::plonk_verifier {
     const ERROR_UNEXPECTED_VK_NB_CUSTOM_GATES_AMOUNT: u64 = 1005;
     const ERROR_PAIRING_KZG_CHECK: u64 = 1006;
 
-    public fun verify(proof: vector<u256>, vk: u256, raw_public_inputs: vector<u256>) {
+    public fun verify(proof: vector<u256>, vk: u256, raw_public_inputs: vector<u8>) {
         let public_inputs = vector::empty<u256>();
         push_back(&mut public_inputs, vk);
-        push_back(&mut public_inputs, compute_public_values_hash(raw_public_inputs));
+        push_back(&mut public_inputs, bytes_to_uint256(sha2_256(raw_public_inputs)) & ((1 << 253) - 1));
+        verify_inner(proof, public_inputs);
+    }
 
+    fun verify_inner(proof: vector<u256>, public_inputs: vector<u256>) {
         // technical assert to ensure that VK_NB_CUSTOM_GATES constant has not been changed
         assert!(VK_NB_CUSTOM_GATES == 1, ERROR_UNEXPECTED_VK_NB_CUSTOM_GATES_AMOUNT);
 
@@ -88,6 +91,7 @@ module plonk_verifier_addr::plonk_verifier {
 
         // check size of the public_inputs
         let i = 0;
+
         while(i < VK_NB_PUBLIC_INPUTS) {
             assert!(R_MOD_MINUS_ONE > (*vector::borrow(&public_inputs, i)), ERROR_INPUTS_SIZE);
             i = i + 1
@@ -149,7 +153,7 @@ module plonk_verifier_addr::plonk_verifier {
         check_pairing_kzg(fd_x, fd_y, fq_x, fq_y);
     }
 
-    public fun derive_gamma(proof: vector<u256>, vk: u256, public_inputs_digest: u256): u256 {
+    fun derive_gamma(proof: vector<u256>, vk: u256, public_inputs_digest: u256): u256 {
         let preimage = vector::empty<u8>();
         append_value(&mut preimage, FS_GAMMA, true, 5);
         append_value(&mut preimage, VK_S1_COM_X, true, 32);
@@ -181,14 +185,14 @@ module plonk_verifier_addr::plonk_verifier {
         bytes_to_uint256(sha2_256(preimage))
     }
 
-    public fun derive_beta(gamma_not_reduced: u256): u256 {
+    fun derive_beta(gamma_not_reduced: u256): u256 {
         let preimage = vector::empty<u8>();
         append_value(&mut preimage, FS_BETA, true, 4);
         append_value(&mut preimage, gamma_not_reduced, true, 32);
         bytes_to_uint256(sha2_256(preimage))
     }
 
-    public fun derive_alpha(proof: vector<u256>, beta_not_reduced: u256): u256 {
+    fun derive_alpha(proof: vector<u256>, beta_not_reduced: u256): u256 {
         let preimage = vector::empty<u8>();
         append_value(&mut preimage, FS_ALPHA, true, 5);
         append_value(&mut preimage, beta_not_reduced, true, 32);
@@ -201,7 +205,7 @@ module plonk_verifier_addr::plonk_verifier {
         bytes_to_uint256(sha2_256(preimage))
     }
 
-    public fun derive_zeta(proof: vector<u256>, alpha_not_reduced: u256): u256 {
+    fun derive_zeta(proof: vector<u256>, alpha_not_reduced: u256): u256 {
         let preimage = vector::empty<u8>();
         append_value(&mut preimage, FS_ZETA, true, 4);
         append_value(&mut preimage, alpha_not_reduced, true, 32);
@@ -216,7 +220,7 @@ module plonk_verifier_addr::plonk_verifier {
     }
 
     // TODO: simplify this function by splitting onto isolated sub-funcitons
-    public fun compute_public_inputs_contribution(zeta: Element<Fr>, zeta_power_n_minus_one: Element<Fr>, public_inputs: vector<u256>): Element<Fr> {
+    fun compute_public_inputs_contribution(zeta: Element<Fr>, zeta_power_n_minus_one: Element<Fr>, public_inputs: vector<u256>): Element<Fr> {
         // sum_pi_wo_api_commit function from Solidity contract
         let ins = public_inputs;
         let n = length(&ins);
@@ -306,7 +310,7 @@ module plonk_verifier_addr::plonk_verifier {
         pi_wo_commit
     }
 
-    public fun compute_public_inputs_contribution_from_custom_gates(proof: vector<u256>, zeta: Element<Fr>, zeta_power_n_minus_one: Element<Fr>, nb_public_inputs: u256): Element<Fr> {
+    fun compute_public_inputs_contribution_from_custom_gates(proof: vector<u256>, zeta: Element<Fr>, zeta_power_n_minus_one: Element<Fr>, nb_public_inputs: u256): Element<Fr> {
         let i = nb_public_inputs + VK_INDEX_COMMIT_API_0;
 
         let w = powSmall(u256_to_fr(VK_OMEGA), i);
@@ -383,7 +387,7 @@ module plonk_verifier_addr::plonk_verifier {
         pi_commit
     }
 
-    public fun compute_alpha_square_lagrange_0(zeta: u256, zeta_power_n_minus_one: Element<Fr>, alpha: u256): Element<Fr> {
+    fun compute_alpha_square_lagrange_0(zeta: u256, zeta_power_n_minus_one: Element<Fr>, alpha: u256): Element<Fr> {
         let den = add(&u256_to_fr(zeta), &u256_to_fr(R_MOD_MINUS_ONE));
         let den = powSmall(den, R_MOD - 2);
         let den = mul(&den, &u256_to_fr(VK_INV_DOMAIN_SIZE));
@@ -393,7 +397,7 @@ module plonk_verifier_addr::plonk_verifier {
         alpha_square_lagrange_0
     }
 
-    public fun verify_opening_linearized_polynomial(proof: vector<u256>, beta: u256, gamma: u256, alpha: u256, alpha_square_lagrange_0: Element<Fr>, pic: Element<Fr>): u256 {
+    fun verify_opening_linearized_polynomial(proof: vector<u256>, beta: u256, gamma: u256, alpha: u256, alpha_square_lagrange_0: Element<Fr>, pic: Element<Fr>): u256 {
         let s1 = mul(&u256_to_fr(*vector::borrow(&proof, 15)), &u256_to_fr(beta));
         let s1 = add(&s1, &u256_to_fr(gamma));
         let s1 = add(&s1, &u256_to_fr(*vector::borrow(&proof, 12)));
@@ -417,7 +421,7 @@ module plonk_verifier_addr::plonk_verifier {
         s1
     }
 
-    public fun compute_gamma_kzg(proof: vector<u256>, zeta: u256, linearized_polynomial_x: u256, linearized_polynomial_y: u256, opening_linearized_polynomial_zeta: u256): u256  {
+    fun compute_gamma_kzg(proof: vector<u256>, zeta: u256, linearized_polynomial_x: u256, linearized_polynomial_y: u256, opening_linearized_polynomial_zeta: u256): u256  {
         let preimage = vector::empty<u8>();
         append_value(&mut preimage, FS_GAMMA_KZG, true, 5);
         append_value(&mut preimage, zeta, true, 32);
@@ -451,7 +455,7 @@ module plonk_verifier_addr::plonk_verifier {
         hash_reduced
     }
 
-    public fun check_pairing_kzg(folded_digests_x: u256, folded_digests_y: u256, folded_quotients_x: u256, folded_quotients_y: u256) {
+    fun check_pairing_kzg(folded_digests_x: u256, folded_digests_y: u256, folded_quotients_x: u256, folded_quotients_y: u256) {
         // G1
         let pairing_input_0: u256 = folded_digests_x;
         let pairing_input_1: u256 = folded_digests_y;
@@ -481,7 +485,7 @@ module plonk_verifier_addr::plonk_verifier {
     }
 
     // TODO: validate verificaion on various proofs since there are places where arithmetic overflow may happen
-    public fun batch_verify_multi_points(proof: vector<u256>, zeta: u256, gamma_kzg: u256, state_folded_digest_x: u256, state_folded_digest_y: u256, state_folded_claimed_evals: u256): (Element<G1>, Element<G1>) {
+    fun batch_verify_multi_points(proof: vector<u256>, zeta: u256, gamma_kzg: u256, state_folded_digest_x: u256, state_folded_digest_y: u256, state_folded_claimed_evals: u256): (Element<G1>, Element<G1>) {
         let proof_batch_opening_at_zeta_x: u256 = *vector::borrow(&proof, 20);
         let proof_batch_opening_at_zeta_y: u256 = *vector::borrow(&proof, 21);
         let proof_grand_product_commitment_x: u256 = *vector::borrow(&proof, 17);
@@ -535,7 +539,7 @@ module plonk_verifier_addr::plonk_verifier {
         (folded_digests, folded_quotients)
     }
 
-    public fun fold_h(proof: vector<u256>, zeta: u256, zeta_power_n_minus_one: u256): Element<G1> {
+    fun fold_h(proof: vector<u256>, zeta: u256, zeta_power_n_minus_one: u256): Element<G1> {
         let n_plus_two = VK_DOMAIN_SIZE + 2;
         let proof_h_2_x: u256 = *vector::borrow(&proof, 10);
         let proof_h_2_y: u256 = *vector::borrow(&proof, 11);
@@ -554,7 +558,7 @@ module plonk_verifier_addr::plonk_verifier {
         folded_h
     }
 
-    public fun fold_state(proof: vector<u256>, gamma_kzg: u256, linearized_polynomial_x: u256, linearized_polynomial_y: u256, opening_linearized_polynomial_zeta: u256): (u256, u256, u256) {
+    fun fold_state(proof: vector<u256>, gamma_kzg: u256, linearized_polynomial_x: u256, linearized_polynomial_y: u256, opening_linearized_polynomial_zeta: u256): (u256, u256, u256) {
         let proof_l_com_x: u256 = *vector::borrow(&proof, 0);
         let proof_l_com_y: u256 = *vector::borrow(&proof, 1);
         let proof_l_at_zeta: u256 = *vector::borrow(&proof, 12);
@@ -608,7 +612,7 @@ module plonk_verifier_addr::plonk_verifier {
         (a, b, fr_to_u256(state_folded_claimed_values))
     }
 
-    public fun compute_commitment_linearized_polynomial(
+    fun compute_commitment_linearized_polynomial(
         proof: vector<u256>,
         state_beta: u256,
         state_gamma: u256,
@@ -694,19 +698,6 @@ module plonk_verifier_addr::plonk_verifier {
         (unset_first_bit(x), unset_first_bit(y))
     }
 
-    public fun compute_public_values_hash(raw_public_inputs: vector<u256>): u256 {
-        let preimage = vector::empty<u8>();
-        let i = 0;
-        while(i < length(&raw_public_inputs)) {
-            append_value(&mut preimage, *vector::borrow(&raw_public_inputs, i), true, 32);
-            i = i + 1;
-        };
-
-        let one: u256 = 1;
-        let hash = bytes_to_uint256(sha2_256(preimage)) & ((one << 253) - 1);
-        hash
-    }
-
     #[test]
     public fun test_pairing_kzg_check() {
         let folded_digests_x: u256 = 0x08b99791fe52556d6763cc2ef120620e81e6403dc1aea7b14be1d96f1f53cb57;
@@ -757,16 +748,29 @@ module plonk_verifier_addr::plonk_verifier {
     }
 
     #[test]
-    public fun test_verify() {
+    public fun test_verify_inner() {
         let proof = get_proof();
-        let public_inputs = get_raw_public_inputs();
+        let public_inputs = get_public_inputs();
+        verify_inner(proof, public_inputs);
+    }
 
-        verify(proof, SphinxInclusionProofVk, public_inputs);
+    #[test_only]
+    fun compute_public_values_hash(raw_public_inputs: vector<u256>): u256 {
+        let preimage = vector::empty<u8>();
+        let i = 0;
+        while(i < length(&raw_public_inputs)) {
+            append_value(&mut preimage, *vector::borrow(&raw_public_inputs, i), true, 32);
+            i = i + 1;
+        };
+
+        let one: u256 = 1;
+        let hash = bytes_to_uint256(sha2_256(preimage)) & ((one << 253) - 1);
+        hash
     }
 
     #[test]
     public fun test_compute_public_values_hash() {
-        let public_values = get_raw_public_inputs();
+        let public_values = get_public_values();
         let pv_hash = compute_public_values_hash(public_values);
         assert!(pv_hash == SphinxPublicValuesHash, 1);
     }
@@ -846,14 +850,14 @@ module plonk_verifier_addr::plonk_verifier {
         public_inputs
     }
 
-    const PublicInputChunk0: u256 = 0x205829098a4c0273312e8bc4fdbde28fc12abdc540c88bdd9abeef0a85d706ec;
-    const PublicInputChunk1: u256 = 0x4f76ef143d0388ab65a4cd568c05da10c070aefbfd385cc4824f5d71b009e962;
+    const PublicValuesChunk0: u256 = 0x205829098a4c0273312e8bc4fdbde28fc12abdc540c88bdd9abeef0a85d706ec;
+    const PublicValuesChunk1: u256 = 0x4f76ef143d0388ab65a4cd568c05da10c070aefbfd385cc4824f5d71b009e962;
 
     #[test_only]
-    public fun get_raw_public_inputs(): vector<u256> {
+    public fun get_public_values(): vector<u256> {
         let public_inputs = vector::empty<u256>();
-        push_back(&mut public_inputs, PublicInputChunk0);
-        push_back(&mut public_inputs, PublicInputChunk1);
+        push_back(&mut public_inputs, PublicValuesChunk0);
+        push_back(&mut public_inputs, PublicValuesChunk1);
         public_inputs
     }
 }
