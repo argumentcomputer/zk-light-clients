@@ -5,8 +5,7 @@ script {
     use std::vector;
 
     const ERROR_LENGTH_VK: u64 = 3001;
-    const ERROR_LENGTH_RAW_PUBLIC_INPUTS: u64 = 3002;
-    const ERROR_LENGTH_PROOF: u64 = 3003;
+    const ERROR_LENGTH_PROOF: u64 = 3002;
 
     fun run_verification<T1, T2>(
         _account: signer,
@@ -14,6 +13,8 @@ script {
         public_values: vector<u8>,
         proof_: vector<u8>,
     ) {
+        // we do not perform input validation of public_values since while core verification it is hashed,
+        // and if hash is invalid, core verification will simply fail
         assert!(length(&vkey_) == 32, ERROR_LENGTH_VK);
         assert!(length(&proof_) % 32 == 0, ERROR_LENGTH_PROOF);
 
