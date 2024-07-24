@@ -6,7 +6,7 @@ In order to install Aptos CLI, follow [this](https://aptos.dev/en/build/cli) ins
 
 ```
 cd ethereum/move
-aptos move test
+aptos move test --named-addresses plonk_verifier_addr=testnet
 ```
 
 This module is configured using setup from [this](https://aptos.dev/en/build/guides/build-e2e-dapp/1-create-smart-contract) tutorial.
@@ -18,6 +18,7 @@ examples).
 To run Move script that executes verification code using JSON fixture (running on Aptos `testnet`):
 
 ```
+aptos move compile --named-addresses plonk_verifier_addr=testnet
 aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile testnet --seed $(openssl rand -hex 32) --assume-yes
 aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/epoch_change_fixture.json --profile testnet --assume-yes
 ```
