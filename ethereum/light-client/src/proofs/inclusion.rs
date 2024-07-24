@@ -149,7 +149,16 @@ pub struct StorageInclusionOut {
     account_key: Address,
     account_value: HashValue,
     storage_key_value_len: u64,
-    storage_key_value: Vec<(Vec<u8>, Vec<u8>)>,
+    storage_key_value: Vec<StorageKeyValue>,
+}
+
+/// Represents the triplet of values output for storage values
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct StorageKeyValue {
+    key: Vec<u8>,
+    value_len: u64,
+    value: Vec<u8>,
 }
 
 impl Prover for StorageInclusionProver {
@@ -197,8 +206,13 @@ impl Prover for StorageInclusionProver {
 
         for _ in 0..storage_key_value_len {
             let key = public_values.read::<Vec<u8>>();
+            let value_len = public_values.read::<u64>();
             let value = public_values.read::<Vec<u8>>();
-            storage_key_value.push((key, value));
+            storage_key_value.push(StorageKeyValue {
+                key,
+                value_len,
+                value,
+            });
         }
 
         Ok(StorageInclusionOut {
@@ -360,12 +374,16 @@ mod test {
 
         for i in 0..inclusion_output.storage_key_value_len as usize {
             assert_eq!(
-                inclusion_output.storage_key_value[i].0,
-                test_assets.eip1186_proof.storage_proof[i].key
+                inclusion_output.storage_key_value[i].key,
+                test_assets.eip1186_proof.storage_proof[i].key.clone()
             );
             assert_eq!(
-                inclusion_output.storage_key_value[i].1,
-                test_assets.eip1186_proof.storage_proof[i].value
+                inclusion_output.storage_key_value[i].value_len,
+                test_assets.eip1186_proof.storage_proof[i].value.len() as u64
+            );
+            assert_eq!(
+                inclusion_output.storage_key_value[i].value,
+                test_assets.eip1186_proof.storage_proof[i].value.clone()
             );
         }
     }
