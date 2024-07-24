@@ -148,6 +148,7 @@ pub struct StorageInclusionOut {
     sync_committee_hash: HashValue,
     account_key: Address,
     account_value: HashValue,
+    storage_key_value_len: u64,
     storage_key_value: Vec<(Vec<u8>, Vec<u8>)>,
 }
 
@@ -190,9 +191,11 @@ impl Prover for StorageInclusionProver {
         let account_key = public_values.read::<[u8; ADDRESS_BYTES_LEN]>();
         let account_value = HashValue::new(public_values.read::<[u8; HASH_LENGTH]>());
 
+        let storage_key_value_len = public_values.read::<u64>();
+
         let mut storage_key_value = vec![];
 
-        for _ in 0..inputs.eip1186_proof.storage_proof.len() {
+        for _ in 0..storage_key_value_len {
             let key = public_values.read::<Vec<u8>>();
             let value = public_values.read::<Vec<u8>>();
             storage_key_value.push((key, value));
@@ -203,6 +206,7 @@ impl Prover for StorageInclusionProver {
             finalized_block_height,
             account_key,
             account_value,
+            storage_key_value_len,
             storage_key_value,
         })
     }
@@ -349,7 +353,12 @@ mod test {
             keccak256_hash(&test_assets.eip1186_proof.address)
                 .expect("could not hash account address")
         );
-        for i in 0..test_assets.eip1186_proof.storage_proof.len() {
+        assert_eq!(
+            inclusion_output.storage_key_value_len,
+            test_assets.eip1186_proof.storage_proof.len() as u64
+        );
+
+        for i in 0..inclusion_output.storage_key_value_len as usize {
             assert_eq!(
                 inclusion_output.storage_key_value[i].0,
                 test_assets.eip1186_proof.storage_proof[i].key
