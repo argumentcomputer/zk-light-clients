@@ -4,7 +4,7 @@ In this section we will cover how to run the benchmarks for the individual proof
 the `light-client` crate folder. Those benchmarks are associated with programs that are meant to reproduce
 a production environment settings. They are meant to measure performance for a complete end-to-end flow.
 
-# Sync committee change
+## Sync committee change
 
 Benchmark that will run a proof generation for the sync committee change program. This program will execute a hash for
 the received `LightClientStore::current_sync_committee` to ensure that the signature is from the previous sync committee
@@ -22,7 +22,28 @@ this benchmark:
 }
 ```
 
-### Running the benchmarks
+## Storage inclusion
+
+Benchmark that will run a proof generation for the storage inclusion program. This program will execute a hash for the
+received `LightClientStore::current_sync_committee` to ensure that the signature is from the current known sync
+committee
+set, execute a `LightClientStore::validate_light_client_update` to confirm that the received block information is one
+signed
+by the committee, and finally run an `EIP1186Proof::verify` against the state root of the finalized execution block
+header.
+
+On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for
+this benchmark:
+
+```json
+{
+  // Time in milliseconds, 7~ minutes
+  "proving_time": 441123,
+  "verification_time": 2
+}
+```
+
+## Running the benchmarks
 
 **Using Makefile**
 

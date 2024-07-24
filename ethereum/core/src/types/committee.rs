@@ -223,7 +223,7 @@ pub(crate) mod test {
     fn test_ssz_serde_sync_committee() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/SyncCommitteeDeneb.ssz");
+            .join("../test-assets/committee-change/SyncCommitteeDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -238,7 +238,7 @@ pub(crate) mod test {
     fn test_sync_committee_hash_tree_root() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/SyncCommitteeDeneb.ssz");
+            .join("../test-assets/committee-change/SyncCommitteeDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 

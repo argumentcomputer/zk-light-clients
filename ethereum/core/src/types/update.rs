@@ -379,7 +379,7 @@ mod test {
     fn test_ssz_serde_update() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/LightClientUpdateDeneb.ssz");
+            .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -394,7 +394,7 @@ mod test {
     fn test_update_proof() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/LightClientUpdateDeneb.ssz");
+            .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -423,7 +423,7 @@ mod test {
     fn test_ssz_serde_finality_update() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/LightClientUpdateDeneb.ssz");
+            .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 

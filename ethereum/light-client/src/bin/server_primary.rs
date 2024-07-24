@@ -9,7 +9,7 @@ use ethereum_lc::types::network::Request;
 use ethereum_lc::utils::{read_bytes, write_bytes};
 use log::{error, info};
 use std::sync::Arc;
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, TcpStream};
 use tokio::task::spawn_blocking;
 
 #[derive(Parser)]
@@ -25,13 +25,14 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let Cli { addr, .. } = Cli::parse();
+    let Cli { addr, snd_addr } = Cli::parse();
 
     env_logger::init();
 
     let listener = TcpListener::bind(addr).await?;
     info!("Server is running on {}", listener.local_addr()?);
 
+    let snd_addr = Arc::new(snd_addr);
     let committee_prover = Arc::new(CommitteeChangeProver::new());
 
     loop {
@@ -39,6 +40,7 @@ async fn main() -> Result<()> {
         info!("Received a connection");
 
         let committee_prover = committee_prover.clone();
+        let snd_addr = snd_addr.clone();
 
         tokio::spawn(async move {
             info!("Awaiting request");
@@ -67,6 +69,17 @@ async fn main() -> Result<()> {
                             &[u8::from(committee_prover.verify(&proof).is_ok())],
                         )
                         .await?;
+                    }
+                    Request::ProveInclusion(_) | Request::VerifyInclusion(_) => {
+                        info!("Connecting to the secondary server");
+                        let mut secondary_stream = TcpStream::connect(&*snd_addr).await?;
+                        info!("Sending secondary request");
+                        write_bytes(&mut secondary_stream, &request_bytes).await?;
+                        info!("Awaiting response from secondary server");
+                        let response = read_bytes(&mut secondary_stream).await?;
+                        info!("Received response from the secondary server. Sending result");
+                        write_bytes(&mut client_stream, &response).await?;
+                        info!("Response forwarded");
                     }
                 },
                 Err(err) => error!("Failed to deserialize request object: {err}"),

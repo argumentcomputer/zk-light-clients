@@ -324,7 +324,7 @@ pub(crate) mod test {
     fn test_ssz_serde() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/ExecutionPayloadHeaderDeneb.ssz");
+            .join("../test-assets/committee-change/ExecutionPayloadHeaderDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
@@ -339,7 +339,7 @@ pub(crate) mod test {
     fn test_execution_block_hash_tree_root() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/ExecutionPayloadHeaderDeneb.ssz");
+            .join("../test-assets/committee-change/ExecutionPayloadHeaderDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 

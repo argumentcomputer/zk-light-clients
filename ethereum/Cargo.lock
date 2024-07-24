@@ -1433,6 +1433,8 @@ dependencies = [
  "anyhow",
  "bls12_381 0.8.0",
  "ethereum-types",
+ "ethereum_ssz",
+ "ethereum_ssz_derive",
  "ethers-core",
  "getset",
  "hex",
@@ -1503,6 +1505,18 @@ dependencies = [
  "ethereum-types",
  "itertools 0.10.5",
  "smallvec",
+]
+
+[[package]]
+name = "ethereum_ssz_derive"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eccd5378ec34a07edd3d9b48088cbc63309d0367d14ba10b0cdb1d1791080ea"
+dependencies = [
+ "darling 0.13.4",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]

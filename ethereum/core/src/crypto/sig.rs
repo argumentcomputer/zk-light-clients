@@ -356,7 +356,7 @@ mod test {
     fn test_ssz_serde_sync_aggregate() {
         let test_asset_path = current_dir()
             .unwrap()
-            .join("../test-assets/SyncAggregateDeneb.ssz");
+            .join("../test-assets/committee-change/SyncAggregateDeneb.ssz");
 
         let test_bytes = fs::read(test_asset_path).unwrap();
 
