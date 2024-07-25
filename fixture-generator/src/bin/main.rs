@@ -4,12 +4,12 @@ use sphinx_prover::types::HashableKey;
 use sphinx_sdk::ProverClient;
 use std::path::PathBuf;
 
-use ethereum_lc::proofs::committee_change::generate_commitee_change_proving_input_for_external_usage;
 use ethereum_lc::proofs::committee_change::{CommitteeChangeIn, CommitteeChangeProver};
-use ethereum_lc::proofs::inclusion::{
-    generate_inclusion_proving_input_for_external_usage, StorageInclusionProver,
-};
+use ethereum_lc::proofs::inclusion::{StorageInclusionIn, StorageInclusionProver};
 use ethereum_lc::proofs::{ProofType, Prover, ProvingMode};
+use ethereum_lc::test_utils::{
+    generate_committee_change_test_assets, generate_inclusion_test_assets,
+};
 
 pub const APTOS_INCLUSION_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/inclusion-program");
@@ -88,7 +88,12 @@ fn generate_fixture_inclusion_ethereum_lc() {
     tracing::info!("Generating inclusion fixture using Ethereum program (for Move verification)");
 
     let prover = StorageInclusionProver::new();
-    let input = generate_inclusion_proving_input_for_external_usage();
+    let test_assets = generate_inclusion_test_assets();
+    let input = StorageInclusionIn::new(
+        test_assets.store,
+        test_assets.finality_update.into(),
+        test_assets.eip1186_proof,
+    );
     let proof = match prover.prove(input, ProvingMode::SNARK).unwrap() {
         ProofType::SNARK(inner_proof) => inner_proof,
         _ => {
@@ -175,8 +180,13 @@ fn generate_fixture_epoch_change_ethereum_lc() {
         "Generating epoch_change fixture using Ethereum program (for Move verification)"
     );
 
-    let (store, update) = generate_commitee_change_proving_input_for_external_usage();
-    let new_period_inputs = CommitteeChangeIn::new(store, update);
+    let mut test_assets = generate_committee_change_test_assets();
+    test_assets
+        .store
+        .process_light_client_update(&test_assets.update)
+        .unwrap();
+    let new_period_inputs =
+        CommitteeChangeIn::new(test_assets.store, test_assets.update_new_period);
     let prover = CommitteeChangeProver::new();
     let proof = match prover.prove(new_period_inputs, ProvingMode::SNARK).unwrap() {
         ProofType::SNARK(inner_proof) => inner_proof,
