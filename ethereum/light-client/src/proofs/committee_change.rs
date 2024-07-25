@@ -48,8 +48,8 @@ impl CommitteeChangeProver {
     /// # Returns
     ///
     /// A `SphinxVerifyingKey` that can be used for verifying the committee-change proof.
-    pub fn get_vk(&self) -> SphinxVerifyingKey {
-        self.keys.1.clone()
+    pub const fn get_vk(&self) -> &SphinxVerifyingKey {
+        &self.keys.1
     }
 }
 

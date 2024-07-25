@@ -90,9 +90,9 @@ fn generate_fixture_inclusion_ethereum_lc() {
     let prover = StorageInclusionProver::new();
     let test_assets = generate_inclusion_test_assets();
     let input = StorageInclusionIn::new(
-        test_assets.store,
-        test_assets.finality_update.into(),
-        test_assets.eip1186_proof,
+        test_assets.store().clone(),
+        test_assets.finality_update().clone().into(),
+        test_assets.eip1186_proof().clone(),
     );
     let proof = match prover.prove(input, ProvingMode::SNARK).unwrap() {
         ProofType::SNARK(inner_proof) => inner_proof,
@@ -185,8 +185,10 @@ fn generate_fixture_epoch_change_ethereum_lc() {
         .store
         .process_light_client_update(&test_assets.update)
         .unwrap();
-    let new_period_inputs =
-        CommitteeChangeIn::new(test_assets.store, test_assets.update_new_period);
+    let new_period_inputs = CommitteeChangeIn::new(
+        test_assets.store.clone(),
+        test_assets.update_new_period.clone(),
+    );
     let prover = CommitteeChangeProver::new();
     let proof = match prover.prove(new_period_inputs, ProvingMode::SNARK).unwrap() {
         ProofType::SNARK(inner_proof) => inner_proof,

@@ -9,13 +9,13 @@ resolver = "2"
 
 [[bin]]
 name = "generate-fixture"
-path = "fixture-generator/src/bin/main.rs"
+path = "src/bin/main.rs"
 
 [dependencies]
 sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0", features = ["plonk"] }
 sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-ethereum-lc = { path = "ethereum/light-client",  features = ["ethereum"] }
-aptos-lc = { path = "aptos/light-client", features = ["aptos"] }
+ethereum-lc = { path = "../ethereum/light-client",  features = ["ethereum"] }
+aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
 serde_json = { version = "1", features = ["alloc"] }
 serde = { version = "1.0.193", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }

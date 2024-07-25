@@ -50,8 +50,8 @@ impl StorageInclusionProver {
     /// # Returns
     ///
     /// A `SphinxVerifyingKey` that can be used for verifying the inclusion proof.
-    pub fn get_vk(&self) -> SphinxVerifyingKey {
-        self.keys.1.clone()
+    pub const fn get_vk(&self) -> &SphinxVerifyingKey {
+        &self.keys.1
     }
 }
 
@@ -286,47 +286,47 @@ mod test {
         let prover = StorageInclusionProver::new();
 
         let inclusion_input = StorageInclusionIn {
-            store: test_assets.store.clone(),
-            update: Update::from(test_assets.finality_update.clone()),
-            eip1186_proof: test_assets.eip1186_proof.clone(),
+            store: test_assets.store().clone(),
+            update: test_assets.finality_update().clone().into(),
+            eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
         let inclusion_output = prover.execute(inclusion_input).unwrap();
 
         assert_eq!(
             inclusion_output.sync_committee_hash,
-            keccak256_hash(&test_assets.store.current_sync_committee().to_ssz_bytes()).unwrap()
+            keccak256_hash(&test_assets.store().current_sync_committee().to_ssz_bytes()).unwrap()
         );
         assert_eq!(
             &inclusion_output.finalized_block_height,
             test_assets
-                .finality_update
+                .finality_update()
                 .finalized_header()
                 .beacon()
                 .slot()
         );
         assert_eq!(
             inclusion_output.account_value,
-            keccak256_hash(&test_assets.eip1186_proof.address)
+            keccak256_hash(test_assets.eip1186_proof().address().as_ref())
                 .expect("could not hash account address")
         );
         assert_eq!(
             inclusion_output.storage_key_value_len,
-            test_assets.eip1186_proof.storage_proof.len() as u64
+            test_assets.eip1186_proof().storage_proof().len() as u64
         );
 
         for i in 0..inclusion_output.storage_key_value_len as usize {
             assert_eq!(
                 inclusion_output.storage_key_value[i].key,
-                test_assets.eip1186_proof.storage_proof[i].key.clone()
+                test_assets.eip1186_proof().storage_proof()[i].key.clone()
             );
             assert_eq!(
                 inclusion_output.storage_key_value[i].value_len,
-                test_assets.eip1186_proof.storage_proof[i].value.len() as u64
+                test_assets.eip1186_proof().storage_proof()[i].value.len() as u64
             );
             assert_eq!(
                 inclusion_output.storage_key_value[i].value,
-                test_assets.eip1186_proof.storage_proof[i].value.clone()
+                test_assets.eip1186_proof().storage_proof()[i].value.clone()
             );
         }
     }
@@ -341,9 +341,9 @@ mod test {
         let prover = StorageInclusionProver::new();
 
         let inclusion_inputs = StorageInclusionIn {
-            store: test_assets.store.clone(),
-            update: Update::from(test_assets.finality_update.clone()),
-            eip1186_proof: test_assets.eip1186_proof.clone(),
+            store: test_assets.store().clone(),
+            update: test_assets.finality_update().clone().into(),
+            eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
         println!("Starting STARK proving for sync committee change...");
@@ -363,9 +363,9 @@ mod test {
         let prover = StorageInclusionProver::new();
 
         let inclusion_inputs = StorageInclusionIn {
-            store: test_assets.store.clone(),
-            update: Update::from(test_assets.finality_update.clone()),
-            eip1186_proof: test_assets.eip1186_proof.clone(),
+            store: test_assets.store().clone(),
+            update: test_assets.finality_update().clone().into(),
+            eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
         println!("Starting SNARK proving for sync committee change...");
