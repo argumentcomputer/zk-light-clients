@@ -7,6 +7,3 @@
 [submodule "aptos/solidity/contracts/lib/sphinx-contracts"]
 	path = aptos/solidity/contracts/lib/sphinx-contracts
 	url = https://github.com/lurk-lab/sphinx-contracts
-[submodule "aptos/solidity/contracts/lib/openzeppelin-contracts"]
-	path = aptos/solidity/contracts/lib/openzeppelin-contracts
-	url = https://github.com/openzeppelin/openzeppelin-contracts
