@@ -135,7 +135,6 @@ impl Client {
     ///
     /// Returns an error if the request fails or the response is not successful or properly formatted.
     pub async fn get_finality_update(&self) -> Result<FinalityUpdate, ClientError> {
-        dbg!("101");
         self.beacon_client.get_finality_update().await
     }
 

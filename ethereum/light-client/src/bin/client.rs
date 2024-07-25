@@ -11,15 +11,14 @@ use ethereum_lc::proofs::{ProofType, ProvingMode};
 use ethereum_lc_core::crypto::hash::HashValue;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
-use ethereum_lc_core::types::update::{FinalityUpdate, Update};
+use ethereum_lc_core::types::update::Update;
 use ethereum_lc_core::types::utils::calc_sync_period;
-use getset::Getters;
 use log::{debug, error, info};
 use std::env;
 use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, Mutex, OwnedSemaphorePermit, RwLock, Semaphore};
+use tokio::sync::{mpsc, OwnedSemaphorePermit, RwLock, Semaphore};
 use tokio::task::JoinHandle;
 
 /// The maximum number of light client updates that can be requested.
@@ -134,7 +133,7 @@ async fn main() -> Result<()> {
 
     // Start the main loop to listen for Eth data every 10 seconds.
     let mut interval = tokio::time::interval(Duration::from_secs(10));
-    let test = Arc::new(Mutex::new(false));
+
     // Spawn a verifier task that sequentially processes the tasks.
     tokio::spawn(verifier_task(
         task_receiver,
@@ -420,7 +419,7 @@ async fn verifier_task(
                 // Wait for the task to finish and handle the result.
                 match task.await {
                     Ok(result) => match result {
-                        Ok((update, proof)) => {
+                        Ok((_update, proof)) => {
                             info!("Start verifying inclusion proof");
                             let res = client.verify_storage_inclusion(proof.clone()).await;
 
