@@ -44,6 +44,15 @@ impl StorageInclusionProver {
 
         Self { client, keys }
     }
+
+    /// Gets a `SphinxVerifyingKey`.
+    ///
+    /// # Returns
+    ///
+    /// A `SphinxVerifyingKey` that can be used for verifying the inclusion proof.
+    pub const fn get_vk(&self) -> &SphinxVerifyingKey {
+        &self.keys.1
+    }
 }
 
 /// The input for the storage inclusion proof.
@@ -264,126 +273,60 @@ impl Prover for StorageInclusionProver {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ethereum"))]
 mod test {
     use super::*;
-    use crate::types::storage::GetProofResponse;
+    use crate::test_utils::generate_inclusion_test_assets;
     use ethereum_lc_core::crypto::hash::keccak256_hash;
-    use ethereum_lc_core::types::bootstrap::Bootstrap;
-    use ethereum_lc_core::types::store::LightClientStore;
-    use ethereum_lc_core::types::update::{FinalityUpdate, Update};
-    use std::env::current_dir;
-    use std::fs;
-
-    struct TestAssets {
-        store: LightClientStore,
-        finality_update: FinalityUpdate,
-        eip1186_proof: EIP1186Proof,
-    }
-
-    fn generate_test_assets() -> TestAssets {
-        // Instantiate bootstrap data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/LightClientBootstrapDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/LightClientUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate finality update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/LightClientFinalityUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let finality_update = FinalityUpdate::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate EIP1186 proof data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/inclusion/base-data/EthGetProof.json");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let ethers_eip1186_proof: GetProofResponse = serde_json::from_slice(&test_bytes).unwrap();
-
-        // Initialize the LightClientStore
-        let checkpoint = "0xf783c545d2dd90cee6c4cb92a9324323ef397f6ec85e1a3d61c48cf6cfc979e2";
-        let trusted_block_root = hex::decode(checkpoint.strip_prefix("0x").unwrap())
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
-
-        store.process_light_client_update(&update).unwrap();
-
-        TestAssets {
-            store,
-            finality_update,
-            eip1186_proof: EIP1186Proof::try_from(ethers_eip1186_proof.result().clone()).unwrap(),
-        }
-    }
 
     #[test]
     fn test_execute_inclusion() {
-        let test_assets = generate_test_assets();
+        let test_assets = generate_inclusion_test_assets();
 
         let prover = StorageInclusionProver::new();
 
         let inclusion_input = StorageInclusionIn {
-            store: test_assets.store.clone(),
-            update: Update::from(test_assets.finality_update.clone()),
-            eip1186_proof: test_assets.eip1186_proof.clone(),
+            store: test_assets.store().clone(),
+            update: test_assets.finality_update().clone().into(),
+            eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
         let inclusion_output = prover.execute(inclusion_input).unwrap();
 
         assert_eq!(
             inclusion_output.sync_committee_hash,
-            keccak256_hash(&test_assets.store.current_sync_committee().to_ssz_bytes()).unwrap()
+            keccak256_hash(&test_assets.store().current_sync_committee().to_ssz_bytes()).unwrap()
         );
         assert_eq!(
             &inclusion_output.finalized_block_height,
             test_assets
-                .finality_update
+                .finality_update()
                 .finalized_header()
                 .beacon()
                 .slot()
         );
         assert_eq!(
             inclusion_output.account_value,
-            keccak256_hash(&test_assets.eip1186_proof.address)
+            keccak256_hash(test_assets.eip1186_proof().address().as_ref())
                 .expect("could not hash account address")
         );
         assert_eq!(
             inclusion_output.storage_key_value_len,
-            test_assets.eip1186_proof.storage_proof.len() as u64
+            test_assets.eip1186_proof().storage_proof().len() as u64
         );
 
         for i in 0..inclusion_output.storage_key_value_len as usize {
             assert_eq!(
                 inclusion_output.storage_key_value[i].key,
-                test_assets.eip1186_proof.storage_proof[i].key.clone()
+                test_assets.eip1186_proof().storage_proof()[i].key.clone()
             );
             assert_eq!(
                 inclusion_output.storage_key_value[i].value_len,
-                test_assets.eip1186_proof.storage_proof[i].value.len() as u64
+                test_assets.eip1186_proof().storage_proof()[i].value.len() as u64
             );
             assert_eq!(
                 inclusion_output.storage_key_value[i].value,
-                test_assets.eip1186_proof.storage_proof[i].value.clone()
+                test_assets.eip1186_proof().storage_proof()[i].value.clone()
             );
         }
     }
@@ -393,14 +336,14 @@ mod test {
     fn test_prove_stark_storage_inclusion() {
         use std::time::Instant;
 
-        let test_assets = generate_test_assets();
+        let test_assets = generate_inclusion_test_assets();
 
         let prover = StorageInclusionProver::new();
 
         let inclusion_inputs = StorageInclusionIn {
-            store: test_assets.store.clone(),
-            update: Update::from(test_assets.finality_update.clone()),
-            eip1186_proof: test_assets.eip1186_proof.clone(),
+            store: test_assets.store().clone(),
+            update: test_assets.finality_update().clone().into(),
+            eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
         println!("Starting STARK proving for sync committee change...");
@@ -415,14 +358,14 @@ mod test {
     fn test_prove_snark_storage_inclusion() {
         use std::time::Instant;
 
-        let test_assets = generate_test_assets();
+        let test_assets = generate_inclusion_test_assets();
 
         let prover = StorageInclusionProver::new();
 
         let inclusion_inputs = StorageInclusionIn {
-            store: test_assets.store.clone(),
-            update: Update::from(test_assets.finality_update.clone()),
-            eip1186_proof: test_assets.eip1186_proof.clone(),
+            store: test_assets.store().clone(),
+            update: test_assets.finality_update().clone().into(),
+            eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
         println!("Starting SNARK proving for sync committee change...");

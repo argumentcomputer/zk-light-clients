@@ -42,6 +42,15 @@ impl CommitteeChangeProver {
 
         Self { client, keys }
     }
+
+    /// Gets a `SphinxVerifyingKey`.
+    ///
+    /// # Returns
+    ///
+    /// A `SphinxVerifyingKey` that can be used for verifying the committee-change proof.
+    pub const fn get_vk(&self) -> &SphinxVerifyingKey {
+        &self.keys.1
+    }
 }
 
 /// The input for the sync committee change proof.
@@ -213,69 +222,15 @@ impl Prover for CommitteeChangeProver {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ethereum"))]
 mod test {
     use super::*;
+    use crate::test_utils::generate_committee_change_test_assets;
     use ethereum_lc_core::crypto::hash::keccak256_hash;
-    use ethereum_lc_core::types::bootstrap::Bootstrap;
-    use ethereum_lc_core::types::store::LightClientStore;
-    use ethereum_lc_core::types::update::Update;
-    use std::env::current_dir;
-    use std::fs;
-
-    struct TestAssets {
-        store: LightClientStore,
-        update: Update,
-        update_new_period: Update,
-    }
-
-    fn generate_test_assets() -> TestAssets {
-        // Instantiate bootstrap data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientBootstrapDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate new period Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientUpdateNewPeriodDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update_new_period = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Initialize the LightClientStore
-        let checkpoint = "0xefb4338d596b9d335b2da176dc85ee97469fc80c7e2d35b9b9c1558b4602077a";
-        let trusted_block_root = hex::decode(checkpoint.strip_prefix("0x").unwrap())
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        let store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
-
-        TestAssets {
-            store,
-            update,
-            update_new_period,
-        }
-    }
 
     #[test]
     fn test_execute_committee_change() {
-        let mut test_assets = generate_test_assets();
+        let mut test_assets = generate_committee_change_test_assets();
 
         test_assets
             .store
@@ -332,7 +287,7 @@ mod test {
     fn test_prove_stark_committee_change() {
         use std::time::Instant;
 
-        let mut test_assets = generate_test_assets();
+        let mut test_assets = generate_committee_change_test_assets();
 
         test_assets
             .store
@@ -358,7 +313,7 @@ mod test {
     fn test_prove_snark_committee_change() {
         use std::time::Instant;
 
-        let mut test_assets = generate_test_assets();
+        let mut test_assets = generate_committee_change_test_assets();
 
         test_assets
             .store

@@ -5,17 +5,17 @@ script {
     use std::vector;
 
     const ERROR_LENGTH_VK: u64 = 3001;
-    const ERROR_LENGTH_RAW_PUBLIC_INPUTS: u64 = 3002;
-    const ERROR_LENGTH_PROOF: u64 = 3003;
+    const ERROR_LENGTH_PROOF: u64 = 3002;
 
     fun run_verification<T1, T2>(
         _account: signer,
         vkey_: vector<u8>,
-        raw_public_inputs_: vector<u8>,
+        public_values: vector<u8>,
         proof_: vector<u8>,
     ) {
+        // we do not perform input validation of public_values since while core verification it is hashed,
+        // and if hash is invalid, core verification will simply fail
         assert!(length(&vkey_) == 32, ERROR_LENGTH_VK);
-        assert!(length(&raw_public_inputs_) % 32 == 0, ERROR_LENGTH_RAW_PUBLIC_INPUTS);
         assert!(length(&proof_) % 32 == 0, ERROR_LENGTH_PROOF);
 
         // convert vkey
@@ -31,16 +31,6 @@ script {
             i = i + 1;
         };
 
-        // convert public inputs
-        let i = 0;
-        let n = length(&raw_public_inputs_) / 32;
-        let raw_public_inputs = vector::empty<u256>();
-        while (i < n) {
-            let chunk = slice(&raw_public_inputs_, i * 32, i * 32 + 32);
-            push_back(&mut raw_public_inputs, bytes_to_uint256(chunk));
-            i = i + 1;
-        };
-
-        plonk_verifier::verify(proof, vkey, raw_public_inputs);
+        plonk_verifier::verify(proof, vkey, public_values);
     }
 }

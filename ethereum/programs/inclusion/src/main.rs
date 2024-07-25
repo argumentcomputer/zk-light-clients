@@ -80,6 +80,7 @@ pub fn main() {
             .expect("could not hash account address")
             .as_ref(),
     );
+
     // Length of storage key/value pair
     sphinx_zkvm::io::commit(&(eip1186_proof.storage_proof().len() as u64));
     // Commit storage keys & values

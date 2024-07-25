@@ -43,3 +43,6 @@ harness = false
 [[bench]]
 name = "inclusion"
 harness = false
+
+[features]
+ethereum = []

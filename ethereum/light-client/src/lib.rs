@@ -31,5 +31,7 @@
 
 pub mod client;
 pub mod proofs;
+#[cfg(feature = "ethereum")]
+pub mod test_utils;
 pub mod types;
 pub mod utils;
