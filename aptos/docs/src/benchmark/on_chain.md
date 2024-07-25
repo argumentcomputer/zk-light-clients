@@ -35,18 +35,27 @@ The output should look like this:
 ```
 % cd solidity/contracts && forge test
 [⠊] Compiling...
-[⠒] Compiling 29 files with Solc 0.8.26
-[⠢] Solc 0.8.26 finished in 1.11s
+[⠒] Compiling 13 files with Solc 0.8.26
+[⠢] Solc 0.8.26 finished in 1.03s
 Compiler run successful!
 
-Ran 4 tests for test/test_lc_proofs.sol:SolidityVerificationTest
-[PASS] testFail_FakeProofEpochChange() (gas: 8660281895700906413)
-[PASS] testFail_FakeProofInclusion() (gas: 8660281895700906417)
-[PASS] testValidEpochChangeProofPlonk() (gas: 318056)
-[PASS] testValidInclusionProofPlonk() (gas: 318103)
-Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 12.52ms (15.70ms CPU time)
+Ran 13 tests for test/test_lc_proofs.t.sol:SolidityVerificationTest
+[PASS] testEpochChangeSignerHashUpdate() (gas: 346345)
+[PASS] testFailInvalidSignerHashEpochChange() (gas: 313381)
+[PASS] testFailInvalidSignerHashInclusion() (gas: 315465)
+[PASS] testFail_FakeProofEpochChange() (gas: 8660281895700906338)
+[PASS] testFail_FakeProofInclusion() (gas: 8660281895700906453)
+[PASS] testFail_FakePublicValuesEpochChange() (gas: 33234)
+[PASS] testFail_FakePublicValuesInclusion() (gas: 34988)
+[PASS] testFail_WrongVkValuesEpochChange() (gas: 334082)
+[PASS] testFail_WrongVkValuesInclusion() (gas: 334846)
+[PASS] testValidEpochChangeProofCore() (gas: 2284085)
+[PASS] testValidEpochChangeProofPlonk() (gas: 388563)
+[PASS] testValidInclusionProofCore() (gas: 2285885)
+[PASS] testValidInclusionProofPlonk() (gas: 421586)
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 18.22ms (84.02ms CPU time)
 
-Ran 1 test suite in 154.07ms (12.52ms CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)
+Ran 1 test suite in 142.15ms (18.22ms CPU time): 13 tests passed, 0 failed, 0 skipped (13 total tests)
 ```
 
 Currently, the verification of Plonk proof (either epoch-change or inclusion program) costs ~318k gas.
@@ -60,7 +69,7 @@ export the fixture file to the relevant place (`solidity/contracts/src/plonk_fix
 To run the `fixture-generator` for the inclusion program, execute the following command:
 
 ```bash
-RUST_LOG=info RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 run --release --features aptos --bin generate-fixture -- --program inclusion
+RUST_LOG=info RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 run --release --bin generate-fixture -- --program inclusion --language solidity
 ```
 
 > **Tips**
