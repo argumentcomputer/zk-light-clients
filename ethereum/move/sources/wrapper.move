@@ -14,15 +14,38 @@ module plonk_verifier_addr::wrapper {
     const ERROR_COMMITTEE_CHANGE_UNEXPECTED_PUBLIC_VALUES: u64 = 4006;
     const ERROR_INCLUSION_UNEXPECTED_PUBLIC_VALUES: u64 = 4007;
 
-    const COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES: u64 = 8 + 32 + 32 + 32;
-    const INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES: u64 = 32 + 8 + 20 + 32 + 8 + 40 + 8;
+    // block height (8 bytes) |
+    // signer_sync_committee (32 bytes) |
+    // updated_sync_committee (32 bytes) |
+    // next_sync_committee (32 bytes)
+    const COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES: u64 = 104;
+
+    // block height (8 bytes) |
+    // signer_sync_committee (32 bytes) |
+    // eip1186_proof_address (20 bytes) |
+    // eip1186_proof_address_hash (32 bytes) |
+    // eip1186_proof_length (8 bytes) |
+    // one merkle tree key (8 bytes + 32 bytes) |
+    // one merkle tree value length (8 bytes) |
+    // one merkle tree value (8 bytes + at least 1 byte)
+    const INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES: u64 = 157;
+
+    const VK_BYTES_SIZE: u64 = 32;
+    const PROOF_CHUNK_BYTE_SIZE: u64 = 32;
+
+    const BLOCK_HEIGHT_BYTE_SIZE: u64 = 8;
+    const COMMITTEE_HASH_BYTE_SIZE: u64 = 32;
+    const EIP1186_PROOF_ADDRESS_BYTE_SIZE: u64 = 20;
+    const EIP1186_PROOF_ADDRESS_HASH_BYTE_SIZE: u64 = 32;
+    const U64_ENCODED_BYTE_SIZE: u64 = 8;
+    const MERKLE_TREE_KEY_BYTE_SIZE: u64 = 40;
 
     struct Hashes has drop, store, key {
         current_hash: u256,
         next_hash: u256,
     }
 
-    public fun publish(account: &signer, current_hash: u256, next_hash: u256) {
+    fun publish(account: &signer, current_hash: u256, next_hash: u256) {
         // only owner of 'Hashes' resource can actually publish it
         move_to(account, Hashes {
             current_hash,
@@ -40,21 +63,21 @@ module plonk_verifier_addr::wrapper {
         borrow_global<Hashes>(addr).next_hash
     }
 
-    public fun update_current_hash(account: &signer, hash: u256) acquires Hashes {
+    fun update_current_hash(account: &signer, hash: u256) acquires Hashes {
         // only owner of 'Hashes' resource can update it
         let c = move_from<Hashes>(signer::address_of(account));
         c.current_hash = hash;
         move_to(account, c)
     }
 
-    public fun update_next_hash(account: &signer, hash: u256) acquires Hashes {
+    fun update_next_hash(account: &signer, hash: u256) acquires Hashes {
         // only owner of 'Hashes' resource can update it
         let c = move_from<Hashes>(signer::address_of(account));
         c.next_hash = hash;
         move_to(account, c)
     }
 
-    public fun delete(account: &signer): (u256, u256) acquires Hashes {
+    fun delete(account: &signer): (u256, u256) acquires Hashes {
         // only owner of 'Hashes' resource can delete it
         let c = move_from<Hashes>(signer::address_of(account));
         let Hashes { current_hash: hash_1, next_hash: hash_2 } = c;
@@ -69,18 +92,18 @@ module plonk_verifier_addr::wrapper {
     public fun committee_change_event_processing(a: &signer, vkey: vector<u8>, proof: vector<u8>, public_values: vector<u8>) acquires Hashes {
         // we know definitely the expected length of public values for committee change event
         assert!(length(&public_values) == COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES, ERROR_COMMITTEE_CHANGE_UNEXPECTED_PUBLIC_VALUES);
-        assert!(length(&vkey) == 32, ERROR_LENGTH_VK);
-        assert!(length(&proof) % 32 == 0, ERROR_LENGTH_PROOF);
+        assert!(length(&vkey) == VK_BYTES_SIZE, ERROR_LENGTH_VK);
+        assert!(length(&proof) % PROOF_CHUNK_BYTE_SIZE == 0, ERROR_LENGTH_PROOF);
 
         // convert vkey
         let vkey: u256 = bytes_to_uint256(vkey);
 
         // convert proof
         let i = 0;
-        let n = length(&proof) / 32;
+        let n = length(&proof) / PROOF_CHUNK_BYTE_SIZE;
         let proof_in = vector::empty<u256>();
         while (i < n) {
-            let chunk = slice(&proof, i * 32, i * 32 + 32);
+            let chunk = slice(&proof, i * PROOF_CHUNK_BYTE_SIZE, i * PROOF_CHUNK_BYTE_SIZE + PROOF_CHUNK_BYTE_SIZE);
             push_back(&mut proof_in, bytes_to_uint256(chunk));
             i = i + 1;
         };
@@ -89,10 +112,18 @@ module plonk_verifier_addr::wrapper {
         plonk_verifier::verify(proof_in, vkey, public_values);
 
         // post processing
-        let block_height = slice(&public_values, 0, 8);
-        let signer_sync_committee = bytes_to_uint256(slice(&public_values, 8, 32 + 8));
-        let updated_sync_committee = bytes_to_uint256(slice(&public_values, 32 + 8, 32 + 8 + 32));
-        let next_sync_committee = bytes_to_uint256(slice(&public_values, 32 + 8 + 32, 32 + 8 + 32 + 32));
+        let offset = 0;
+        let block_height = slice(&public_values, offset, BLOCK_HEIGHT_BYTE_SIZE);
+        offset = offset + BLOCK_HEIGHT_BYTE_SIZE;
+
+        let signer_sync_committee = bytes_to_uint256(slice(&public_values, offset, offset + COMMITTEE_HASH_BYTE_SIZE));
+        offset = offset + COMMITTEE_HASH_BYTE_SIZE;
+
+        let updated_sync_committee = bytes_to_uint256(slice(&public_values, offset, offset + COMMITTEE_HASH_BYTE_SIZE));
+        offset = offset + COMMITTEE_HASH_BYTE_SIZE;
+
+        let next_sync_committee = bytes_to_uint256(slice(&public_values, offset, offset + COMMITTEE_HASH_BYTE_SIZE));
+        offset = offset + COMMITTEE_HASH_BYTE_SIZE;
 
         let curr_hash_stored = get_current_hash_stored(signer::address_of(a));
         let next_hash_stored = get_next_hash_stored(signer::address_of(a));
@@ -112,18 +143,18 @@ module plonk_verifier_addr::wrapper {
     public fun inclusion_event_processing(a: &signer, vkey: vector<u8>, proof: vector<u8>, public_values: vector<u8>) acquires Hashes {
         // we know only minimal acceptable length of public values in inclusion event, when EIP1186 proof contains 1 key/value pair
         assert!(length(&public_values) >= INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES, ERROR_INCLUSION_UNEXPECTED_PUBLIC_VALUES);
-        assert!(length(&vkey) == 32, ERROR_LENGTH_VK);
-        assert!(length(&proof) % 32 == 0, ERROR_LENGTH_PROOF);
+        assert!(length(&vkey) == VK_BYTES_SIZE, ERROR_LENGTH_VK);
+        assert!(length(&proof) % PROOF_CHUNK_BYTE_SIZE == 0, ERROR_LENGTH_PROOF);
 
         // convert vkey
         let vkey: u256 = bytes_to_uint256(vkey);
 
         // convert proof
         let i = 0;
-        let n = length(&proof) / 32;
+        let n = length(&proof) / VK_BYTES_SIZE;
         let proof_in = vector::empty<u256>();
         while (i < n) {
-            let chunk = slice(&proof, i * 32, i * 32 + 32);
+            let chunk = slice(&proof, i * PROOF_CHUNK_BYTE_SIZE, i * PROOF_CHUNK_BYTE_SIZE + PROOF_CHUNK_BYTE_SIZE);
             push_back(&mut proof_in, bytes_to_uint256(chunk));
             i = i + 1;
         };
@@ -132,15 +163,21 @@ module plonk_verifier_addr::wrapper {
         plonk_verifier::verify(proof_in, vkey, public_values);
 
         // post processing
-        let block_height = slice(&public_values, 0, 8);
-        let signer_sync_committee = bytes_to_uint256(slice(&public_values, 8, 32 + 8));
-        let eip1186_proof_address = slice(&public_values, 32 + 8, 32 + 8 + 20);
-        let eip1186_proof_address_hash = slice(&public_values, 32 + 8 + 20, 32 + 8 + 20 + 32);
-        let eip1186_proof_length = slice(&public_values, 32 + 8 + 20 + 32, 32 + 8 + 20 + 32 + 8);
-        let zero_key = slice(&public_values, 32 + 8 + 20 + 32 + 8, 32 + 8 + 20 + 32 + 8 + 40);
-        let zero_value_length = slice(&public_values, 32 + 8 + 20 + 32 + 8 + 40, 32 + 8 + 20 + 32 + 8 + 40 + 8);
-        reverse(&mut zero_value_length);
-        let zero_value = slice(&public_values, 32 + 8 + 20 + 32 + 8 + 40 + 8, 32 + 8 + 20 + 32 + 8 + 40 + 8 + (bytes_to_uint256(zero_value_length) as u64));
+        let offset = 0;
+        let block_height = slice(&public_values, offset, BLOCK_HEIGHT_BYTE_SIZE);
+        offset = offset + BLOCK_HEIGHT_BYTE_SIZE;
+
+        let signer_sync_committee = bytes_to_uint256(slice(&public_values, offset, offset + COMMITTEE_HASH_BYTE_SIZE));
+        offset = offset + COMMITTEE_HASH_BYTE_SIZE;
+
+        let eip1186_proof_address = slice(&public_values, offset, offset + EIP1186_PROOF_ADDRESS_BYTE_SIZE);
+        offset = offset + EIP1186_PROOF_ADDRESS_BYTE_SIZE;
+
+        let eip1186_proof_address_hash = slice(&public_values, offset, offset + EIP1186_PROOF_ADDRESS_HASH_BYTE_SIZE);
+        offset = offset + EIP1186_PROOF_ADDRESS_HASH_BYTE_SIZE;
+
+        let eip1186_proof_length = slice(&public_values, offset, offset + U64_ENCODED_BYTE_SIZE);
+        offset = offset + U64_ENCODED_BYTE_SIZE;
 
         let curr_hash_stored = get_current_hash_stored(signer::address_of(a));
         let next_hash_stored = get_next_hash_stored(signer::address_of(a));
@@ -155,10 +192,36 @@ module plonk_verifier_addr::wrapper {
             aptos_std::debug::print(&eip1186_proof_address_hash);
             aptos_std::debug::print(&utf8(b"EIP1186 proof size is:"));
             aptos_std::debug::print(&eip1186_proof_length);
-            aptos_std::debug::print(&utf8(b"key[0]:"));
-            aptos_std::debug::print(&zero_key);
-            aptos_std::debug::print(&utf8(b"value[0]:"));
-            aptos_std::debug::print(&zero_value);
+            aptos_std::debug::print(&utf8(b"printing up to 5 first key/value pairs:"));
+
+            aptos_std::debug::print(&utf8(b"---------------------------------------"));
+            let key_value_pairs_amount = eip1186_proof_length;
+            reverse(&mut key_value_pairs_amount);
+            let key_value_pairs_amount = bytes_to_uint256(key_value_pairs_amount);
+
+            let i = 0;
+            while (i < key_value_pairs_amount) {
+                let key = slice(&public_values, offset, offset + MERKLE_TREE_KEY_BYTE_SIZE);
+                offset = offset + MERKLE_TREE_KEY_BYTE_SIZE;
+
+                let value_length = slice(&public_values, offset, offset + U64_ENCODED_BYTE_SIZE);
+                offset = offset + U64_ENCODED_BYTE_SIZE;
+
+                reverse(&mut value_length);
+
+                let value_size = (bytes_to_uint256(value_length) as u64);
+                let value = slice(&public_values, offset, offset + value_size + U64_ENCODED_BYTE_SIZE);
+                offset = offset + value_size;
+
+                if (i < 5) {
+                    aptos_std::debug::print(&utf8(b"key:"));
+                    aptos_std::debug::print(&key);
+                    aptos_std::debug::print(&utf8(b"value:"));
+                    aptos_std::debug::print(&value);
+                };
+                i = i + 1;
+            };
+            aptos_std::debug::print(&utf8(b"---------------------------------------"));
         } else {
             assert!(false, ERROR_INCLUSION);
         }
