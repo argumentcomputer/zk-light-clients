@@ -76,6 +76,15 @@ pub enum VerificationTask {
     },
 }
 
+impl VerificationTask {
+    pub fn task_finished(&self) -> bool {
+        match self {
+            VerificationTask::CommitteeChange { task, .. }
+            | VerificationTask::StorageInclusion { task, .. } => task.is_finished(),
+        }
+    }
+}
+
 impl Display for &VerificationTask {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -130,12 +139,14 @@ async fn main() -> Result<()> {
 
     info!("Spawn verifier task");
     let (task_sender, task_receiver) = mpsc::channel::<VerificationTask>(100);
+    let task_sender = Arc::new(task_sender);
 
     // Start the main loop to listen for Eth data every 10 seconds.
     let mut interval = tokio::time::interval(Duration::from_secs(10));
 
     // Spawn a verifier task that sequentially processes the tasks.
     tokio::spawn(verifier_task(
+        task_sender.clone(),
         task_receiver,
         verifier_state,
         client.clone(),
@@ -361,14 +372,35 @@ async fn initialize_light_client(
 /// * `store` - The store.
 
 async fn verifier_task(
+    task_sender: Arc<mpsc::Sender<VerificationTask>>,
     mut task_receiver: mpsc::Receiver<VerificationTask>,
     initial_verifier_state: VerifierState,
     client: Arc<Client>,
     store: Arc<RwLock<LightClientStore>>,
 ) {
     let mut verifier_state = initial_verifier_state;
+
+    // Interval to continue processing tasks when one has been recycled.
+    let mut interval = tokio::time::interval(Duration::from_secs(10));
+
     while let Some(proof_type) = task_receiver.recv().await {
         info!("Received a new task to verify: {}", &proof_type);
+
+        // If task is not complete we send it back in the queue. This
+        // allows us to continue receiving inclusion verification task
+        // while the sync committee one is not done.
+        if !proof_type.task_finished() {
+            info!("Task is not finished, send back to the queue...");
+            let send_res = task_sender.send(proof_type).await;
+
+            if let Err(e) = send_res {
+                error!("Failed to recycle task to the verifier: {:?}", e);
+            }
+
+            interval.tick().await;
+
+            continue;
+        }
 
         match proof_type {
             VerificationTask::CommitteeChange { task, permit } => {
