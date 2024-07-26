@@ -128,7 +128,7 @@ fn generate_fixture_inclusion_ethereum_lc() {
     };
 
     let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../ethereum/move/sources/fixtures");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../ethereum/move/sources/fixtures");
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join("inclusion_fixture.json");
     std::fs::write(
@@ -224,7 +224,7 @@ fn generate_fixture_epoch_change_ethereum_lc() {
     };
 
     let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../ethereum/move/sources/fixtures");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../ethereum/move/sources/fixtures");
 
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join("epoch_change_fixture.json");

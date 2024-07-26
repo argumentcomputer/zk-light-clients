@@ -174,7 +174,6 @@ pub struct StorageInclusionOut {
 #[getset(get = "pub")]
 pub struct StorageKeyValue {
     key: Vec<u8>,
-    value_len: u64,
     value: Vec<u8>,
 }
 
@@ -191,13 +190,8 @@ impl From<&mut SphinxPublicValues> for StorageInclusionOut {
 
         for _ in 0..storage_key_value_len {
             let key = public_values.read::<Vec<u8>>();
-            let value_len = public_values.read::<u64>();
             let value = public_values.read::<Vec<u8>>();
-            storage_key_value.push(StorageKeyValue {
-                key,
-                value_len,
-                value,
-            });
+            storage_key_value.push(StorageKeyValue { key, value });
         }
 
         Self {
@@ -333,10 +327,6 @@ mod test {
             assert_eq!(
                 inclusion_output.storage_key_value[i].key,
                 test_assets.eip1186_proof().storage_proof()[i].key.clone()
-            );
-            assert_eq!(
-                inclusion_output.storage_key_value[i].value_len,
-                test_assets.eip1186_proof().storage_proof()[i].value.len() as u64
             );
             assert_eq!(
                 inclusion_output.storage_key_value[i].value,

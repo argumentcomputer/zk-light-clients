@@ -86,7 +86,6 @@ pub fn main() {
     // Commit storage keys & values
     for storage_proof in eip1186_proof.storage_proof().iter() {
         sphinx_zkvm::io::commit(&storage_proof.key);
-        sphinx_zkvm::io::commit(&(storage_proof.value.len() as u64));
         sphinx_zkvm::io::commit(&storage_proof.value);
     }
 
