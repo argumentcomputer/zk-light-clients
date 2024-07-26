@@ -7,7 +7,6 @@ module plonk_verifier_addr::wrapper {
     use std::string::utf8;
 
     const ERROR_LENGTH_VK: u64 = 4001;
-    const ERROR_LENGTH_RAW_PUBLIC_INPUTS: u64 = 4002;
     const ERROR_LENGTH_PROOF: u64 = 4003;
     const ERROR_COMMITTEE_CHANGE: u64 = 4004;
     const ERROR_INCLUSION: u64 = 4005;
@@ -25,10 +24,9 @@ module plonk_verifier_addr::wrapper {
     // eip1186_proof_address (20 bytes) |
     // eip1186_proof_address_hash (32 bytes) |
     // eip1186_proof_length (8 bytes) |
-    // one merkle tree key (8 bytes + 32 bytes) |
-    // one merkle tree value length (8 bytes) |
-    // one merkle tree value (8 bytes + at least 1 byte)
-    const INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES: u64 = 157;
+    // one merkle tree key (8 bytes length prefix + at least 1 byte) |
+    // one merkle tree value (8 bytes length prefix + at least 1 byte)
+    const INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES: u64 = 118;
 
     const VK_BYTES_SIZE: u64 = 32;
     const PROOF_CHUNK_BYTE_SIZE: u64 = 32;
@@ -38,7 +36,6 @@ module plonk_verifier_addr::wrapper {
     const EIP1186_PROOF_ADDRESS_BYTE_SIZE: u64 = 20;
     const EIP1186_PROOF_ADDRESS_HASH_BYTE_SIZE: u64 = 32;
     const U64_ENCODED_BYTE_SIZE: u64 = 8;
-    const MERKLE_TREE_KEY_BYTE_SIZE: u64 = 40;
 
     struct Hashes has drop, store, key {
         current_hash: u256,
@@ -123,7 +120,6 @@ module plonk_verifier_addr::wrapper {
         offset = offset + COMMITTEE_HASH_BYTE_SIZE;
 
         let next_sync_committee = bytes_to_uint256(slice(&public_values, offset, offset + COMMITTEE_HASH_BYTE_SIZE));
-        offset = offset + COMMITTEE_HASH_BYTE_SIZE;
 
         let curr_hash_stored = get_current_hash_stored(signer::address_of(a));
         let next_hash_stored = get_next_hash_stored(signer::address_of(a));
@@ -201,8 +197,14 @@ module plonk_verifier_addr::wrapper {
 
             let i = 0;
             while (i < key_value_pairs_amount) {
-                let key = slice(&public_values, offset, offset + MERKLE_TREE_KEY_BYTE_SIZE);
-                offset = offset + MERKLE_TREE_KEY_BYTE_SIZE;
+                let key_length = slice(&public_values, offset, offset + U64_ENCODED_BYTE_SIZE);
+                offset = offset + U64_ENCODED_BYTE_SIZE;
+
+                reverse(&mut key_length);
+
+                let key_size = (bytes_to_uint256(key_length) as u64);
+                let key = slice(&public_values, offset, offset + key_size);
+                offset = offset + key_size;
 
                 let value_length = slice(&public_values, offset, offset + U64_ENCODED_BYTE_SIZE);
                 offset = offset + U64_ENCODED_BYTE_SIZE;
@@ -210,7 +212,7 @@ module plonk_verifier_addr::wrapper {
                 reverse(&mut value_length);
 
                 let value_size = (bytes_to_uint256(value_length) as u64);
-                let value = slice(&public_values, offset, offset + value_size + U64_ENCODED_BYTE_SIZE);
+                let value = slice(&public_values, offset, offset + value_size);
                 offset = offset + value_size;
 
                 if (i < 5) {
@@ -229,7 +231,7 @@ module plonk_verifier_addr::wrapper {
 
     #[test(a = @plonk_verifier_addr)]
     public fun test_storage_flow(a: signer) acquires Hashes {
-        publish(&a, InitialHash1, InitialHash2);
+        publish(&a, InitialTestHash1, InitialTestHash2);
         assert!(exists_at(signer::address_of(&a)), 1);
 
         update_current_hash(&a, SignerSyncCommitteeHashH29);
@@ -246,7 +248,7 @@ module plonk_verifier_addr::wrapper {
 
     #[test(a = @plonk_verifier_addr)]
     public fun test_committee_change_is_allowed(a: signer) acquires Hashes {
-        publish(&a, InitialHash1, SignerSyncCommitteeHashH29);
+        publish(&a, InitialTestHash1, SignerSyncCommitteeHashH29);
 
         committee_change_event_processing(&a, EpochChangeVk, EpochChangeProof, EpochChangePublicValues);
 
@@ -258,7 +260,7 @@ module plonk_verifier_addr::wrapper {
 
     #[test(a = @plonk_verifier_addr)]
     public fun test_committee_change_is_allowed_too(a: signer) acquires Hashes {
-        publish(&a, SignerSyncCommitteeHashH29, InitialHash2);
+        publish(&a, SignerSyncCommitteeHashH29, InitialTestHash2);
 
         committee_change_event_processing(&a, EpochChangeVk, EpochChangeProof, EpochChangePublicValues);
 
@@ -271,7 +273,7 @@ module plonk_verifier_addr::wrapper {
     #[test(a = @plonk_verifier_addr)]
     #[expected_failure(abort_code = ERROR_COMMITTEE_CHANGE)]
     public fun test_committee_change_is_not_allowed(a: signer) acquires Hashes {
-        publish(&a, InitialHash1, InitialHash2);
+        publish(&a, InitialTestHash1, InitialTestHash2);
 
         // panics, since SignerSyncCommitteeHashH29 was NOT in storage initially
         committee_change_event_processing(&a, EpochChangeVk, EpochChangeProof, EpochChangePublicValues);
@@ -280,7 +282,7 @@ module plonk_verifier_addr::wrapper {
 
     #[test(a = @plonk_verifier_addr)]
     public fun test_inclusion_is_allowed(a: signer) acquires Hashes {
-        publish(&a, ValidSignerSyncCommitteeHashInclusion, InitialHash2);
+        publish(&a, ValidSignerSyncCommitteeHashInclusion, InitialTestHash2);
         // doesn't panic, since SignerSyncCommitteeHashH29 is in storage
         inclusion_event_processing(&a, InclusionVk, InclusionProof, InclusionPublicValues);
 
@@ -290,7 +292,7 @@ module plonk_verifier_addr::wrapper {
 
     #[test(a = @plonk_verifier_addr)]
     public fun test_inclusion_is_allowed_too(a: signer) acquires Hashes {
-        publish(&a, InitialHash1, ValidSignerSyncCommitteeHashInclusion);
+        publish(&a, InitialTestHash1, ValidSignerSyncCommitteeHashInclusion);
         // doesn't panic, since SignerSyncCommitteeHashH29 is in storage
         inclusion_event_processing(&a, InclusionVk, InclusionProof, InclusionPublicValues);
 
@@ -300,13 +302,13 @@ module plonk_verifier_addr::wrapper {
     #[test(a = @plonk_verifier_addr)]
     #[expected_failure(abort_code = ERROR_INCLUSION)]
     public fun test_inclusion_is_not_allowed(a: signer) acquires Hashes {
-        publish(&a, InitialHash1, InitialHash2);
+        publish(&a, InitialTestHash1, InitialTestHash2);
         // panics, since SignerSyncCommitteeHashH29 is NOT in storage
         inclusion_event_processing(&a, InclusionVk, InclusionProof, InclusionPublicValues);
     }
 
-    const InitialHash1: u256 = 0x1111111111111111111111111111111111111111111111111111111111111111;
-    const InitialHash2: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    const InitialTestHash1: u256 = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    const InitialTestHash2: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     const ValidSignerSyncCommitteeHashInclusion: u256 = 0x0969ed235cf75d25800ea6845c2584af013c1f9617ad2de87202d7e9b93739c9;
     const SignerSyncCommitteeHashH29: u256 = 0x5d32119aae2ee9f88867d5787af5c4df68884a4bf8fff525ff8c408e8f988050;
@@ -317,8 +319,8 @@ module plonk_verifier_addr::wrapper {
     const EpochChangePublicValues: vector<u8> = x"e0e58f00000000005d32119aae2ee9f88867d5787af5c4df68884a4bf8fff525ff8c408e8f98805085382a0c8b1b38485a3d816f31ab5b23a0eae94d86c90086cd4e7b6e8c5c46825ebd1cf9ea54ce88af740aad4d7e95e742157209f36867ff5d7d490afa91c6bf";
     const EpochChangeProof: vector<u8> = x"1c4d9239aa37ce4e46a51548849ee6f80ebbd5b7297d8ee219c7e243938fe3091b7eb59e14352e7375f9d26affef30bbc37307d50f4f13e6393b94dd926bcad50380a78c1ef216d777784e1fa2a4c0e53ffa09dd5f98e3adb8d613133f0c35c016711f4bd906b35d52bfb95a35a7333a1c166e04d0224cad8d464c73e98e440f0ee507235a17b7a742da7bd8af131eb6fd8ae08df9795c14987b370a916dc3c224903e09963046e687ca6d8f995619a50d6d840acc26c3ba55b005a5bd14db9a303c426cedc49c2da933ccd9f12817262c78db4b0b5c34003752f84b801c11950da266d3568e6765e35998c70d381b7f7c1e5a291795cbba76ba9d4dd99577882a686c3abfb1fde1e1ffb24ddfb248c9cb2ad38fdad6638f69752b5e854336c220db999f2f20766164559a1529d90d5feed42befc81933ae426b637b82d6a84d12677dcca6035905febe868c6d0f0761bb83cb581c1e19e97a412ccf513df53103b97bac07501414b2c388a550961a078ee93f1610324aa78389ce648d6ae5c307351c17e241b7990c44b8f98ad3be8097fd375a9a35812081ef74b455f7e9b217fe1b56f2b9d5d4952827b5e8975fcf9d135391314161acdfeaf14db9d98baf1778e9dadc6074119811041f9feaef0d935c89633570bc49550a7133745628382ed6dcb04b3041942209fc20b034f515400a4b7b8ce6c142ab22878ab4b033ec10492dd7eb8093816038fe5bfef120ae435ec4e2a1f149e1777a9faab436924e19c54b2619f2ac9bf6b1c89a9cfe30f9fe556450a12bf43a9d15d1b0e8dc38ee2b2df1b3d36c496dc42f0151ebddafc7414486d6112a8432f6a534d2dd20f3730c9522c33bb531c518309938898c2223fb697038fc85cf1b9c4369e83280fb3f1efde55d698a32e546f90565588a97f7694bbefd316b92152ddb1e7fb3c4c1872df421106581245876b6aea345633dbf7a727bf91797591f665e31c6e823aff325ad8db2fdc6182255ed4b79da91df21ce25d09291d0806da1f47470afa6e75123aa972bbd5fa473011fea66612c6165755bfd5a762ee32460789d9e402f789f2ee65a0e34a9a80bd906aa3fcb53d6ac6e22a0b16d3e5f4bfcea8f5310d687cb12ccf639a010e2a179274c3535888644ece752730dc63c5f2e5c680259b345650f2aa4e3d097b6e9850302be4ebfb71449a5fe76b69ed28f3276b1432504fbdf";
 
-    const InclusionVk: vector<u8> = x"00a4bfebb1b7e0ec5ba69c8735540a0a56bfdc7dd0816c64a47c932406eff668";
-    const InclusionPublicValues: vector<u8> = x"e0fc9100000000000969ed235cf75d25800ea6845c2584af013c1f9617ad2de87202d7e9b93739c95c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f22002fe30a172d0a479f6add89c63b29dce29b6071b3c7e486b0fb4bc431f88501000000000000002000000000000000290decd9548b62a8ef0d3e6ac11e2d7b95a49e22ecf57fc6044b6f007ca2b2ba0100000000000000010000000000000080";
-    const InclusionProof: vector<u8> = x"18eccca3a8940e062f8e740456d4be747a1be744c28ac06657c7c241ab7abca01ea3636892f2f699b9c263262d8e4f0dba7f6deda3f18acbaf3e8afe067b3a751dca7502ec3819ad0fa821a68406d3a70b24ea21e5e7a9d1ae805877dbbf754c1b780ef900339e13cffcb0534be963b7e25a638ce39e59b9471012882486e9612d2e1db6e89ab9ac9dd1267d1d3d73ff424de5877fe1da09e28612ab1c24b1d32018584fc32f6cdefdbcbb12880e8671dfe2c083a03cd4ee2041b0de187bcd7900ecdf820c4dd6b9a2bb988bb0d83f5b34ded87af2bd39a04bfd8f1375ead222058cd0bbfc7920fa8cff5e348c240065de948d4f7c24246622a0ccd3ce6c8a171575ba7225e8f2b6b8abae637d3ab5e9b53c1c631eea42109f4df319d6c2ada528143a21737681fda1fbaca0427d57dd56cf1b94f1c1cc3f11f6376fc7e83fb312b53334b23acaa17c994257bb3d8831602038d8cedb5c26d97c4743bdbff52922d154019b34addca07bce76347d960a4a1486306124e362516491efe5597fdf146adf9a9a0f5e407968cd1d1a33f0ea0206faa047c5fabc103ce7225dbab1ad219a48d2f1c267fbb30fccf6460238db85041e81caa03f5baafed148bfe6038522e951d42a24dbc6334e675f3bd67a1991d447369c38034156cc1abbfbb926da0416d2d09caaf4f3d11207d2c9e10b385282d4e7b8ba37a1e02d0e8b0a3e5a6313dca979544190a53b1f538acfd04316acf1d6b64e3a55c2ac1946a86b7134450b96db83da150e44e36206bdc44e2241f0daef7aa74f32ca5991d8e0ee6dd0aa158f98848e4b0f6397d46f20722d7945e12b5c1c2fbc8ba7d84b96d34dbb33f92786e166664f7630e819879ee21cbca12c8a24d4141978a874a6bfa5786fafd32fa1234dd2f347e1ad1e3ec97728c78925236a423d53cd43c6ff9129b89893611a50acd847251e80ba44b857d26fc5cc0fa283a7f3801f84dcd603bb57b07e1611272a285e07801ccb72572c63b2c690d898012042836dc7082409374ea314dd2e61f4d955fca27761e4c05c8fc94a281611317105fec1dd6906ba520413b16a25a71b67029038ccc67ce23fa21b0c677df89445e4df99fbf8009aeb74cbeb2e08de0e0de864da06d000ae28c9524c6fd5ac0a55b27f0ce7db0a4f4b6bef1eed1bf3a65b9fd78b60777ea32c00597fa2a6f595c90381d500f667f7af6271d37b";
+    const InclusionVk: vector<u8> = x"00e326549ab661885dbefc3570c3f1f73aafc248b5f6119db8c08a3f9149c5eb";
+    const InclusionPublicValues: vector<u8> = x"e0fc9100000000000969ed235cf75d25800ea6845c2584af013c1f9617ad2de87202d7e9b93739c95c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f22002fe30a172d0a479f6add89c63b29dce29b6071b3c7e486b0fb4bc431f88501000000000000002000000000000000290decd9548b62a8ef0d3e6ac11e2d7b95a49e22ecf57fc6044b6f007ca2b2ba010000000000000080";
+    const InclusionProof: vector<u8> = x"0a55c90b03ae2afd44c45fcf2a4053fc34d3896e9da9ff20857a6880381ca9803034bcd8ef4fa1bc50d6ca8f44b6d9bf46e986cdb614389a59f6affb58b395e11f9d74a40e86539048719166ae9658a20b437699d336cc4add796a254673aad00dd1e8107842847b8c60ba58b104b24e86379071b20d895d0e5ae7f82d611bba0dce4b9239034f5c80b956bd9cc7d3a1fd29119168b1b4425a45b3e948ad03af194a1e83d7aef29152b8c253e6b6b7a1a347a6a194e0f94d81c612f111c6171318de02b6a8ed77fb0f3a61543f39244f39f8363dc02290da9a87dc21266b647b077f7d591a8bcd3c7519952a1ec570fbbd10a1502a639eddd97f67f57654a95c140d995a6ee72e1c85f8e755a5d47fb055f3b40d67cc7ac537fadcba739313b4219fae4b63a3279de675c236f4156682029f5963382fb9cb4d2e60bd4f3dee912aa6c2e03a2f078148fe78243307d8631f2fbeba70e0c75573d856bd3ae36b3b2c810c270993e4f42a2f5d173bd924e6694ced0c218d98c217b00aefc977e28b27dc053cf901dba318eca443cfeded204b21c8db2c8fdc90a5dccaf67ecaaef82966ebb2053f878f41806283a636d9bdbf7c58ca4a40b152443d836fdab5394908474c911fc2e846a20b93bc92f3d45ddbc020d38ba363a68dc6f72872bbb2db2aacc1454352e0667f9d540511b0d4ef177726f77df460217c2c06d4859c55481df5fa7e9c76429f1dd8520e72bfdd996897ad9b16cc8d5a1f5d875ea1d0414c161277b48777abcb4de44d7992c22967cf9e237af7c69a800bf5ac6774b009c71b9db958635e5de897e21bf941e1ff66bb04a229ed47213b8b2c859120cc3fab25caa4f317f111c7751c7f8c6d7c9a0c272e4a759e1ab3f2ba5882280fefa6df1b487cd6ef96faa8eb09683cb94879664495d72fc50042cc59e25a3660b1563700a87ecca8fec5372a886849965715d2a30027ddf9bdbf20c0051b0ad7008ff10ff7f0805a25f3fb10f9df86ec7463320f7b2d85d0be624d9281bbc4fd13fa5f28e6a90c517439ff444be5852a5005eb95c083a68aeccf6b236cfc40e9e5d0a51a3304b133ba4b6680e69912ba719747530acbd2f0d94bc34f4d8b555bb92446254e682daad529691d916a3c2a08248ac1fc6cfce8ad7ee354680b56d63dd1e22b3329a12c9845f66683e887bc220f4f180ff114b1f5322fd6d21e4d6c402312";
 
 }
