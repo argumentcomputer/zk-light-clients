@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
 
     // Initialize the Light Client.
     let (client, store, verifier_state) = initialize_light_client(
-        mode.clone(),
+        mode,
         checkpoint_provider_address,
         beacon_node_address,
         proof_server_address,
@@ -195,18 +195,22 @@ async fn main() -> Result<()> {
 
             info!("Generating proof of inclusion...");
 
-            let mode_clone = mode.clone();
+            let mode_clone = mode;
             let store_clone = store.clone();
             let client_clone = client.clone();
 
             // Spawn proving task for inclusion proof, and send it to the verifier task.
             let task = tokio::spawn(async move {
-                let store = store_clone.read().await;
+                let store = store_clone.read().await.clone();
                 let update = Update::from(finality_update);
                 let proof = client_clone
-                    .prove_storage_inclusion(mode_clone, &store, &update, &light_client_internal)
+                    .prove_storage_inclusion(
+                        mode_clone,
+                        store,
+                        update.clone(),
+                        light_client_internal,
+                    )
                     .await?;
-                drop(store);
                 info!("Proof of storage inclusion generated successfully");
 
                 Ok((update, proof))
@@ -225,19 +229,18 @@ async fn main() -> Result<()> {
             // Acquire a permit from the semaphore before starting the committee change task.
             let permit = committee_change_semaphore.clone().acquire_owned().await?;
 
-            let mode_clone = mode.clone();
+            let mode_clone = mode;
             let store_clone = store.clone();
             let client_clone = client.clone();
 
             // Spawn proving task for committee change proof, and send it to the verifier task.
             let task = tokio::spawn(async move {
-                let store = store_clone.read().await;
+                let store = store_clone.read().await.clone();
                 let update = potential_update.unwrap();
 
                 let proof = client_clone
-                    .prove_committee_change(mode_clone, &store, &update)
+                    .prove_committee_change(mode_clone, store, update.clone())
                     .await?;
-                drop(store);
                 info!("Proof of committee change generated successfully");
 
                 Ok((update, proof))
@@ -324,20 +327,22 @@ async fn initialize_light_client(
         next_sync_committee: HashValue::default(),
     };
 
-    for (i, update) in update_response.updates().iter().enumerate() {
+    let n = update_response.updates().len();
+    for (i, update) in update_response.updates.into_iter().enumerate() {
+        let update = update.update;
         info!(
             "Processing update at slot: {:?}",
-            update.update().attested_header().beacon().slot()
+            update.attested_header().beacon().slot()
         );
 
         if calc_sync_period(bootstrap.header().beacon().slot())
-            != calc_sync_period(update.update().attested_header().beacon().slot())
+            != calc_sync_period(update.attested_header().beacon().slot())
         {
             info!("Sync period changed, updating store...");
         }
 
         let proof = client
-            .prove_committee_change(proving_mode.clone(), &store, update.update())
+            .prove_committee_change(proving_mode, store.clone(), update.clone())
             .await
             .expect("Failed to prove committee change");
 
@@ -346,7 +351,7 @@ async fn initialize_light_client(
             .await
             .expect("Failed to prove committee change");
 
-        if i == update_response.updates().len() - 1 {
+        if i == n - 1 {
             let outputs: CommitteeChangeOut = CommitteeChangeOut::from(&mut proof.public_values());
 
             verifier_state.current_sync_committee = outputs.new_sync_committee();
@@ -355,7 +360,7 @@ async fn initialize_light_client(
 
         // TODO this is redundant, to simplify
         store
-            .process_light_client_update(update.update())
+            .process_light_client_update(&update)
             .expect("Failed to process update");
     }
 
@@ -516,5 +521,5 @@ async fn check_update(
     let update = client
         .get_update_data(known_period, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
         .await?;
-    update.contains_committee_change(known_period)
+    update.extract_committee_change(known_period)
 }

@@ -72,9 +72,9 @@ pub fn generate_committee_change_test_assets() -> CommitteeChangeTestAssets {
 #[derive(Getters)]
 #[getset(get = "pub")]
 pub struct InclusionTestAssets {
-    store: LightClientStore,
-    finality_update: FinalityUpdate,
-    eip1186_proof: EIP1186Proof,
+    pub store: LightClientStore,
+    pub finality_update: FinalityUpdate,
+    pub eip1186_proof: EIP1186Proof,
 }
 
 pub fn generate_inclusion_test_assets() -> InclusionTestAssets {

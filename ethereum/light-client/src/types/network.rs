@@ -3,7 +3,7 @@ use crate::proofs::inclusion::StorageInclusionIn;
 use crate::proofs::{ProofType, ProvingMode};
 use anyhow::{anyhow, Error};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Request {
     /// Request to prove the validity of a sync committee change.
     ProveCommitteeChange(Box<(ProvingMode, CommitteeChangeIn)>),

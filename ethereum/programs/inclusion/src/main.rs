@@ -64,9 +64,9 @@ pub fn main() {
     let update_sig_period = calc_sync_period(update.signature_slot());
     let store_period = calc_sync_period(store.finalized_header().beacon().slot());
     let sync_committee = if update_sig_period == store_period {
-        store.current_sync_committee().clone()
+        store.current_sync_committee
     } else {
-        store.next_sync_committee().clone().unwrap()
+        store.next_sync_committee().unwrap()
     };
     let sync_committee_hash = keccak256_hash(&sync_committee.to_ssz_bytes())
         .expect("LightClientStore::current_sync_committee: could not hash committee after inclusion proving");

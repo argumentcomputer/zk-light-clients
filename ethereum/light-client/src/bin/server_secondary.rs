@@ -48,8 +48,8 @@ async fn main() -> Result<()> {
                     Request::ProveInclusion(boxed) => {
                         info!("Start proving");
                         let proof_handle = spawn_blocking(move || {
-                            let (proving_mode, inputs) = boxed.as_ref();
-                            inclusion_prover.prove(inputs.clone(), proving_mode.clone())
+                            let (proving_mode, inputs) = *boxed;
+                            inclusion_prover.prove(inputs, proving_mode)
                         });
                         let proof = proof_handle.await??;
                         info!("Proof generated. Serializing");

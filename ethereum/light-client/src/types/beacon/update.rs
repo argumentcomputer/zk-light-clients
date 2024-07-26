@@ -9,10 +9,10 @@ use ethereum_lc_core::types::ForkDigest;
 use getset::Getters;
 
 /// Payload received from the Beacon Node when fetching updates starting at a given period.
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Getters)]
 #[getset(get = "pub")]
 pub struct UpdateResponse {
-    updates: Vec<UpdateItem>,
+    pub updates: Vec<UpdateItem>,
 }
 
 impl UpdateResponse {
@@ -73,12 +73,12 @@ impl UpdateResponse {
     /// # Returns
     ///
     /// An `Option` containing the update if it exists.
-    pub fn contains_committee_change(&self, known_period: u64) -> Result<Option<Update>> {
-        for update_item in &self.updates {
+    pub fn extract_committee_change(self, known_period: u64) -> Result<Option<Update>> {
+        for update_item in self.updates {
             let update_period =
                 calc_sync_period(update_item.update.attested_header().beacon().slot());
             if update_period == known_period + 1 {
-                return Ok(Some(update_item.update.clone()));
+                return Ok(Some(update_item.update));
             }
         }
         Ok(None)
@@ -86,10 +86,10 @@ impl UpdateResponse {
 }
 
 /// An item in the `UpdateResponse` containing the size of the update, the fork digest and the update itself.
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Getters)]
 #[getset(get = "pub")]
 pub struct UpdateItem {
-    size: u64,
-    fork_digest: ForkDigest,
-    update: Update,
+    pub size: u64,
+    pub fork_digest: ForkDigest,
+    pub update: Update,
 }

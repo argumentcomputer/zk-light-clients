@@ -31,7 +31,7 @@ pub mod error;
 pub mod inclusion;
 
 /// The proving mode for the prover.
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ProvingMode {
     STARK,
     SNARK,
