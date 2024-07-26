@@ -28,3 +28,13 @@ pub enum ProverError {
         source: Box<dyn std::error::Error + Sync + Send>,
     },
 }
+
+/// The error type for the errors being thrown when reading public values from a proof.
+#[derive(Debug, Error)]
+pub enum PublicValuesError {
+    #[error("Error while reading public values from Sphinx proof: {source}")]
+    SphinxProof {
+        #[source]
+        source: Box<dyn std::error::Error + Sync + Send>,
+    },
+}

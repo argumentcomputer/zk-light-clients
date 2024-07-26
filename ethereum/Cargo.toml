@@ -27,7 +27,7 @@ sha2 = "0.9"
 ssz_types = "0.6"
 thiserror = "1.0.61"
 tiny-keccak = "2.0.2"
-tokio = "1.38.0"
+tokio = "1.39.0"
 tree_hash = "0.6"
 tree_hash_derive = "0.6"
 # Crypto dependencies

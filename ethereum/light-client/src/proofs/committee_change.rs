@@ -16,7 +16,10 @@ use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
 use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
 use ethereum_programs::COMMITTEE_CHANGE_PROGRAM;
-use sphinx_sdk::{ProverClient, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
+use getset::CopyGetters;
+use sphinx_sdk::{
+    ProverClient, SphinxProvingKey, SphinxPublicValues, SphinxStdin, SphinxVerifyingKey,
+};
 
 /// The prover for the sync committee change proof.
 pub struct CommitteeChangeProver {
@@ -128,13 +131,29 @@ impl CommitteeChangeIn {
 }
 
 /// The output for the sync committee change proof.
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, CopyGetters)]
+#[getset(get_copy = "pub")]
 pub struct CommitteeChangeOut {
     finalized_block_height: u64,
     signer_sync_committee: HashValue,
     new_sync_committee: HashValue,
     new_next_sync_committee: HashValue,
+}
+
+impl From<&mut SphinxPublicValues> for CommitteeChangeOut {
+    fn from(public_values: &mut SphinxPublicValues) -> Self {
+        let finalized_block_height = public_values.read::<u64>();
+        let signer_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
+        let new_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
+        let new_next_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
+
+        Self {
+            finalized_block_height,
+            signer_sync_committee,
+            new_sync_committee,
+            new_next_sync_committee,
+        }
+    }
 }
 
 impl Prover for CommitteeChangeProver {
@@ -170,17 +189,7 @@ impl Prover for CommitteeChangeProver {
             .execute(Self::PROGRAM, &stdin)
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
-        let finalized_block_height = public_values.read::<u64>();
-        let signer_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
-        let new_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
-        let new_next_sync_committee = HashValue::new(public_values.read::<[u8; 32]>());
-
-        Ok(CommitteeChangeOut {
-            finalized_block_height,
-            signer_sync_committee,
-            new_sync_committee,
-            new_next_sync_committee,
-        })
+        Ok(CommitteeChangeOut::from(&mut public_values))
     }
 
     fn prove(&self, inputs: Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {

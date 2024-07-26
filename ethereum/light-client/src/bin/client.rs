@@ -3,14 +3,23 @@
 
 use anyhow::Result;
 use clap::Parser;
+use ethereum_lc::client::error::ClientError;
 use ethereum_lc::client::Client;
-use ethereum_lc::proofs::ProvingMode;
+use ethereum_lc::proofs::committee_change::CommitteeChangeOut;
+use ethereum_lc::proofs::inclusion::StorageInclusionOut;
+use ethereum_lc::proofs::{ProofType, ProvingMode};
+use ethereum_lc_core::crypto::hash::HashValue;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
 use ethereum_lc_core::types::utils::calc_sync_period;
-use log::info;
+use log::{debug, error, info};
+use std::env;
+use std::fmt::Display;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::{mpsc, OwnedSemaphorePermit, RwLock, Semaphore};
+use tokio::task::JoinHandle;
 
 /// The maximum number of light client updates that can be requested.
 ///
@@ -50,13 +59,48 @@ struct Cli {
     rpc_provider_address: String,
 }
 
-pub struct ClientState {
-    client: Client,
-    store: LightClientStore,
+#[derive(Debug, Clone)]
+pub struct VerifierState {
+    current_sync_committee: HashValue,
+    next_sync_committee: HashValue,
+}
+
+pub enum VerificationTask {
+    CommitteeChange {
+        task: JoinHandle<Result<(Update, ProofType), ClientError>>,
+        permit: OwnedSemaphorePermit,
+    },
+    StorageInclusion {
+        task: JoinHandle<Result<(Update, ProofType), ClientError>>,
+        permit: OwnedSemaphorePermit,
+    },
+}
+
+impl VerificationTask {
+    pub fn task_finished(&self) -> bool {
+        match self {
+            VerificationTask::CommitteeChange { task, .. }
+            | VerificationTask::StorageInclusion { task, .. } => task.is_finished(),
+        }
+    }
+}
+
+impl Display for &VerificationTask {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VerificationTask::CommitteeChange { .. } => write!(f, "Sync Committee Change"),
+            VerificationTask::StorageInclusion { .. } => write!(f, "Storage Inclusion"),
+        }
+    }
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
+    // Get proving mode for the light client.
+    let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
+    let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+
+    // Extract all addresses from the command.
     let Cli {
         checkpoint_provider_address,
         beacon_node_address,
@@ -73,7 +117,9 @@ async fn main() {
     let proof_server_address = Arc::new(proof_server_address);
     let rpc_provider_address = Arc::new(rpc_provider_address);
 
-    let state = initialize_light_client(
+    // Initialize the Light Client.
+    let (client, store, verifier_state) = initialize_light_client(
+        mode.clone(),
         checkpoint_provider_address,
         beacon_node_address,
         proof_server_address,
@@ -82,72 +128,135 @@ async fn main() {
     .await
     .expect("Failed to initialize light client");
 
+    let store = Arc::new(RwLock::new(store));
+    let client = Arc::new(client);
+
     info!("Light client initialized successfully");
 
-    info!("Fetching proof of storage inclusion for the latest block...");
+    // Create a Semaphore with only one permit for the proofs process.
+    let inclusion_semaphore = Arc::new(Semaphore::new(1));
+    let committee_change_semaphore = Arc::new(Semaphore::new(1));
 
-    // Check signature
-    // Use execution branch to check finalized execution is properly in finalized header
-    // Use finalized branch to check finalized block is properly in attested block
-    // Check the proof of storage inclusion
+    info!("Spawn verifier task");
+    let (task_sender, task_receiver) = mpsc::channel::<VerificationTask>(100);
+    let task_sender = Arc::new(task_sender);
 
-    let finality_update = state
-        .client
-        .get_finality_update()
-        .await
-        .expect("Failed to fetch finality update");
+    // Start the main loop to listen for Eth data every 10 seconds.
+    let mut interval = tokio::time::interval(Duration::from_secs(10));
 
-    let inclusion_merkle_proof = state
-        .client
-        .get_proof(
-            UNISWAP_V2_ADDRESS,
-            &[String::from(ALL_PAIRS_STORAGE_KEY)],
-            &format!(
-                "0x{}",
-                hex::encode(
-                    finality_update
-                        .finalized_header()
-                        .execution()
-                        .block_hash()
-                        .as_ref()
+    // Spawn a verifier task that sequentially processes the tasks.
+    tokio::spawn(verifier_task(
+        task_sender.clone(),
+        task_receiver,
+        verifier_state,
+        client.clone(),
+        store.clone(),
+    ));
+
+    debug!("Start listening for Eth data");
+
+    loop {
+        interval.tick().await;
+
+        if inclusion_semaphore.available_permits() > 0 {
+            info!("Starting process to prove storage inclusion...");
+            // Acquire a permit from the semaphore before starting the inclusion task.
+            let permit = inclusion_semaphore.clone().acquire_owned().await?;
+
+            info!("Fetching proof of storage inclusion for the latest block...");
+            // Fetch latest finality update.
+            let finality_update = client
+                .get_finality_update()
+                .await
+                .expect("Failed to fetch finality update");
+
+            info!("Fetching EIP1186 proof...");
+            // Fetch EIP1186 proof.
+            let inclusion_merkle_proof = client
+                .get_proof(
+                    UNISWAP_V2_ADDRESS,
+                    &[String::from(ALL_PAIRS_STORAGE_KEY)],
+                    &format!(
+                        "0x{}",
+                        hex::encode(
+                            finality_update
+                                .finalized_header()
+                                .execution()
+                                .block_hash()
+                                .as_ref()
+                        )
+                    ),
                 )
-            ),
-        )
-        .await
-        .expect("Failed to fetch storage inclusion proof");
+                .await
+                .expect("Failed to fetch storage inclusion proof");
 
-    let light_client_internal =
-        EIP1186Proof::try_from(inclusion_merkle_proof).expect("Failed to convert to EIP1186Proof");
+            let light_client_internal = EIP1186Proof::try_from(inclusion_merkle_proof)
+                .expect("Failed to convert to EIP1186Proof");
 
-    info!("Generating proof of inclusion...");
-    let proof = state
-        .client
-        .prove_storage_inclusion(
-            ProvingMode::STARK,
-            &state.store,
-            &Update::from(finality_update),
-            &light_client_internal,
-        )
-        .await
-        .expect("Failed to prove storage inclusion");
-    info!("Proof of storage inclusion generated successfully");
+            info!("Generating proof of inclusion...");
 
-    // Verify the proof of storage inclusion
-    info!("Verifying proof of storage inclusion...");
-    state
-        .client
-        .verify_storage_inclusion(proof)
-        .await
-        .expect("Failed to verify storage inclusion proof");
-    info!("Proof of storage inclusion verified successfully");
+            let mode_clone = mode.clone();
+            let store_clone = store.clone();
+            let client_clone = client.clone();
+
+            // Spawn proving task for inclusion proof, and send it to the verifier task.
+            let task = tokio::spawn(async move {
+                let store = store_clone.read().await;
+                let update = Update::from(finality_update);
+                let proof = client_clone
+                    .prove_storage_inclusion(mode_clone, &store, &update, &light_client_internal)
+                    .await?;
+                drop(store);
+                info!("Proof of storage inclusion generated successfully");
+
+                Ok((update, proof))
+            });
+
+            task_sender
+                .send(VerificationTask::StorageInclusion { task, permit })
+                .await?;
+        }
+
+        info!("Looking for potential update....");
+
+        let potential_update = check_update(client.clone(), store.clone()).await?;
+
+        if potential_update.is_some() && committee_change_semaphore.available_permits() > 0 {
+            // Acquire a permit from the semaphore before starting the committee change task.
+            let permit = committee_change_semaphore.clone().acquire_owned().await?;
+
+            let mode_clone = mode.clone();
+            let store_clone = store.clone();
+            let client_clone = client.clone();
+
+            // Spawn proving task for committee change proof, and send it to the verifier task.
+            let task = tokio::spawn(async move {
+                let store = store_clone.read().await;
+                let update = potential_update.unwrap();
+
+                let proof = client_clone
+                    .prove_committee_change(mode_clone, &store, &update)
+                    .await?;
+                drop(store);
+                info!("Proof of committee change generated successfully");
+
+                Ok((update, proof))
+            });
+
+            task_sender
+                .send(VerificationTask::CommitteeChange { task, permit })
+                .await?;
+        }
+    }
 }
 
 async fn initialize_light_client(
+    proving_mode: ProvingMode,
     checkpoint_provider_address: Arc<String>,
     beacon_node_address: Arc<String>,
     proof_server_address: Arc<String>,
     rpc_provider_address: Arc<String>,
-) -> Result<ClientState> {
+) -> Result<(Client, LightClientStore, VerifierState)> {
     // Instantiate client.
     let client = Client::new(
         &checkpoint_provider_address,
@@ -192,18 +301,15 @@ async fn initialize_light_client(
     .try_into()
     .expect("Failed to convert checkpoint bytes to Bytes32");
 
-    let store = LightClientStore::initialize(trusted_block_root, &bootstrap)
+    let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap)
         .expect("Could not initialize the store based on bootstrap data");
-
-    let mut client_state = ClientState { client, store };
 
     info!("Fetching updates...");
 
     // Fetch updates
     let sync_period = calc_sync_period(bootstrap.header().beacon().slot());
 
-    let update_response = client_state
-        .client
+    let update_response = client
         .get_update_data(sync_period, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
         .await
         .expect("Failed to fetch update data");
@@ -213,7 +319,12 @@ async fn initialize_light_client(
         update_response.updates().len()
     );
 
-    for update in update_response.updates() {
+    let mut verifier_state = VerifierState {
+        current_sync_committee: HashValue::default(),
+        next_sync_committee: HashValue::default(),
+    };
+
+    for (i, update) in update_response.updates().iter().enumerate() {
         info!(
             "Processing update at slot: {:?}",
             update.update().attested_header().beacon().slot()
@@ -225,24 +336,185 @@ async fn initialize_light_client(
             info!("Sync period changed, updating store...");
         }
 
-        let proof = client_state
-            .client
-            .prove_committee_change(ProvingMode::STARK, &client_state.store, update.update())
+        let proof = client
+            .prove_committee_change(proving_mode.clone(), &store, update.update())
             .await
             .expect("Failed to prove committee change");
 
-        client_state
-            .client
+        client
             .verify_committee_change(proof.clone())
             .await
             .expect("Failed to prove committee change");
 
+        if i == update_response.updates().len() - 1 {
+            let outputs: CommitteeChangeOut = CommitteeChangeOut::from(&mut proof.public_values());
+
+            verifier_state.current_sync_committee = outputs.new_sync_committee();
+            verifier_state.next_sync_committee = outputs.new_next_sync_committee();
+        }
+
         // TODO this is redundant, to simplify
-        client_state
-            .store
+        store
             .process_light_client_update(update.update())
-            .unwrap()
+            .expect("Failed to process update");
     }
 
-    Ok(client_state)
+    Ok((client, store, verifier_state))
+}
+
+/// This method creates a listener for new tasks to verify proofs and processes them.
+///
+/// # Arguments
+///
+/// * `task_receiver` - The receiver channel for the tasks.
+/// * `initial_verifier_state` - The initial verifier state.
+/// * `client` - The client.
+/// * `store` - The store.
+
+async fn verifier_task(
+    task_sender: Arc<mpsc::Sender<VerificationTask>>,
+    mut task_receiver: mpsc::Receiver<VerificationTask>,
+    initial_verifier_state: VerifierState,
+    client: Arc<Client>,
+    store: Arc<RwLock<LightClientStore>>,
+) {
+    let mut verifier_state = initial_verifier_state;
+
+    // Interval to continue processing tasks when one has been recycled.
+    let mut interval = tokio::time::interval(Duration::from_secs(10));
+
+    while let Some(proof_type) = task_receiver.recv().await {
+        info!("Received a new task to verify: {}", &proof_type);
+
+        // If task is not complete we send it back in the queue. This
+        // allows us to continue receiving inclusion verification task
+        // while the sync committee one is not done.
+        if !proof_type.task_finished() {
+            info!("Task is not finished, send back to the queue...");
+            let send_res = task_sender.send(proof_type).await;
+
+            if let Err(e) = send_res {
+                error!("Failed to recycle task to the verifier: {:?}", e);
+            }
+
+            interval.tick().await;
+
+            continue;
+        }
+
+        match proof_type {
+            VerificationTask::CommitteeChange { task, permit } => {
+                // Wait for the task to finish and handle the result.
+                match task.await {
+                    Ok(result) => match result {
+                        Ok((update, proof)) => {
+                            info!("Start verifying sync committee change proof");
+                            let res = client.verify_committee_change(proof.clone()).await;
+
+                            if let Ok(true) = res {
+                                info!("Proof of sync committee change verified successfully");
+                                let outputs = CommitteeChangeOut::from(&mut proof.public_values());
+
+                                if outputs.signer_sync_committee()
+                                    == verifier_state.current_sync_committee
+                                {
+                                    info!(
+                                        "Signer sync committee matches the current sync committee"
+                                    );
+                                    verifier_state.current_sync_committee =
+                                        outputs.new_sync_committee();
+                                    verifier_state.next_sync_committee =
+                                        outputs.new_next_sync_committee();
+
+                                    let mut lock = store.blocking_write();
+                                    lock.process_light_client_update(&update).unwrap();
+
+                                    drop(permit);
+                                } else {
+                                    error!("Signer sync committee does not match the current sync committee");
+                                }
+                            } else {
+                                error!("Committee change proof verification failed: {:?}", res);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Task failed: {:?}", e);
+                        }
+                    },
+                    Err(e) => {
+                        // The task was cancelled.
+                        eprintln!("Task was cancelled: {:?}", e);
+                    }
+                }
+            }
+            VerificationTask::StorageInclusion { task, permit } => {
+                // Wait for the task to finish and handle the result.
+                match task.await {
+                    Ok(result) => match result {
+                        Ok((_update, proof)) => {
+                            info!("Start verifying inclusion proof");
+                            let res = client.verify_storage_inclusion(proof.clone()).await;
+
+                            if let Ok(true) = res {
+                                info!("Proof of storage inclusion verified successfully");
+                                let outputs = StorageInclusionOut::from(&mut proof.public_values());
+
+                                if outputs.sync_committee_hash()
+                                    == verifier_state.current_sync_committee
+                                    || outputs.sync_committee_hash()
+                                        == verifier_state.next_sync_committee
+                                {
+                                    info!("Sync committee hash matches the current or next sync committee");
+                                    println!(
+                                        "Sync committee hash: {:?}",
+                                        verifier_state.current_sync_committee
+                                    );
+                                    println!(
+                                        "Attested block number: {:?}",
+                                        outputs.finalized_block_height()
+                                    );
+
+                                    drop(permit);
+                                } else {
+                                    error!("Sync committee hash does not match the current or next sync committee");
+                                    continue;
+                                }
+                            } else {
+                                error!("Storage inclusion proof verification failed: {:?}", res);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Task failed: {:?}", e);
+                        }
+                    },
+                    Err(e) => {
+                        // The task was cancelled.
+                        eprintln!("Task was cancelled: {:?}", e);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// This method checks if there is a new update containing a sync committee change available.
+///
+/// # Arguments
+///
+/// * `client` - The client.
+/// * `store` - The store.
+///
+/// # Returns
+///
+/// An optional update if a new update is available.
+async fn check_update(
+    client: Arc<Client>,
+    store: Arc<RwLock<LightClientStore>>,
+) -> Result<Option<Update>> {
+    let store = store.read().await;
+    let known_period = calc_sync_period(store.finalized_header().beacon().slot());
+    let update = client
+        .get_update_data(known_period, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
+        .await?;
+    update.contains_committee_change(known_period)
 }

@@ -1,9 +1,10 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
 use ethereum_lc_core::types::error::TypesError;
 use ethereum_lc_core::types::update::{Update, UPDATE_BASE_BYTES_LEN};
-use ethereum_lc_core::types::utils::U64_LEN;
+use ethereum_lc_core::types::utils::{calc_sync_period, U64_LEN};
 use ethereum_lc_core::types::ForkDigest;
 use getset::Getters;
 
@@ -61,6 +62,26 @@ impl UpdateResponse {
         }
 
         Ok(UpdateResponse { updates })
+    }
+
+    /// Returns the update containing the committee change for the given period.
+    ///
+    /// # Arguments
+    ///
+    /// * `known_period` - The period for which we already have the committee.
+    ///
+    /// # Returns
+    ///
+    /// An `Option` containing the update if it exists.
+    pub fn contains_committee_change(&self, known_period: u64) -> Result<Option<Update>> {
+        for update_item in &self.updates {
+            let update_period =
+                calc_sync_period(update_item.update.attested_header().beacon().slot());
+            if update_period == known_period + 1 {
+                return Ok(Some(update_item.update.clone()));
+            }
+        }
+        Ok(None)
     }
 }
 
