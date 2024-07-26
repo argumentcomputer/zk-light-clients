@@ -157,10 +157,10 @@ impl ProofType {
     /// # Returns
     ///
     /// The public values of the proof.
-    pub fn public_values(&self) -> SphinxPublicValues {
+    pub fn public_values(self) -> SphinxPublicValues {
         match self {
-            ProofType::STARK(proof) => proof.public_values.clone(),
-            ProofType::SNARK(proof) => proof.public_values.clone(),
+            ProofType::STARK(proof) => proof.public_values,
+            ProofType::SNARK(proof) => proof.public_values,
         }
     }
 }
