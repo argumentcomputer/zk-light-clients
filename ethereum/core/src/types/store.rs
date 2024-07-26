@@ -20,7 +20,7 @@ use crate::types::bootstrap::Bootstrap;
 use crate::types::committee::{SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BYTES_LEN};
 use crate::types::error::{ConsensusError, StoreError, TypesError};
 use crate::types::signing_data::SigningData;
-use crate::types::update::Update;
+use crate::types::update::{CompactUpdate, Update};
 use crate::types::utils::{
     calc_sync_period, extract_u32, extract_u64, DOMAIN_BEACON_DENEB, OFFSET_BYTE_LENGTH, U64_LEN,
 };
@@ -81,7 +81,7 @@ impl LightClientStore {
 
         // Confirm that the given sync committee was committed in the block
         let is_valid = is_current_committee_proof_valid(
-            bootstrap.header(),
+            bootstrap.header().beacon().state_root(),
             &mut bootstrap.current_sync_committee().clone(),
             bootstrap.current_sync_committee_branch(),
         )
@@ -226,18 +226,21 @@ impl LightClientStore {
             return Err(ConsensusError::NotRelevant);
         }
 
+        println!("cycle-tracker-start: is_finality_proof_valid");
         // Ensure that the received finality proof is valid
         let is_valid = is_finality_proof_valid(
-            update.attested_header(),
+            update.attested_header().beacon().state_root(),
             &mut update.finalized_header().beacon().clone(),
             update.finality_branch(),
         )
         .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+        println!("cycle-tracker-end: is_finality_proof_valid");
 
         if !is_valid {
             return Err(ConsensusError::InvalidFinalityProof);
         }
 
+        println!("cycle-tracker-start: is_next_sync_proof_valid");
         // Ensure that the next sync committee proof is valid
         if update.next_sync_committee_branch() == &SyncCommitteeBranch::default() {
             if update.next_sync_committee() != &SyncCommittee::default() {
@@ -245,7 +248,7 @@ impl LightClientStore {
             }
         } else {
             let is_valid = is_next_committee_proof_valid(
-                update.attested_header(),
+                update.attested_header().beacon().state_root(),
                 &mut update.next_sync_committee().clone(),
                 update.next_sync_committee_branch(),
             )
@@ -255,6 +258,7 @@ impl LightClientStore {
                 return Err(ConsensusError::InvalidNextSyncCommitteeProof);
             }
         }
+        println!("cycle-tracker-end: is_next_sync_proof_valid");
 
         // Verify signature on the received data
         let sync_committee = if update_sig_period == store_period {
@@ -263,29 +267,41 @@ impl LightClientStore {
             self.next_sync_committee().clone().unwrap()
         };
 
+        println!("cycle-tracker-start: get_participants_key");
         let pks =
             sync_committee.get_participant_pubkeys(update.sync_aggregate().sync_committee_bits());
+        println!("cycle-tracker-end: get_participants_key");
 
+        println!("cycle-tracker-start: attested_hash_tree_root");
         let header_root = update
             .attested_header()
             .beacon()
             .hash_tree_root()
             .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+        println!("cycle-tracker-end: attested_hash_tree_root");
 
         let signing_data = SigningData::new(header_root.hash(), DOMAIN_BEACON_DENEB);
 
+        println!("cycle-tracker-start: signing_root");
         let signing_root = signing_data
             .hash_tree_root()
             .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+        println!("cycle-tracker-end: signing_root");
 
+        println!("cycle-tracker-start: aggregate");
         let aggregated_pubkey = PublicKey::aggregate(&pks)
             .map_err(|err| ConsensusError::SignatureError { source: err.into() })?;
+        println!("cycle-tracker-end: aggregate");
 
-        update
+        println!("cycle-tracker-start: verify_sig");
+        let res = update
             .sync_aggregate()
             .sync_committee_signature()
             .verify(signing_root.as_ref(), &aggregated_pubkey)
-            .map_err(|err| ConsensusError::SignatureError { source: err.into() })
+            .map_err(|err| ConsensusError::SignatureError { source: err.into() });
+        println!("cycle-tracker-end: verify_sig");
+
+        res
     }
 
     /// Applies the given `Update` to the `LightClientStore`.
@@ -477,11 +493,122 @@ impl LightClientStore {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
+#[getset(get = "pub")]
+pub struct CompactStore {
+    finalized_beacon_header_slot: u64,
+    sync_committee: SyncCommittee,
+}
+
+impl CompactStore {
+    pub fn new(finalized_beacon_header_slot: u64, sync_committee: SyncCommittee) -> Self {
+        Self {
+            finalized_beacon_header_slot,
+            sync_committee,
+        }
+    }
+
+    pub fn to_ssz_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        // Serialize the snapshot period
+        bytes.extend_from_slice(&self.finalized_beacon_header_slot.to_le_bytes());
+        bytes.extend_from_slice(&self.sync_committee.to_ssz_bytes());
+
+        bytes
+    }
+
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        if bytes.len() != U64_LEN + SYNC_COMMITTEE_BYTES_LEN {
+            return Err(TypesError::UnderLength {
+                minimum: U64_LEN + SYNC_COMMITTEE_BYTES_LEN,
+                actual: bytes.len(),
+                structure: "CompactStore".into(),
+            });
+        }
+
+        // Deserialize the snapshot period
+        let finalized_beacon_header_slot = u64::from_le_bytes(bytes[..U64_LEN].try_into().unwrap());
+
+        // Deserialize the sync committee
+        let sync_committee = SyncCommittee::from_ssz_bytes(&bytes[U64_LEN..])?;
+
+        Ok(Self {
+            finalized_beacon_header_slot,
+            sync_committee,
+        })
+    }
+
+    pub fn validate_compact_update(&self, update: &CompactUpdate) -> Result<(), ConsensusError> {
+        // Ensure we at least have 1 signer
+        if update
+            .sync_aggregate()
+            .sync_committee_bits()
+            .iter()
+            .map(|&bit| u64::from(bit))
+            .sum::<u64>()
+            < 1
+        {
+            return Err(ConsensusError::InsufficientSigners);
+        }
+
+        // Assert that the received data make sense chronologically
+        let valid_time = update.signature_slot() > update.attested_beacon_header().slot()
+            && update.attested_beacon_header().slot() >= update.finalized_beacon_header().slot();
+
+        if !valid_time {
+            return Err(ConsensusError::InvalidTimestamp);
+        }
+
+        let snapshot_period = calc_sync_period(self.finalized_beacon_header_slot());
+        let update_sig_period = calc_sync_period(update.signature_slot());
+        if snapshot_period != update_sig_period {
+            return Err(ConsensusError::InvalidPeriod);
+        }
+
+        // Ensure that the received finality proof is valid
+        let is_valid = is_finality_proof_valid(
+            update.attested_beacon_header().state_root(),
+            &mut update.finalized_beacon_header().clone(),
+            update.finality_branch(),
+        )
+        .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+
+        if !is_valid {
+            return Err(ConsensusError::InvalidFinalityProof);
+        }
+
+        let pks = self
+            .sync_committee
+            .get_participant_pubkeys(update.sync_aggregate().sync_committee_bits());
+
+        let header_root = update
+            .attested_beacon_header()
+            .hash_tree_root()
+            .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+
+        let signing_data = SigningData::new(header_root.hash(), DOMAIN_BEACON_DENEB);
+
+        let signing_root = signing_data
+            .hash_tree_root()
+            .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+
+        let aggregated_pubkey = PublicKey::aggregate(&pks)
+            .map_err(|err| ConsensusError::SignatureError { source: err.into() })?;
+
+        update
+            .sync_aggregate()
+            .sync_committee_signature()
+            .verify(signing_root.as_ref(), &aggregated_pubkey)
+            .map_err(|err| ConsensusError::SignatureError { source: err.into() })
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::merkle::Merkleized;
     use crate::types::bootstrap::Bootstrap;
-    use crate::types::store::LightClientStore;
+    use crate::types::store::{CompactStore, LightClientStore};
     use crate::types::update::Update;
     use std::env::current_dir;
     use std::fs;
@@ -639,7 +766,7 @@ mod test {
     }
 
     #[test]
-    fn test_ssz_serde() {
+    fn test_ssz_serde_light_client_store() {
         let test_assets = generate_test_assets();
 
         let bytes = test_assets.store.to_ssz_bytes().unwrap();
@@ -647,5 +774,21 @@ mod test {
         let deserialized_store = LightClientStore::from_ssz_bytes(&bytes);
 
         assert_eq!(test_assets.store, deserialized_store.unwrap());
+    }
+
+    #[test]
+    fn test_ssz_serde_compact_store() {
+        let test_assets = generate_test_assets();
+
+        let compact_store = CompactStore::new(
+            *test_assets.store.finalized_header().beacon().slot(),
+            test_assets.store.current_sync_committee().clone(),
+        );
+
+        let serialized_store = compact_store.to_ssz_bytes();
+
+        let deserialized_store = CompactStore::from_ssz_bytes(&serialized_store).unwrap();
+
+        assert_eq!(compact_store, deserialized_store);
     }
 }

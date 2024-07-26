@@ -13,8 +13,8 @@ use ethereum_lc_core::crypto::hash::{HashValue, HASH_LENGTH};
 use ethereum_lc_core::deserialization_error;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::error::TypesError;
-use ethereum_lc_core::types::store::LightClientStore;
-use ethereum_lc_core::types::update::Update;
+use ethereum_lc_core::types::store::{CompactStore, LightClientStore};
+use ethereum_lc_core::types::update::{CompactUpdate, Update};
 use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{Address, ADDRESS_BYTES_LEN};
 use ethereum_programs::INCLUSION_PROGRAM;
@@ -214,14 +214,14 @@ impl Prover for StorageInclusionProver {
     fn generate_sphinx_stdin(&self, inputs: Self::StdIn) -> Result<SphinxStdin, Self::Error> {
         let mut stdin = SphinxStdin::new();
         stdin.write(
-            &inputs
-                .store
-                .to_ssz_bytes()
-                .map_err(|err| ProverError::SphinxInput { source: err.into() })?,
+            &CompactStore::new(
+                *inputs.store.finalized_header().beacon().slot(),
+                inputs.store.current_sync_committee().clone(),
+            )
+            .to_ssz_bytes(),
         );
         stdin.write(
-            &inputs
-                .update
+            &CompactUpdate::from(inputs.update)
                 .to_ssz_bytes()
                 .map_err(|err| ProverError::SphinxInput { source: err.into() })?,
         );

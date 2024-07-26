@@ -6,7 +6,6 @@ use crate::merkle::error::MerkleError;
 use crate::merkle::utils::get_subtree_index;
 use crate::merkle::Merkleized;
 use crate::types::block::consensus::BeaconBlockHeader;
-use crate::types::block::LightClientHeader;
 use crate::types::committee::{
     SyncCommittee, SyncCommitteeBranch, CURRENT_SYNC_COMMITTEE_GENERALIZED_INDEX,
     NEXT_SYNC_COMMITTEE_GENERALIZED_INDEX, SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
@@ -20,7 +19,7 @@ use crate::types::{
 ///
 /// # Arguments
 ///
-/// * `attested_header` - The header of the block that the update is attesting to.
+/// * `state_root` - The state root of the Beacon block that the proof is attesting to.
 /// * `finality_header` - The header of the block that the update is attesting to be finalized.
 /// * `finality_branch` - The branch of the Merkle tree that proves the finality of the block.
 ///
@@ -28,12 +27,12 @@ use crate::types::{
 ///
 /// A `bool` indicating whether the finality proof is valid.
 pub fn is_finality_proof_valid(
-    attested_header: &LightClientHeader,
+    state_root: &Bytes32,
     finality_header: &mut BeaconBlockHeader,
     finality_branch: &FinalizedRootBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
-        attested_header,
+        state_root,
         finality_header,
         finality_branch,
         FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS,
@@ -45,7 +44,7 @@ pub fn is_finality_proof_valid(
 ///
 /// # Arguments
 ///
-/// * `attested_header` - The header of the block that the update is attesting to.
+/// * `state_root` - The state root of the Beacon block that the proof is attesting to.
 /// * `sync_committee` - The next sync committee that the update is attesting to.
 /// * `sync_committee_branch` - The branch of the Merkle tree that proves the sync committee of the block.
 ///
@@ -53,12 +52,12 @@ pub fn is_finality_proof_valid(
 ///
 /// A `bool` indicating whether the sync committee proof is valid.
 pub fn is_next_committee_proof_valid(
-    attested_header: &LightClientHeader,
+    state_root: &Bytes32,
     next_committee: &mut SyncCommittee,
     next_committee_branch: &SyncCommitteeBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
-        attested_header,
+        state_root,
         next_committee,
         next_committee_branch,
         SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
@@ -70,7 +69,7 @@ pub fn is_next_committee_proof_valid(
 ///
 /// # Arguments
 ///
-/// * `bootstrap_header` - The header of the block that the bootstrap is attesting to.
+/// * `state_root` - The state root of the Beacon block that the proof is attesting to.
 /// * `current_committee` - The current sync committee that the bootstrap is attesting to.
 /// * `current_committee_branch` - The branch of the Merkle tree that proves the current committee of the block.
 ///
@@ -78,12 +77,12 @@ pub fn is_next_committee_proof_valid(
 ///
 /// A `bool` indicating whether the current committee proof is valid.
 pub fn is_current_committee_proof_valid(
-    bootstrap_header: &LightClientHeader,
+    state_root: &Bytes32,
     current_committee: &mut SyncCommittee,
     current_committee_branch: &SyncCommitteeBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
-        bootstrap_header,
+        state_root,
         current_committee,
         current_committee_branch,
         SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
@@ -95,7 +94,7 @@ pub fn is_current_committee_proof_valid(
 ///
 /// # Arguments
 ///
-/// * `attested_header` - The header of the block that the update is attesting to.
+/// * `state_root` - The state root of the Beacon block that the proof is attesting to.
 /// * `leaf_object` - The object that the proof is attesting to.
 /// * `branch` - The branch of the Merkle tree that proves the object.
 /// * `depth` - The depth of the Merkle tree.
@@ -105,7 +104,7 @@ pub fn is_current_committee_proof_valid(
 ///
 /// A `bool` indicating whether the proof is valid.
 fn is_proof_valid<M: Merkleized>(
-    attested_header: &LightClientHeader,
+    state_root: &Bytes32,
     leaf_object: &mut M,
     branch: &[Bytes32],
     depth: usize,
@@ -143,7 +142,7 @@ fn is_proof_valid<M: Merkleized>(
         .map_err(|err| MerkleError::Hash { source: err.into() })?;
 
     // 4. Instantiate expected root and siblings as `HashValue`
-    let state_root = HashValue::new(*attested_header.beacon().state_root());
+    let state_root = HashValue::new(*state_root);
     let branch_hashes = branch
         .iter()
         .map(|bytes| HashValue::new(*bytes))
