@@ -42,7 +42,7 @@ pub const LIGHT_CLIENT_HEADER_BASE_BYTES_LEN: usize = BEACON_BLOCK_HEADER_BYTES_
 #[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct LightClientHeader {
-    beacon: BeaconBlockHeader,
+    pub(crate) beacon: BeaconBlockHeader,
     execution: ExecutionBlockHeader,
     execution_branch: ExecutionBranch,
 }

@@ -36,10 +36,10 @@ pub const UPDATE_BASE_BYTES_LEN: usize = LIGHT_CLIENT_HEADER_BASE_BYTES_LEN * 2
 #[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct Update {
-    attested_header: LightClientHeader,
+    pub(crate) attested_header: LightClientHeader,
     next_sync_committee: SyncCommittee,
     next_sync_committee_branch: SyncCommitteeBranch,
-    finalized_header: LightClientHeader,
+    pub(crate) finalized_header: LightClientHeader,
     finality_branch: FinalizedRootBranch,
     sync_aggregate: SyncAggregate,
     signature_slot: u64,
@@ -409,9 +409,9 @@ impl From<FinalityUpdate> for CompactUpdate {
 impl From<Update> for CompactUpdate {
     fn from(update: Update) -> Self {
         Self {
-            attested_beacon_header: update.attested_header.beacon().clone(),
-            finalized_beacon_header: update.finalized_header.beacon().clone(),
             finalized_execution_state_root: *update.finalized_header.execution().state_root(),
+            attested_beacon_header: update.attested_header.beacon,
+            finalized_beacon_header: update.finalized_header.beacon,
             finality_branch: update.finality_branch,
             sync_aggregate: update.sync_aggregate,
             signature_slot: update.signature_slot,
