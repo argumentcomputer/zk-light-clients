@@ -2,6 +2,14 @@ name: Bump Version
 on:
   workflow_dispatch:
     inputs:
+      light-client:
+        description: 'aptos or ethereum'
+        type: choice
+        options:
+          - aptos
+          - ethereum
+        required: true
+        default: 'release'
       type:
         description: 'release or hotfix'
         type: choice
@@ -39,8 +47,8 @@ jobs:
       - name: Install `tq-rs`
         run: cargo install tq-rs
 
-      # The `release/1.0` branch is always truncated, so that patch version merges still are valid Semver
-      # However, when we make the initial `release/1.0` version bump, we include the full `1.0.0` in `Cargo.toml`
+      # The `release/light-client-v1.0` branch is always truncated, so that patch version merges still are valid Semver
+      # However, when we make the initial `release/light-client-v1.0` version bump, we include the full `1.0.0` in `Cargo.toml`
       # and the release for clarity
       - name: Set branches
         run: |
@@ -48,19 +56,19 @@ jobs:
           BASE_VERSION="${BASE_VERSION_SHORT}.0"
           if [[ "${{ inputs.type }}" == "hotfix" ]]; then
             VERSION=${{ inputs.version }}
-            BASE_BRANCH="release/v$BASE_VERSION_SHORT"
-            PR_BRANCH="${{ inputs.type }}/v${{ inputs.version }}"
-            git checkout $PR_BRANCH
+            BASE_BRANCH="release/${{ inputs.light-client }}-v$BASE_VERSION_SHORT"
+            PR_BRANCH="${{ inputs.type }}/${{ inputs.light-client }}-v${{ inputs.version }}"
+            git checkout -b $PR_BRANCH
           else
             VERSION=$BASE_VERSION
             BASE_BRANCH="dev"
-            PR_BRANCH="release/v$BASE_VERSION_SHORT"
+            PR_BRANCH="release/${{ inputs.light-client }}-v$BASE_VERSION_SHORT"
             git checkout -b $PR_BRANCH
           fi
 
           echo "BASE_BRANCH=$BASE_BRANCH" | tee -a $GITHUB_ENV
           echo "PR_BRANCH=$PR_BRANCH" | tee -a $GITHUB_ENV
-          echo "PR_DESCRIPTION=chore: Release $VERSION" | tee -a $GITHUB_ENV
+          echo "PR_DESCRIPTION=chore(${{ inputs.light-client }}): Release $VERSION" | tee -a $GITHUB_ENV
           echo "VERSION=$VERSION" | tee -a $GITHUB_ENV
 
       # Regex from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
@@ -81,7 +89,14 @@ jobs:
         run: |
           echo "Updating version in Cargo.toml..."
 
-          members=$(tq workspace.members -f Cargo.toml | jq -r '. += ["programs/inclusion", "programs/epoch-change"] | .[]')
+          if [[ "${{ inputs.light-client }}" == "ethereum" ]]; then
+            members=$(tq workspace.members -f Cargo.toml | jq -r '. += ["programs/inclusion", "programs/committee-change"] | .[]')
+          elif [[ "${{ inputs.light-client }}" == "aptos" ]]; then
+            members=$(tq workspace.members -f Cargo.toml | jq -r '. += ["programs/inclusion", "programs/epoch-change"] | .[]')
+          else
+            echo "Unknown light-client: ${{ inputs.light-client }}. Aborting..."
+          exit 1
+          fi
           
           bump_version() {
             cd "$1"
@@ -106,7 +121,7 @@ jobs:
               bump_version "$path"
             fi
           done <<< "$members"
-        working-directory: ${{ github.workspace }}/aptos
+        working-directory: ${{ github.workspace }}/${{ inputs.light-client }}
 
       - name: Commit changes
         run: |
@@ -119,9 +134,9 @@ jobs:
       - name: Create PR
         run: |
           cat << 'EOF' > body.md
-          This is an automated release PR for version `${ env.VERSION }}`.
+          This is an automated release PR for version `${{ env.VERSION }}` of the ${{ inputs.light-client }} light client.
 
-          On merge, this will trigger the [release publish workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/tag-release.yml), which will upload a new GitHub release with tag `v${{ env.VERSION }}`.
+          On merge, this will trigger the [release publish workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/tag-release.yml), which will upload a new GitHub release with tag `${{ inputs.light-client }}-v${{ env.VERSION }}`.
 
           [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
