@@ -1,5 +1,4 @@
-# Rebuilds proof fixtures for Solidity and Move (TBD) for smart contract verification tests
-# The fixtures are located in `aptos/solidity/contracts/src/plonk_fixtures`
+# Rebuilds proof fixtures for Solidity and Move for smart contract verification tests
 # Then opens a pull request with the changes
 # Note: This workflow takes over 30 minutes due to parallel E2E proof generation for `inclusion` and `epoch_change`
 name: Update fixtures
@@ -71,24 +70,25 @@ jobs:
           path: ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
           pattern: "solidity_*"
           merge-multiple: true
-      - name: Rename Solidity fixtures
-        run: |
-          for file in solidity_*_fixture.json; do
-            mv "$file" "${file#solidity_}"
-          done
-        working-directory: ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
+      - run: ls ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
+     # - name: Rename Solidity fixtures
+     #   run: |
+     #     for file in "solidity_*"; do
+     #       mv "$file" "${file#solidity_}"
+     #     done
+     #   working-directory: ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
       - name: Download Move fixtures
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
           pattern: "move_*"
           merge-multiple: true
-      - name: Rename Move fixtures
-        run: |
-          for file in move_*_fixture.json; do
-            mv "$file" "${file#move_}"
-          done
-        working-directory: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
+     # - name: Rename Move fixtures
+     #   run: |
+     #     for file in "move_*"; do
+     #       mv "$file" "${file#move_}"
+     #     done
+     #   working-directory: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
       - run: git diff
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
@@ -99,6 +99,6 @@ jobs:
           labels: "automated-issue"
           reviewers: "tchataigner, storojs72, wwared, huitseeker, samuelburnham"
           body: |
-            This is an automated PR updating the proof fixtures for Solidity and Move (TBD), which are used for smart contract verification tests.
+            This is an automated PR updating the proof fixtures for Solidity and Move, which are used for smart contract verification tests.
 
             Workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
