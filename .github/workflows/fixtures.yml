@@ -4,9 +4,6 @@
 name: Update fixtures
 
 on:
-  push:
-    branches:
-      - "fix/fixtures"
   workflow_dispatch: {}
   # Once per day at 00:00 UTC
   schedule:
@@ -15,7 +12,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-
 
 jobs:
   generate-fixtures:
@@ -40,12 +36,9 @@ jobs:
         uses: ./.github/actions/setup
         with:
           pull_token: ${{ secrets.REPO_TOKEN }}
-      #- name: Generate ${{ matrix.language }} fixtures
-      #  run: |
-      #    cargo run --release -- --program ${{ matrix.fixture }} --language ${{ matrix.language }}
-      #  working-directory: ${{ github.workspace }}/fixture-generator
-      - run: |
-          echo "Test fixture" > ${{ github.workspace }}/${{ matrix.fixture-path }}/${{ matrix.fixture }}_fixture.json
+      - name: Generate ${{ matrix.language }} fixtures
+        run: |
+          cargo run --release -- --program ${{ matrix.fixture }} --language ${{ matrix.language }}
         working-directory: ${{ github.workspace }}/fixture-generator
       - name: Upload fixture artifact
         uses: actions/upload-artifact@v4
@@ -70,26 +63,12 @@ jobs:
           path: ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
           pattern: "solidity_*"
           merge-multiple: true
-      - run: ls ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
-     # - name: Rename Solidity fixtures
-     #   run: |
-     #     for file in "solidity_*"; do
-     #       mv "$file" "${file#solidity_}"
-     #     done
-     #   working-directory: ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
       - name: Download Move fixtures
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
           pattern: "move_*"
           merge-multiple: true
-     # - name: Rename Move fixtures
-     #   run: |
-     #     for file in "move_*"; do
-     #       mv "$file" "${file#move_}"
-     #     done
-     #   working-directory: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
-      - run: git diff
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
