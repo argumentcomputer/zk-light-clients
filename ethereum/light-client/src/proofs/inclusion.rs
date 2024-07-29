@@ -59,7 +59,7 @@ impl StorageInclusionProver {
 }
 
 /// The input for the storage inclusion proof.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct StorageInclusionIn {
     store: LightClientStore,
     update: Update,

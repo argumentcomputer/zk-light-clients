@@ -95,9 +95,9 @@ fn main() {
 
     // Prove storage inclusion
     let inputs = StorageInclusionIn::new(
-        benchmark_assets.store.clone(),
-        benchmark_assets.finality_update.clone().into(),
-        benchmark_assets.eip1186_proof.clone(),
+        benchmark_assets.store,
+        benchmark_assets.finality_update.into(),
+        benchmark_assets.eip1186_proof,
     );
 
     let start_proving = Instant::now();

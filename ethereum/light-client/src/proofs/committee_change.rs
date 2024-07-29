@@ -57,7 +57,7 @@ impl CommitteeChangeProver {
 }
 
 /// The input for the sync committee change proof.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct CommitteeChangeIn {
     store: LightClientStore,
     update: Update,

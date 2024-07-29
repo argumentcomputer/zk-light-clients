@@ -156,8 +156,8 @@ impl Client {
     pub async fn prove_committee_change(
         &self,
         proving_mode: ProvingMode,
-        store: &LightClientStore,
-        update: &Update,
+        store: LightClientStore,
+        update: Update,
     ) -> Result<ProofType, ClientError> {
         self.proof_server_client
             .prove_committee_change(proving_mode, store, update)
@@ -228,9 +228,9 @@ impl Client {
     pub async fn prove_storage_inclusion(
         &self,
         proving_mode: ProvingMode,
-        store: &LightClientStore,
-        update: &Update,
-        eip1186_proof: &EIP1186Proof,
+        store: LightClientStore,
+        update: Update,
+        eip1186_proof: EIP1186Proof,
     ) -> Result<ProofType, ClientError> {
         self.proof_server_client
             .prove_storage_inclusion(proving_mode, store, update, eip1186_proof)

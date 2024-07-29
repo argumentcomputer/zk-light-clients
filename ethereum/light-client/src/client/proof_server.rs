@@ -55,8 +55,8 @@ impl ProofServerClient {
     pub(crate) async fn prove_committee_change(
         &self,
         proving_mode: ProvingMode,
-        store: &LightClientStore,
-        update: &Update,
+        store: LightClientStore,
+        update: Update,
     ) -> Result<ProofType, ClientError> {
         let mut stream =
             TcpStream::connect(&self.address)
@@ -65,7 +65,7 @@ impl ProofServerClient {
                     endpoint: "ProofServer::ProveCommitteeChange".into(),
                     source: err.into(),
                 })?;
-        let inputs = CommitteeChangeIn::new(store.clone(), update.clone());
+        let inputs = CommitteeChangeIn::new(store, update);
         let request = Request::ProveCommitteeChange(Box::new((proving_mode, inputs)));
 
         write_bytes(
@@ -163,9 +163,9 @@ impl ProofServerClient {
     pub(crate) async fn prove_storage_inclusion(
         &self,
         proving_mode: ProvingMode,
-        store: &LightClientStore,
-        update: &Update,
-        eip1186_proof: &EIP1186Proof,
+        store: LightClientStore,
+        update: Update,
+        eip1186_proof: EIP1186Proof,
     ) -> Result<ProofType, ClientError> {
         let mut stream =
             TcpStream::connect(&self.address)
@@ -174,7 +174,7 @@ impl ProofServerClient {
                     endpoint: "ProofServer::ProveInclusion".into(),
                     source: err.into(),
                 })?;
-        let inputs = StorageInclusionIn::new(store.clone(), update.clone(), eip1186_proof.clone());
+        let inputs = StorageInclusionIn::new(store, update, eip1186_proof);
         let request = Request::ProveInclusion(Box::new((proving_mode, inputs)));
 
         write_bytes(

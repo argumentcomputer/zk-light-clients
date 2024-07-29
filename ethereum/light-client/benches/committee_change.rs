@@ -87,10 +87,7 @@ fn main() {
         .unwrap();
 
     // Prove committee change
-    let inputs = CommitteeChangeIn::new(
-        benchmark_assets.store.clone(),
-        benchmark_assets.update_new_period.clone(),
-    );
+    let inputs = CommitteeChangeIn::new(benchmark_assets.store, benchmark_assets.update_new_period);
 
     let start_proving = Instant::now();
     let proof = benchmark_assets
