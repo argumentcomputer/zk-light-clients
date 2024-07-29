@@ -152,6 +152,22 @@ jobs:
           python3 --version
           curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
           echo "PATH=$HOME/.local/bin:$PATH" | tee -a $GITHUB_ENV
+      - name: Check Aptos account balance
+        id: check_balance
+        run: |
+          balance_output=$(aptos account balance --profile testnet)
+          echo "Balance output: $balance_output"
+
+          balance=$(echo $balance_output | jq '.Result[0].balance')
+          echo "Balance value: $balance"
+
+          if [ "$balance" -lt 100000000 ]; then
+            echo "Balance is below threshold. Funding the account..."
+            aptos account fund-with-faucet --profile testnet
+          else
+            echo "Balance is sufficient. No action needed."
+          fi
+        working-directory: ${{ github.workspace }}/ethereum/move
       - name: Run unit tests
         run: |
           aptos move test --named-addresses plonk_verifier_addr=devnet
