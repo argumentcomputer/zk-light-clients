@@ -32,9 +32,10 @@ Here are the standard config variables that are worth setting for any benchmark:
 
 - `cargo +nightly-2024-05-31`
 
-  This ensures you are on a nightly toolchain. Nightly allows usage of AVX512 instructions which is crucial for performance.
-  This is the same version set on `rust-toolchain.toml`. It's pinned to a specific release (`v1.80.0-nightly`) to prevent
-  unexpected issues caused by newer Rust versions.
+  This ensures you are on a nightly toolchain. Nightly allows usage of AVX512 instructions which is crucial for
+  performance. This is the same version set on `rust-toolchain.toml`. It's pinned
+  to a specific release (`v1.80.0-nightly`) to prevent unexpected issues caused
+  by newer Rust versions.
 
 - `cargo bench --release <...>`
 

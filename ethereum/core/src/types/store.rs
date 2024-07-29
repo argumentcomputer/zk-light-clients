@@ -52,6 +52,34 @@ pub struct LightClientStore {
 }
 
 impl LightClientStore {
+    /// Consumes the `LightClientStore` and returns the `current_sync_committee`.
+    ///
+    /// This method moves the `current_sync_committee` field out
+    /// of the `LightClientStore` struct, consuming the struct in the process.
+    /// As a result, the `LightClientStore` cannot be used after this method is called.
+    ///
+    /// # Returns
+    ///
+    /// The current sync committee.
+    pub fn into_current_sync_committee(self) -> SyncCommittee {
+        self.current_sync_committee
+    }
+
+    /// Consumes the `LightClientStore` and returns the `next_sync_committee`,
+    /// if it exists.
+    ///
+    /// This method moves the `next_sync_committee` field out of the
+    /// `LightClientStore` struct, consuming the struct in the process.
+    /// As a result, the `LightClientStore` cannot be used after this
+    /// method is called.
+    ///
+    /// # Returns
+    ///
+    /// - `Option<SyncCommittee>`: An `Option` containing the next synchronization committee if it exists, or `None` if it does not.
+    pub fn into_next_sync_committee(self) -> Option<SyncCommittee> {
+        self.next_sync_committee
+    }
+
     /// Initializes the `LightClientStore` with the given `Bootstrap` data.
     ///
     /// # Arguments
@@ -226,7 +254,6 @@ impl LightClientStore {
             return Err(ConsensusError::NotRelevant);
         }
 
-        println!("cycle-tracker-start: is_finality_proof_valid");
         // Ensure that the received finality proof is valid
         let is_valid = is_finality_proof_valid(
             update.attested_header().beacon().state_root(),
@@ -234,13 +261,11 @@ impl LightClientStore {
             update.finality_branch(),
         )
         .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
-        println!("cycle-tracker-end: is_finality_proof_valid");
 
         if !is_valid {
             return Err(ConsensusError::InvalidFinalityProof);
         }
 
-        println!("cycle-tracker-start: is_next_sync_proof_valid");
         // Ensure that the next sync committee proof is valid
         if update.next_sync_committee_branch() == &SyncCommitteeBranch::default() {
             if update.next_sync_committee() != &SyncCommittee::default() {
@@ -258,7 +283,6 @@ impl LightClientStore {
                 return Err(ConsensusError::InvalidNextSyncCommitteeProof);
             }
         }
-        println!("cycle-tracker-end: is_next_sync_proof_valid");
 
         // Verify signature on the received data
         let sync_committee = if update_sig_period == store_period {
@@ -267,41 +291,29 @@ impl LightClientStore {
             self.next_sync_committee().clone().unwrap()
         };
 
-        println!("cycle-tracker-start: get_participants_key");
         let pks =
             sync_committee.get_participant_pubkeys(update.sync_aggregate().sync_committee_bits());
-        println!("cycle-tracker-end: get_participants_key");
 
-        println!("cycle-tracker-start: attested_hash_tree_root");
         let header_root = update
             .attested_header()
             .beacon()
             .hash_tree_root()
             .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
-        println!("cycle-tracker-end: attested_hash_tree_root");
 
         let signing_data = SigningData::new(header_root.hash(), DOMAIN_BEACON_DENEB);
 
-        println!("cycle-tracker-start: signing_root");
         let signing_root = signing_data
             .hash_tree_root()
             .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
-        println!("cycle-tracker-end: signing_root");
 
-        println!("cycle-tracker-start: aggregate");
         let aggregated_pubkey = PublicKey::aggregate(&pks)
             .map_err(|err| ConsensusError::SignatureError { source: err.into() })?;
-        println!("cycle-tracker-end: aggregate");
 
-        println!("cycle-tracker-start: verify_sig");
-        let res = update
+        update
             .sync_aggregate()
             .sync_committee_signature()
             .verify(signing_root.as_ref(), &aggregated_pubkey)
-            .map_err(|err| ConsensusError::SignatureError { source: err.into() });
-        println!("cycle-tracker-end: verify_sig");
-
-        res
+            .map_err(|err| ConsensusError::SignatureError { source: err.into() })
     }
 
     /// Applies the given `Update` to the `LightClientStore`.
@@ -493,6 +505,9 @@ impl LightClientStore {
     }
 }
 
+/// Data structure used to represent a compact store. This is a reduced
+/// version of the [`LightClientStore`] that is used to store the minimum
+/// amount of data necessary to verify a [`CompactUpdate`].
 #[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct CompactStore {
@@ -501,13 +516,29 @@ pub struct CompactStore {
 }
 
 impl CompactStore {
-    pub fn new(finalized_beacon_header_slot: u64, sync_committee: SyncCommittee) -> Self {
+    /// Initializes the `CompactStore` with the given finalized beacon
+    /// header slot and `SyncCommittee`.
+    ///
+    /// # Arguments
+    ///
+    /// * `finalized_beacon_header_slot` - The slot of the finalized beacon header.
+    /// * `sync_committee` - The `SyncCommittee` to initialize the store.
+    ///
+    /// # Returns
+    ///
+    /// The initialized `CompactStore`.
+    pub const fn new(finalized_beacon_header_slot: u64, sync_committee: SyncCommittee) -> Self {
         Self {
             finalized_beacon_header_slot,
             sync_committee,
         }
     }
 
+    /// Serializes the `CompactStore` into SSZ bytes.
+    ///
+    /// # Returns
+    ///
+    /// The SSZ bytes of the `CompactStore`.
     pub fn to_ssz_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -518,6 +549,16 @@ impl CompactStore {
         bytes
     }
 
+    /// Deserializes the `CompactStore` from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ bytes to deserialize.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `CompactStore` or a `TypesError` if the bytes are
+    /// invalid.
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         if bytes.len() != U64_LEN + SYNC_COMMITTEE_BYTES_LEN {
             return Err(TypesError::UnderLength {
@@ -539,6 +580,17 @@ impl CompactStore {
         })
     }
 
+    /// Validates the received `CompactUpdate` against the current
+    /// state of the `CompactStore`.
+    ///
+    /// # Arguments
+    ///
+    /// * `update` - The `CompactUpdate` to validate.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing `()` if the update is valid, or a `ConsensusError`
+    /// if the update is invalid.
     pub fn validate_compact_update(&self, update: &CompactUpdate) -> Result<(), ConsensusError> {
         // Ensure we at least have 1 signer
         if update

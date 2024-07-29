@@ -371,12 +371,14 @@ impl FinalityUpdate {
     }
 }
 
+/// Base length of a `CompactUpdate` struct in SSZ bytes.
 pub const COMPACT_ATTESTED_BEACON_OFFSET: usize = OFFSET_BYTE_LENGTH * 2
     + BYTES_32_LEN
     + FINALIZED_CHECKPOINT_BRANCH_NBR_SIBLINGS * BYTES_32_LEN
     + SYNC_AGGREGATE_BYTES_LEN
     + U64_LEN;
 
+/// A compact representation of a `Update` struct.
 #[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct CompactUpdate {
@@ -418,6 +420,11 @@ impl From<Update> for CompactUpdate {
 }
 
 impl CompactUpdate {
+    /// Serialize the `CompactUpdate` struct to SSZ bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<u8>` containing the SSZ serialized `CompactUpdate` struct.
     pub fn to_ssz_bytes(&self) -> Result<Vec<u8>, TypesError> {
         let mut bytes = vec![];
 
@@ -454,6 +461,15 @@ impl CompactUpdate {
         Ok(bytes)
     }
 
+    /// Deserialize a `CompactUpdate` struct from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ encoded bytes.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `CompactUpdate` struct or a `TypesError`.
     pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         if bytes.len() < COMPACT_ATTESTED_BEACON_OFFSET {
             return Err(TypesError::UnderLength {

@@ -25,9 +25,9 @@ pub fn main() {
                 println!("cycle-tracker-start: deserialize_inputs");
     }
     let compact_store = CompactStore::from_ssz_bytes(&compact_store_bytes)
-        .expect("LightClientStore::from_ssz_bytes: could not create store");
+        .expect("CompactStore::from_ssz_bytes: could not create store");
     let compact_update = CompactUpdate::from_ssz_bytes(&compact_update_bytes)
-        .expect("Update::from_ssz_bytes: could not create update");
+        .expect("CompactUpdate::from_ssz_bytes: could not create update");
     let eip1186_proof = EIP1186Proof::from_ssz_bytes(&eip1186_proof_bytes)
         .expect("EIP1186Proof::from_ssz_bytes: could not create proof");
     sphinx_zkvm::precompiles::unconstrained! {
