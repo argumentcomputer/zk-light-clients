@@ -3982,6 +3982,7 @@ dependencies = [
  "getset",
  "hex",
  "serde",
+ "serde_json",
  "sha2 0.9.9",
  "thiserror",
  "tiny-keccak",
