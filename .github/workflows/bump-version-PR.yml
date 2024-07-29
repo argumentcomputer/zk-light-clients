@@ -9,7 +9,7 @@ on:
           - aptos
           - ethereum
         required: true
-        default: 'release'
+        default: 'aptos'
       type:
         description: 'release or hotfix'
         type: choice
@@ -95,7 +95,7 @@ jobs:
             members=$(tq workspace.members -f Cargo.toml | jq -r '. += ["programs/inclusion", "programs/epoch-change"] | .[]')
           else
             echo "Unknown light-client: ${{ inputs.light-client }}. Aborting..."
-          exit 1
+            exit 1
           fi
           
           bump_version() {
