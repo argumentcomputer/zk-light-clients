@@ -4,10 +4,32 @@ use sphinx_prover::types::HashableKey;
 use sphinx_sdk::ProverClient;
 use std::path::PathBuf;
 
+/// Location for the Inclusion program of the Aptos Light Client.
 pub const APTOS_INCLUSION_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/inclusion-program");
+
+/// Location for the Epoch Change program of the Aptos Light Client.
 pub const APTOS_EPOCH_CHANGE_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/epoch-change-program");
+
+/// Path to the directory where the Solidity fixtures for the Aptos Light Client are stored.
+pub const SOLIDITY_FIXTURE_PATH: &str =
+    "../aptos/solidity/contracts/src/plonk_fixtures";
+
+/// Filename for the inclusion fixture.
+pub const INCLUSION_FIXTURE_FILENAME: &str = "inclusion_fixture.json";
+
+/// Filename for the epoch change fixture.
+pub const EPOCH_CHANGE_FIXTURE_FILENAME: &str = "epoch_change_fixture.json";
+
+/// Supported languages for the smart contracts, used for the Aptos Light Client.
+pub const SOLIDITY: &str ="solidity";
+
+/// Supported programs for the fixtures.
+pub const INCLUSION: &str = "inclusion";
+
+/// Supported programs for the fixtures.
+pub const EPOCH_CHANGE: &str = "epoch_change";
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -45,7 +67,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     prover.verify_plonk(&proof, &vk).unwrap();
 
     let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../contracts/src/plonk_fixtures");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = SolidityFixture {
@@ -54,7 +76,7 @@ fn generate_fixture_inclusion_aptos_lc() {
         proof: proof.bytes(),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
-    let fixture_path = fixture_path.join("inclusion_fixture.json");
+    let fixture_path = fixture_path.join(INCLUSION_FIXTURE_FILENAME);
     std::fs::write(
         fixture_path.clone(),
         serde_json::to_string_pretty(&fixture).unwrap(),
@@ -80,7 +102,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     prover.verify_plonk(&proof, &vk).unwrap();
 
     let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../contracts/src/plonk_fixtures");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = SolidityFixture {
@@ -89,7 +111,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
         proof: proof.bytes(),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
-    let fixture_path = fixture_path.join("epoch_change_fixture.json");
+    let fixture_path = fixture_path.join(EPOCH_CHANGE_FIXTURE_FILENAME);
     std::fs::write(
         fixture_path.clone(),
         serde_json::to_string_pretty(&fixture).unwrap(),
@@ -104,14 +126,14 @@ fn main() {
     let args = ProveArgs::parse();
 
     match args.program.as_str() {
-        "inclusion" => match args.language.as_str() {
-            "solidity" => {
+        INCLUSION=> match args.language.as_str() {
+            SOLIDITY => {
                 generate_fixture_inclusion_aptos_lc();
             }
             _ => panic!("Unsupported language. Use: ['solidity']"),
         },
-        "epoch_change" => match args.language.as_str() {
-            "solidity" => {
+        EPOCH_CHANGE => match args.language.as_str() {
+            SOLIDITY => {
                 generate_fixture_epoch_change_aptos_lc();
             }
             _ => panic!("Unsupported language. Use: ['solidity']"),

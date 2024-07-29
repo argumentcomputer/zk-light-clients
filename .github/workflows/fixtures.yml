@@ -1,5 +1,4 @@
-# Rebuilds proof fixtures for Solidity and Move (TBD) for smart contract verification tests
-# The fixtures are located in `aptos/solidity/contracts/src/plonk_fixtures`
+# Rebuilds proof fixtures for Solidity and Move for smart contract verification tests
 # Then opens a pull request with the changes
 # Note: This workflow takes over 30 minutes due to parallel E2E proof generation for `inclusion` and `epoch_change`
 name: Update fixtures
@@ -21,6 +20,12 @@ jobs:
     strategy:
       matrix:
         fixture: [inclusion, epoch_change]
+        language: [solidity, move]
+        include:
+          - fixture-path: aptos/solidity/contracts/src/plonk_fixtures
+            language: solidity
+          - fixture-path: ethereum/move/sources/fixtures
+            language: move
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,31 +36,15 @@ jobs:
         uses: ./.github/actions/setup
         with:
           pull_token: ${{ secrets.REPO_TOKEN }}
-      - name: Generate Solidity fixtures
+      - name: Generate ${{ matrix.language }} fixtures
         run: |
-          cargo run --release -- --program ${{ matrix.fixture }} --language solidity
+          cargo run --release -- --program ${{ matrix.fixture }} --language ${{ matrix.language }}
         working-directory: ${{ github.workspace }}/fixture-generator
-      - name: Check for diff
-        run: git diff
       - name: Upload fixture artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.fixture }}_fixture
-          path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/${{ matrix.fixture }}_fixture.json
-          if-no-files-found: error
-          overwrite: true
-          retention-days: 1
-      - name: Generate Move fixtures
-        run: |
-          cargo run --release -- --program ${{ matrix.fixture }} --language move
-        working-directory: ${{ github.workspace }}/fixture-generator
-      - name: Check for diff
-        run: git diff
-      - name: Upload fixture artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.fixture }}_fixture
-          path: ${{ github.workspace }}/ethereum/move/sources/fixtures/${{ matrix.fixture }}_fixture.json
+          name: ${{ matrix.language }}_${{ matrix.fixture }}_fixture.json
+          path: ${{ github.workspace }}/${{ matrix.fixture-path }}/${{ matrix.fixture }}_fixture.json
           if-no-files-found: error
           overwrite: true
           retention-days: 1
@@ -63,22 +52,23 @@ jobs:
   create-pull-request:
     needs: generate-fixtures
     runs-on: ubuntu-latest
+    env:
+      SOLIDITY_FIXTURE_PATH: aptos/soldity/contracts/src/plonk_fixtures
+      MOVE_FIXTURE_PATH: ethereum/move/sources/fixtures
     steps:
       - uses: actions/checkout@v4
-      - name: Download inclusion fixture
+      - name: Download Solidity fixtures
         uses: actions/download-artifact@v4
         with:
-          path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/
-          pattern: "*_fixture"
+          path: ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
+          pattern: "solidity_*"
           merge-multiple: true
-      - name: Download inclusion fixture
+      - name: Download Move fixtures
         uses: actions/download-artifact@v4
         with:
-          path: ${{ github.workspace }}/ethereum/move/sources/fixtures/
-          pattern: "*_fixture"
+          path: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
+          pattern: "move_*"
           merge-multiple: true
-      - name: Check for diff
-        run: git diff
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
@@ -87,6 +77,6 @@ jobs:
           commit-message: "chore: Update fixtures"
           labels: "automated-issue"
           body: |
-            This is an automated PR updating the proof fixtures for Solidity and Move (TBD), which are used for smart contract verification tests.
+            This is an automated PR updating the proof fixtures for Solidity and Move, which are used for smart contract verification tests.
 
             Workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
