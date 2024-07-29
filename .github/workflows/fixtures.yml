@@ -17,10 +17,10 @@ concurrency:
 jobs:
   generate-fixtures:
     runs-on: warp-ubuntu-latest-x64-32x
-    timeout-minutes: 90
     strategy:
       matrix:
         fixture: [inclusion, epoch_change]
+        language: [solidity, move]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,31 +31,15 @@ jobs:
         uses: ./.github/actions/setup
         with:
           pull_token: ${{ secrets.REPO_TOKEN }}
-      - name: Generate Solidity fixtures
+      - name: Generate ${{ matrix.language }} fixtures
         run: |
-          cargo run --release -- --program ${{ matrix.fixture }} --language solidity
+          cargo run --release -- --program ${{ matrix.fixture }} --language ${{ matrix.language }}
         working-directory: ${{ github.workspace }}/fixture-generator
-      - name: Check for diff
-        run: git diff
       - name: Upload fixture artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.fixture }}_fixture
-          path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/${{ matrix.fixture }}_fixture.json
-          if-no-files-found: error
-          overwrite: true
-          retention-days: 1
-      - name: Generate Move fixtures
-        run: |
-          cargo run --release -- --program ${{ matrix.fixture }} --language move
-        working-directory: ${{ github.workspace }}/fixture-generator
-      - name: Check for diff
-        run: git diff
-      - name: Upload fixture artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.fixture }}_fixture
-          path: ${{ github.workspace }}/ethereum/move/sources/fixtures/${{ matrix.fixture }}_fixture.json
+          name: ${{ matrix.language }}_${{ matrix.fixture }}_fixture
+          path: ${{ github.workspace }}/fixture-generator/${{ matrix.fixture }}_fixture.json
           if-no-files-found: error
           overwrite: true
           retention-days: 1
@@ -65,20 +49,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download inclusion fixture
+      - name: Download Solidity fixtures
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/aptos/solidity/contracts/src/plonk_fixtures/
-          pattern: "*_fixture"
+          pattern: "solidity_.*_fixture"
           merge-multiple: true
-      - name: Download inclusion fixture
+      - name: Download Move fixtures
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/ethereum/move/sources/fixtures/
-          pattern: "*_fixture"
+          pattern: "move_.*_fixture"
           merge-multiple: true
-      - name: Check for diff
-        run: git diff
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
