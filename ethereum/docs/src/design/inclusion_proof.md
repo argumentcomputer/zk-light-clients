@@ -1,1 +1,32 @@
 # Inclusion proof
+
+To bridge an account from the Ethereum chain to another chain at any given time the Light Client 
+needs to prove that the given account exists in the chain state for the latest
+block produced.
+
+To do so, the Light Client will first need to verify that the signature on the latest block corresponds to the sync committee
+known for the given period. Then, it will have to prove that the account is part of the updated state that this
+block commits.
+
+The inclusion program takes in an arbitrary Ethereum Merkle proof generated 
+fetched through the [EIP-1186](https://eips.ethereum.org/EIPS/eip-1186).
+
+## Inclusion program IO
+
+[Program reference](https://github.com/lurk-lab/zk-light-clients/blob/dev/ethereum/programs/inclusion/src/main.rs)
+
+### Inputs
+
+The following data structures are required for proof generation :
+
+- **Light Client Store**: The current state of the Light Client, containing information about the latest handled finalized block and the known committees.
+- **`EIP1186Proof`**: Data structure the data received from the `eth_getProof` RPC call.
+### Outputs
+
+- **Finalized header slot**: The slot of the finalized beacon header.
+- **Hash of the signing sync committee**: The hash of the signing committee for the finalized beacon block.
+- **Account address**: The address of the account being checked for inclusion.
+- **Account value**: The value of the account being checked for inclusion.
+-  **Number of storage keys**: The number of storage keys being checked for inclusion.
+- **Storage keys**: The keys of the storage being checked for inclusion.
+- **Storage values**: The values of the storage being checked for inclusion.

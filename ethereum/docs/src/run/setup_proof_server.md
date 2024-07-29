@@ -38,7 +38,7 @@ Now that our deployment machine is properly configured, we can run the secondary
 ```bash
 git clone git@github.com:lurk-lab/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
-  SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_secondary -- -a <NETWORK_ADDRESS>
+  SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_secondary -- -a <NETWORK_ADDRESS>
 ```
 
 ## Deploy the primary server

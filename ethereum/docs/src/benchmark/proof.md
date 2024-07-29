@@ -4,6 +4,9 @@ In this section we will cover how to run the benchmarks for the individual proof
 the `light-client` crate folder. Those benchmarks are associated with programs that are meant to reproduce
 a production environment settings. They are meant to measure performance for a complete end-to-end flow.
 
+The numbers we've measured using our [production configuration](../run/overview.md) are further detailed in the
+following section.
+
 ## Sync committee change
 
 Benchmark that will run a proof generation for the sync committee change program. This program will execute a hash for
@@ -14,20 +17,30 @@ new `LightClientStore::current_sync_committee`.
 On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for
 this benchmark:
 
+For STARKS:
 ```json
 {
-  // Time in milliseconds, 13~ minutes
-  "proving_time": 791696,
-  "verification_time": 1
+  // Time in milliseconds, 2 minutes 10s ~
+  "proving_time":133511,
+  "verification_time":2469
+}
+```
+
+For SNARKS:
+```json
+{
+    // Time in milliseconds, 13 minute 13s ~
+  "proving_time":793280,
+  "verification_time":1
 }
 ```
 
 ## Storage inclusion
 
 Benchmark that will run a proof generation for the storage inclusion program. This program will execute a hash for the
-received `LightClientStore::current_sync_committee` to ensure that the signature is from the current known sync
+received `CompactStore::sync_committee` to ensure that the signature is from the current known sync
 committee
-set, execute a `LightClientStore::validate_light_client_update` to confirm that the received block information is one
+set, execute a `CompactStore::validate_compact_update` to confirm that the received block information is one
 signed
 by the committee, and finally run an `EIP1186Proof::verify` against the state root of the finalized execution block
 header.
@@ -35,11 +48,21 @@ header.
 On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for
 this benchmark:
 
+For STARKS:
 ```json
 {
-  // Time in milliseconds, 7~ minutes
-  "proving_time": 441123,
-  "verification_time": 2
+  // Time in milliseconds, 1 minute 20s ~
+  "proving_time":83383,
+  "verification_time":2178
+}
+```
+
+For SNARKS:
+```json
+{
+  // Time in milliseconds, 11 minute 35s ~
+  "proving_time":695637,
+  "verification_time":1
 }
 ```
 
