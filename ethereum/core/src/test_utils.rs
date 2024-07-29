@@ -1,9 +1,10 @@
-use crate::types::storage::GetProofResponse;
-use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
-use ethereum_lc_core::types::bootstrap::Bootstrap;
-use ethereum_lc_core::types::store::LightClientStore;
-use ethereum_lc_core::types::update::{FinalityUpdate, Update};
+use crate::merkle::storage_proofs::EIP1186Proof;
+use crate::types::bootstrap::Bootstrap;
+use crate::types::store::LightClientStore;
+use crate::types::update::{FinalityUpdate, Update};
+use ethers_core::types::EIP1186ProofResponse;
 use getset::Getters;
+use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 
@@ -105,7 +106,13 @@ pub fn generate_inclusion_test_assets() -> InclusionTestAssets {
 
     let test_bytes = fs::read(test_asset_path).unwrap();
 
-    let ethers_eip1186_proof: GetProofResponse = serde_json::from_slice(&test_bytes).unwrap();
+    let ethers_eip1186_proof: Value = serde_json::from_slice(&test_bytes).unwrap();
+
+    let call_res = ethers_eip1186_proof
+        .get("result")
+        .expect("Ethers EIP1186 proof result not found");
+    let ethers_eip1186_proof: EIP1186ProofResponse =
+        serde_json::from_value(call_res.clone()).unwrap();
 
     // Initialize the LightClientStore
     let trusted_block_root = hex::decode(INCLUSION_CHECKPOINT.strip_prefix("0x").unwrap())
@@ -120,6 +127,6 @@ pub fn generate_inclusion_test_assets() -> InclusionTestAssets {
     InclusionTestAssets {
         store,
         finality_update,
-        eip1186_proof: EIP1186Proof::try_from(ethers_eip1186_proof.result().clone()).unwrap(),
+        eip1186_proof: EIP1186Proof::try_from(ethers_eip1186_proof).unwrap(),
     }
 }

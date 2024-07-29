@@ -134,7 +134,7 @@ To run the test efficiently, first install `nextest` following [its documentatio
 Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
-SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --package ethereum-lc --no-capture
+SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --package ethereum-lc --no-capture --all-features
 ```
 
 > **Note**

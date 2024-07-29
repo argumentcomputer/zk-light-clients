@@ -656,68 +656,16 @@ impl CompactStore {
     }
 }
 
+#[cfg(feature = "ethereum")]
 #[cfg(test)]
 mod test {
     use crate::merkle::Merkleized;
-    use crate::types::bootstrap::Bootstrap;
+    use crate::test_utils::generate_committee_change_test_assets;
     use crate::types::store::{CompactStore, LightClientStore};
-    use crate::types::update::Update;
-    use std::env::current_dir;
-    use std::fs;
-
-    struct TestAssets {
-        store: LightClientStore,
-        update: Update,
-        update_new_period: Update,
-    }
-
-    fn generate_test_assets() -> TestAssets {
-        // Instantiate bootstrap data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientBootstrapDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate new period Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientUpdateNewPeriodDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update_new_period = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Initialize the LightClientStore
-        let checkpoint = "0xefb4338d596b9d335b2da176dc85ee97469fc80c7e2d35b9b9c1558b4602077a";
-        let trusted_block_root = hex::decode(checkpoint.strip_prefix("0x").unwrap())
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        let store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
-
-        TestAssets {
-            store,
-            update,
-            update_new_period,
-        }
-    }
 
     #[test]
     fn test_simple_validate_and_apply_update() {
-        let mut test_assets = generate_test_assets();
+        let mut test_assets = generate_committee_change_test_assets();
 
         test_assets
             .store
@@ -747,7 +695,7 @@ mod test {
 
     #[test]
     fn test_process_update() {
-        let mut test_assets = generate_test_assets();
+        let mut test_assets = generate_committee_change_test_assets();
 
         // Note: The data is not passed through process_light_client_update as the update is never applied because quorum is not met on the static data
 
@@ -819,7 +767,7 @@ mod test {
 
     #[test]
     fn test_ssz_serde_light_client_store() {
-        let test_assets = generate_test_assets();
+        let test_assets = generate_committee_change_test_assets();
 
         let bytes = test_assets.store.to_ssz_bytes().unwrap();
 
@@ -830,7 +778,7 @@ mod test {
 
     #[test]
     fn test_ssz_serde_compact_store() {
-        let test_assets = generate_test_assets();
+        let test_assets = generate_committee_change_test_assets();
 
         let compact_store = CompactStore::new(
             *test_assets.store.finalized_header().beacon().slot(),
