@@ -350,7 +350,7 @@ pub(crate) mod test {
 
         // Hash for lighthouse implementation
         let test_execution_block_header =
-            ExecutionBlockHeaderTreeHash::try_from(execution_block_header.clone()).unwrap();
+            ExecutionBlockHeaderTreeHash::try_from(execution_block_header).unwrap();
         let execution_block_header_tree_hash = test_execution_block_header.tree_hash_root();
 
         assert_eq!(hash_tree_root.hash(), execution_block_header_tree_hash.0);

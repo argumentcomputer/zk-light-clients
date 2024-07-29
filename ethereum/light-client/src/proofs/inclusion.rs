@@ -13,9 +13,9 @@ use ethereum_lc_core::crypto::hash::{HashValue, HASH_LENGTH};
 use ethereum_lc_core::deserialization_error;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::error::TypesError;
-use ethereum_lc_core::types::store::LightClientStore;
-use ethereum_lc_core::types::update::Update;
-use ethereum_lc_core::types::utils::{extract_u32, OFFSET_BYTE_LENGTH};
+use ethereum_lc_core::types::store::{CompactStore, LightClientStore};
+use ethereum_lc_core::types::update::{CompactUpdate, Update};
+use ethereum_lc_core::types::utils::{calc_sync_period, extract_u32, OFFSET_BYTE_LENGTH};
 use ethereum_lc_core::types::{Address, ADDRESS_BYTES_LEN};
 use ethereum_programs::INCLUSION_PROGRAM;
 use getset::{CopyGetters, Getters};
@@ -213,15 +213,27 @@ impl Prover for StorageInclusionProver {
 
     fn generate_sphinx_stdin(&self, inputs: Self::StdIn) -> Result<SphinxStdin, Self::Error> {
         let mut stdin = SphinxStdin::new();
-        stdin.write(
-            &inputs
+
+        let update_sig_period = calc_sync_period(inputs.update.signature_slot());
+        let store_period = calc_sync_period(inputs.store.finalized_header().beacon().slot());
+
+        let finalized_beacon_slot = *inputs.store.finalized_header().beacon().slot();
+        let correct_sync_committee = if update_sig_period == store_period {
+            inputs.store.into_current_sync_committee()
+        } else {
+            inputs
                 .store
-                .to_ssz_bytes()
-                .map_err(|err| ProverError::SphinxInput { source: err.into() })?,
+                .into_next_sync_committee()
+                .ok_or_else(|| ProverError::SphinxInput {
+                    source: "Expected next sync committee".into(),
+                })?
+        };
+
+        stdin.write(
+            &CompactStore::new(finalized_beacon_slot, correct_sync_committee).to_ssz_bytes(),
         );
         stdin.write(
-            &inputs
-                .update
+            &CompactUpdate::from(inputs.update)
                 .to_ssz_bytes()
                 .map_err(|err| ProverError::SphinxInput { source: err.into() })?,
         );

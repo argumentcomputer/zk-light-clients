@@ -45,4 +45,4 @@ name = "inclusion"
 harness = false
 
 [features]
-ethereum = []
+ethereum = ["ethereum-lc-core/ethereum"]

@@ -20,7 +20,7 @@ use crate::types::bootstrap::Bootstrap;
 use crate::types::committee::{SyncCommittee, SyncCommitteeBranch, SYNC_COMMITTEE_BYTES_LEN};
 use crate::types::error::{ConsensusError, StoreError, TypesError};
 use crate::types::signing_data::SigningData;
-use crate::types::update::Update;
+use crate::types::update::{CompactUpdate, Update};
 use crate::types::utils::{
     calc_sync_period, extract_u32, extract_u64, DOMAIN_BEACON_DENEB, OFFSET_BYTE_LENGTH, U64_LEN,
 };
@@ -52,6 +52,34 @@ pub struct LightClientStore {
 }
 
 impl LightClientStore {
+    /// Consumes the `LightClientStore` and returns the `current_sync_committee`.
+    ///
+    /// This method moves the `current_sync_committee` field out
+    /// of the `LightClientStore` struct, consuming the struct in the process.
+    /// As a result, the `LightClientStore` cannot be used after this method is called.
+    ///
+    /// # Returns
+    ///
+    /// The current sync committee.
+    pub fn into_current_sync_committee(self) -> SyncCommittee {
+        self.current_sync_committee
+    }
+
+    /// Consumes the `LightClientStore` and returns the `next_sync_committee`,
+    /// if it exists.
+    ///
+    /// This method moves the `next_sync_committee` field out of the
+    /// `LightClientStore` struct, consuming the struct in the process.
+    /// As a result, the `LightClientStore` cannot be used after this
+    /// method is called.
+    ///
+    /// # Returns
+    ///
+    /// - `Option<SyncCommittee>`: An `Option` containing the next synchronization committee if it exists, or `None` if it does not.
+    pub fn into_next_sync_committee(self) -> Option<SyncCommittee> {
+        self.next_sync_committee
+    }
+
     /// Initializes the `LightClientStore` with the given `Bootstrap` data.
     ///
     /// # Arguments
@@ -81,7 +109,7 @@ impl LightClientStore {
 
         // Confirm that the given sync committee was committed in the block
         let is_valid = is_current_committee_proof_valid(
-            bootstrap.header(),
+            bootstrap.header().beacon().state_root(),
             &mut bootstrap.current_sync_committee().clone(),
             bootstrap.current_sync_committee_branch(),
         )
@@ -228,7 +256,7 @@ impl LightClientStore {
 
         // Ensure that the received finality proof is valid
         let is_valid = is_finality_proof_valid(
-            update.attested_header(),
+            update.attested_header().beacon().state_root(),
             &mut update.finalized_header().beacon().clone(),
             update.finality_branch(),
         )
@@ -245,7 +273,7 @@ impl LightClientStore {
             }
         } else {
             let is_valid = is_next_committee_proof_valid(
-                update.attested_header(),
+                update.attested_header().beacon().state_root(),
                 &mut update.next_sync_committee().clone(),
                 update.next_sync_committee_branch(),
             )
@@ -477,68 +505,167 @@ impl LightClientStore {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use crate::merkle::Merkleized;
-    use crate::types::bootstrap::Bootstrap;
-    use crate::types::store::LightClientStore;
-    use crate::types::update::Update;
-    use std::env::current_dir;
-    use std::fs;
+/// Data structure used to represent a compact store. This is a reduced
+/// version of the [`LightClientStore`] that is used to store the minimum
+/// amount of data necessary to verify a [`CompactUpdate`].
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
+#[getset(get = "pub")]
+pub struct CompactStore {
+    finalized_beacon_header_slot: u64,
+    sync_committee: SyncCommittee,
+}
 
-    struct TestAssets {
-        store: LightClientStore,
-        update: Update,
-        update_new_period: Update,
-    }
-
-    fn generate_test_assets() -> TestAssets {
-        // Instantiate bootstrap data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientBootstrapDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientUpdateDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Instantiate new period Update data
-        let test_asset_path = current_dir()
-            .unwrap()
-            .join("../test-assets/committee-change/LightClientUpdateNewPeriodDeneb.ssz");
-
-        let test_bytes = fs::read(test_asset_path).unwrap();
-
-        let update_new_period = Update::from_ssz_bytes(&test_bytes).unwrap();
-
-        // Initialize the LightClientStore
-        let checkpoint = "0xefb4338d596b9d335b2da176dc85ee97469fc80c7e2d35b9b9c1558b4602077a";
-        let trusted_block_root = hex::decode(checkpoint.strip_prefix("0x").unwrap())
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        let store = LightClientStore::initialize(trusted_block_root, &bootstrap).unwrap();
-
-        TestAssets {
-            store,
-            update,
-            update_new_period,
+impl CompactStore {
+    /// Initializes the `CompactStore` with the given finalized beacon
+    /// header slot and `SyncCommittee`.
+    ///
+    /// # Arguments
+    ///
+    /// * `finalized_beacon_header_slot` - The slot of the finalized beacon header.
+    /// * `sync_committee` - The `SyncCommittee` to initialize the store.
+    ///
+    /// # Returns
+    ///
+    /// The initialized `CompactStore`.
+    pub const fn new(finalized_beacon_header_slot: u64, sync_committee: SyncCommittee) -> Self {
+        Self {
+            finalized_beacon_header_slot,
+            sync_committee,
         }
     }
 
+    /// Serializes the `CompactStore` into SSZ bytes.
+    ///
+    /// # Returns
+    ///
+    /// The SSZ bytes of the `CompactStore`.
+    pub fn to_ssz_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        // Serialize the snapshot period
+        bytes.extend_from_slice(&self.finalized_beacon_header_slot.to_le_bytes());
+        bytes.extend_from_slice(&self.sync_committee.to_ssz_bytes());
+
+        bytes
+    }
+
+    /// Deserializes the `CompactStore` from SSZ bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The SSZ bytes to deserialize.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `CompactStore` or a `TypesError` if the bytes are
+    /// invalid.
+    pub fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+        if bytes.len() != U64_LEN + SYNC_COMMITTEE_BYTES_LEN {
+            return Err(TypesError::UnderLength {
+                minimum: U64_LEN + SYNC_COMMITTEE_BYTES_LEN,
+                actual: bytes.len(),
+                structure: "CompactStore".into(),
+            });
+        }
+
+        // Deserialize the snapshot period
+        let finalized_beacon_header_slot = u64::from_le_bytes(bytes[..U64_LEN].try_into().unwrap());
+
+        // Deserialize the sync committee
+        let sync_committee = SyncCommittee::from_ssz_bytes(&bytes[U64_LEN..])?;
+
+        Ok(Self {
+            finalized_beacon_header_slot,
+            sync_committee,
+        })
+    }
+
+    /// Validates the received `CompactUpdate` against the current
+    /// state of the `CompactStore`.
+    ///
+    /// # Arguments
+    ///
+    /// * `update` - The `CompactUpdate` to validate.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing `()` if the update is valid, or a `ConsensusError`
+    /// if the update is invalid.
+    pub fn validate_compact_update(&self, update: &CompactUpdate) -> Result<(), ConsensusError> {
+        // Ensure we at least have 1 signer
+        if update
+            .sync_aggregate()
+            .sync_committee_bits()
+            .iter()
+            .map(|&bit| u64::from(bit))
+            .sum::<u64>()
+            < 1
+        {
+            return Err(ConsensusError::InsufficientSigners);
+        }
+
+        // Assert that the received data make sense chronologically
+        let valid_time = update.signature_slot() > update.attested_beacon_header().slot()
+            && update.attested_beacon_header().slot() >= update.finalized_beacon_header().slot();
+
+        if !valid_time {
+            return Err(ConsensusError::InvalidTimestamp);
+        }
+
+        let snapshot_period = calc_sync_period(self.finalized_beacon_header_slot());
+        let update_sig_period = calc_sync_period(update.signature_slot());
+        if snapshot_period != update_sig_period {
+            return Err(ConsensusError::InvalidPeriod);
+        }
+
+        // Ensure that the received finality proof is valid
+        let is_valid = is_finality_proof_valid(
+            update.attested_beacon_header().state_root(),
+            &mut update.finalized_beacon_header().clone(),
+            update.finality_branch(),
+        )
+        .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+
+        if !is_valid {
+            return Err(ConsensusError::InvalidFinalityProof);
+        }
+
+        let pks = self
+            .sync_committee
+            .get_participant_pubkeys(update.sync_aggregate().sync_committee_bits());
+
+        let header_root = update
+            .attested_beacon_header()
+            .hash_tree_root()
+            .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+
+        let signing_data = SigningData::new(header_root.hash(), DOMAIN_BEACON_DENEB);
+
+        let signing_root = signing_data
+            .hash_tree_root()
+            .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
+
+        let aggregated_pubkey = PublicKey::aggregate(&pks)
+            .map_err(|err| ConsensusError::SignatureError { source: err.into() })?;
+
+        update
+            .sync_aggregate()
+            .sync_committee_signature()
+            .verify(signing_root.as_ref(), &aggregated_pubkey)
+            .map_err(|err| ConsensusError::SignatureError { source: err.into() })
+    }
+}
+
+#[cfg(feature = "ethereum")]
+#[cfg(test)]
+mod test {
+    use crate::merkle::Merkleized;
+    use crate::test_utils::generate_committee_change_test_assets;
+    use crate::types::store::{CompactStore, LightClientStore};
+
     #[test]
     fn test_simple_validate_and_apply_update() {
-        let mut test_assets = generate_test_assets();
+        let mut test_assets = generate_committee_change_test_assets();
 
         test_assets
             .store
@@ -568,7 +695,7 @@ mod test {
 
     #[test]
     fn test_process_update() {
-        let mut test_assets = generate_test_assets();
+        let mut test_assets = generate_committee_change_test_assets();
 
         // Note: The data is not passed through process_light_client_update as the update is never applied because quorum is not met on the static data
 
@@ -639,13 +766,29 @@ mod test {
     }
 
     #[test]
-    fn test_ssz_serde() {
-        let test_assets = generate_test_assets();
+    fn test_ssz_serde_light_client_store() {
+        let test_assets = generate_committee_change_test_assets();
 
         let bytes = test_assets.store.to_ssz_bytes().unwrap();
 
         let deserialized_store = LightClientStore::from_ssz_bytes(&bytes);
 
         assert_eq!(test_assets.store, deserialized_store.unwrap());
+    }
+
+    #[test]
+    fn test_ssz_serde_compact_store() {
+        let test_assets = generate_committee_change_test_assets();
+
+        let compact_store = CompactStore::new(
+            *test_assets.store.finalized_header().beacon().slot(),
+            test_assets.store.current_sync_committee().clone(),
+        );
+
+        let serialized_store = compact_store.to_ssz_bytes();
+
+        let deserialized_store = CompactStore::from_ssz_bytes(&serialized_store).unwrap();
+
+        assert_eq!(compact_store, deserialized_store);
     }
 }
