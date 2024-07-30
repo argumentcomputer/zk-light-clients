@@ -53,7 +53,7 @@ jobs:
     needs: generate-fixtures
     runs-on: ubuntu-latest
     env:
-      SOLIDITY_FIXTURE_PATH: aptos/soldity/contracts/src/plonk_fixtures
+      SOLIDITY_FIXTURE_PATH: aptos/solidity/contracts/src/plonk_fixtures
       MOVE_FIXTURE_PATH: ethereum/move/sources/fixtures
     steps:
       - uses: actions/checkout@v4
