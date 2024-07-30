@@ -107,7 +107,7 @@ jobs:
               echo "New version is not greater than the current version for $1. Aborting..."
               exit 1
             fi
-            cd ${{ github.workspace }}/aptos
+            cd ${{ github.workspace }}/${{ inputs.light-client }}
           }
           
           while IFS= read -r path; do
