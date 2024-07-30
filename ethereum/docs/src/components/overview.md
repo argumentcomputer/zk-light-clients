@@ -6,9 +6,9 @@ and use cryptographic proofs to verify transactions and maintain security.
 
 There are four core components that need to exist to have a functional light client bridge running:
 
-- [**Source Chain Node**](./eth_nodes): A full node of the source chain from which it is possible to fetch the
+- [**Source Chain Node**](./eth_nodes.md): A full node of the source chain from which it is possible to fetch the
   necessary data to generate our proofs.
-- **Coordinator Middleware**: This middleware is responsible for orchestrating the other components that are part of the
+- [**Coordinator Middleware**](./client.md): This middleware is responsible for orchestrating the other components that are part of the
   architecture.
 - [**Light Client Proving Servers**](./proof_server.md): The core service developed by Lurk. It contains all the
   necessary logic to generate the necessary proofs and exposes it through a simple RPC endpoint.

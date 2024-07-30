@@ -1,7 +1,5 @@
 # Benchmark on-chain verification
 
-# Benchmark on-chain verification
-
 Our Light Client is able to produce SNARK proofs that can be verified on-chain. This section will cover how to run the
 benchmarks for the on-chain verification.
 

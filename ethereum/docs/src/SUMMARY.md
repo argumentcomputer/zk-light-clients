@@ -38,7 +38,6 @@ This section goes over how to run the benchmarks to measure the performances of 
 - [Overview](./benchmark/overview.md)
 - [Configuration](./benchmark/configuration.md)
 - [Benchmark individual proofs](./benchmark/proof.md)
-- [E2E benchmarks](./benchmark/e2e.md)
 - [On-chain verification benchmarks](./benchmark/on_chain.md)
 
 # Miscellaneous
