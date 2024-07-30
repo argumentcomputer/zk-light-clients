@@ -4,13 +4,6 @@ use sphinx_prover::types::HashableKey;
 use sphinx_sdk::ProverClient;
 use std::path::PathBuf;
 
-use ethereum_lc::proofs::committee_change::{CommitteeChangeIn, CommitteeChangeProver};
-use ethereum_lc::proofs::inclusion::{StorageInclusionIn, StorageInclusionProver};
-use ethereum_lc::proofs::{ProofType, Prover, ProvingMode};
-use ethereum_lc::test_utils::{
-    generate_committee_change_test_assets, generate_inclusion_test_assets,
-};
-
 pub const APTOS_INCLUSION_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/inclusion-program");
 pub const APTOS_EPOCH_CHANGE_ELF: &[u8] =
@@ -31,19 +24,6 @@ struct SolidityFixture {
     vkey: String,
     public_values: String,
     proof: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct MoveArg {
-    #[serde(rename = "type")]
-    type_: String,
-    value: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct MoveFixture {
-    type_args: [String; 2], // two hardcoded service fields required by Aptos
-    args: [MoveArg; 3],     // vk, public_values, proof
 }
 
 fn generate_fixture_inclusion_aptos_lc() {
@@ -73,62 +53,6 @@ fn generate_fixture_inclusion_aptos_lc() {
         public_values: proof.public_values.bytes().to_string(),
         proof: proof.bytes(),
     };
-    std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
-    let fixture_path = fixture_path.join("inclusion_fixture.json");
-    std::fs::write(
-        fixture_path.clone(),
-        serde_json::to_string_pretty(&fixture).unwrap(),
-    )
-    .expect("failed to write fixture");
-
-    tracing::info!("Fixture has been successfully saved to {:?}", fixture_path);
-}
-
-fn generate_fixture_inclusion_ethereum_lc() {
-    tracing::info!("Generating inclusion fixture using Ethereum program (for Move verification)");
-
-    let prover = StorageInclusionProver::new();
-    let test_assets = generate_inclusion_test_assets();
-    let input = StorageInclusionIn::new(
-        test_assets.store().clone(),
-        test_assets.finality_update().clone().into(),
-        test_assets.eip1186_proof().clone(),
-    );
-    let proof = match prover.prove(input, ProvingMode::SNARK).unwrap() {
-        ProofType::SNARK(inner_proof) => inner_proof,
-        _ => {
-            panic!("Unexpected proof")
-        }
-    };
-    prover.verify(&ProofType::SNARK(proof.clone())).unwrap();
-
-    // save fixture
-    let fixture = MoveFixture {
-        type_args: [
-            String::from("0x1::account::Account"),
-            String::from("0x1::chain_id::ChainId"),
-        ],
-        args: [
-            MoveArg {
-                // vk
-                type_: String::from("hex"),
-                value: prover.get_vk().bytes32().to_string(),
-            },
-            MoveArg {
-                // public values
-                type_: String::from("hex"),
-                value: proof.public_values.bytes().to_string(),
-            },
-            MoveArg {
-                // proof
-                type_: String::from("hex"),
-                value: proof.bytes(),
-            },
-        ],
-    };
-
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../ethereum/move/sources/fixtures");
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join("inclusion_fixture.json");
     std::fs::write(
@@ -175,68 +99,6 @@ fn generate_fixture_epoch_change_aptos_lc() {
     tracing::info!("Fixture has been successfully saved to {:?}", fixture_path);
 }
 
-fn generate_fixture_epoch_change_ethereum_lc() {
-    tracing::info!(
-        "Generating epoch_change fixture using Ethereum program (for Move verification)"
-    );
-
-    let mut test_assets = generate_committee_change_test_assets();
-    test_assets
-        .store
-        .process_light_client_update(&test_assets.update)
-        .unwrap();
-    let new_period_inputs = CommitteeChangeIn::new(
-        test_assets.store.clone(),
-        test_assets.update_new_period.clone(),
-    );
-    let prover = CommitteeChangeProver::new();
-    let proof = match prover.prove(new_period_inputs, ProvingMode::SNARK).unwrap() {
-        ProofType::SNARK(inner_proof) => inner_proof,
-        _ => {
-            panic!("Unexpected proof")
-        }
-    };
-    prover.verify(&ProofType::SNARK(proof.clone())).unwrap();
-
-    // save fixture
-    let fixture = MoveFixture {
-        type_args: [
-            String::from("0x1::account::Account"),
-            String::from("0x1::chain_id::ChainId"),
-        ],
-        args: [
-            MoveArg {
-                // vk
-                type_: String::from("hex"),
-                value: prover.get_vk().bytes32().to_string(),
-            },
-            MoveArg {
-                // public values
-                type_: String::from("hex"),
-                value: proof.public_values.bytes().to_string(),
-            },
-            MoveArg {
-                // proof
-                type_: String::from("hex"),
-                value: proof.bytes(),
-            },
-        ],
-    };
-
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../ethereum/move/sources/fixtures");
-
-    std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
-    let fixture_path = fixture_path.join("epoch_change_fixture.json");
-    std::fs::write(
-        fixture_path.clone(),
-        serde_json::to_string_pretty(&fixture).unwrap(),
-    )
-    .expect("failed to write fixture");
-
-    tracing::info!("Fixture has been successfully saved to {:?}", fixture_path);
-}
-
 fn main() {
     sphinx_sdk::utils::setup_logger();
     let args = ProveArgs::parse();
@@ -246,19 +108,13 @@ fn main() {
             "solidity" => {
                 generate_fixture_inclusion_aptos_lc();
             }
-            "move" => {
-                generate_fixture_inclusion_ethereum_lc();
-            }
-            _ => panic!("Unsupported language. Use: ['solidity', 'move']"),
+            _ => panic!("Unsupported language. Use: ['solidity']"),
         },
         "epoch_change" => match args.language.as_str() {
             "solidity" => {
                 generate_fixture_epoch_change_aptos_lc();
             }
-            "move" => {
-                generate_fixture_epoch_change_ethereum_lc();
-            }
-            _ => panic!("Unsupported language. Use: ['solidity', 'move']"),
+            _ => panic!("Unsupported language. Use: ['solidity']"),
         },
         _ => panic!("Unsupported program. Use: ['inclusion', 'epoch_change']"),
     }
