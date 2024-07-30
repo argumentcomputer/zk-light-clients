@@ -134,7 +134,7 @@ impl ValidatorVerifier {
     /// # Returns
     ///
     /// A new `ValidatorVerifier`.
-    pub fn new(validator_infos: Vec<ValidatorConsensusInfo>) -> Self {
+    pub const fn new(validator_infos: Vec<ValidatorConsensusInfo>) -> Self {
         Self { validator_infos }
     }
 

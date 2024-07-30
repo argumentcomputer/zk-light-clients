@@ -17,7 +17,7 @@ pub struct SparseMerkleProofAssets {
 }
 
 impl SparseMerkleProofAssets {
-    pub fn new(
+    pub const fn new(
         sparse_merkle_proof: Vec<u8>,
         leaf_key: [u8; 32],
         leaf_hash: [u8; 32],
@@ -40,7 +40,7 @@ pub struct TransactionProofAssets {
 }
 
 impl TransactionProofAssets {
-    pub fn new(
+    pub const fn new(
         transaction: Vec<u8>,
         transaction_index: u64,
         transaction_proof: Vec<u8>,
@@ -62,7 +62,7 @@ pub struct ValidatorVerifierAssets {
 }
 
 impl ValidatorVerifierAssets {
-    pub fn new(validator_verifier: Vec<u8>) -> ValidatorVerifierAssets {
+    pub const fn new(validator_verifier: Vec<u8>) -> ValidatorVerifierAssets {
         ValidatorVerifierAssets { validator_verifier }
     }
 }
