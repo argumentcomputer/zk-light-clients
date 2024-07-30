@@ -30,4 +30,3 @@ directory are:
 * `inclusion`: `0x00336c570224c00161ca7b3c275c24f3968aa09086c31d09d98691bce109f4f6`
 
 These values are also present in and used by the [solidity fixtures](../benchmark/on_chain.md).
- --cfg tokio_unstable

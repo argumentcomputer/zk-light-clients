@@ -8,8 +8,7 @@ There are four core components that need to exist to have a functional light cli
 
 - [**Source Chain Node**](./eth_nodes): A full node of the source chain from which it is possible to fetch the
   necessary data to generate our proofs.
-- [**Coordinator Middleware**](./clThe bundled example client currently only requests and verifies STARK proofs. The proof servers have support for generating
-and verifying SNARK proofs, but the example client does not yet make use of this.ient): This middleware is responsible for orchestrating the other components that are part of the
+- [**Coordinator Middleware**](./client): This middleware is responsible for orchestrating the other components that are part of the
   architecture.
 - [**Light Client Proving Servers**](./proof_server.md): The core service developed by Lurk. It contains all the
   necessary logic to generate the necessary proofs and exposes it through a simple RPC endpoint.

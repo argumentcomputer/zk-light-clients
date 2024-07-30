@@ -1,11 +1,11 @@
 # Sync committee change proof
 
-The Ethereum chain has (at any given time)  a committee of 512 validators that
+The Ethereum chain has (at any given time) a committee of 512 validators that
 is randomly selected every sync committee period (~1 day), and while a validator
 is part of the currently active sync committee they are expected to continually
 sign the block header that is the new head of the chain at each slot.
 
-At the start of each period \\(N\\)  any Light Client can trustfully know and verify
+At the start of each period \\(N\\) any Light Client can trustfully know and verify
 the current valid sync committee and the one for the period \\(N+1\\). The Light Client
 needs to keep track of those two hashes.
 

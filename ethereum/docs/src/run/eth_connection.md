@@ -44,8 +44,7 @@ in [the `BeaconClient` file](https://github.com/lurk-lab/zk-light-clients/tree/d
 ## Execution RPC Endpoint
 
 The Execution RPC endpoint is responsible for providing the Light Client with the necessary data to prove value
-inclusionThe bundled example client currently only requests and verifies STARK proofs. The proof servers have support for generating
-and verifying SNARK proofs, but the example client does not yet make use of this.
+inclusion
 in the state of the chain. The Light Client needs to connect to an Ethereum node that exposes the necessary RPC
 endpoints.
 
