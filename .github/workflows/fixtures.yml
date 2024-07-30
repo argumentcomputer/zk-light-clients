@@ -1,0 +1,82 @@
+# Rebuilds proof fixtures for Solidity and Move for smart contract verification tests
+# Then opens a pull request with the changes
+# Note: This workflow takes over 30 minutes due to parallel E2E proof generation for `inclusion` and `epoch_change`
+name: Update fixtures
+
+on:
+  workflow_dispatch: {}
+  # Once per day at 00:00 UTC
+  schedule:
+    - cron: "0 0 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  generate-fixtures:
+    runs-on: warp-ubuntu-latest-x64-32x
+    timeout-minutes: 90
+    strategy:
+      matrix:
+        fixture: [inclusion, epoch_change]
+        language: [solidity, move]
+        include:
+          - fixture-path: aptos/solidity/contracts/src/plonk_fixtures
+            language: solidity
+          - fixture-path: ethereum/move/sources/fixtures
+            language: move
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lurk-lab/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./.github/actions/setup
+        with:
+          pull_token: ${{ secrets.REPO_TOKEN }}
+      - name: Generate ${{ matrix.language }} fixtures
+        run: |
+          cargo run --release -- --program ${{ matrix.fixture }} --language ${{ matrix.language }}
+        working-directory: ${{ github.workspace }}/fixture-generator
+      - name: Upload fixture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.language }}_${{ matrix.fixture }}_fixture.json
+          path: ${{ github.workspace }}/${{ matrix.fixture-path }}/${{ matrix.fixture }}_fixture.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+  create-pull-request:
+    needs: generate-fixtures
+    runs-on: ubuntu-latest
+    env:
+      SOLIDITY_FIXTURE_PATH: aptos/soldity/contracts/src/plonk_fixtures
+      MOVE_FIXTURE_PATH: ethereum/move/sources/fixtures
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Solidity fixtures
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ github.workspace }}/${{ env.SOLIDITY_FIXTURE_PATH }}
+          pattern: "solidity_*"
+          merge-multiple: true
+      - name: Download Move fixtures
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
+          pattern: "move_*"
+          merge-multiple: true
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: "ci-update-fixtures"
+          title: "chore: Update fixtures"
+          commit-message: "chore: Update fixtures"
+          labels: "automated-issue"
+          body: |
+            This is an automated PR updating the proof fixtures for Solidity and Move, which are used for smart contract verification tests.
+
+            Workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

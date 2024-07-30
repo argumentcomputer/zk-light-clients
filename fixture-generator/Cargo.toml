@@ -1,0 +1,30 @@
+[package]
+version = "1.0.0"
+name = "fixture-generator"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/lurk-lab/zk-light-clients"
+
+resolver = "2"
+
+[[bin]]
+name = "generate-fixture"
+path = "src/bin/main.rs"
+
+[dependencies]
+sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0", features = ["plonk"] }
+sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
+serde_json = { version = "1", features = ["alloc"] }
+serde = { version = "1.0.193", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive", "env"] }
+tracing = "0.1.40"
+alloy-sol-types = "0.7.2"
+
+# Match the forks used by the aptos crates
+[patch.crates-io]
+merlin = { git = "https://github.com/aptos-labs/merlin" }
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+# Sphinx patch
+tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", branch = "patch-v2.0.2" }
+sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", branch = "patch-v0.10.8" }
