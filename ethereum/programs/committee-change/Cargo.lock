@@ -149,7 +149,7 @@ dependencies = [
 
 [[package]]
 name = "committee-change-program"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "ethereum-lc-core",
  "sphinx-zkvm",
@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "bls12_381",

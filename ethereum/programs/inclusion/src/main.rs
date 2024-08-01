@@ -45,6 +45,21 @@ pub fn main() {
             println!("cycle-tracker-end: validate_update");
     }
 
+    // Check execution inclusion in the beacon header
+    sphinx_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-start: check_execution_inclusion");
+    }
+    let is_valid = compact_update
+        .check_execution_proof()
+        .expect("is_execution_payload_proof_valid: could not validate proof");
+    assert!(
+        is_valid,
+        "is_execution_payload_proof_valid: proof is invalid"
+    );
+    sphinx_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-end: check_execution_inclusion");
+    }
+
     // Verify proof against finalized state root
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: verify_proof");
@@ -64,7 +79,7 @@ pub fn main() {
         .expect(
         "CompactStore::current_sync_committee: could not hash committee after inclusion proving",
     );
-    sphinx_zkvm::io::commit(compact_update.finalized_beacon_header().slot());
+    sphinx_zkvm::io::commit(compact_update.finalized_header().beacon().slot());
     sphinx_zkvm::io::commit(sync_committee_hash.as_ref());
     // Account key
     sphinx_zkvm::io::commit(&eip1186_proof.address);

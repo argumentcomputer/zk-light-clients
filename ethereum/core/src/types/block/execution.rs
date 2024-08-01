@@ -23,6 +23,12 @@ use getset::Getters;
 /// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/light-client/sync-protocol.md#custom-types).
 pub const EXECUTION_BRANCH_NBR_SIBLINGS: usize = 4;
 
+/// The [generalized Merkle tree index](https://github.com/ethereum/consensus-specs/blob/81f3ea8322aff6b9fb15132d050f8f98b16bdba4/ssz/merkle-proofs.md#generalized-merkle-tree-index)
+/// for the execution payload.
+///
+/// From [the Altair specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/light-client/sync-protocol.md#constants)
+pub const EXECUTION_PAYLOAD_GENERALIZED_INDEX: usize = 25;
+
 /// Path in the tree to the execution payload in the beacon block body.
 pub type ExecutionBranch = [Bytes32; EXECUTION_BRANCH_NBR_SIBLINGS];
 
@@ -45,7 +51,7 @@ pub const MAX_EXTRA_DATA_BYTES_LEN: usize = BYTES_32_LEN;
 
 /// `ExecutionBlockHeader` represents the header of an execution block.
 ///
-/// From [the Capella specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/capella/beacon-chain.md#executionpayloadheader).
+/// From [the Deneb specifications](https://github.com/ethereum/consensus-specs/blob/v1.4.0/specs/deneb/beacon-chain.md#executionpayloadheader).
 #[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct ExecutionBlockHeader {
