@@ -1,68 +1,65 @@
 # Benchmark individual proofs
 
-In this section we will cover how to run the benchmarks for the individual proofs. The benchmarks are located in
-the `light-client` crate folder. Those benchmarks are associated with programs that are meant to reproduce
-a production environment settings. They are meant to measure performance for a complete end-to-end flow.
+In this section we will cover how to run the benchmarks for the individual proofs. The benchmarks are located in the
+`light-client` crate folder. Those benchmarks are associated with programs that are meant to reproduce a production environment settings. They are meant to measure performance for a complete end-to-end flow.
 
-The numbers we've measured using our [production configuration](../run/overview.md) are further detailed in the
-following section.
+The numbers we've measured using our [production configuration](../run/overview.md) are further detailed in the following section.
 
 ## Sync committee change
 
-Benchmark that will run a proof generation for the sync committee change program. This program will execute a hash for
-the received `LightClientStore::current_sync_committee` to ensure that the signature is from the previous sync committee
-set, execute a `LightClientStore::process_light_client_update` and finally generate the hash for the
-new `LightClientStore::current_sync_committee`.
+Benchmark that will run a proof generation for the sync committee change program. This program will execute a hash for the received
+`LightClientStore::current_sync_committee` to ensure that the signature is from the previous sync committee set, execute a
+`LightClientStore::process_light_client_update` and finally generate the hash for the new
+`LightClientStore::current_sync_committee`.
 
-On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for
-this benchmark:
+On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for this benchmark:
 
 For STARKS:
+
 ```json
 {
   // Time in milliseconds, 2 minutes 10s ~
-  "proving_time":133511,
-  "verification_time":2469
+  "proving_time": 133511,
+  "verification_time": 2469
 }
 ```
 
 For SNARKS:
+
 ```json
 {
-    // Time in milliseconds, 13 minute 13s ~
-  "proving_time":793280,
-  "verification_time":1
+  // Time in milliseconds, 13 minute 13s ~
+  "proving_time": 793280,
+  "verification_time": 1
 }
 ```
 
 ## Storage inclusion
 
-Benchmark that will run a proof generation for the storage inclusion program. This program will execute a hash for the
-received `CompactStore::sync_committee` to ensure that the signature is from the current known sync
-committee
-set, execute a `CompactStore::validate_compact_update` to confirm that the received block information is one
-signed
-by the committee, and finally run an `EIP1186Proof::verify` against the state root of the finalized execution block
-header.
+Benchmark that will run a proof generation for the storage inclusion program. This program will execute a hash for the received
+`CompactStore::sync_committee` to ensure that the signature is from the current known sync committee set, execute a
+`CompactStore::validate_compact_update` to confirm that the received block information is one signed by the committee, and finally run an
+`EIP1186Proof::verify` against the state root of the finalized execution block header.
 
-On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for
-this benchmark:
+On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for this benchmark:
 
 For STARKS:
+
 ```json
 {
   // Time in milliseconds, 1 minute 20s ~
-  "proving_time":83383,
-  "verification_time":2178
+  "proving_time": 83383,
+  "verification_time": 2178
 }
 ```
 
 For SNARKS:
+
 ```json
 {
-  // Time in milliseconds, 11 minute 45s ~
-  "proving_time": 706585,
-  "verification_time":1
+  // Time in milliseconds, 11 minute 40s ~
+  "proving_time": 700401,
+  "verification_time": 1
 }
 ```
 
@@ -96,12 +93,9 @@ SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 bench --bench execute -- <benchmark
 
 ## Interpreting the results
 
-Before delving into the details, please take a look at the [cycle tracking documentation
-from SP1](https://succinctlabs.github.io/sp1/writing-programs/cycle-tracking.html) to get a rough sense of what the
-numbers mean.
+Before delving into the details, please take a look at the [cycle tracking documentation from SP1](https://succinctlabs.github.io/sp1/writing-programs/cycle-tracking.html) to get a rough sense of what the numbers mean.
 
-The benchmark will output a lot of information. The most important parts are the
-following:
+The benchmark will output a lot of information. The most important parts are the following:
 
 **Total cycles for the program execution**
 
@@ -111,8 +105,7 @@ This value can be found on the following line:
 INFO summary: cycles=63736, e2e=2506, khz=25.43, proofSize=2.66 MiB
 ```
 
-It contains the total number of cycles needed for the program, the end-to-end time in milliseconds, the frequency of the
-CPU in kHz, and the size of the proof generated.
+It contains the total number of cycles needed for the program, the end-to-end time in milliseconds, the frequency of the CPU in kHz, and the size of the proof generated.
 
 **Specific cycle count**
 
@@ -129,8 +122,7 @@ These specific cycles count are generated by us to track the cost of specific op
 
 **Proving time**
 
-The proving time is an output at the end of a benchmark in the shape of the following data structure, with each time in
-milliseconds:
+The proving time is an output at the end of a benchmark in the shape of the following data structure, with each time in milliseconds:
 
 ```json
 {
@@ -142,8 +134,7 @@ milliseconds:
 ## Alternative
 
 Another solution to get some information about proving time is to run the tests located in the `light-client`
-crate. They will output the same logs as the benchmarks, only the time necessary
-to generate a proof will change shape:
+crate. They will output the same logs as the benchmarks, only the time necessary to generate a proof will change shape:
 
 ```shell
 Starting generation of Merkle inclusion proof with 18 siblings...
@@ -153,8 +144,8 @@ Starting verification of Merkle inclusion proof...
 Verification took 805.530068ms
 ```
 
-To run the test efficiently, first install `nextest` following [its documentation](https://nexte.st/book/installation).
-Ensure that you also have the previously described environment variables set, then run the following command:
+To run the test efficiently, first install
+`nextest` following [its documentation](https://nexte.st/book/installation). Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
 SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --package ethereum-lc --no-capture --all-features
