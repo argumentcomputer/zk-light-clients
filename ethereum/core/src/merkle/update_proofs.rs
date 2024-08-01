@@ -32,7 +32,7 @@ use crate::types::{
 /// A `bool` indicating whether the finality proof is valid.
 pub fn is_finality_proof_valid(
     state_root: &Bytes32,
-    finality_header: &mut BeaconBlockHeader,
+    finality_header: &BeaconBlockHeader,
     finality_branch: &FinalizedRootBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
@@ -57,7 +57,7 @@ pub fn is_finality_proof_valid(
 /// A `bool` indicating whether the sync committee proof is valid.
 pub fn is_next_committee_proof_valid(
     state_root: &Bytes32,
-    next_committee: &mut SyncCommittee,
+    next_committee: &SyncCommittee,
     next_committee_branch: &SyncCommitteeBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
@@ -82,7 +82,7 @@ pub fn is_next_committee_proof_valid(
 /// A `bool` indicating whether the current committee proof is valid.
 pub fn is_current_committee_proof_valid(
     state_root: &Bytes32,
-    current_committee: &mut SyncCommittee,
+    current_committee: &SyncCommittee,
     current_committee_branch: &SyncCommitteeBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
@@ -107,7 +107,7 @@ pub fn is_current_committee_proof_valid(
 /// A `bool` indicating whether the execution payload proof is valid.
 pub fn is_execution_payload_proof_valid(
     state_root: &Bytes32,
-    execution_block_header: &mut ExecutionBlockHeader,
+    execution_block_header: &ExecutionBlockHeader,
     execution_payload_branch: &ExecutionBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
@@ -134,7 +134,7 @@ pub fn is_execution_payload_proof_valid(
 /// A `bool` indicating whether the proof is valid.
 fn is_proof_valid<M: Merkleized>(
     state_root: &Bytes32,
-    leaf_object: &mut M,
+    leaf_object: &M,
     branch: &[Bytes32],
     depth: usize,
     generalized_index: usize,
@@ -223,19 +223,13 @@ mod test {
     fn test_is_execution_payload_proof_valid() {
         let test_assets = generate_inclusion_test_assets();
 
-        let mut execution_header = test_assets
-            .finality_update()
-            .finalized_header()
-            .execution()
-            .clone();
-
         let is_valid = is_execution_payload_proof_valid(
             test_assets
                 .finality_update()
                 .finalized_header()
                 .beacon()
                 .body_root(),
-            &mut execution_header,
+            test_assets.finality_update().finalized_header().execution(),
             test_assets
                 .finality_update()
                 .finalized_header()
@@ -250,19 +244,13 @@ mod test {
     fn test_is_finality_proof_valid() {
         let test_assets = generate_inclusion_test_assets();
 
-        let mut finality_header = test_assets
-            .finality_update()
-            .finalized_header()
-            .beacon()
-            .clone();
-
         let is_valid = is_finality_proof_valid(
             test_assets
                 .finality_update()
                 .attested_header()
                 .beacon()
                 .state_root(),
-            &mut finality_header,
+            test_assets.finality_update().finalized_header().beacon(),
             test_assets.finality_update().finality_branch(),
         )
         .unwrap();
@@ -274,18 +262,13 @@ mod test {
     fn test_is_next_committee_proof_valid() {
         let test_assets = generate_committee_change_test_assets();
 
-        let mut next_committee = test_assets
-            .update_new_period()
-            .next_sync_committee()
-            .clone();
-
         let is_valid = is_next_committee_proof_valid(
             test_assets
                 .update_new_period()
                 .attested_header()
                 .beacon()
                 .state_root(),
-            &mut next_committee,
+            test_assets.update_new_period().next_sync_committee(),
             test_assets.update_new_period().next_sync_committee_branch(),
         )
         .unwrap();
@@ -303,11 +286,9 @@ mod test {
 
         let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
 
-        let mut current_committee = bootstrap.current_sync_committee().clone();
-
         let is_valid = is_current_committee_proof_valid(
             bootstrap.header().beacon().state_root(),
-            &mut current_committee,
+            bootstrap.current_sync_committee(),
             bootstrap.current_sync_committee_branch(),
         )
         .unwrap();

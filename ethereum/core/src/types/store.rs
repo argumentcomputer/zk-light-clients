@@ -112,7 +112,7 @@ impl LightClientStore {
         // Confirm that the given sync committee was committed in the block
         let is_valid = is_current_committee_proof_valid(
             bootstrap.header().beacon().state_root(),
-            &mut bootstrap.current_sync_committee().clone(),
+            bootstrap.current_sync_committee(),
             bootstrap.current_sync_committee_branch(),
         )
         .map_err(|err| StoreError::InvalidCurrentCommitteeProof { source: err.into() })?;
@@ -259,7 +259,7 @@ impl LightClientStore {
         // Ensure that the received finality proof is valid
         let is_valid = is_finality_proof_valid(
             update.attested_header().beacon().state_root(),
-            &mut update.finalized_header().beacon().clone(),
+            update.finalized_header().beacon(),
             update.finality_branch(),
         )
         .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
@@ -276,7 +276,7 @@ impl LightClientStore {
         } else {
             let is_valid = is_next_committee_proof_valid(
                 update.attested_header().beacon().state_root(),
-                &mut update.next_sync_committee().clone(),
+                update.next_sync_committee(),
                 update.next_sync_committee_branch(),
             )
             .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;
@@ -623,7 +623,7 @@ impl CompactStore {
         // Ensure that the received finality proof is valid
         let is_valid = is_finality_proof_valid(
             update.attested_beacon_header().state_root(),
-            &mut update.finalized_header().beacon().clone(),
+            update.finalized_header().beacon(),
             update.finality_branch(),
         )
         .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;

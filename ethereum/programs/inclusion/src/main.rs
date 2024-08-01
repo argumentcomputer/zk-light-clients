@@ -26,7 +26,7 @@ pub fn main() {
     }
     let compact_store = CompactStore::from_ssz_bytes(&compact_store_bytes)
         .expect("CompactStore::from_ssz_bytes: could not create store");
-    let mut compact_update = CompactUpdate::from_ssz_bytes(&compact_update_bytes)
+    let compact_update = CompactUpdate::from_ssz_bytes(&compact_update_bytes)
         .expect("CompactUpdate::from_ssz_bytes: could not create update");
     let eip1186_proof = EIP1186Proof::from_ssz_bytes(&eip1186_proof_bytes)
         .expect("EIP1186Proof::from_ssz_bytes: could not create proof");
@@ -49,8 +49,13 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: check_execution_inclusion");
     }
-    let is_valid = compact_update.check_execution_proof().expect("is_execution_payload_proof_valid: could not validate proof");
-    assert!(is_valid, "is_execution_payload_proof_valid: proof is invalid");
+    let is_valid = compact_update
+        .check_execution_proof()
+        .expect("is_execution_payload_proof_valid: could not validate proof");
+    assert!(
+        is_valid,
+        "is_execution_payload_proof_valid: proof is invalid"
+    );
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: check_execution_inclusion");
     }

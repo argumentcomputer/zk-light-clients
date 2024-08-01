@@ -570,13 +570,11 @@ impl CompactUpdate {
     /// # Returns
     ///
     /// A `Result` containing a `bool` indicating whether the execution payload proof is valid or a `MerkleError`.
-    pub fn check_execution_proof(&mut self) -> Result<bool, MerkleError> {
-        let body_root = self.finalized_header.beacon().body_root;
-        let execution_branch = self.finalized_header.execution_branch;
+    pub fn check_execution_proof(&self) -> Result<bool, MerkleError> {
         is_execution_payload_proof_valid(
-            &body_root,
-            &mut self.finalized_header.execution,
-            &execution_branch,
+            self.finalized_header().beacon().body_root(),
+            self.finalized_header().execution(),
+            self.finalized_header().execution_branch(),
         )
     }
 }
@@ -615,7 +613,7 @@ mod test {
 
         let valid = is_next_committee_proof_valid(
             update.attested_header().beacon().state_root(),
-            &mut update.next_sync_committee().clone(),
+            update.next_sync_committee(),
             update.next_sync_committee_branch(),
         )
         .unwrap();
@@ -624,7 +622,7 @@ mod test {
 
         let valid = is_finality_proof_valid(
             update.attested_header().beacon().state_root(),
-            &mut update.finalized_header().beacon().clone(),
+            update.finalized_header().beacon(),
             update.finality_branch(),
         )
         .unwrap();
