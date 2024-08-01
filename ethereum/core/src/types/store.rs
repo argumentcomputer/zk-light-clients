@@ -40,6 +40,8 @@ pub const FINALIZED_HEADER_OFFSET: usize = OFFSET_BYTE_LENGTH
 
 /// The `LightClientStore` represents the fill state for our Light Client. It includes the necessary
 /// data to be maintained to verify the consensus rules in future updates.
+///
+/// From [the Altaïr specification](https://github.com/ethereum/consensus-specs/blob/9c39645761e9526ff4b272ff9101ede9bd54b7a5/specs/altair/light-client/sync-protocol.md#lightclientstore).
 #[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct LightClientStore {
@@ -606,7 +608,7 @@ impl CompactStore {
 
         // Assert that the received data make sense chronologically
         let valid_time = update.signature_slot() > update.attested_beacon_header().slot()
-            && update.attested_beacon_header().slot() >= update.finalized_beacon_header().slot();
+            && update.attested_beacon_header().slot() >= update.finalized_header().beacon().slot();
 
         if !valid_time {
             return Err(ConsensusError::InvalidTimestamp);
@@ -621,7 +623,7 @@ impl CompactStore {
         // Ensure that the received finality proof is valid
         let is_valid = is_finality_proof_valid(
             update.attested_beacon_header().state_root(),
-            &mut update.finalized_beacon_header().clone(),
+            &mut update.finalized_header().beacon().clone(),
             update.finality_branch(),
         )
         .map_err(|err| ConsensusError::MerkleError { source: err.into() })?;

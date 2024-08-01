@@ -60,8 +60,8 @@ For STARKS:
 For SNARKS:
 ```json
 {
-  // Time in milliseconds, 11 minute 35s ~
-  "proving_time":695637,
+  // Time in milliseconds, 11 minute 45s ~
+  "proving_time": 706585,
   "verification_time":1
 }
 ```
