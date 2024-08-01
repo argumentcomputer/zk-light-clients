@@ -6,6 +6,10 @@ use crate::merkle::error::MerkleError;
 use crate::merkle::utils::get_subtree_index;
 use crate::merkle::Merkleized;
 use crate::types::block::consensus::BeaconBlockHeader;
+use crate::types::block::execution::{
+    ExecutionBlockHeader, ExecutionBranch, EXECUTION_BRANCH_NBR_SIBLINGS,
+    EXECUTION_PAYLOAD_GENERALIZED_INDEX,
+};
 use crate::types::committee::{
     SyncCommittee, SyncCommitteeBranch, CURRENT_SYNC_COMMITTEE_GENERALIZED_INDEX,
     NEXT_SYNC_COMMITTEE_GENERALIZED_INDEX, SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
@@ -28,7 +32,7 @@ use crate::types::{
 /// A `bool` indicating whether the finality proof is valid.
 pub fn is_finality_proof_valid(
     state_root: &Bytes32,
-    finality_header: &mut BeaconBlockHeader,
+    finality_header: &BeaconBlockHeader,
     finality_branch: &FinalizedRootBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
@@ -53,7 +57,7 @@ pub fn is_finality_proof_valid(
 /// A `bool` indicating whether the sync committee proof is valid.
 pub fn is_next_committee_proof_valid(
     state_root: &Bytes32,
-    next_committee: &mut SyncCommittee,
+    next_committee: &SyncCommittee,
     next_committee_branch: &SyncCommitteeBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
@@ -78,7 +82,7 @@ pub fn is_next_committee_proof_valid(
 /// A `bool` indicating whether the current committee proof is valid.
 pub fn is_current_committee_proof_valid(
     state_root: &Bytes32,
-    current_committee: &mut SyncCommittee,
+    current_committee: &SyncCommittee,
     current_committee_branch: &SyncCommitteeBranch,
 ) -> Result<bool, MerkleError> {
     is_proof_valid(
@@ -87,6 +91,31 @@ pub fn is_current_committee_proof_valid(
         current_committee_branch,
         SYNC_COMMITTEE_BRANCH_NBR_SIBLINGS,
         CURRENT_SYNC_COMMITTEE_GENERALIZED_INDEX,
+    )
+}
+
+/// Verifies the validity of an execution payload proof received in an [`crate::types::update::Update`] message.
+///
+/// # Arguments
+///
+/// * `state_root` - The state root of the Beacon block that the proof is attesting to.
+/// * `execution_block_header` - The header of the block that the update is attesting to be executed.
+/// * `execution_payload_branch` - The branch of the Merkle tree that proves the execution payload of the block.
+///
+/// # Returns
+///
+/// A `bool` indicating whether the execution payload proof is valid.
+pub fn is_execution_payload_proof_valid(
+    state_root: &Bytes32,
+    execution_block_header: &ExecutionBlockHeader,
+    execution_payload_branch: &ExecutionBranch,
+) -> Result<bool, MerkleError> {
+    is_proof_valid(
+        state_root,
+        execution_block_header,
+        execution_payload_branch,
+        EXECUTION_BRANCH_NBR_SIBLINGS,
+        EXECUTION_PAYLOAD_GENERALIZED_INDEX,
     )
 }
 
@@ -105,7 +134,7 @@ pub fn is_current_committee_proof_valid(
 /// A `bool` indicating whether the proof is valid.
 fn is_proof_valid<M: Merkleized>(
     state_root: &Bytes32,
-    leaf_object: &mut M,
+    leaf_object: &M,
     branch: &[Bytes32],
     depth: usize,
     generalized_index: usize,
@@ -174,5 +203,96 @@ fn accumulator_update(acc_hash: HashValue, (sibling_hash, bit): (&HashValue, boo
         sha2_hash_concat(sibling_hash, &acc_hash).unwrap()
     } else {
         sha2_hash_concat(&acc_hash, sibling_hash).unwrap()
+    }
+}
+
+#[cfg(all(test, feature = "ethereum"))]
+mod test {
+    use crate::merkle::update_proofs::{
+        is_current_committee_proof_valid, is_execution_payload_proof_valid,
+        is_finality_proof_valid, is_next_committee_proof_valid,
+    };
+    use crate::test_utils::{
+        generate_committee_change_test_assets, generate_inclusion_test_assets,
+    };
+    use crate::types::bootstrap::Bootstrap;
+    use std::env::current_dir;
+    use std::fs;
+
+    #[test]
+    fn test_is_execution_payload_proof_valid() {
+        let test_assets = generate_inclusion_test_assets();
+
+        let is_valid = is_execution_payload_proof_valid(
+            test_assets
+                .finality_update()
+                .finalized_header()
+                .beacon()
+                .body_root(),
+            test_assets.finality_update().finalized_header().execution(),
+            test_assets
+                .finality_update()
+                .finalized_header()
+                .execution_branch(),
+        )
+        .unwrap();
+
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_is_finality_proof_valid() {
+        let test_assets = generate_inclusion_test_assets();
+
+        let is_valid = is_finality_proof_valid(
+            test_assets
+                .finality_update()
+                .attested_header()
+                .beacon()
+                .state_root(),
+            test_assets.finality_update().finalized_header().beacon(),
+            test_assets.finality_update().finality_branch(),
+        )
+        .unwrap();
+
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_is_next_committee_proof_valid() {
+        let test_assets = generate_committee_change_test_assets();
+
+        let is_valid = is_next_committee_proof_valid(
+            test_assets
+                .update_new_period()
+                .attested_header()
+                .beacon()
+                .state_root(),
+            test_assets.update_new_period().next_sync_committee(),
+            test_assets.update_new_period().next_sync_committee_branch(),
+        )
+        .unwrap();
+
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_is_current_committee_proof_valid() {
+        let test_asset_path = current_dir()
+            .unwrap()
+            .join("../test-assets/committee-change/LightClientBootstrapDeneb.ssz");
+
+        let test_bytes = fs::read(test_asset_path).unwrap();
+
+        let bootstrap = Bootstrap::from_ssz_bytes(&test_bytes).unwrap();
+
+        let is_valid = is_current_committee_proof_valid(
+            bootstrap.header().beacon().state_root(),
+            bootstrap.current_sync_committee(),
+            bootstrap.current_sync_committee_branch(),
+        )
+        .unwrap();
+
+        assert!(is_valid);
     }
 }

@@ -30,7 +30,7 @@ pub struct BeaconBlockHeader {
     proposer_index: u64,
     parent_root: Bytes32,
     state_root: Bytes32,
-    body_root: Bytes32,
+    pub(crate) body_root: Bytes32,
 }
 
 impl BeaconBlockHeader {
