@@ -3,7 +3,7 @@
 version = "1.0.1"
 name = "epoch-change-program"
 edition = "2021"
-license = "BUSL-1.1"
+license = "Apache-2.0"
 
 [dependencies]
 aptos-lc-core = { path = "../../core", package = "aptos-lc-core", default-features = false }
