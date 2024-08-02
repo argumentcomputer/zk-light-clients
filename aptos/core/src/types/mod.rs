@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: Apache-2.0
 
 //! # Types Module
 //!
@@ -34,7 +34,7 @@
 //! For more detailed information, users should refer to the specific
 //! documentation for each sub-module.
 
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: Apache-2.0
 use crate::crypto::hash::HASH_LENGTH;
 use crate::serde_error;
 use crate::types::error::TypesError;

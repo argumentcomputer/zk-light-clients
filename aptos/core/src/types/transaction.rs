@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: Apache-2.0
 
 //! # Transaction Module
 //!
@@ -10,7 +10,7 @@
 //! The `TransactionInfo` structure represents the information
 //! about how a transaction affects the state of the Aptos blockchain.
 
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: Apache-2.0
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::error::TypesError;

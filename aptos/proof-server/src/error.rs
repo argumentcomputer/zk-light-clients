@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: Apache-2.0, MIT
+// SPDX-License-Identifier: Apache-2.0
 
 use aptos_lc_core::crypto::hash::HashValue;
 use thiserror::Error;
