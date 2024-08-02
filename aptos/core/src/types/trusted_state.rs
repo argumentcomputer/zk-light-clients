@@ -1,5 +1,5 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 //! # Trusted State Module
 //!
@@ -8,7 +8,7 @@
 //! It can be leveraged alongside an`EpochChangeProof`
 //! to "ratchet" our view forward to a newer state.
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::serde_error;
 use crate::types::epoch_state::EpochState;
