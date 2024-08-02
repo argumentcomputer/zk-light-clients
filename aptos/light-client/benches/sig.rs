@@ -1,5 +1,5 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use serde::Serialize;

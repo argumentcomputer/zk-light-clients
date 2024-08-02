@@ -1,5 +1,5 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 //! # Sparse Merkle Proof Module
 //!
@@ -23,7 +23,7 @@
 //! transmission, and deserialize the proof for verification,
 //! respectively.
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0
 use crate::crypto::hash::{CryptoHash, HashValue, HASH_LENGTH};
 use crate::merkle::node::{MerkleInternalNode, SparseMerkleInternalHasher, SparseMerkleLeafNode};
 use crate::serde_error;

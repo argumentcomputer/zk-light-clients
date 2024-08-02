@@ -1,5 +1,5 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 //! This module defines LedgerInfo and LedgerInfoWithSignatures structs which are used to
 //! represent the information about the latest committed block and the signatures of the
@@ -11,7 +11,7 @@
 //! fields in the serialized LedgerInfo and LedgerInfoWithSignatures structs. These constants
 //! represent offset and length of the fields bytes.
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
 use crate::crypto::sig::AggregateSignature;
 use crate::serde_error;
