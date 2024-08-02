@@ -1,7 +1,7 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey, PUB_KEY_LEN};
 use crate::serde_error;

@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 
 use crate::types::proof_server::{EpochChangeData, InclusionData};
 use aptos_lc::inclusion::{

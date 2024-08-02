@@ -10,7 +10,7 @@ members = [
 
 [workspace.package]
 edition = "2021"
-license = "BUSL-1.1"
+license = "Apache-2.0"
 repository = "https://github.com/lurk-lab/zk-light-clients"
 
 [workspace.dependencies]

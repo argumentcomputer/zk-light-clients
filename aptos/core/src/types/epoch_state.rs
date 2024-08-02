@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 
 //! # Epoch State Module
 //!
@@ -11,7 +11,7 @@
 //! an epoch in the blockchain, including the epoch number
 //! and the validator verifier.
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::serde_error;
 use crate::types::error::TypesError;
 use crate::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};

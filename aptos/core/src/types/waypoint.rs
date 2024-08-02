@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 
 //! # Waypoint Module
 //!
@@ -10,7 +10,7 @@
 //! The `Waypoint` structure represents a waypoint on the Aptos chain,
 //! which is a value that clients can use to bootstrap securely to a ledger.
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::epoch_state::EpochState;

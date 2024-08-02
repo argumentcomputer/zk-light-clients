@@ -1,5 +1,5 @@
 // Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 
 //! # Transaction Proof Module
 //!
@@ -14,7 +14,7 @@
 //! in the  Aptos state or not. It contains a list of sibling nodes,
 //! ordered from the bottom level to the root level of the Merkle Tree.
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0, MIT
 use crate::crypto::hash::{CryptoHash, HashValue, HASH_LENGTH};
 use crate::merkle::node::MerkleInternalNode;
 use crate::merkle::node::TransactionAccumulatorHasher;
