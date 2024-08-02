@@ -1,4 +1,4 @@
-// Copyright (c) Yatima, Inc.
+// Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;

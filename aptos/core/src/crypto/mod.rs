@@ -1,4 +1,4 @@
-// Copyright (c) Yatima, Inc.
+// Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 //! # Cryptographic Utilities for the Aptos Light Client

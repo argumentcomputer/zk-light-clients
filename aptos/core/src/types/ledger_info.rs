@@ -1,4 +1,4 @@
-// Copyright (c) Yatima, Inc.
+// Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 //! This module defines LedgerInfo and LedgerInfoWithSignatures structs which are used to
