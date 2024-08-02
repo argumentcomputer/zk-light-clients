@@ -1024,7 +1024,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-lc"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "aptos-lc-core",
@@ -1040,7 +1040,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-lc-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1246,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-programs"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "glob",
  "sphinx-helper",
@@ -8051,7 +8051,7 @@ dependencies = [
 
 [[package]]
 name = "proof-server"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "aptos-lc",
