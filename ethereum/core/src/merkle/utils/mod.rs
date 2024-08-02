@@ -118,7 +118,7 @@ fn calculate_root(mut leaves: Vec<HashValue>) -> Result<HashValue, CryptoError> 
 ///
 /// The mixed hash.
 pub fn mix_size(base_hash: &HashValue, size: usize) -> Result<HashValue, CryptoError> {
-    let usize_len = std::mem::size_of::<usize>();
+    let usize_len = size_of::<usize>();
 
     let mut length_bytes = [0; BYTES_32_LEN];
     length_bytes[0..usize_len].copy_from_slice(&size.to_le_bytes());

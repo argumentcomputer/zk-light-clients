@@ -1024,7 +1024,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-lc"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "aptos-lc-core",
@@ -1038,7 +1038,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-lc-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1243,7 +1243,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-programs"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "glob",
  "sphinx-helper",
@@ -3953,7 +3953,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "clap 4.5.11",
@@ -3974,7 +3974,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "bls12_381 0.8.0",
@@ -3990,7 +3990,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-programs"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "glob",
  "sphinx-helper",

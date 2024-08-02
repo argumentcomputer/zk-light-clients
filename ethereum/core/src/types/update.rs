@@ -9,6 +9,8 @@
 
 use crate::crypto::sig::{SyncAggregate, SYNC_AGGREGATE_BYTES_LEN};
 use crate::deserialization_error;
+use crate::merkle::error::MerkleError;
+use crate::merkle::update_proofs::is_execution_payload_proof_valid;
 use crate::types::block::consensus::BeaconBlockHeader;
 use crate::types::block::{LightClientHeader, LIGHT_CLIENT_HEADER_BASE_BYTES_LEN};
 use crate::types::committee::{
@@ -383,7 +385,7 @@ pub const COMPACT_ATTESTED_BEACON_OFFSET: usize = OFFSET_BYTE_LENGTH * 2
 #[getset(get = "pub")]
 pub struct CompactUpdate {
     attested_beacon_header: BeaconBlockHeader,
-    finalized_beacon_header: BeaconBlockHeader,
+    pub finalized_header: LightClientHeader,
     finalized_execution_state_root: Bytes32,
     finality_branch: FinalizedRootBranch,
     sync_aggregate: SyncAggregate,
@@ -394,11 +396,11 @@ impl From<FinalityUpdate> for CompactUpdate {
     fn from(finality_update: FinalityUpdate) -> Self {
         Self {
             attested_beacon_header: finality_update.attested_header.beacon().clone(),
-            finalized_beacon_header: finality_update.finalized_header.beacon().clone(),
             finalized_execution_state_root: *finality_update
                 .finalized_header
                 .execution()
                 .state_root(),
+            finalized_header: finality_update.finalized_header,
             finality_branch: finality_update.finality_branch,
             sync_aggregate: finality_update.sync_aggregate,
             signature_slot: finality_update.signature_slot,
@@ -411,7 +413,7 @@ impl From<Update> for CompactUpdate {
         Self {
             finalized_execution_state_root: *update.finalized_header.execution().state_root(),
             attested_beacon_header: update.attested_header.beacon,
-            finalized_beacon_header: update.finalized_header.beacon,
+            finalized_header: update.finalized_header,
             finality_branch: update.finality_branch,
             sync_aggregate: update.sync_aggregate,
             signature_slot: update.signature_slot,
@@ -433,10 +435,10 @@ impl CompactUpdate {
         let attested_header_bytes = self.attested_beacon_header.to_ssz_bytes();
 
         // Serialize finalized beacon block header
-        let finalized_beacon_block_header_offset =
+        let finalized_block_header_offset =
             attested_header_bytes.len() + COMPACT_ATTESTED_BEACON_OFFSET;
-        bytes.extend_from_slice(&(finalized_beacon_block_header_offset as u32).to_le_bytes());
-        let finalized_beacon_block_header_bytes = self.finalized_beacon_header.to_ssz_bytes();
+        bytes.extend_from_slice(&(finalized_block_header_offset as u32).to_le_bytes());
+        let finalized_block_header_bytes = self.finalized_header.to_ssz_bytes();
 
         // Serialize finalized execution state root
         bytes.extend_from_slice(&self.finalized_execution_state_root);
@@ -456,7 +458,7 @@ impl CompactUpdate {
         bytes.extend(&attested_header_bytes);
 
         // Append finalized beacon block header bytes
-        bytes.extend(&finalized_beacon_block_header_bytes);
+        bytes.extend(&finalized_block_header_bytes);
 
         Ok(bytes)
     }
@@ -551,16 +553,29 @@ impl CompactUpdate {
             ));
         }
 
-        let finalized_beacon_header = BeaconBlockHeader::from_ssz_bytes(&bytes[cursor..])?;
+        let finalized_header = LightClientHeader::from_ssz_bytes(&bytes[cursor..])?;
 
         Ok(Self {
             attested_beacon_header,
-            finalized_beacon_header,
+            finalized_header,
             finalized_execution_state_root,
             finality_branch,
             sync_aggregate,
             signature_slot,
         })
+    }
+
+    /// Check the validity of the execution payload proof.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing a `bool` indicating whether the execution payload proof is valid or a `MerkleError`.
+    pub fn check_execution_proof(&self) -> Result<bool, MerkleError> {
+        is_execution_payload_proof_valid(
+            self.finalized_header().beacon().body_root(),
+            self.finalized_header().execution(),
+            self.finalized_header().execution_branch(),
+        )
     }
 }
 
@@ -598,7 +613,7 @@ mod test {
 
         let valid = is_next_committee_proof_valid(
             update.attested_header().beacon().state_root(),
-            &mut update.next_sync_committee().clone(),
+            update.next_sync_committee(),
             update.next_sync_committee_branch(),
         )
         .unwrap();
@@ -607,7 +622,7 @@ mod test {
 
         let valid = is_finality_proof_valid(
             update.attested_header().beacon().state_root(),
-            &mut update.finalized_header().beacon().clone(),
+            update.finalized_header().beacon(),
             update.finality_branch(),
         )
         .unwrap();
