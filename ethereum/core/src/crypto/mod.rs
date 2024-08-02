@@ -1,4 +1,4 @@
-// Copyright (c) Yatima, Inc.
+// Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: APACHE-2.0
 
 //! # Cryptographic Utilities for the Ethereum Light Client
