@@ -6,7 +6,7 @@ worst case scenario where the client has to generate two proofs in parallel. It 
 benchmark is running in a single machine, to prevent resource exhaustion.
 
 The benchmark can be found in
-the [`proof-server`](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/proof-server/benches/proof_server.rs)
+the [`proof-server`](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/proof-server/benches/proof_server.rs)
 crate. It can be run with the following command:
 
 ```bash

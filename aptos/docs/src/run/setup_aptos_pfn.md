@@ -1,8 +1,8 @@
 # Setup an Aptos Full Node
 
 As we covered [in the previous section](../components/aptos_pfn.md), the current reference for the Aptos Full Node
-codebase is [`lurk-lab/aptos-core`](https://github.com/lurk-lab/aptos-core). The current version can be found on the
-branch [`lurk-lab/aptos-core:release/aptos-node-v1.14.0-patched`](https://github.com/lurk-lab/aptos-core/tree/release/aptos-node-v1.14.0-patched).
+codebase is [`argumentcomputer/aptos-core`](https://github.com/argumentcomputer/aptos-core). The current version can be found on the
+branch [`argumentcomputer/aptos-core:release/aptos-node-v1.14.0-patched`](https://github.com/argumentcomputer/aptos-core/tree/release/aptos-node-v1.14.0-patched).
 
 The setup we will go over is a setup by
 building the code source.
@@ -13,7 +13,7 @@ found [on the Aptos website](https://aptos.dev/nodes/full-node/public-fullnode/)
 First, clone the repository, `cd` into it and checkout the patched branch:
 
 ```bash
-git clone git@github.com:lurk-lab/aptos-core.git && cd aptos-core && git checkout release/aptos-node-v1.14.0-patched
+git clone git@github.com:argumentcomputer/aptos-core.git && cd aptos-core && git checkout release/aptos-node-v1.14.0-patched
 ```
 
 Then, we have some configuration to set up.

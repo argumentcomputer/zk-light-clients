@@ -37,7 +37,7 @@ runs:
 
         sudo apt-get install -y build-essential pkg-config libssl-dev libudev-dev cmake clang
 
-        git clone https://github.com/lurk-lab/sphinx.git
+        git clone https://github.com/argumentcomputer/sphinx.git
         cd sphinx/cli
         cargo install --locked --force --path .
 

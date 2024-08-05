@@ -13,7 +13,7 @@ Server can be divided in two distinct implementations:
 
 This layer of the Proof Server corresponds to the code for which the execution has to be proven. Its logic is the core
 of our whole implementation and ensures the correctness of what we are trying to achieve. The programs are written in Rust
-and leverages the [`lurk-lab/sphinx`](https://github.com/lurk-lab/sphinx) zkVM to generate the proofs and verify them.
+and leverages the [`argumentcomputer/sphinx`](https://github.com/argumentcomputer/sphinx) zkVM to generate the proofs and verify them.
 
 In the design document of both the [Sync Committee change proof](../design/committee_change_proof.md) and
 the [inclusion proof](../design/inclusion_proof.md), we describe what each program has to prove. Most computations
@@ -23,7 +23,7 @@ header.
 To accelerate those operations, we leverage some out-of-VM circuits called **pre-compiles** that are optimized for those
 specific operations. The following libraries that make use of our pre-compiles are used in our codebase:
 
-- [bls12_381](https://github.com/lurk-lab/bls12_381/tree/zkvm): A library for BLS12-381 operations based on
+- [bls12_381](https://github.com/argumentcomputer/bls12_381/tree/zkvm): A library for BLS12-381 operations based on
   [`zkcrypto/bls12_381`](https://github.com/zkcrypto/bls12_381) making use of pre-compiles for non-native arithmetic. Used
   for verifying the signatures over block header.
 - [sha2](https://github.com/sp1-patches/RustCrypto-hashes/tree/patch-v0.10.8): A library for SHA-256 hashing making use of
@@ -46,5 +46,5 @@ generate both proofs in parallel, since each server handles one proof at a time.
 both STARK core proofs and SNARK proofs.
 
 The RPC protocol used by the servers is a very simple length-prefixed protocol passing serialized messages back and forth.
-The messages are defined in [`proof-server/src/types/proof_server.rs`](https://github.com/lurk-lab/zk-light-clients/blob/dev/ethereum/light-client/src/types/network.rs).
+The messages are defined in [`proof-server/src/types/proof_server.rs`](https://github.com/argumentcomputer/zk-light-clients/blob/dev/ethereum/light-client/src/types/network.rs).
 See also the documentation on the [client](./client.md).

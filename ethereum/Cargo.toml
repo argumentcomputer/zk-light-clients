@@ -6,7 +6,7 @@ members = ["core", "ethereum-programs", "light-client"]
 [workspace.package]
 edition = "2021"
 license = "Apache-2.0"
-repository = "https://github.com/lurk-lab/zk-light-clients"
+repository = "https://github.com/argumentcomputer/zk-light-clients"
 
 [workspace.dependencies]
 anyhow = "1.0.86"
@@ -31,13 +31,13 @@ tokio = "1.39.0"
 tree_hash = "0.6"
 tree_hash_derive = "0.6"
 # Crypto dependencies
-bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm" }
+bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "zkvm" }
 # Sphinx dependencies
-sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0", features = ["plonk"] }
-sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-derive = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-sdk = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
+sphinx-zkvm = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-helper = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-prover = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
 
 [patch.crates-io]
 # Sphinx patch

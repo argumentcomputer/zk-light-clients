@@ -39,7 +39,7 @@ In this documentation, we will use the endpoint [https://www.lightclientdata.org
 > If you decide to use an infrastructure provider, make sure that the endpoints we need are properly available. Those
 > endpoints can be found
 >
-in [the `BeaconClient` file](https://github.com/lurk-lab/zk-light-clients/tree/dev/ethereum/light-client/src/client/beacon.rs).
+in [the `BeaconClient` file](https://github.com/argumentcomputer/zk-light-clients/tree/dev/ethereum/light-client/src/client/beacon.rs).
 
 ## Execution RPC Endpoint
 

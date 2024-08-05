@@ -15,7 +15,7 @@ The client can either work with STARK or SNARK proofs. To configure this, the
 environment variable `MODE` can be set to either `STARK` or `SNARK`. The default is `STARK`.
 
 ```bash
-git clone git@github.com:lurk-lab/zk-light-clients.git && \
+git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/ethereum && \
   MODE=SNARK RUST_LOG="debug" cargo +nightly-2024-05-31 run -p light-client --release --bin client -- -c <CHECKPOINT_PROVIDER_ADDRESS> -b <BEACON_NODE_ADDRESS> -p <PROOF_SERVER_ADDRESS> -r <RPC_PROVIDER_ADDRESS>
 ```

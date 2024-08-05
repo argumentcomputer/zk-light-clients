@@ -52,5 +52,5 @@ Here are the standard config variables that are worth setting for any benchmark:
 When running any tests or benchmarks that makes Plonk proofs over BN254, the prover leverages some pre-built circuits
 artifacts. Those circuits artifacts are generated when we release new versions of Sphinx and are automatically
 downloaded on first use. The current address for downloading the artifacts can be found
-[here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs), but it should not be necessary to download
+[here](https://github.com/argumentcomputer/sphinx/blob/dev/prover/src/install.rs), but it should not be necessary to download
 them manually.

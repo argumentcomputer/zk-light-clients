@@ -6,7 +6,7 @@ for what an on-chain verifier would be responsible for.
 
 The client also demonstrates how to request data from the Ethereum nodes endpoints, how to forward it to the proof servers
 using the simple binary RPC protocol, example and how to parse the received responses from the server. See
-[the source](https://github.com/lurk-lab/zk-light-clients/blob/dev/ethereum/light-client/src/bin/client.rs)
+[the source](https://github.com/argumentcomputer/zk-light-clients/blob/dev/ethereum/light-client/src/bin/client.rs)
 for more details.
 
 The client has two phases:
