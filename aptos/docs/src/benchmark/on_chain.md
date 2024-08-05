@@ -9,7 +9,7 @@ fixtures (JSON files) containing the proof data (proof itself, public values and
 the verification for both epoch-change and inclusion programs. These fixtures are generated from a SNARK proof generated
 by the proof servers, but currently the fixtures generated are meant for simple testing only.
 
-The contracts used for testing can be found in the [sphinx-contracts](https://github.com/lurk-lab/sphinx-contracts)
+The contracts used for testing can be found in the [sphinx-contracts](https://github.com/argumentcomputer/sphinx-contracts)
 repository which is used as a dependency.
 
 ## Requirements
@@ -81,5 +81,5 @@ RUST_LOG=info RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=
 > You might be encountering issue with updating `sphinx-contracts` Foundry dependency, in this case try manually
 > specifying accessing the submodule via SSH like this:
 > ```
-> git config submodule.aptos/solidity/contracts/lib/sphinx-contracts.url git@github.com:lurk-lab/sphinx-contracts
+> git config submodule.aptos/solidity/contracts/lib/sphinx-contracts.url git@github.com:argumentcomputer/sphinx-contracts
 > ```

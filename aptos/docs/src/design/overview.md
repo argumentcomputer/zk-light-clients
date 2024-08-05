@@ -24,7 +24,7 @@ The second proof is generated and submitted when a proof about some on-chain val
 to some account needs to be validated.
 
 The current Verifying Key Hashes which uniquely identify the specific RISC-V binaries for the proof programs, located in the
-[`aptos/aptos-programs/artifacts/`](https://github.com/lurk-lab/zk-light-clients/tree/dev/aptos/aptos-programs/artifacts)
+[`aptos/aptos-programs/artifacts/`](https://github.com/argumentcomputer/zk-light-clients/tree/dev/aptos/aptos-programs/artifacts)
 directory are:
 * `epoch_change`: `0x00eea0650222f7e5bb6a2fe57c0e0e504d1df8b3d848d5116174a8703d228c94`
 * `inclusion`: `0x00336c570224c00161ca7b3c275c24f3968aa09086c31d09d98691bce109f4f6`

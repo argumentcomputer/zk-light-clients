@@ -15,7 +15,7 @@ the new epoch. This is handled by the Epoch Change program.
 
 ## Epoch Change program IO
 
-[Program reference](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs)
+[Program reference](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs)
 
 ### Inputs
 

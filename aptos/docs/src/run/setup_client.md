@@ -12,7 +12,7 @@ Make sure to finish the [initial configuration](./configuration.md) first.
 With our deployment machine properly configured, we can run the client.
 
 ```bash
-git clone git@github.com:lurk-lab/zk-light-clients.git && \
+git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
   RUST_LOG="debug" cargo +nightly-2024-05-31 run -p proof-server --release --bin client -- --proof-server-address <PRIMARY_SERVER_ADDRESS> --aptos-node-url <APTOS_NODE_URL>
 ```

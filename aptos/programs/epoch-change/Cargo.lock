@@ -89,7 +89,7 @@ dependencies = [
 [[package]]
 name = "bls12_381"
 version = "0.8.0"
-source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#0d57d6ac0af6a464c4764809b5bf994d15920762"
+source = "git+https://github.com/argumentcomputer/bls12_381.git?branch=zkvm#0d57d6ac0af6a464c4764809b5bf994d15920762"
 dependencies = [
  "cfg-if",
  "digest 0.9.0",
@@ -541,7 +541,7 @@ dependencies = [
 [[package]]
 name = "sphinx-precompiles"
 version = "1.0.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+ssh://git@github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
 dependencies = [
  "anyhow",
  "bincode",
@@ -556,7 +556,7 @@ dependencies = [
 [[package]]
 name = "sphinx-zkvm"
 version = "1.0.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+ssh://git@github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
 dependencies = [
  "bincode",
  "cfg-if",
