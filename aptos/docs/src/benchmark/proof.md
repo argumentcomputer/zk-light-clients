@@ -14,29 +14,29 @@ Benchmarks can be classified in two distinct categories:
 
 ## End-to-end
 
-- [e2e](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/e2e.rs): Benchmark that will
+- [e2e](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/e2e.rs): Benchmark that will
   run a proof generation for both
-  the [epoch change program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs)
+  the [epoch change program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs)
   and
-  the [inclusion program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
+  the [inclusion program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
   The goal here is to test the complete flow for our light client and get cycle count and proving time for it. Note that
   each proof is handled sequentially, so running it might take some time.
-- [epoch_change](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/epoch_change.rs):
+- [epoch_change](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/epoch_change.rs):
   Benchmark that will run a proof generation
-  for [epoch change program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs).
+  for [epoch change program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs).
   This program will execute a hash for the received `ValidatorVerifier` to ensure that the signature is from the
   previous validator set, execute a `TrustedState::verify_and_ratchet_inner` and finally generate the hash for the
   verified `ValidatorVerifier`.
-- [inclusion](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/inclusion.rs):
+- [inclusion](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/inclusion.rs):
   Benchmark that will run a proof generation for
-  the [inclusion program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
+  the [inclusion program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
   It is meant to assess the cost of verifying a Merkle proof for a given leaf and a given root.
 
 ## Internals
 
-- [sig](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/sig.rs): Benchmark that will
+- [sig](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/sig.rs): Benchmark that will
   run a proof generation for
-  the [signature verification program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/benchmarks/signature-verification/src/main.rs).
+  the [signature verification program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/benchmarks/signature-verification/src/main.rs).
   This program mainly executes an aggregated signature verification for an aggregated signature and a set of public
   keys.
 

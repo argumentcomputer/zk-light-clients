@@ -24,7 +24,7 @@ deposit to some account needs to be validated.
 
 The current Verifying Key Hashes which uniquely identify the specific RISC-V
 binaries for the proof programs, located in the
-[`ethereum/ethereum-programs/artifacts/`](https://github.com/lurk-lab/zk-light-clients/tree/dev/ethereum/ethereum-programs/artifacts)
+[`ethereum/ethereum-programs/artifacts/`](https://github.com/argumentcomputer/zk-light-clients/tree/dev/ethereum/ethereum-programs/artifacts)
 directory are:
 
 * `epoch_change`: `0x0016ada2465cce37e1908bf462fec9c82d3f6f090965345d8f785f6d11f65826`

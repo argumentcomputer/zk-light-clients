@@ -47,7 +47,7 @@ For SNARKs:
 We're also working on a STARK verifier that could be used alongside Ethereum's new
 [blob transactions](https://eips.ethereum.org/EIPS/eip-4844), which can be used to drastically minimize the gas costs
 for large data such as STARK proofs. This is still experimental and an early work-in-progress, but
-[preliminary](https://github.com/lurk-lab/sphinx/pull/51) benchmarks using an Ethereum-friendly hash function and
+[preliminary](https://github.com/argumentcomputer/sphinx/pull/51) benchmarks using an Ethereum-friendly hash function and
 compression show that proof generation could be achieved at around 6 to 7 minutes.
 
 ## GPU acceleration

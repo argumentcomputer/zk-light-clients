@@ -13,7 +13,7 @@ fetched through the [EIP-1186](https://eips.ethereum.org/EIPS/eip-1186) RPC endp
 
 ## Inclusion program IO
 
-[Program reference](https://github.com/lurk-lab/zk-light-clients/blob/dev/ethereum/programs/inclusion/src/main.rs)
+[Program reference](https://github.com/argumentcomputer/zk-light-clients/blob/dev/ethereum/programs/inclusion/src/main.rs)
 
 ### Inputs
 

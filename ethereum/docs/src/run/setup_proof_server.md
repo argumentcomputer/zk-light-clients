@@ -36,7 +36,7 @@ Make sure to launch the proof servers with `cargo +nightly-2024-05-31`.
 Now that our deployment machine is properly configured, we can run the secondary server.
 
 ```bash
-git clone git@github.com:lurk-lab/zk-light-clients.git && \
+git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
   SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_secondary -- -a <NETWORK_ADDRESS>
 ```
@@ -46,7 +46,7 @@ git clone git@github.com:lurk-lab/zk-light-clients.git && \
 Finally, once the primary server is configured in the same fashion, run it:
 
 ```bash
-git clone git@github.com:lurk-lab/zk-light-clients.git && \
+git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/ethereum/light-client && \
   SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```
