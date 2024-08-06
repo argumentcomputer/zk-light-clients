@@ -71,13 +71,14 @@ async fn main() -> Result<()> {
 
     env_logger::init();
 
-    let listener = TcpListener::bind(addr).await?;
-    info!("Server is running on {}", listener.local_addr()?);
-
+    info!("Initializing server");
     let snd_addr = Arc::new(snd_addr);
     let prover_client = Arc::new(ProverClient::default());
     let (pk, vk) = inclusion::generate_keys(&prover_client);
     let (pk, vk) = (Arc::new(pk), Arc::new(vk));
+
+    let listener = TcpListener::bind(addr).await?;
+    info!("Server is running on {}", listener.local_addr()?);
 
     loop {
         let (mut client_stream, _) = listener.accept().await?;
