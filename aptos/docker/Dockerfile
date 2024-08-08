@@ -1,5 +1,5 @@
 # Use an existing docker image as a base
-FROM rust:latest as builder
+FROM rust:latest AS builder
 
 # Install git
 RUN apt-get update && apt-get install -y git build-essential pkg-config libssl-dev libudev-dev cmake clang
@@ -59,7 +59,7 @@ WORKDIR /app
 COPY --from=builder /app/aptos/target/release/client /app/aptos/target/release/server_primary /app/aptos/target/release/server_secondary ./
 
 # Create group and user
-RUN groupadd execgroup && useradd -m -g execgroup exec-user
+RUN groupadd execgroup && useradd -m -g execgroup execuser
 
 # Give ownership of files in /app to execuser
 RUN chown -R execuser:execgroup /app
