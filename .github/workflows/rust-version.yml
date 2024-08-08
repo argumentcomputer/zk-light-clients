@@ -4,14 +4,14 @@ name: Rust Version Check
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '0 0 1,15 * *'
+    - cron: '0 0 1,15 * *'
 
 jobs:
   rust-version-check:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: ["aptos", "ethereum"]
+        package: [ "aptos", "ethereum" ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
@@ -38,6 +38,7 @@ jobs:
         if: steps.compare-versions.outputs.outdated == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.REPO_TOKEN }}
           branch: "ci-update-rust-version-${{ matrix.package }}"
           title: "chore: Update `${{ matrix.package }}` Rust version to `nightly-${{ env.RUST_VERSION }}`"
           commit-message: "chore: Update `${{ matrix.package }}` Rust version to `nightly-${{ env.RUST_VERSION }}`"

@@ -34,20 +34,50 @@ jobs:
         run: |
           VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
           RELEASE_BRANCH="${{ startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.head.ref || github.event.pull_request.base.ref }}"
+          PATH=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2 | cut -d'.' -f 1)
 
           if [[ "${{ startsWith(github.event.pull_request.head.ref, 'release/') }}" == "true" ]]; then
             VERSION="${VERSION}.0"
           fi
 
           git tag -a $VERSION -m "$VERSION" origin/$RELEASE_BRANCH
-          git push origin $VERSION --follow-tags
+          git push origin $VERSION --follow-tags          
+          echo "path=$PATH" | tee -a "$GITHUB_OUTPUT"
           echo "version=$VERSION" | tee -a "$GITHUB_OUTPUT"
           echo "RELEASE_BRANCH=$RELEASE_BRANCH" | tee -a "$GITHUB_ENV"
+
+
+      - name: Get latest release reference
+        id: get-latest-release
+        run: |
+          if [[ "${{ startsWith(github.event.pull_request.head.ref, 'release/') }}" == "true" ]]; then
+            REGEX=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2 | cut -d'.' -f 1)
+            LATEST_RELEASE=$(gh release list --repo $GITHUB_REPOSITORY --limit 100 | grep -Ei "$REGEX" | head -n 1)
+
+            if [ -z "$LATEST_RELEASE" ]; then
+              FIRST_COMMIT=$(git rev-list --max-parents=0 dev#refs/heads/)
+
+              echo "The first commit on branch dev is $FIRST_COMMIT"
+              echo "latest_release=$FIRST_COMMIT" | tee -a "$GITHUB_OUTPUT"      
+            else
+              echo "Found release: $LATEST_RELEASE"
+              echo "latest_release=$LATEST_RELEASE" | tee -a "$GITHUB_OUTPUT"      
+            fi
+
+          else
+            REGEX=$(echo "${{ github.event.pull_request.base.ref }}" | cut -d'/' -f 2)
+            LATEST_RELEASE=$(gh release list --repo $GITHUB_REPOSITORY --limit 100 | grep -Ei "$REGEX" | head -n 1)
+
+            echo "Found release: $LATEST_RELEASE"
+            echo "latest_release=$LATEST_RELEASE" | tee -a "$GITHUB_OUTPUT"
+          fi
 
       - name: Build Changelog
         id: github_release
         uses: mikepenz/release-changelog-builder-action@v4
         with:
+          path: "./${{ steps.get-version.outputs.path }}"
+          fromTag: ${{ steps.get-latest-release.outputs.latest_release }}
           toTag: ${{ steps.get-version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

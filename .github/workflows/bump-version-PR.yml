@@ -143,4 +143,4 @@ jobs:
 
           gh pr create --title "${{ env.PR_DESCRIPTION }}" --body-file ./body.md --head ${{ env.PR_BRANCH }} --base ${{ env.BASE_BRANCH }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.REPO_TOKEN }}
