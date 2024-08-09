@@ -20,8 +20,7 @@ pub const APTOS_EPOCH_CHANGE_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/epoch-change-program");
 
 /// Path to the directory where the Solidity fixtures for the Aptos Light Client are stored.
-pub const SOLIDITY_FIXTURE_PATH: &str =
-    "../aptos/solidity/contracts/src/plonk_fixtures";
+pub const SOLIDITY_FIXTURE_PATH: &str = "../aptos/solidity/contracts/src/plonk_fixtures";
 
 /// Path to the directory where the Move fixtures for the Ethereum Light Client are stored.
 pub const MOVE_FIXTURE_PATH: &str = "../ethereum/move/sources/fixtures";
@@ -33,7 +32,7 @@ pub const INCLUSION_FIXTURE_FILENAME: &str = "inclusion_fixture.json";
 pub const EPOCH_CHANGE_FIXTURE_FILENAME: &str = "epoch_change_fixture.json";
 
 /// Supported languages for the smart contracts, used for the Aptos Light Client.
-pub const SOLIDITY: &str ="solidity";
+pub const SOLIDITY: &str = "solidity";
 
 /// Supported languages for the smart contracts, used for the Ethereum Light Client.
 pub const MOVE: &str = "move";
@@ -92,8 +91,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify_plonk(&proof, &vk).unwrap();
 
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = SolidityFixture {
@@ -118,9 +116,9 @@ fn generate_fixture_inclusion_ethereum_lc() {
     let prover = StorageInclusionProver::new();
     let test_assets = generate_inclusion_test_assets();
     let input = StorageInclusionIn::new(
-        test_assets.store,
-        test_assets.finality_update.into(),
-        test_assets.eip1186_proof,
+        test_assets.store().clone(),
+        test_assets.finality_update().clone().into(),
+        test_assets.eip1186_proof().clone(),
     );
     let proof = match prover.prove(input, ProvingMode::SNARK).unwrap() {
         ProofType::SNARK(inner_proof) => inner_proof,
@@ -155,8 +153,7 @@ fn generate_fixture_inclusion_ethereum_lc() {
         ],
     };
 
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(MOVE_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(MOVE_FIXTURE_PATH);
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join(INCLUSION_FIXTURE_FILENAME);
     std::fs::write(
@@ -183,8 +180,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify_plonk(&proof, &vk).unwrap();
 
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = SolidityFixture {
@@ -213,10 +209,8 @@ fn generate_fixture_epoch_change_ethereum_lc() {
         .store
         .process_light_client_update(&test_assets.update)
         .unwrap();
-    let new_period_inputs = CommitteeChangeIn::new(
-        test_assets.store,
-        test_assets.update_new_period,
-    );
+    let new_period_inputs =
+        CommitteeChangeIn::new(test_assets.store, test_assets.update_new_period);
     let prover = CommitteeChangeProver::new();
     let proof = match prover.prove(new_period_inputs, ProvingMode::SNARK).unwrap() {
         ProofType::SNARK(inner_proof) => inner_proof,
@@ -251,8 +245,7 @@ fn generate_fixture_epoch_change_ethereum_lc() {
         ],
     };
 
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(MOVE_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(MOVE_FIXTURE_PATH);
 
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join(EPOCH_CHANGE_FIXTURE_FILENAME);
@@ -270,7 +263,7 @@ fn main() {
     let args = ProveArgs::parse();
 
     match args.program.as_str() {
-        INCLUSION=> match args.language.as_str() {
+        INCLUSION => match args.language.as_str() {
             SOLIDITY => {
                 generate_fixture_inclusion_aptos_lc();
             }
