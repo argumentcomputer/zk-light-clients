@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 ethereum-lc-core = { path = "../../core", package = "ethereum-lc-core", default-features = false }
-sphinx-zkvm = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
 
 [patch.crates-io]
 # Sphinx patch
