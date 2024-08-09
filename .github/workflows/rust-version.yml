@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [ "aptos", "ethereum" ]
+        package: ["aptos", "ethereum", "fixture-generator"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
