@@ -50,11 +50,11 @@ sha2 = "0.9"
 thiserror = "1.0.58"
 tiny-keccak = "2.0.2"
 url = "2.5.0"
-sphinx-derive = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-sphinx-sdk = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
-sphinx-zkvm = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-sphinx-helper = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-sphinx-prover = { git = "ssh://git@github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
 tokio = "1.37"
 tokio-stream = "0.1"
 alloy-sol-types = "0.7.2"
