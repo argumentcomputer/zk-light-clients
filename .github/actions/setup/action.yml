@@ -1,16 +1,7 @@
 name: Test setup
-inputs:
-  pull_token:
-    description: "Token to use for private repo access"
-    required: true
 runs:
   using: "composite"
   steps:
-    - name: Set up git private repo access
-      shell: bash
-      run: |
-        git config --global url."https://${{ inputs.pull_token }}@github.com/".insteadOf ssh://git@github.com
-        git config --global url."https://${{ inputs.pull_token }}@github.com".insteadOf https://github.com
     - name: Set env
       shell: bash
       run: |
