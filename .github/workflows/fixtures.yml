@@ -46,6 +46,15 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 1
+      - uses: JasonEtco/create-an-issue@v2
+        if: ${{ failure() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_URL:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          update_existing: true
+          filename: .github/FIXTURES.md 
 
   create-pull-request:
     needs: generate-fixtures
@@ -70,6 +79,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
+          token: "${{ secrets.REPO_TOKEN }}"
           branch: "ci-update-fixtures"
           title: "chore: Update fixtures"
           commit-message: "chore: Update fixtures"
