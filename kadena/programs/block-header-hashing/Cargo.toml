@@ -1,0 +1,10 @@
+[workspace]
+[package]
+version = "1.0.1"
+name = "block-header-hashing-program"
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+kadena-lc-core = { path = "../../core", package = "kadena-lc-core"}
