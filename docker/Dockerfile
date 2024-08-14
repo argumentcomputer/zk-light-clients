@@ -1,6 +1,8 @@
 # Use an existing docker image as a base
 FROM rust:latest AS builder
 
+ARG LIGHT_CLIENT=aptos
+
 # Install git
 RUN apt-get update && apt-get install -y git build-essential pkg-config libssl-dev libudev-dev cmake clang
 
@@ -38,16 +40,23 @@ RUN cargo install --locked --force --path .
 RUN cargo prove install-toolchain
 
 # Set context in /app/aptos
-WORKDIR /app/aptos
+WORKDIR /app/$LIGHT_CLIENT
 
-# Copy aptos folder
-COPY . .
+# Copy light client folder
+COPY ./$LIGHT_CLIENT .
 
-# Build binaries
-RUN RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native" cargo +nightly build --release --bins -p proof-server
+# Determine the package name based on the value of LIGHT_CLIENT
+RUN if [ "$LIGHT_CLIENT" = "aptos" ]; then \
+        PACKAGE_NAME="proof-server"; \
+    else \
+        PACKAGE_NAME="ethereum-lc"; \
+    fi && \
+    RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native" cargo +nightly build --release --bins -p $PACKAGE_NAME
 
 # Start a new stage from scratch
 FROM debian:stable-slim
+
+ARG LIGHT_CLIENT=aptos
 
 # Install SSL libraries
 RUN apt update && apt install -y openssl libssl-dev
@@ -56,7 +65,7 @@ RUN apt update && apt install -y openssl libssl-dev
 WORKDIR /app
 
 # Copy only the binaries from the builder stage
-COPY --from=builder /app/aptos/target/release/client /app/aptos/target/release/server_primary /app/aptos/target/release/server_secondary ./
+COPY --from=builder /app/$LIGHT_CLIENT/target/release/client /app/$LIGHT_CLIENT/target/release/server_primary /app/$LIGHT_CLIENT/target/release/server_secondary ./
 
 # Create group and user
 RUN groupadd execgroup && useradd -m -g execgroup execuser

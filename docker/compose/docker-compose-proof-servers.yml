@@ -1,8 +1,8 @@
 services:
   server-primary:
     build:
-      context: ../
-      dockerfile: ./docker/Dockerfile
+      context: ../..
+      dockerfile: docker/Dockerfile
     command: sh -c "/app/server_primary --addr ${PRIMARY_ADDR}:${PRIMARY_PORT} --snd-addr server-secondary:${SECONDARY_PORT}"
     environment:
       - RUST_LOG=debug
@@ -14,23 +14,11 @@ services:
 
   server-secondary:
     build:
-      context: ../
-      dockerfile: ./docker/Dockerfile
+      context: ../..
+      dockerfile: docker/Dockerfile
     command: sh -c "/app/server_secondary --addr ${SECONDARY_ADDR}:${SECONDARY_PORT}"
     environment:
       - RUST_LOG=debug
     restart: always
     ports:
       - "${SECONDARY_PORT}:${SECONDARY_PORT}"
-
-  client:
-    build:
-      context: ../
-      dockerfile: ./docker/Dockerfile
-    command: sh -c "/app/client --proof-server-address server-primary:${PRIMARY_PORT} --aptos-node-url ${APTOS_NODE_URL}"
-    environment:
-      - RUST_LOG=debug
-    restart: always
-    depends_on:
-      - server-primary
-      - server-secondary

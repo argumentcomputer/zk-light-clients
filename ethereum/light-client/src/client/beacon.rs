@@ -15,6 +15,7 @@ use ethereum_lc_core::types::update::FinalityUpdate;
 use getset::Getters;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
+use std::time::Duration;
 
 /// An internal client to handle communication with a Beacon Node.
 #[derive(Debug, Clone, Getters)]
@@ -41,6 +42,34 @@ impl BeaconClient {
             beacon_node_address: beacon_node_address.to_string(),
             inner: Client::new(),
         }
+    }
+
+    /// Test the connection to the beacon node.
+    ///
+    /// # Returns
+    ///
+    /// A result indicating whether the connection was successful.
+    pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
+        // Try to connect to the proof server
+        let mut retries = 0;
+        loop {
+            match self.inner.get(&self.beacon_node_address).send().await {
+                Ok(_) => {
+                    break;
+                }
+                Err(_) if retries < 10 => {
+                    retries += 1;
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                }
+                Err(_) => {
+                    return Err(ClientError::Connection {
+                        address: self.beacon_node_address.clone(),
+                    });
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// `get_bootstrap_data` makes an HTTP request to the Beacon Node API to get the bootstrap data.
