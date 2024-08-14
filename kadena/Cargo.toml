@@ -12,8 +12,7 @@ repository = "https://github.com/argumentcomputer/zk-light-clients"
 glob = "0.3.1"
 
 # Sphinx dependencies
-sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
+#sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+#sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
 sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
 sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }

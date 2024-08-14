@@ -3,8 +3,26 @@
 
 #![no_main]
 
+use kadena_lc_core::{ KadenaHeaderRaw, header_root };
+
 sphinx_zkvm::entrypoint!(main);
 
 pub fn main() {
-    let _ = 1 + 2;
+    sphinx_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-start: read_inputs");
+    }
+    let header_bytes_base64 = sphinx_zkvm::io::read::<Vec<u8>>();
+    sphinx_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-end: read_inputs");
+    }
+    sphinx_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-start: deserialize_inputs");
+    }
+    let header = KadenaHeaderRaw::from_base64(&header_bytes_base64);
+    sphinx_zkvm::precompiles::unconstrained! {
+                println!("cycle-tracker-end: deserialize_inputs");
+    }
+
+    let actual = header_root(&header);
+    assert_eq!(actual, header.hash());
 }

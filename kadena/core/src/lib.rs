@@ -273,6 +273,8 @@ impl KadenaHeaderRaw {
 
 #[cfg(test)]
 mod test {
+    use std::process::Stdio;
+    use base64::Engine;
     use crate::{
         KadenaHeader, KadenaHeaderRaw, header_root, tag_bytes, ChainwebHash, BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG,
         BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG, CHAINWEB_VERSION_TAG, CHAIN_ID_TAG,
@@ -287,8 +289,15 @@ mod test {
     // export BLOCKHEADER_HASH=PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg=
     // export HEADER_ENCODING=''
     // curl -sk "https://${NODE}/chainweb/0.0/${CHAINWEB_VERSION}/chain/${CHAIN_ID}/header/${BLOCKHEADER_HASH}" ${HEADER_ENCODING}
-    const RAW_HEADER: &[u8; 424] = b"AAAAAAAAAAB97UtijQ4GABZadGj_lZHt2_fPGA0latJzV5-A68ZxHHj5vuSqaitWAwAFAAAAuIdT1f1Ljy2RW4pfv_qQZT701v9NiUO78l_ISWa5WE8KAAAAtgbgjwjxNIlyNxzVJFCZj3MSd-cC4tHEwPP4AMkndQYPAAAAQqZj-Xbeb0flE-pPUzZHnKIff0omUW3EHWk1pETh17Dt0Z6VjZnWIy6fsZz20SslSPE0ar6qTbHKG97AigIAAK-C-MGqrNxklX1UaYDYY7Ghvz3XNrv1XdHUyWktBmIpAAAAAFMcLVUmJQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXRk8AAAAAAAHAAAAC6UQSI0OBgDOgg0AAAAAAD40yGxliuhpyaLDEbwXjdmKMrnvc1NrcLlgkmENSEUY";
+    const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAAB97UtijQ4GABZadGj_lZHt2_fPGA0latJzV5-A68ZxHHj5vuSqaitWAwAFAAAAuIdT1f1Ljy2RW4pfv_qQZT701v9NiUO78l_ISWa5WE8KAAAAtgbgjwjxNIlyNxzVJFCZj3MSd-cC4tHEwPP4AMkndQYPAAAAQqZj-Xbeb0flE-pPUzZHnKIff0omUW3EHWk1pETh17Dt0Z6VjZnWIy6fsZz20SslSPE0ar6qTbHKG97AigIAAK-C-MGqrNxklX1UaYDYY7Ghvz3XNrv1XdHUyWktBmIpAAAAAFMcLVUmJQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXRk8AAAAAAAHAAAAC6UQSI0OBgDOgg0AAAAAAD40yGxliuhpyaLDEbwXjdmKMrnvc1NrcLlgkmENSEUY";
+    const RAW_HEADER_BYTES_LEN: usize = 424;
 
+    // Some other valid block headers
+    //const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAAACmFEpXKIFAFqnBc1TShDFkkFBmVKO-5iQg3VYbZXoHAHW5G8s1hGtAwAAAAAALg0UzRaXrSRnI1VrG6QC5K4zKSHmZRc7_YijkChipsMBAAAAiVAs8q7BjIn9Ku9bD3hgeXKAA5JAsREj2bZ11ULbeUwIAAAAvcOCfWo3JMHAG8aZvJRSlIaOhazIVhPxeg-NoTCd5g5Z5Kdd_FDWRq0DKTVnMm70lx3SBXzZ471ng0AergQAADq5MUlAkWvb09X2oPM6CJKP3gg4Zr7BoAOSFjtnKyvXAwAAAB-VZ0MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZwEAAAAAAAAHAAAAZ8U9WVuiBQBbTBQAAAAAAK_JUGU5QA2xe-dxVWyoWscrxSHj7lRrO8LGhDTf5ciX";
+    //const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAADagen7WaIFAASBaVOSlhojqQjImJ0F2PR258lozvJLjkLfXfsEIjPCAwAAAAAAHHEJ8CfvcweMTfvSMBYlXLWv0v25Mt-4bK3RUi_L6lsBAAAAi0pTBul2AUh0jWNPs2LXCdc_sgEyFK01O_bmHgDwkWAIAAAAYzOtui7Ns_-SQp472GrIlRUmIl9UsDagsuZ-Xuzf_L3__________________________________________4dF0GK2zmpsHFv5NYbuvc0pyhXfXwxxJRM0uvq8InFUAwAAAAcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAHAAAACH1lqeSNBQAAAAAAAAAAAJhcOUndKMtEn5_aPlk_LbLgU-vK_gpvrf14eFWrgEFW";
+    const TESTNET_CHAIN_3_HEADERS_URL: &str = "https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/3/header/";
+
+    /*
     #[tokio::test]
     async fn test_fetch_block_header() {
         pub async fn query_raw_header(client: &reqwest::Client) -> KadenaHeaderRaw {
@@ -309,8 +318,9 @@ mod test {
         let kadena_raw = query_raw_header(&client).await;
 
         let root = header_root(&kadena_raw);
+
         assert_eq!(root, kadena_raw.hash());
-    }
+    }*/
 
     #[test]
     fn test_merkle_log_lib() {
@@ -358,5 +368,40 @@ mod test {
     fn test_decode_binary_no_panic() {
         let header_raw = KadenaHeaderRaw::from_base64(RAW_HEADER);
         KadenaHeader::from_raw(&header_raw);
+    }
+
+    #[test]
+    fn test_multiple_header_root_computing() {
+        use std::process::Command;
+
+        let curl = Command::new("curl")
+            .arg("-s")
+            .arg(TESTNET_CHAIN_3_HEADERS_URL)
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("curl failure");
+
+        let jq = Command::new("jq")
+            .arg("-r")
+            .arg(".items")
+            .stdin(Stdio::from(curl.stdout.unwrap()))
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("jq failure");
+
+        let output = jq.wait_with_output().unwrap();
+        let output = String::from_utf8_lossy(&output.stdout);
+        let raw_headers = output.split_whitespace();
+        raw_headers.for_each(|header_str| {
+            let header_str = header_str.replace(&[',', '[', ']', '\"'], "");
+            let header_bytes = header_str.as_bytes();
+            // skip "garbage" in headers
+            if header_bytes.len() == RAW_HEADER_BYTES_LEN {
+                let parsed_header = KadenaHeaderRaw::from_base64(header_bytes);
+                let actual = header_root(&parsed_header);
+                let expected = parsed_header.hash();
+                assert_eq!(actual, expected);
+            }
+        });
     }
 }
