@@ -1,7 +1,9 @@
-use sha2::{Digest, Sha512_256};
+#![allow(clippy::assign_op_pattern)]
+
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{DateTime, Utc};
 use getset::Getters;
+use sha2::{Digest, Sha512Trunc256 as Sha512_256};
 use uint::construct_uint;
 
 construct_uint! {
@@ -30,7 +32,7 @@ pub fn tag_bytes(tag: u16) -> [u8; 2] {
 
 pub fn hash_data(tag: u16, bytes: &[u8]) -> Vec<u8> {
     let x: &[u8] = &[0x0];
-    ChainwebHash::digest([x, &tag_bytes(tag), bytes].concat()).to_vec()
+    ChainwebHash::digest([x, &tag_bytes(tag), bytes].concat().as_slice()).to_vec()
 }
 
 pub fn hash_root(bytes: &[u8; 32]) -> Vec<u8> {
@@ -39,7 +41,7 @@ pub fn hash_root(bytes: &[u8; 32]) -> Vec<u8> {
 
 pub fn hash_inner(left: &[u8], right: &[u8]) -> Vec<u8> {
     let x: &[u8] = &[0x1];
-    ChainwebHash::digest([x, left, right].concat()).to_vec()
+    ChainwebHash::digest([x, left, right].concat().as_slice()).to_vec()
 }
 
 pub fn header_root(kadena_raw: &KadenaHeaderRaw) -> Vec<u8> {
@@ -270,15 +272,10 @@ impl KadenaHeaderRaw {
     }
 }
 
-
 #[cfg(test)]
 mod test {
+    use crate::{header_root, KadenaHeader, KadenaHeaderRaw};
     use std::process::Stdio;
-    use crate::{
-        KadenaHeader, KadenaHeaderRaw, header_root, tag_bytes, ChainwebHash, BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG,
-        BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG, CHAINWEB_VERSION_TAG, CHAIN_ID_TAG,
-        EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
-    };
 
     // this binary data comes from this block header: https://explorer.chainweb.com/testnet/chain/0/block/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg
     // Extracted using the p2p REST API:
@@ -290,78 +287,8 @@ mod test {
     // curl -sk "https://${NODE}/chainweb/0.0/${CHAINWEB_VERSION}/chain/${CHAIN_ID}/header/${BLOCKHEADER_HASH}" ${HEADER_ENCODING}
     const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAAB97UtijQ4GABZadGj_lZHt2_fPGA0latJzV5-A68ZxHHj5vuSqaitWAwAFAAAAuIdT1f1Ljy2RW4pfv_qQZT701v9NiUO78l_ISWa5WE8KAAAAtgbgjwjxNIlyNxzVJFCZj3MSd-cC4tHEwPP4AMkndQYPAAAAQqZj-Xbeb0flE-pPUzZHnKIff0omUW3EHWk1pETh17Dt0Z6VjZnWIy6fsZz20SslSPE0ar6qTbHKG97AigIAAK-C-MGqrNxklX1UaYDYY7Ghvz3XNrv1XdHUyWktBmIpAAAAAFMcLVUmJQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXRk8AAAAAAAHAAAAC6UQSI0OBgDOgg0AAAAAAD40yGxliuhpyaLDEbwXjdmKMrnvc1NrcLlgkmENSEUY";
     const RAW_HEADER_BYTES_LEN: usize = 424;
-
-    // Some other valid block headers
-    //const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAAACmFEpXKIFAFqnBc1TShDFkkFBmVKO-5iQg3VYbZXoHAHW5G8s1hGtAwAAAAAALg0UzRaXrSRnI1VrG6QC5K4zKSHmZRc7_YijkChipsMBAAAAiVAs8q7BjIn9Ku9bD3hgeXKAA5JAsREj2bZ11ULbeUwIAAAAvcOCfWo3JMHAG8aZvJRSlIaOhazIVhPxeg-NoTCd5g5Z5Kdd_FDWRq0DKTVnMm70lx3SBXzZ471ng0AergQAADq5MUlAkWvb09X2oPM6CJKP3gg4Zr7BoAOSFjtnKyvXAwAAAB-VZ0MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZwEAAAAAAAAHAAAAZ8U9WVuiBQBbTBQAAAAAAK_JUGU5QA2xe-dxVWyoWscrxSHj7lRrO8LGhDTf5ciX";
-    //const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAADagen7WaIFAASBaVOSlhojqQjImJ0F2PR258lozvJLjkLfXfsEIjPCAwAAAAAAHHEJ8CfvcweMTfvSMBYlXLWv0v25Mt-4bK3RUi_L6lsBAAAAi0pTBul2AUh0jWNPs2LXCdc_sgEyFK01O_bmHgDwkWAIAAAAYzOtui7Ns_-SQp472GrIlRUmIl9UsDagsuZ-Xuzf_L3__________________________________________4dF0GK2zmpsHFv5NYbuvc0pyhXfXwxxJRM0uvq8InFUAwAAAAcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAHAAAACH1lqeSNBQAAAAAAAAAAAJhcOUndKMtEn5_aPlk_LbLgU-vK_gpvrf14eFWrgEFW";
-    const TESTNET_CHAIN_3_HEADERS_URL: &str = "https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/3/header/";
-
-    /*
-    #[tokio::test]
-    async fn test_fetch_block_header() {
-        pub async fn query_raw_header(client: &reqwest::Client) -> KadenaHeaderRaw {
-            // Get Header
-            let response_header = client
-                .get("https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/0/header/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg=")
-                .send()
-                .await
-                .unwrap()
-                .bytes()
-                .await
-                .unwrap();
-            KadenaHeaderRaw::from_base64(&response_header.to_vec()[1..response_header.len() - 1])
-        }
-
-        let client = reqwest::Client::new();
-
-        let kadena_raw = query_raw_header(&client).await;
-
-        let root = header_root(&kadena_raw);
-
-        assert_eq!(root, kadena_raw.hash());
-    }*/
-
-    #[test]
-    fn test_merkle_log_lib() {
-        use merkle_log::tree::{MerkleHash, MerkleLogEntry, MerkleTree};
-        use sha2::digest::Output;
-
-        let kadena_raw = KadenaHeaderRaw::from_base64(RAW_HEADER);
-
-        fn mk_root_entry(hash: &[u8]) -> MerkleLogEntry<ChainwebHash> {
-            let r: Output<ChainwebHash> = Output::<ChainwebHash>::clone_from_slice(hash);
-            MerkleLogEntry::TreeLeaf(MerkleHash(r))
-        }
-
-        fn mk_data_entry(tag: u16, data: &[u8]) -> MerkleLogEntry<ChainwebHash> {
-            MerkleLogEntry::DataLeaf([&tag_bytes(tag), data].concat())
-        }
-
-        let header = KadenaHeader::from_raw(&kadena_raw.clone());
-        let adjacents = header.adjacents().hashes();
-
-        let entries = [
-            mk_data_entry(FEATURE_FLAGS_TAG, kadena_raw.flags()),
-            mk_data_entry(BLOCK_CREATION_TIME_TAG, kadena_raw.time()),
-            mk_root_entry(kadena_raw.parent()),
-            mk_data_entry(HASH_TARGET_TAG, kadena_raw.target()),
-            mk_root_entry(kadena_raw.payload()),
-            mk_data_entry(CHAIN_ID_TAG, kadena_raw.chain()),
-            mk_data_entry(BLOCK_WEIGHT_TAG, kadena_raw.weight()),
-            mk_data_entry(BLOCK_HEIGHT_TAG, kadena_raw.height()),
-            mk_data_entry(CHAINWEB_VERSION_TAG, kadena_raw.version()),
-            mk_data_entry(EPOCH_START_TIME_TAG, kadena_raw.epoch_start()),
-            mk_data_entry(BLOCK_NONCE_TAG, kadena_raw.nonce()),
-            mk_root_entry(&adjacents[0]),
-            mk_root_entry(&adjacents[1]),
-            mk_root_entry(&adjacents[2]),
-        ];
-        let tree = MerkleTree::<ChainwebHash>::new(&entries);
-
-        let root = &header_root(&kadena_raw);
-
-        assert_eq!(tree.root().0.as_slice(), root);
-    }
+    const TESTNET_CHAIN_3_HEADERS_URL: &str =
+        "https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/3/header/";
 
     #[test]
     fn test_decode_binary_no_panic() {

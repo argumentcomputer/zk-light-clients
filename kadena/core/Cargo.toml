@@ -6,11 +6,13 @@ repository = { workspace = true }
 license = { workspace = true }
 
 [dependencies]
+bls12_381 = { workspace = true, features = ["experimental"] }
 sha2 = { workspace = true }
 getset = { workspace = true }
 base64 = { workspace = true }
 uint = { workspace = true }
 chrono = { workspace = true }
+tiny-keccak = { workspace = true, features = ["keccak"] }
 
-[dev-dependencies]
-merkle-log = { workspace = true }
+#[dev-dependencies]
+#merkle-log = { workspace = true }

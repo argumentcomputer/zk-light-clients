@@ -10,15 +10,24 @@ repository = "https://github.com/argumentcomputer/zk-light-clients"
 
 [workspace.dependencies]
 glob = "0.3.1"
-sha2 = "0.10.8"
 getset = "0.1.2"
 base64 = "0.22.1"
 uint = "0.9.5"
 chrono = "0.4.38"
-merkle-log = { version = "0.1.0", git = "https://github.com/kadena-io/merkle-log-rs.git" }
+sha2 = "0.9"
+tiny-keccak = "2.0.2"
+#merkle-log = { version = "0.1.0", git = "https://github.com/kadena-io/merkle-log-rs.git" }
+
+# Crypto dependencies
+bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "zkvm" }
 
 # Sphinx dependencies
 sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
 sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
 sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
 sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+
+[patch.crates-io]
+# Sphinx patch
+tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", branch = "patch-v2.0.2" }
+sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", branch = "patch-v0.10.8" }
