@@ -21,6 +21,7 @@ serde = { version = "1.0.193", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
 tracing = "0.1.40"
 alloy-sol-types = "0.7.2"
+hex = "0.4.3"
 
 # Match the forks used by the aptos crates
 [patch.crates-io]

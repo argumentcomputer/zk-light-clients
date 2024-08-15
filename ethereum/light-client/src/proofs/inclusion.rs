@@ -248,7 +248,8 @@ impl Prover for StorageInclusionProver {
 
         let (mut public_values, _) = self
             .client
-            .execute(Self::PROGRAM, &stdin)
+            .execute(Self::PROGRAM, stdin)
+            .run()
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
         Ok(StorageInclusionOut::from(&mut public_values))
@@ -261,6 +262,7 @@ impl Prover for StorageInclusionProver {
             ProvingMode::STARK => self
                 .client
                 .prove(&self.keys.0, stdin)
+                .run()
                 .map_err(|err| ProverError::Proving {
                     proof_type: mode.into(),
                     source: err.into(),
@@ -268,7 +270,9 @@ impl Prover for StorageInclusionProver {
                 .map(ProofType::STARK),
             ProvingMode::SNARK => self
                 .client
-                .prove_plonk(&self.keys.0, stdin)
+                .prove(&self.keys.0, stdin)
+                .plonk()
+                .run()
                 .map_err(|err| ProverError::Proving {
                     proof_type: mode.into(),
                     source: err.into(),
@@ -287,7 +291,7 @@ impl Prover for StorageInclusionProver {
                 .map_err(|err| ProverError::Verification { source: err.into() }),
             ProofType::SNARK(proof) => self
                 .client
-                .verify_plonk(proof, vk)
+                .verify(proof, vk)
                 .map_err(|err| ProverError::Verification { source: err.into() }),
         }
     }
