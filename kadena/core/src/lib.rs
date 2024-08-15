@@ -274,7 +274,6 @@ impl KadenaHeaderRaw {
 #[cfg(test)]
 mod test {
     use std::process::Stdio;
-    use base64::Engine;
     use crate::{
         KadenaHeader, KadenaHeaderRaw, header_root, tag_bytes, ChainwebHash, BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG,
         BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG, CHAINWEB_VERSION_TAG, CHAIN_ID_TAG,

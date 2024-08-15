@@ -6,15 +6,11 @@ repository = { workspace = true }
 license = { workspace = true }
 
 [dependencies]
-sha2 = "0.10.8"
-getset = "0.1.2"
-base64 = "0.22.1"
-uint = "0.9.5"
-chrono = "0.4.38"
-#reqwest = { version = "0.12.5", features = ["blocking", "json"] }
-#tokio = { version = "1.38.1", features = ["rt", "rt-multi-thread", "macros"] }
-
-#sphinx-sdk = { workspace = true }
+sha2 = { workspace = true }
+getset = { workspace = true }
+base64 = { workspace = true }
+uint = { workspace = true }
+chrono = { workspace = true }
 
 [dev-dependencies]
-merkle-log = { version = "0.1.0", git = "https://github.com/kadena-io/merkle-log-rs.git" }
+merkle-log = { workspace = true }

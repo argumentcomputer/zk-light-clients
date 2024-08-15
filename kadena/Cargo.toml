@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["kadena-programs", "core"]
+members = ["kadena-programs", "core", "light-client"]
 
 [workspace.package]
 edition = "2021"
@@ -10,9 +10,15 @@ repository = "https://github.com/argumentcomputer/zk-light-clients"
 
 [workspace.dependencies]
 glob = "0.3.1"
+sha2 = "0.10.8"
+getset = "0.1.2"
+base64 = "0.22.1"
+uint = "0.9.5"
+chrono = "0.4.38"
+merkle-log = { version = "0.1.0", git = "https://github.com/kadena-io/merkle-log-rs.git" }
 
 # Sphinx dependencies
-#sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-#sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
+sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
 sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
 sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }

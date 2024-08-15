@@ -22,7 +22,6 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: deserialize_inputs");
     }
-
     let actual = header_root(&header);
     assert_eq!(actual, header.hash());
 }
