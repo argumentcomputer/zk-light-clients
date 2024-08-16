@@ -204,13 +204,11 @@ jobs:
       - name: Set env
         run: |
           if [[ "${{ matrix.package }}" == "aptos" ]]; then
-            # TODO: Remove hardcoded test names
             TESTS="test_execute_inclusion test_execute_epoch_change test_execute_sig"
             FEATURES="--features aptos"
           elif [[ "${{ matrix.package }}" == "ethereum" ]]; then
-            # TODO: Add execution tests
-            TESTS=""
-            FEATURES=""
+            TESTS="test_execute_inclusion test_execute_committee_change"
+            FEATURES="--features ethereum"
           fi
           echo "TESTS=$TESTS" | tee -a $GITHUB_ENV
           echo "FEATURES=$FEATURES" | tee -a $GITHUB_ENV
