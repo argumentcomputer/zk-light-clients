@@ -299,7 +299,6 @@ mod test {
     use crate::test_utils::generate_inclusion_test_assets;
     use ethereum_lc_core::crypto::hash::keccak256_hash;
 
-    // Test CI
     #[test]
     fn test_execute_inclusion() {
         let test_assets = generate_inclusion_test_assets();
