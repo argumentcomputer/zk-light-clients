@@ -6,10 +6,18 @@ updates:
       separator: "-"
     schedule:
       interval: weekly
+    ignore:
+      # Ignore updates from certain packages
+      - dependency-name: "syn" # this is a major update for a pre-1.0 package
+
     groups:
       rust-dependencies:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
     open-pull-requests-limit: 5
 
   - package-ecosystem: "github-actions"
