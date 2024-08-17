@@ -9,7 +9,7 @@ license = { workspace = true }
 
 [dependencies]
 # LC crates
-aptos-lc-core = { path = "../core" }
+aptos-lc-core = { path = "../core", optional = true }
 aptos-programs = { path = "../aptos-programs" }
 
 # Sphinx crates
@@ -20,7 +20,7 @@ anyhow = { workspace = true }
 getset = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 thiserror = { workspace = true }
-bcs = { workspace = true }
+bcs = { workspace = true, optional = true  }
 
 [dev-dependencies]
 aptos-programs = { path = "../aptos-programs", features = ["bench"] }
@@ -30,7 +30,7 @@ serde_json = { workspace = true }
 
 [features]
 default = []
-aptos = ["aptos-lc-core/aptos"]
+aptos = ["dep:aptos-lc-core", "dep:bcs", "aptos-lc-core/aptos"]
 
 [[bench]]
 name = "inclusion"
