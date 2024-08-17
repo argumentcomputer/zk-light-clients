@@ -1054,7 +1054,7 @@ dependencies = [
  "aptos-vm",
  "aptos-vm-genesis",
  "bcs 0.1.4",
- "bls12_381 0.8.0 (git+https://github.com/argumentcomputer/bls12_381.git?branch=zkvm)",
+ "bls12_381 0.8.0",
  "bytes",
  "cfg-if",
  "getset",
@@ -2367,7 +2367,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "shlex",
  "syn 2.0.72",
 ]
@@ -2389,7 +2389,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "shlex",
  "syn 2.0.72",
  "which",
@@ -2555,19 +2555,6 @@ source = "git+https://github.com/argumentcomputer/bls12_381.git?branch=zkvm#0d57
 dependencies = [
  "cfg-if",
  "digest 0.9.0",
- "ff 0.13.0",
- "group 0.13.0",
- "pairing 0.23.0",
- "rand_core 0.6.4",
- "subtle",
-]
-
-[[package]]
-name = "bls12_381"
-version = "0.8.0"
-source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#0d57d6ac0af6a464c4764809b5bf994d15920762"
-dependencies = [
- "cfg-if",
  "ff 0.13.0",
  "group 0.13.0",
  "pairing 0.23.0",
@@ -5144,6 +5131,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.0",
  "tower-service",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -7117,7 +7105,7 @@ dependencies = [
 [[package]]
 name = "p3-air"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -7126,7 +7114,7 @@ dependencies = [
 [[package]]
 name = "p3-baby-bear"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "num-bigint 0.4.6",
  "p3-field",
@@ -7140,7 +7128,7 @@ dependencies = [
 [[package]]
 name = "p3-blake3"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "blake3",
  "p3-symmetric",
@@ -7149,7 +7137,7 @@ dependencies = [
 [[package]]
 name = "p3-bn254-fr"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "ff 0.13.0",
  "num-bigint 0.4.6",
@@ -7163,7 +7151,7 @@ dependencies = [
 [[package]]
 name = "p3-challenger"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "p3-field",
  "p3-maybe-rayon",
@@ -7175,7 +7163,7 @@ dependencies = [
 [[package]]
 name = "p3-commit"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "p3-challenger",
@@ -7188,7 +7176,7 @@ dependencies = [
 [[package]]
 name = "p3-dft"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -7200,7 +7188,7 @@ dependencies = [
 [[package]]
 name = "p3-field"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "num-bigint 0.4.6",
@@ -7213,7 +7201,7 @@ dependencies = [
 [[package]]
 name = "p3-fri"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "p3-challenger",
@@ -7231,7 +7219,7 @@ dependencies = [
 [[package]]
 name = "p3-interpolation"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -7241,7 +7229,7 @@ dependencies = [
 [[package]]
 name = "p3-keccak"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "p3-symmetric",
  "tiny-keccak",
@@ -7250,7 +7238,7 @@ dependencies = [
 [[package]]
 name = "p3-keccak-air"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "p3-air",
  "p3-field",
@@ -7263,7 +7251,7 @@ dependencies = [
 [[package]]
 name = "p3-matrix"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "p3-field",
@@ -7277,7 +7265,7 @@ dependencies = [
 [[package]]
 name = "p3-maybe-rayon"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "rayon",
 ]
@@ -7285,7 +7273,7 @@ dependencies = [
 [[package]]
 name = "p3-mds"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "p3-dft",
@@ -7299,7 +7287,7 @@ dependencies = [
 [[package]]
 name = "p3-merkle-tree"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "p3-commit",
@@ -7315,7 +7303,7 @@ dependencies = [
 [[package]]
 name = "p3-poseidon2"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "gcd",
  "p3-field",
@@ -7327,7 +7315,7 @@ dependencies = [
 [[package]]
 name = "p3-symmetric"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "p3-field",
@@ -7337,7 +7325,7 @@ dependencies = [
 [[package]]
 name = "p3-uni-stark"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "itertools 0.12.1",
  "p3-air",
@@ -7355,7 +7343,7 @@ dependencies = [
 [[package]]
 name = "p3-util"
 version = "0.1.0"
-source = "git+https://github.com/lurk-lab/Plonky3.git?branch=sp1#03f2b272e1b33ed91f8dfb0336f0a791071ef458"
+source = "git+https://github.com/argumentcomputer/Plonky3.git?branch=sp1-new#c5ee5502813e9621641407b3d2e22afee057321a"
 dependencies = [
  "serde",
 ]
@@ -8233,6 +8221,54 @@ dependencies = [
 ]
 
 [[package]]
+name = "quinn"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b22d8e7369034b9a7132bc2008cac12f2013c8132b45e0554e6e20e2617f2156"
+dependencies = [
+ "bytes",
+ "pin-project-lite",
+ "quinn-proto",
+ "quinn-udp",
+ "rustc-hash 2.0.0",
+ "rustls 0.23.12",
+ "socket2",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "quinn-proto"
+version = "0.11.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba92fb39ec7ad06ca2582c0ca834dfeadcaf06ddfc8e635c80aa7e1c05315fdd"
+dependencies = [
+ "bytes",
+ "rand 0.8.5",
+ "ring 0.17.8",
+ "rustc-hash 2.0.0",
+ "rustls 0.23.12",
+ "slab",
+ "thiserror",
+ "tinyvec",
+ "tracing",
+]
+
+[[package]]
+name = "quinn-udp"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bffec3605b73c6f1754535084a85229fa8a30f86014e6c81aeec4abb68b0285"
+dependencies = [
+ "libc",
+ "once_cell",
+ "socket2",
+ "tracing",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8535,7 +8571,10 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
+ "quinn",
+ "rustls 0.23.12",
  "rustls-pemfile 2.1.3",
+ "rustls-pki-types",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -8543,6 +8582,7 @@ dependencies = [
  "system-configuration",
  "tokio",
  "tokio-native-tls",
+ "tokio-rustls 0.26.0",
  "tokio-util",
  "tower-service",
  "url",
@@ -8550,6 +8590,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-streams",
  "web-sys",
+ "webpki-roots",
  "winreg 0.52.0",
 ]
 
@@ -8740,6 +8781,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "rustc-hash"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
+
+[[package]]
 name = "rustc-hex"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8823,6 +8870,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c58f8c84392efc0a126acce10fa59ff7b3d2ac06ab451a33f2741989b806b044"
 dependencies = [
  "once_cell",
+ "ring 0.17.8",
  "rustls-pki-types",
  "rustls-webpki 0.102.6",
  "subtle",
@@ -9595,13 +9643,14 @@ dependencies = [
 [[package]]
 name = "sphinx-core"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "anyhow",
  "arrayref",
  "bincode",
  "blake3",
- "bls12_381 0.8.0 (git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm)",
+ "bls12_381 0.8.0",
+ "bytemuck",
  "cfg-if",
  "curve25519-dalek 4.1.3",
  "elf",
@@ -9656,7 +9705,7 @@ dependencies = [
 [[package]]
 name = "sphinx-derive"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9666,7 +9715,7 @@ dependencies = [
 [[package]]
 name = "sphinx-helper"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "cargo_metadata 0.18.1",
  "chrono",
@@ -9675,7 +9724,7 @@ dependencies = [
 [[package]]
 name = "sphinx-primitives"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "itertools 0.12.1",
  "lazy_static",
@@ -9688,7 +9737,7 @@ dependencies = [
 [[package]]
 name = "sphinx-prover"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -9730,7 +9779,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-circuit"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "bincode",
  "itertools 0.12.1",
@@ -9753,7 +9802,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-compiler"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "backtrace",
  "hashbrown 0.14.5",
@@ -9778,7 +9827,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-core"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "arrayref",
  "backtrace",
@@ -9798,6 +9847,7 @@ dependencies = [
  "p3-merkle-tree",
  "p3-poseidon2",
  "p3-symmetric",
+ "p3-util",
  "serde",
  "serde_with",
  "sphinx-core",
@@ -9811,7 +9861,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-derive"
 version = "0.1.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9821,10 +9871,13 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-gnark-ffi"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
+ "anyhow",
+ "bincode",
  "bindgen 0.69.4",
  "cfg-if",
+ "hex",
  "log",
  "num-bigint 0.4.6",
  "p3-baby-bear",
@@ -9833,6 +9886,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_json",
+ "sha2 0.10.8",
  "sphinx-core",
  "sphinx-recursion-compiler",
  "tempfile",
@@ -9841,7 +9895,7 @@ dependencies = [
 [[package]]
 name = "sphinx-recursion-program"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "itertools 0.12.1",
  "p3-air",
@@ -9868,7 +9922,7 @@ dependencies = [
 [[package]]
 name = "sphinx-sdk"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#93e4598c5036fb3d50cb4aac95ed88decff0815a"
 dependencies = [
  "alloy-sol-types",
  "anyhow",
@@ -9897,6 +9951,7 @@ dependencies = [
  "strum 0.26.3",
  "strum_macros 0.26.4",
  "tempfile",
+ "thiserror",
  "tokio",
  "tracing",
  "twirp",
@@ -10330,7 +10385,7 @@ dependencies = [
  "once_cell",
  "pbkdf2 0.4.0",
  "rand 0.7.3",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "sha2 0.9.9",
  "thiserror",
  "unicode-normalization",
@@ -11262,6 +11317,15 @@ checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "0.26.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd7c23921eeb1713a4e851530e9b9756e4fb0e89978582942612524cf09f01cd"
+dependencies = [
+ "rustls-pki-types",
 ]
 
 [[package]]

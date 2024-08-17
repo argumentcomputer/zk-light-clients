@@ -12,8 +12,8 @@ name = "generate-fixture"
 path = "src/bin/main.rs"
 
 [dependencies]
-sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
-sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev", features = ["plonk"] }
+sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
 serde_json = { version = "1", features = ["alloc"] }
 serde = { version = "1.0.193", features = ["derive"] }
