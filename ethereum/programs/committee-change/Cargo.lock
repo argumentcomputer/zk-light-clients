@@ -112,6 +112,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bls12_381"
+version = "0.8.0"
+source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#e8604d27df3dee9d22f84732d433a10f1036c324"
+dependencies = [
+ "cfg-if",
+ "ff",
+ "group",
+ "pairing",
+ "rand_core",
+ "subtle",
+]
+
+[[package]]
 name = "byte-slice-cast"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -340,7 +353,7 @@ name = "ethereum-lc-core"
 version = "1.0.1"
 dependencies = [
  "anyhow",
- "bls12_381",
+ "bls12_381 0.8.0 (git+https://github.com/argumentcomputer/bls12_381.git?branch=zkvm)",
  "ethers-core",
  "getset",
  "hex",
@@ -1068,11 +1081,11 @@ dependencies = [
 [[package]]
 name = "sphinx-precompiles"
 version = "1.0.0"
-source = "git+ssh://git@github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
 dependencies = [
  "anyhow",
  "bincode",
- "bls12_381",
+ "bls12_381 0.8.0 (git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm)",
  "cfg-if",
  "getrandom",
  "hybrid-array",
@@ -1083,7 +1096,7 @@ dependencies = [
 [[package]]
 name = "sphinx-zkvm"
 version = "1.0.0"
-source = "git+ssh://git@github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
 dependencies = [
  "bincode",
  "cfg-if",
