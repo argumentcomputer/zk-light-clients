@@ -137,6 +137,8 @@ confidence-threshold = 0.8
 # aren't accepted for every possible crate as with the normal allow list
 exceptions = [
     # Each entry is the crate and version constraint, and its specific allow list.
+    # Fixed upstream, see https://github.com/aptos-labs/aptos-core/issues/13931
+    # Requires updating to a newer version of `aptos-core`
     { name = "number_range", version = "0.3.2", allow = ["GPL-3.0"] }
 ]
 

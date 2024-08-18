@@ -39,7 +39,6 @@ jobs:
         id: get-packages
         run: |
           PACKAGES=$(echo '${{ steps.filter.outputs.changes }}' | jq -c '.')
-
           LC_PACKAGES=$(echo "$PACKAGES" | jq -c 'del(.[] | select(. == "fixture-generator"))')
 
           if [ "$PACKAGES" != "[]" ]; then
@@ -53,6 +52,7 @@ jobs:
   test:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -80,6 +80,7 @@ jobs:
   clippy:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -207,6 +208,7 @@ jobs:
   cycle-count-regression:
     needs: changes
     runs-on: warp-ubuntu-latest-x64-32x
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       fail-fast: false
       matrix:
