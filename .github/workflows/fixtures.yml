@@ -76,10 +76,15 @@ jobs:
           path: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
           pattern: "move_*"
           merge-multiple: true
+      - uses: tibdex/github-app-token@v2
+        id: generate-token
+        with:
+          app_id: ${{ secrets.TOKEN_APP_ID }}
+          private_key: ${{ secrets.TOKEN_APP_PRIVATE_KEY }}
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          token: "${{ secrets.REPO_TOKEN }}"
+          token: ${{ steps.generate-token.outputs.token }}
           branch: "ci-update-fixtures"
           title: "chore: Update fixtures"
           commit-message: "chore: Update fixtures"
