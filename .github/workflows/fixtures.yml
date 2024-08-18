@@ -26,6 +26,7 @@ jobs:
             language: solidity
           - fixture-path: ethereum/move/sources/fixtures
             language: move
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
         with:
