@@ -40,7 +40,7 @@ jobs:
         run: |
           PACKAGES=$(echo '${{ steps.filter.outputs.changes }}' | jq -c '.')
 
-          LC_PACKAGES=$(echo "$PACKAGES" | jq 'del(.[] | select(. == "fixture-generator"))')
+          LC_PACKAGES=$(echo "$PACKAGES" | jq -c 'del(.[] | select(. == "fixture-generator"))')
 
           if [ "$PACKAGES" != "[]" ]; then
             if ! echo "$PACKAGES" | jq -e '.[] | select(. == "fixture-generator")' > /dev/null; then
