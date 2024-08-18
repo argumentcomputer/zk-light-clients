@@ -13,12 +13,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Detect changes in each light client crate
+  # Detect changes in each subcrate
   changes:
     runs-on: ubuntu-latest
     outputs:
-      # Expose matched filters as job 'packages' output variable
-      packages: ${{ steps.filter.outputs.changes }}
+      # List of changed packages, including `fixture-generator` if the light client packages were changed
+      packages: ${{ steps.get-packages.outputs.packages }}
+      # List of changed light client packages, excluding `fixture-generator`
+      lc-packages: ${{ steps.get-packages.outputs.lc-packages }}
       aptos: ${{ steps.filter.outputs.aptos }}
       ethereum: ${{ steps.filter.outputs.ethereum }}
     steps:
@@ -31,17 +33,32 @@ jobs:
               - 'aptos/**'
             ethereum:
               - 'ethereum/**'
+            fixture-generator:
+              - 'fixture-generator/**'
+      - name: Get list of changed packages
+        id: get-packages
+        run: |
+          PACKAGES=$(echo '${{ steps.filter.outputs.changes }}' | jq -c '.')
+          LC_PACKAGES=$(echo "$PACKAGES" | jq -c 'del(.[] | select(. == "fixture-generator"))')
+
+          if [ "$PACKAGES" != "[]" ]; then
+            if ! echo "$PACKAGES" | jq -e '.[] | select(. == "fixture-generator")' > /dev/null; then
+              PACKAGES=$(echo "$PACKAGES" | jq -c '. + ["fixture-generator"]')
+            fi
+          fi
+          echo "packages=$PACKAGES" | tee -a "$GITHUB_OUTPUT"
+          echo "lc-packages=$LC_PACKAGES" | tee -a "$GITHUB_OUTPUT"
 
   test:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
-      matrix:
-        # Parse JSON array containing names of all changed light client packages
-        # e.g. ['aptos', 'ethereum'] if both directories contain changes
-        package: ${{ fromJSON(needs.changes.outputs.packages) }}
       fail-fast: false
+      matrix:
+        # Parse JSON array containing names of all changed light client packages,
+        # e.g. ['aptos', 'ethereum'] if `aptos` and `ethereum` contain changes.
+        package: ${{ fromJSON(needs.changes.outputs.lc-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,9 +82,11 @@ jobs:
     runs-on: buildjet-16vcpu-ubuntu-2204
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
+      fail-fast: false
       matrix:
-        # Parse JSON array containing names of all changed light client packages
-        # e.g. ['aptos', 'ethereum'] if both directories contain changes
+        # Parse JSON array containing names of all changed packages,
+        # e.g. ['aptos', 'ethereum', 'fixture-generator'] if `aptos` and `ethereum` contain changes.
+        # We always run 'fixture-generator' clippy tests if it or any light client was changed.
         package: ${{ fromJSON(needs.changes.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
@@ -88,6 +107,7 @@ jobs:
         run: cargo xclippy -D warnings
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
       - name: Doctests
+        if: ${{ matrix.package != 'fixture-generator'}}
         run: |
           cargo test --doc
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
@@ -96,6 +116,7 @@ jobs:
         run: |
           cargo deny --manifest-path ${{ matrix.package }}/Cargo.toml check
       - name: Cargo-deny check programs
+        if: ${{ matrix.package != 'fixture-generator'}}
         run: |
           find ${{ matrix.package }}/programs -type d -name "target" -prune -o -type f -name "Cargo.toml" -exec cargo deny --manifest-path {} check \;
 
@@ -189,10 +210,11 @@ jobs:
     runs-on: warp-ubuntu-latest-x64-32x
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
+      fail-fast: false
       matrix:
         # Parse JSON array containing names of all changed light client packages
         # e.g. ['aptos', 'ethereum'] if both directories contain changes
-        package: ${{ fromJSON(needs.changes.outputs.packages) }}
+        package: ${{ fromJSON(needs.changes.outputs.lc-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
