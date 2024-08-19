@@ -76,12 +76,11 @@ struct MoveFixture {
 fn bytes(proof: SphinxProofWithPublicValues) -> String {
     match &proof.proof {
         SphinxProof::Plonk(pr) => {
-            pr.encoded_proof
-              format!(
-                  "0x{}{}",
-                  hex::encode(&pr.plonk_vkey_hash[..4]);
-                  pr.encoded_proof,
-              )
+            format!(
+                "0x{}{}",
+                hex::encode(&pr.plonk_vkey_hash[..4]),
+                pr.encoded_proof,
+            )
         }
         _ => unimplemented!("Only Plonk proofs are supported for now"),
     }
