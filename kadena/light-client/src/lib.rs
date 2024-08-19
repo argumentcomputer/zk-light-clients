@@ -29,7 +29,12 @@ mod tests {
 
         let prover = ProverClient::new();
         let (pk, vk) = prover.setup(BLOCK_HEADER_HASHING_PROGRAM);
-        let proof = prover.prove_compressed(&pk, stdin).unwrap();
+        let mut proof = prover.prove_compressed(&pk, stdin).unwrap();
+        proof.proof.
+        let out: Vec<u8> = proof.public_values.read();
+
+        dbg!(out);
+
         prover.verify_compressed(&proof, &vk).unwrap();
     }
 
