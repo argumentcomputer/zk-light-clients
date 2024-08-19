@@ -3,7 +3,7 @@
 
 #![no_main]
 
-use kadena_lc_core::{ KadenaHeaderRaw, header_root };
+use kadena_lc_core::{header_root, KadenaHeaderRaw};
 
 sphinx_zkvm::entrypoint!(main);
 
@@ -23,5 +23,6 @@ pub fn main() {
                 println!("cycle-tracker-end: deserialize_inputs");
     }
     let actual = header_root(&header);
+    dbg!(&actual);
     sphinx_zkvm::io::commit(&actual);
 }
