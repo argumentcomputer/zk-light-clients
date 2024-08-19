@@ -6,6 +6,7 @@ script {
 
     const ERROR_LENGTH_VK: u64 = 3001;
     const ERROR_LENGTH_PROOF: u64 = 3002;
+    const ERROR_PROOF_VERSION: u64 = 3003;
 
     fun run_verification<T1, T2>(
         _account: signer,
@@ -21,8 +22,14 @@ script {
         // convert vkey
         let vkey: u256 = bytes_to_uint256(vkey_);
 
+        // check hardcoded plonk verifier hash
+        let expected_verifier_hash: u256 = 0xa8558442; // corresponds to v1.0.8-testnet artifacts
+        let verifier_hash_header = slice(&proof, 0, 4);
+        let verifier_hash: u256 = bytes_to_uint256(verifier_hash_header);
+        assert!(verifier_hash == expected_verifier_hash, ERROR_PROOF_VERSION);
+
         // convert proof
-        let i = 0;
+        let i = 4; // skip first 4 bytes
         let n = length(&proof_) / 32;
         let proof = vector::empty<u256>();
         while (i < n) {
