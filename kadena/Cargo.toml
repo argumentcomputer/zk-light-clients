@@ -22,10 +22,10 @@ tiny-keccak = "2.0.2"
 bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "zkvm" }
 
 # Sphinx dependencies
-sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0", features = ["plonk"] }
-sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
-sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", tag = "v1.0.0" }
+sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev", features = ["plonk"] }
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
+sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 
 [patch.crates-io]
 # Sphinx patch
