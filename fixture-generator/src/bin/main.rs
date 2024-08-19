@@ -73,7 +73,7 @@ struct MoveFixture {
     args: [MoveArg; 3],     // vk, public_values, proof
 }
 
-fn bytes(proof: SphinxProofWithPublicValues) -> String {
+fn bytes(proof: &SphinxProofWithPublicValues) -> String {
     match &proof.proof {
         SphinxProof::Plonk(pr) => {
             format!(
@@ -110,7 +110,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     let fixture = SolidityFixture {
         vkey: vk.bytes32().to_string(),
         public_values: proof.public_values.bytes().to_string(),
-        proof: bytes(proof),
+        proof: bytes(&proof),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join(INCLUSION_FIXTURE_FILENAME);
@@ -161,7 +161,7 @@ fn generate_fixture_inclusion_ethereum_lc() {
             MoveArg {
                 // proof
                 type_: String::from("hex"),
-                value: bytes(proof),
+                value: bytes(&proof),
             },
         ],
     };
@@ -199,7 +199,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     let fixture = SolidityFixture {
         vkey: vk.bytes32().to_string(),
         public_values: proof.public_values.bytes().to_string(),
-        proof: bytes(proof),
+        proof: bytes(&proof),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join(EPOCH_CHANGE_FIXTURE_FILENAME);
@@ -253,7 +253,7 @@ fn generate_fixture_epoch_change_ethereum_lc() {
             MoveArg {
                 // proof
                 type_: String::from("hex"),
-                value: bytes(proof),
+                value: bytes(&proof),
             },
         ],
     };
