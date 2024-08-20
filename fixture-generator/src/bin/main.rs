@@ -1,7 +1,7 @@
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use sphinx_prover::types::HashableKey;
-use sphinx_sdk::ProverClient;
+use sphinx_sdk::{ProverClient, SphinxProof, SphinxProofWithPublicValues};
 use std::path::PathBuf;
 
 /// Location for the Inclusion program of the Aptos Light Client.
@@ -23,7 +23,7 @@ pub const INCLUSION_FIXTURE_FILENAME: &str = "inclusion_fixture.json";
 pub const EPOCH_CHANGE_FIXTURE_FILENAME: &str = "epoch_change_fixture.json";
 
 /// Supported languages for the smart contracts, used for the Aptos Light Client.
-pub const SOLIDITY: &str ="solidity";
+pub const SOLIDITY: &str = "solidity";
 
 /// Supported programs for the fixtures.
 pub const INCLUSION: &str = "inclusion";
@@ -61,6 +61,19 @@ struct MoveFixture {
     args: [MoveArg; 3],     // vk, public_values, proof
 }
 
+fn bytes(proof: &SphinxProofWithPublicValues) -> String {
+    match &proof.proof {
+        SphinxProof::Plonk(pr) => {
+            format!(
+                "0x{}{}",
+                hex::encode(&pr.plonk_vkey_hash[..4]),
+                pr.encoded_proof,
+            )
+        }
+        _ => unimplemented!("Only Plonk proofs are supported for now"),
+    }
+}
+
 fn generate_fixture_inclusion_aptos_lc() {
     tracing::info!("Generating inclusion fixture using Aptos program (for Solidity verification)");
 
@@ -75,9 +88,9 @@ fn generate_fixture_inclusion_aptos_lc() {
 
     let prover = ProverClient::new();
     let (pk, vk) = prover.setup(elf);
-    let proof = prover.prove_plonk(&pk, stdin).unwrap();
+    let proof = prover.prove(&pk, stdin).plonk().run().unwrap();
     // just to check that proof is valid and verifiable
-    prover.verify_plonk(&proof, &vk).unwrap();
+    prover.verify(&proof, &vk).unwrap();
 
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
@@ -86,7 +99,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     let fixture = SolidityFixture {
         vkey: vk.bytes32().to_string(),
         public_values: proof.public_values.bytes().to_string(),
-        proof: proof.bytes(),
+        proof: bytes(&proof),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join(INCLUSION_FIXTURE_FILENAME);
@@ -110,9 +123,9 @@ fn generate_fixture_epoch_change_aptos_lc() {
 
     let prover = ProverClient::new();
     let (pk, vk) = prover.setup(elf);
-    let proof = prover.prove_plonk(&pk, stdin).unwrap();
+    let proof = prover.prove(&pk, stdin).plonk().run().unwrap();
     // just to check that proof is valid and verifiable
-    prover.verify_plonk(&proof, &vk).unwrap();
+    prover.verify(&proof, &vk).unwrap();
 
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
@@ -121,7 +134,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     let fixture = SolidityFixture {
         vkey: vk.bytes32().to_string(),
         public_values: proof.public_values.bytes().to_string(),
-        proof: proof.bytes(),
+        proof: bytes(&proof),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
     let fixture_path = fixture_path.join(EPOCH_CHANGE_FIXTURE_FILENAME);
@@ -139,7 +152,7 @@ fn main() {
     let args = ProveArgs::parse();
 
     match args.program.as_str() {
-        INCLUSION=> match args.language.as_str() {
+        INCLUSION => match args.language.as_str() {
             SOLIDITY => {
                 generate_fixture_inclusion_aptos_lc();
             }

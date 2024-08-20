@@ -108,7 +108,8 @@ async fn main() -> Result<()> {
                         &validator_verifier_assets,
                     );
                     info!("Start proving");
-                    let proof_handle = spawn_blocking(move || prover_client.prove(&pk, stdin));
+                    let proof_handle =
+                        spawn_blocking(move || prover_client.prove(&pk, stdin).run());
                     let proof = proof_handle.await??;
                     info!("Proof generated. Serializing");
                     let proof_bytes = bcs::to_bytes(&proof)?;
@@ -164,7 +165,7 @@ async fn main() -> Result<()> {
                     );
                     info!("Start proving");
                     let proof_handle =
-                        spawn_blocking(move || prover_client.prove_plonk(&pk, stdin));
+                        spawn_blocking(move || prover_client.prove(&pk, stdin).plonk().run());
                     let proof = proof_handle.await??;
                     info!("Proof generated. Serializing");
                     let proof_bytes = bcs::to_bytes(&proof)?;
@@ -175,7 +176,7 @@ async fn main() -> Result<()> {
                 Ok(Request::SnarkVerifyInclusion(proof)) => {
                     write_bytes(
                         &mut client_stream,
-                        &bcs::to_bytes(&prover_client.verify_plonk(&proof, &vk).is_ok())?,
+                        &bcs::to_bytes(&prover_client.verify(&proof, &vk).is_ok())?,
                     )
                     .await?;
                 }
