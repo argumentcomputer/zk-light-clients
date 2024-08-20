@@ -159,9 +159,11 @@ impl Client {
         store: LightClientStore,
         update: Update,
     ) -> Result<ProofType, ClientError> {
-        self.proof_server_client
-            .prove_committee_change(proving_mode, store, update)
-            .await
+        Box::pin(
+            self.proof_server_client
+                .prove_committee_change(proving_mode, store, update),
+        )
+        .await
     }
 
     /// `verify_committee_change` makes a request to the Proof Server API to verify the proof of a committee change.
@@ -232,9 +234,13 @@ impl Client {
         update: Update,
         eip1186_proof: EIP1186Proof,
     ) -> Result<ProofType, ClientError> {
-        self.proof_server_client
-            .prove_storage_inclusion(proving_mode, store, update, eip1186_proof)
-            .await
+        Box::pin(self.proof_server_client.prove_storage_inclusion(
+            proving_mode,
+            store,
+            update,
+            eip1186_proof,
+        ))
+        .await
     }
 
     /// `verify_storage_inclusion` makes a request to the Proof Server API to verify the proof of a storage inclusion.

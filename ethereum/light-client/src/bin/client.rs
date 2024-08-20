@@ -118,13 +118,13 @@ async fn main() -> Result<()> {
     let rpc_provider_address = Arc::new(rpc_provider_address);
 
     // Initialize the Light Client.
-    let (client, store, verifier_state) = initialize_light_client(
+    let (client, store, verifier_state) = Box::pin(initialize_light_client(
         mode,
         checkpoint_provider_address,
         beacon_node_address,
         proof_server_address,
         rpc_provider_address,
-    )
+    ))
     .await
     .expect("Failed to initialize light client");
 
@@ -203,14 +203,13 @@ async fn main() -> Result<()> {
             let task = tokio::spawn(async move {
                 let store = store_clone.read().await.clone();
                 let update = Update::from(finality_update);
-                let proof = client_clone
-                    .prove_storage_inclusion(
-                        mode_clone,
-                        store,
-                        update.clone(),
-                        light_client_internal,
-                    )
-                    .await?;
+                let proof = Box::pin(client_clone.prove_storage_inclusion(
+                    mode_clone,
+                    store,
+                    update.clone(),
+                    light_client_internal,
+                ))
+                .await?;
                 info!("Proof of storage inclusion generated successfully");
 
                 Ok((update, proof))
@@ -238,9 +237,12 @@ async fn main() -> Result<()> {
                 let store = store_clone.read().await.clone();
                 let update = potential_update.unwrap();
 
-                let proof = client_clone
-                    .prove_committee_change(mode_clone, store, update.clone())
-                    .await?;
+                let proof = Box::pin(client_clone.prove_committee_change(
+                    mode_clone,
+                    store,
+                    update.clone(),
+                ))
+                .await?;
                 info!("Proof of committee change generated successfully");
 
                 Ok((update, proof))
@@ -341,10 +343,10 @@ async fn initialize_light_client(
             info!("Sync period changed, updating store...");
         }
 
-        let proof = client
-            .prove_committee_change(proving_mode, store.clone(), update.clone())
-            .await
-            .expect("Failed to prove committee change");
+        let proof =
+            Box::pin(client.prove_committee_change(proving_mode, store.clone(), update.clone()))
+                .await
+                .expect("Failed to prove committee change");
 
         client
             .verify_committee_change(proof.clone())
