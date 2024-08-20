@@ -30,26 +30,28 @@ module plonk_verifier_addr::plonk_verifier {
     const VK_DOMAIN_SIZE: u256 = 67108864;
     const VK_INV_DOMAIN_SIZE: u256 = 0x30644e66c81e03716be83b486d6feabcc7ddd0fe6cbf5e72d585d142f7829b05;
     const VK_OMEGA: u256 = 0x1067569af1ff73b20113eff9b8d89d4a605b52b63d68f9ae1c79bd572f4e9212;
-    const VK_QL_COM_X: u256 = 48928834306167443025507055502202067200240823993352402100102620828723773653;
-    const VK_QL_COM_Y: u256 = 2042095935721586861269278494849843501067752929878965775735116249791377189349;
-    const VK_QR_COM_X: u256 = 9263055746511352788967168242441740132968013915506788573208357567094202827437;
-    const VK_QR_COM_Y: u256 = 17628428921127964441677913917368279104903634377401680292327523375466045449821;
-    const VK_QM_COM_X: u256 = 5386497313205418866075671870604723600462702364443576348523388000562720155397;
-    const VK_QM_COM_Y: u256 = 10251277836844837493691486022258656237409980141605838548173765900573579037048;
-    const VK_QO_COM_X: u256 = 17892144205963166011887822724506030774548821972604674531477350577120233687735;
-    const VK_QO_COM_Y: u256 = 12628315211947344797164579921778371930128823896428193831555008525111790366444;
-    const VK_QK_COM_X: u256 = 14861769437953976497529730847443333640366704373271067429561158303180456942870;
-    const VK_QK_COM_Y: u256 = 14662562919486173853933305484282245429424763948861532235926442375885400771007;
-    const VK_S1_COM_X: u256 = 3073888053341554920881016181058807402426536838286493276385115449633539775248;
-    const VK_S1_COM_Y: u256 = 5384424222329100501817783245522106750938337029519044356500555260900853476873;
-    const VK_S2_COM_X: u256 = 19461186879863774198290657382293078306984201116484502913827155116237255045292;
-    const VK_S2_COM_Y: u256 = 2873204720580225076071638780752364114819201030390154715441418039817738911367;
-    const VK_S3_COM_X: u256 = 2096906860978765391282094222602615310661660657556910851436043580799708727565;
-    const VK_S3_COM_Y: u256 = 2161063310508571838500646252285726166473952589055632093444464980556430797130;
+    const VK_QL_COM_X: u256 = 0x001bb15754e011a2a423c73e153aa852b09aef41cc2b1295694ccc6f9cf300d5;
+    const VK_QL_COM_Y: u256 = 0x0483c90c0cfc2de75643c07e4fede2aa9c2f5eb6bd094a1c28590f2a23bc29e5;
+    const VK_QR_COM_X: u256 = 0x147ab4297dbf87265d3ab42c6300ec8b0f59e7258e8ff9243a81b956e2b402ad;
+    const VK_QR_COM_Y: u256 = 0x26f95651cfe1c49de5d5765b6cfad6b8a34348a54713d5fc55f1b92ab107265d;
+    const VK_QM_COM_X: u256 = 0x0be8a641a5e52b4b2026fd30e9ea51dbb57418891fc3372e49ff13e514622705;
+    const VK_QM_COM_Y: u256 = 0x16aa04840c5dba028688923bb4abe223662512feb496e3074f239ca6c0864978;
+    const VK_QO_COM_X: u256 = 0x278e984160a07cd1d9896aef99a0d92dfd8e0f4f3d08ca91b51cc1467b1c8ab7;
+    const VK_QO_COM_Y: u256 = 0x1beb5f8491dae2d9ea489874553b0f3d7581dd6cdc30df0fd5d52d55141b6eec;
+    const VK_QK_COM_X: u256 = 0x20db76a217f45ae31f96d72384089b40a69ab8185e9f7ae8da387d8945375d16;
+    const VK_QK_COM_Y: u256 = 0x206ab76da8725088e16f1c2bb07b3665740eb110d45676ebefb068eed71b09bf;
+    const VK_S1_COM_X: u256 = 0x06cbc24cbd62ee09a95672a3c251abc39baed40c7a8682a556291b5efb7a5b10;
+    const VK_S1_COM_Y: u256 = 0x0be779e26f0936ebcf1368e98ae78bed27e08f796b7865d47cee108abad8ee09;
+    const VK_S2_COM_X: u256 = 0x2b06a434bea3630550a316e1047568944b33c8ba0f79e424969603116b2770ac;
+    const VK_S2_COM_Y: u256 = 0x065a2d1e37b4d5564937baf39cadb76f22348e027bc3d2f3db4fd559c46ffe87;
+    const VK_S3_COM_X: u256 = 0x04a2cea642f8ee9d9b73e8715a74e84e30c2625d4eb3175e242c5b7e37da890d;
+    const VK_S3_COM_Y: u256 = 0x04c71e553bcf61e4d5f85b2ffc1b1dab4a4a7f4d76a0b2de19300e42ff15694a;
     const VK_COSET_SHIFT: u256 = 5;
-    const VK_QCP_0_X: u256 = 7517051128132060126170113520963297922398874457515198318132621766317406868261;
-    const VK_QCP_0_Y: u256 = 11472137363060303021114982968577795162044850614296769357227193724808785551909;
+
+    const VK_QCP_0_X: u256 = 0x109e800acb84a21685e8eabdb98a8c4ab1abc939341902b34dcb3f1a3aa6d325;
+    const VK_QCP_0_Y: u256 = 0x195cffe8af99edb66d60be290baa002cdec78a7b9998259f88f818f32fa3e225;
     const VK_INDEX_COMMIT_API_0: u256 = 31314682;
+
     const VK_NB_CUSTOM_GATES: u64 = 1;
 
     // Utils for Fiat Shamir
@@ -713,30 +715,30 @@ module plonk_verifier_addr::plonk_verifier {
     public fun test_derive_gamma() {
         let proof = get_proof();
         let gamma = derive_gamma(proof, SphinxInclusionProofVk, SphinxPublicValuesHash);
-        assert!(gamma == 0xbec7f35a9a4ab19ed3c1bd4122d8a4ef9e7eaa3a29483c4602cc45d88db86135, 1);
+        assert!(gamma == 0x36ab7b3ee6ee14f303c705f8bf298dcd83d005f957fe6ab42e3298530d856ffe, 1);
     }
 
     #[test]
     public fun test_derive_beta() {
-        let gamma = 0xbec7f35a9a4ab19ed3c1bd4122d8a4ef9e7eaa3a29483c4602cc45d88db86135;
+        let gamma = 0x36ab7b3ee6ee14f303c705f8bf298dcd83d005f957fe6ab42e3298530d856ffe;
         let beta = derive_beta(gamma);
-        assert!(beta == 0x42fc83c6f494936df5a8d6d66f7b1c92e8f9e3b4f59653a03260e3b61590e031, 1);
+        assert!(beta == 0x56312fd81f7977970edb1322391cdb08fdc00e00b7184ca63e2c9ed50bdfc5c6, 1);
     }
 
     #[test]
     public fun test_derive_alpha() {
         let proof = get_proof();
-        let beta = 0x42fc83c6f494936df5a8d6d66f7b1c92e8f9e3b4f59653a03260e3b61590e031;
+        let beta = 0x56312fd81f7977970edb1322391cdb08fdc00e00b7184ca63e2c9ed50bdfc5c6;
         let alpha = derive_alpha(proof, beta);
-        assert!(alpha == 0x9deb5bee532ca79e9560d86926c70bd8fd8a727cc24a38a0c6c977542cd1db00, 1);
+        assert!(alpha == 0x692c5a0559999207073af899757b72492f32d8911ad6ed690441273fb480b6ff, 1);
     }
 
     #[test]
     public fun test_derive_zeta() {
         let proof = get_proof();
-        let alpha = 0x9deb5bee532ca79e9560d86926c70bd8fd8a727cc24a38a0c6c977542cd1db00;
+        let alpha = 0x692c5a0559999207073af899757b72492f32d8911ad6ed690441273fb480b6ff;
         let zeta = derive_zeta(proof, alpha);
-        assert!(zeta == 0x16497e15231e0304a0f5307d0a4d3b874bc4a33bb786c88344ce3206a952f61a, 1);
+        assert!(zeta == 0x62c1899d13488ac348727366d41d27f0f6cf756503cff9706622e6737c12d5c3, 1);
     }
 
     #[test]
@@ -754,56 +756,43 @@ module plonk_verifier_addr::plonk_verifier {
         verify_inner(proof, public_inputs);
     }
 
-    #[test_only]
-    fun compute_public_values_hash(raw_public_inputs: vector<u256>): u256 {
-        let preimage = vector::empty<u8>();
-        let i = 0;
-        while(i < length(&raw_public_inputs)) {
-            append_value(&mut preimage, *vector::borrow(&raw_public_inputs, i), true, 32);
-            i = i + 1;
-        };
-
-        let one: u256 = 1;
-        let hash = bytes_to_uint256(sha2_256(preimage)) & ((one << 253) - 1);
-        hash
-    }
-
     #[test]
     public fun test_compute_public_values_hash() {
-        let public_values = get_public_values();
-        let pv_hash = compute_public_values_hash(public_values);
+        let raw_public_inputs = x"205829098a4c0273312e8bc4fdbde28fc12abdc540c88bdd9abeef0a85d706ec5c1e92bfe65b6200f1f7383d8fe6be26f70e05d784df4a170e38eb6be236145c020202020202020202020202020202020202020202020202020202020202020244fa02feb400a383b1824df6198c7e30cbf60a21838efa46fedf35f760fdf25839d1a3ec2b5d09aee31c1c0c380eef28744673ea3ab7e9d065baccc8d1874ca1";
+        let pv_hash = bytes_to_uint256(sha2_256(raw_public_inputs)) & ((1 << 253) - 1);
         assert!(pv_hash == SphinxPublicValuesHash, 1);
     }
 
     // Actual valid proof instance data generated by Sphinx using inclusion program
-    // (from inclusion_fixture.json)
-    const Proof_chunk_0: u256 = 0x22260e22daca34e1068152746ae216a2576089f90a3b8d07831b364e1e0ea6f7;
-    const Proof_chunk_1: u256 = 0x20ca2f29609382c698b2c89310ae12c0480f85850d514fe8b0de8b0122ccac20;
-    const Proof_chunk_2: u256 = 0x083abde04f1ad3b0e3de4a757bfd265c95813964c59cca3d4e8649283879bff2;
-    const Proof_chunk_3: u256 = 0x1a84b386c065f769074e7702e3fe905ed017140dac90f890628fcac0b1668a8b;
-    const Proof_chunk_4: u256 = 0x0071cf52b558d58c3ef27c152e933775e0fc9153c63294af6f18567da2029669;
-    const Proof_chunk_5: u256 = 0x2198dceeda96b8b0d9059ac0c95fea33c7cbaa544e9ffcd3e23f5f14c2b9d379;
-    const Proof_chunk_6: u256 = 0x02ae25ae6dd5ddf546536b49f5a95ab8f1d62638078ced7ae27a74db063e4eaf;
-    const Proof_chunk_7: u256 = 0x17fe58c15400e3a138143be59e573202e5b0ede42340b4bb3fdf5b9a60ab1d46;
-    const Proof_chunk_8: u256 = 0x301376093bd4af6c89aa43fb90b08623c1cce6810f469b863a808bd8c8fa5bff;
-    const Proof_chunk_9: u256 = 0x16aa37fb247c92f9d17eb9b1d8d89724269e14af43f719d53a8766006f7de93e;
-    const Proof_chunk_10: u256 = 0x076d1faac1fa4b235ffc8802522a3e9b9601e23f011dfa6c8e5c15ecd8f6913c;
-    const Proof_chunk_11: u256 = 0x0fca1f8b773e831881d70e907f8453946fd9af1e80b1b3e2a15c766732840904;
-    const Proof_chunk_12: u256 = 0x2acb8ea1cc325082dc7d9255302747046ff7665978deb49f4d918056183e6439;
-    const Proof_chunk_13: u256 = 0x27755b2b9ffdff73ac96803106da5245baa3a1af4db5d4c54461076a91c9f3f3;
-    const Proof_chunk_14: u256 = 0x24c4593c2e883ebea49825e3f9d8c128bd28e44f4ccee8084a3276d5a7703b82;
-    const Proof_chunk_15: u256 = 0x0f5a3f27fdd4168c1143bc700cf648863406021f45aa0dca338e3a175a4c309a;
-    const Proof_chunk_16: u256 = 0x0535bd79d2cd0a7048e0984f79d0d342dd5c3b0bf354f20d447fcb6731d2ee65;
-    const Proof_chunk_17: u256 = 0x01f755ec65481149faa10ce77989f2dcf0fac47c4eac553b157c757f3337ff04;
-    const Proof_chunk_18: u256 = 0x052f9ae5a78abb78689c2ca378af86afa180c683aefde3ed835a42960314fa2f;
-    const Proof_chunk_19: u256 = 0x1ae1fd74ea330416d0fa891250535dd7deac3b8e98338c5bb21a168116cd014f;
-    const Proof_chunk_20: u256 = 0x1f201aede6e12b30bc9cf21d5e92534ef76d84e88e95eeb772f5a59f65ac7ea1;
-    const Proof_chunk_21: u256 = 0x28f2b25c8172a777d706196a470e604c650372818f2f514efff1e7e76d413a8e;
-    const Proof_chunk_22: u256 = 0x143856445caa26db7923454b0352aa2856a40426a61344a62063e2a155a36e90;
-    const Proof_chunk_23: u256 = 0x2602c5e130d1246cbbc88c26b74ea864dcb1dc94bc8128faa4e39fd81ab64e64;
-    const Proof_chunk_24: u256 = 0x0665cd62153ce455e65dd02ba8422717c862f179ec17d03918dd5dab88e602dc;
-    const Proof_chunk_25: u256 = 0x2d108e2f617641e1148229ee62332ae0841bc704a7614924c780ae62119e771a;
-    const Proof_chunk_26: u256 = 0x26659d75a98e0401e8f60968dd55c96ad5d8044942b15d75fe53efb24e01d0b7;
+    // (from Solidity's inclusion_fixture.json)
+
+    const Proof_chunk_0: u256 = 0x00667c07f515143095356049737e6657b90cadabb9e75b17ac3a9dca9ee5e7f5;
+    const Proof_chunk_1: u256 = 0x2c8b43ff6d992c9eff8ee2c0628b15a5399f549188867048db7c0367e7c79b9d;
+    const Proof_chunk_2: u256 = 0x233c2374c0a912c170f58bf362342adfd7f09ce84f7000ac4f065aae3c150217;
+    const Proof_chunk_3: u256 = 0x2df54ea50bdb9ed329044aef6350f53a2233c71bfd0c6b465a667b6ffe542430;
+    const Proof_chunk_4: u256 = 0x1eaa330341702e7afd6ae68033b0707744b5e50a149d59af317b8e52401af21d;
+    const Proof_chunk_5: u256 = 0x102acdfe11036570f2d0691342614e3ddd6549cfd67729fb189140573e946032;
+    const Proof_chunk_6: u256 = 0x218c0fb39ec5093827752c7b54ef6468e2f86f6ee9e8405467a30388ae7f42ff;
+    const Proof_chunk_7: u256 = 0x08857c2a06da015595c42b9df69c4937ff73f22e2d954ad067ae45a04148782c;
+    const Proof_chunk_8: u256 = 0x0e310ecba87e87e0a0b6e5ecc2bc605b3dc7a5a4e2547018d7f18b49e519ece9;
+    const Proof_chunk_9: u256 = 0x067be6db04dea06356dea63bca0ef328ed312ab9270ed04dd6dffd3524d83ade;
+    const Proof_chunk_10: u256 = 0x23cb10051eb93281b83417e2cba965885e7ee012d9ee5b9d497cd1dc79996c3b;
+    const Proof_chunk_11: u256 = 0x301fd4279c8fef195adabc01808df994d148091ce14176df7831ca0b71969384;
+    const Proof_chunk_12: u256 = 0x050a16976a9e578f3cc941d84d436b920f6fd3daad140b65b8ae89e4ab9e2c81;
+    const Proof_chunk_13: u256 = 0x0c94eb34bb13f7d67249579f1a01f071abcc17b9ed5966a8934981fbd758ec86;
+    const Proof_chunk_14: u256 = 0x272a97a5ce2f775b958104caff4d25d410dbbeafa51b9607fea23eb50795ace4;
+    const Proof_chunk_15: u256 = 0x14795d11ba6618cff0899fd73081ea45552543c720c96d332a69e689381c4554;
+    const Proof_chunk_16: u256 = 0x1fe8bea6880184167ad371fbcaf02a4d773ab4fcb1e9bfd8e794ce2aa5b8fdb1;
+    const Proof_chunk_17: u256 = 0x00b46c07bfea1a1fbad8482559a57ee58cd558be3e2ddcfa09b8784efcbb41f9;
+    const Proof_chunk_18: u256 = 0x07040ec3bc4c94b45cde233abbe553d8c1d63c95e0c255c1254a00e920c0a439;
+    const Proof_chunk_19: u256 = 0x0c7000b724c6824524ecaaab56665b799bfce546e0564342f9c3c6e60ec827d1;
+    const Proof_chunk_20: u256 = 0x26c8bb9c6c2f735e6343c1e9e5bdfd80337af117b43bacc8a6f1caf2b943f243;
+    const Proof_chunk_21: u256 = 0x0c02db189892f57e103ba7119e5e280ae84bf0df40f68d7c7feca8a5a04b1cb5;
+    const Proof_chunk_22: u256 = 0x0122e868aa96fe13c9186855897783a5db92f18469aaac677b177d19565b0852;
+    const Proof_chunk_23: u256 = 0x1d3810e9094abb668d8cb919f20b6c6af73a38d8cd20b353e690160916bfb7c4;
+    const Proof_chunk_24: u256 = 0x124465371d102cbb003eb9ab98adc44184de1126ffb20de7b7899067b909fc8b;
+    const Proof_chunk_25: u256 = 0x1092a0c2e947725839c187ad71869e6c53c63dff202f839ff654baec3f4e607c;
+    const Proof_chunk_26: u256 = 0x24101e865f15d29b2bd21baea29231bebe0a411ef5adc219b024c236513dd741;
 
     #[test_only]
     public fun get_proof(): vector<u256> {
@@ -838,26 +827,14 @@ module plonk_verifier_addr::plonk_verifier {
         proof
     }
 
-    // TODO: add function for computing this digest based on the SphinxVerifier.sol contract
-    const SphinxPublicValuesHash: u256 = 0x1b73d6e73d3224150622f22a8c18740efc94af34d45500eaf658a389935513ad;
-    const SphinxInclusionProofVk: u256 = 0x00edc477759b49c9f16fa0fae93b11dcde295121eda80472196c13cf4b6d079f;
+    const SphinxPublicValuesHash: u256 = 0x02eb293422b0c500ccdaa643ad740f777cf82ea54daf1c7d0a9b6076caa05548;
+    const SphinxInclusionProofVk: u256 = 0x00336c570224c00161ca7b3c275c24f3968aa09086c31d09d98691bce109f4f6;
 
     #[test_only]
     public fun get_public_inputs(): vector<u256> {
         let public_inputs = vector::empty<u256>();
         push_back(&mut public_inputs, SphinxInclusionProofVk);
         push_back(&mut public_inputs, SphinxPublicValuesHash);
-        public_inputs
-    }
-
-    const PublicValuesChunk0: u256 = 0x205829098a4c0273312e8bc4fdbde28fc12abdc540c88bdd9abeef0a85d706ec;
-    const PublicValuesChunk1: u256 = 0x4f76ef143d0388ab65a4cd568c05da10c070aefbfd385cc4824f5d71b009e962;
-
-    #[test_only]
-    public fun get_public_values(): vector<u256> {
-        let public_inputs = vector::empty<u256>();
-        push_back(&mut public_inputs, PublicValuesChunk0);
-        push_back(&mut public_inputs, PublicValuesChunk1);
         public_inputs
     }
 }
