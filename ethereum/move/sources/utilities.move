@@ -10,6 +10,39 @@ module plonk_verifier_addr::utilities {
     use std::hash::sha2_256;
 
     const ERROR_U256_TO_FR: u64 = 2001;
+    const ERROR_LENGTH_VK: u64 = 2002;
+    const ERROR_LENGTH_PROOF: u64 = 2003;
+    const ERROR_SPHINX_PROOF_VERSION: u64 = 2004;
+
+    const VK_BYTES_SIZE: u64 = 32;
+    const PROOF_CHUNK_BYTE_SIZE: u64 = 32;
+
+    public fun validate_fixture_data(sphinx_proof: vector<u8>, sphinx_vkey: vector<u8>): (vector<u256>, u256) {
+        assert!(length(&sphinx_vkey) == VK_BYTES_SIZE, ERROR_LENGTH_VK);
+        let proof_length = length(&sphinx_proof);
+        assert!(proof_length > 4, ERROR_LENGTH_PROOF);
+        assert!((proof_length - 4) % PROOF_CHUNK_BYTE_SIZE == 0, ERROR_LENGTH_PROOF);
+
+        // convert vkey
+        let vkey: u256 = bytes_to_uint256(sphinx_vkey);
+
+        // check hardcoded plonk verifier hash
+        let expected_version: u256 = 0xa8558442; // corresponds to v1.0.8-testnet artifacts
+        let actual_version = slice(&sphinx_proof, 0, 4);
+        let actual_version: u256 = bytes_to_uint256(actual_version);
+        assert!(expected_version == actual_version, ERROR_SPHINX_PROOF_VERSION);
+
+        // convert proof
+        let i = 0;
+        let n = (proof_length - 4) / PROOF_CHUNK_BYTE_SIZE;
+        let proof_in = vector::empty<u256>();
+        while (i < n) {
+            let chunk = slice(&sphinx_proof, i * PROOF_CHUNK_BYTE_SIZE + 4, i * PROOF_CHUNK_BYTE_SIZE + PROOF_CHUNK_BYTE_SIZE + 4);
+            push_back(&mut proof_in, bytes_to_uint256(chunk));
+            i = i + 1;
+        };
+        (proof_in, vkey)
+    }
 
     public fun powSmall(base: Element<Fr>, exponent: u256): Element<Fr> {
         let result = one<Fr>();
