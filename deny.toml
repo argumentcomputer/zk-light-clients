@@ -120,6 +120,13 @@ confidence-threshold = 0.8
 # aren't accepted for every possible crate as with the normal allow list
 exceptions = [
     # Each entry is the crate and version constraint, and its specific allow list.
+    { allow = ["BUSL-1.1"], crate = "aptos-lc" },
+    { allow = ["BUSL-1.1"], crate = "aptos-lc-core" },
+    { allow = ["BUSL-1.1"], crate = "aptos-programs" },
+    { allow = ["BUSL-1.1"], crate = "proof-server" },
+    { allow = ["BUSL-1.1"], crate = "signature-verification-program" },
+    { allow = ["BUSL-1.1"], crate = "epoch-change-program" },
+    { allow = ["BUSL-1.1"], crate = "inclusion-program" },
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
