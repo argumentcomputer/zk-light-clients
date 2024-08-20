@@ -329,7 +329,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc-core"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "bls12_381",
@@ -541,7 +541,7 @@ dependencies = [
 
 [[package]]
 name = "inclusion-program"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "ethereum-lc-core",
  "sphinx-zkvm",
