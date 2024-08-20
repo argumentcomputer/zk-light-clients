@@ -13,7 +13,8 @@ mod tests {
 
         let prover = ProverClient::new();
         prover
-            .execute(BLOCK_HEADER_HASHING_PROGRAM, &stdin)
+            .execute(BLOCK_HEADER_HASHING_PROGRAM, stdin)
+            .run()
             .unwrap();
     }
 
@@ -29,13 +30,8 @@ mod tests {
 
         let prover = ProverClient::new();
         let (pk, vk) = prover.setup(BLOCK_HEADER_HASHING_PROGRAM);
-        let mut proof = prover.prove_compressed(&pk, stdin).unwrap();
-
-        let out: Vec<u8> = proof.public_values.read();
-
-        dbg!(out);
-
-        prover.verify_compressed(&proof, &vk).unwrap();
+        let proof = prover.prove(&pk, stdin).compressed().run().unwrap();
+        prover.verify(&proof, &vk).unwrap();
     }
 
     #[test]
@@ -50,7 +46,7 @@ mod tests {
 
         let prover = ProverClient::new();
         let (pk, vk) = prover.setup(BLOCK_HEADER_HASHING_PROGRAM);
-        let proof = prover.prove_plonk(&pk, stdin).unwrap();
-        prover.verify_plonk(&proof, &vk).unwrap();
+        let proof = prover.prove(&pk, stdin).plonk().run().unwrap();
+        prover.verify(&proof, &vk).unwrap();
     }
 }

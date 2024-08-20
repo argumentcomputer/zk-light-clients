@@ -23,6 +23,6 @@ pub fn main() {
                 println!("cycle-tracker-end: deserialize_inputs");
     }
     let actual = header_root(&header);
-    dbg!(&actual);
+    assert_eq!(header.hash().to_vec(), actual);
     sphinx_zkvm::io::commit(&actual);
 }

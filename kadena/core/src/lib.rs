@@ -3,7 +3,7 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{DateTime, Utc};
 use getset::Getters;
-use sha2::{Digest, Sha256, Sha512};
+use sha2::{Digest, Sha512Trunc256};
 use uint::construct_uint;
 
 construct_uint! {
@@ -24,7 +24,7 @@ const BLOCK_NONCE_TAG: u16 = 0x0020;
 
 // Hash functions for Merkle tree nodes
 // cf. https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree#merke-log-trees
-pub type ChainwebHash = Sha256;
+pub type ChainwebHash = Sha512Trunc256;
 
 pub fn tag_bytes(tag: u16) -> [u8; 2] {
     tag.to_be_bytes()
