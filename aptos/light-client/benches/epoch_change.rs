@@ -20,7 +20,7 @@ use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
-use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
+use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
 use std::hint::black_box;
 use std::time::Instant;
 
@@ -64,7 +64,7 @@ impl ProvingAssets {
         }
     }
 
-    fn prove(&self) -> SphinxProof {
+    fn prove(&self) -> SphinxProofWithPublicValues {
         let mut stdin = SphinxStdin::new();
 
         setup_logger();
@@ -73,10 +73,10 @@ impl ProvingAssets {
         stdin.write(&self.epoch_change_proof);
 
         let (pk, _) = self.client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
-        self.client.prove(&pk, stdin).unwrap()
+        self.client.prove(&pk, stdin).run().unwrap()
     }
 
-    fn verify(&self, proof: &SphinxProof) {
+    fn verify(&self, proof: &SphinxProofWithPublicValues) {
         let (_, vk) = self.client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
         self.client.verify(proof, &vk).expect("Verification failed");
     }

@@ -1,11 +1,11 @@
 script {
     use plonk_verifier_addr::plonk_verifier;
-    use plonk_verifier_addr::utilities::{bytes_to_uint256};
-    use std::vector::{length, slice, push_back};
-    use std::vector;
+    use plonk_verifier_addr::utilities::{validate_fixture_data};
+    use std::vector::length;
 
     const ERROR_LENGTH_VK: u64 = 3001;
     const ERROR_LENGTH_PROOF: u64 = 3002;
+    const ERROR_PROOF_VERSION: u64 = 3003;
 
     fun run_verification<T1, T2>(
         _account: signer,
@@ -16,20 +16,9 @@ script {
         // we do not perform input validation of public_values since while core verification it is hashed,
         // and if hash is invalid, core verification will simply fail
         assert!(length(&vkey_) == 32, ERROR_LENGTH_VK);
-        assert!(length(&proof_) % 32 == 0, ERROR_LENGTH_PROOF);
+        assert!((length(&proof_) - 4) % 32 == 0, ERROR_LENGTH_PROOF);
 
-        // convert vkey
-        let vkey: u256 = bytes_to_uint256(vkey_);
-
-        // convert proof
-        let i = 0;
-        let n = length(&proof_) / 32;
-        let proof = vector::empty<u256>();
-        while (i < n) {
-            let chunk = slice(&proof_, i * 32, i * 32 + 32);
-            push_back(&mut proof, bytes_to_uint256(chunk));
-            i = i + 1;
-        };
+        let (proof, vkey) = validate_fixture_data(proof_, vkey_);
 
         plonk_verifier::verify(proof, vkey, public_values);
     }

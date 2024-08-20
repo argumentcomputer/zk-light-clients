@@ -4,7 +4,9 @@
 use anyhow::Result;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-use sphinx_sdk::{ProverClient, SphinxProof, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
+use sphinx_sdk::{
+    ProverClient, SphinxProofWithPublicValues, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey,
+};
 
 use crate::error::LightClientError;
 
@@ -168,7 +170,7 @@ fn prove_inclusion(
     sparse_merkle_proof_assets: &SparseMerkleProofAssets,
     transaction_proof_assets: &TransactionProofAssets,
     validator_verifier_assets: &ValidatorVerifierAssets,
-) -> Result<(SphinxProof, InclusionOutput), LightClientError> {
+) -> Result<(SphinxProofWithPublicValues, InclusionOutput), LightClientError> {
     sphinx_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(
@@ -178,12 +180,14 @@ fn prove_inclusion(
     );
     let (pk, _) = generate_keys(client);
 
-    let mut proof = client
-        .prove(&pk, stdin)
-        .map_err(|err| LightClientError::ProvingError {
-            program: "prove-merkle-inclusion".to_string(),
-            source: err.into(),
-        })?;
+    let mut proof =
+        client
+            .prove(&pk, stdin)
+            .run()
+            .map_err(|err| LightClientError::ProvingError {
+                program: "prove-merkle-inclusion".to_string(),
+                source: err.into(),
+            })?;
 
     // Read output.
     let validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
@@ -240,7 +244,8 @@ mod test {
 
         let client = ProverClient::new();
         client
-            .execute(aptos_programs::INCLUSION_PROGRAM, &stdin)
+            .execute(aptos_programs::INCLUSION_PROGRAM, stdin)
+            .run()
             .map_err(|err| LightClientError::ProvingError {
                 program: "prove-merkle-inclusion".to_string(),
                 source: err.into(),
@@ -332,12 +337,12 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of inclusion proof...");
-        let snark_proof = client.prove_plonk(&pk, stdin).unwrap();
+        let snark_proof = client.prove(&pk, stdin).plonk().run().unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         let start = Instant::now();
         println!("Starting verification of inclusion proof...");
-        client.verify_plonk(&snark_proof, &vk).unwrap();
+        client.verify(&snark_proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 use anyhow::Result;
-use sphinx_sdk::{ProverClient, SphinxProof, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey};
+use sphinx_sdk::{
+    ProverClient, SphinxProofWithPublicValues, SphinxProvingKey, SphinxStdin, SphinxVerifyingKey,
+};
 
 use crate::error::LightClientError;
 
@@ -61,18 +63,20 @@ fn prove_epoch_change(
     client: &ProverClient,
     current_trusted_state: &[u8],
     epoch_change_proof: &[u8],
-) -> Result<(SphinxProof, EpochChangeOutput), LightClientError> {
+) -> Result<(SphinxProofWithPublicValues, EpochChangeOutput), LightClientError> {
     sphinx_sdk::utils::setup_logger();
 
     let stdin = generate_stdin(current_trusted_state, epoch_change_proof);
     let (pk, _) = generate_keys(client);
 
-    let mut proof = client
-        .prove(&pk, stdin)
-        .map_err(|err| LightClientError::ProvingError {
-            program: "prove-epoch-change".to_string(),
-            source: err.into(),
-        })?;
+    let mut proof =
+        client
+            .prove(&pk, stdin)
+            .run()
+            .map_err(|err| LightClientError::ProvingError {
+                program: "prove-epoch-change".to_string(),
+                source: err.into(),
+            })?;
 
     // Read output.
     let prev_validator_verifier_hash = proof.public_values.read::<[u8; 32]>();
@@ -108,7 +112,8 @@ mod test {
 
         let client = ProverClient::new();
         client
-            .execute(aptos_programs::EPOCH_CHANGE_PROGRAM, &stdin)
+            .execute(aptos_programs::EPOCH_CHANGE_PROGRAM, stdin)
+            .run()
             .map_err(|err| LightClientError::ProvingError {
                 program: "prove-epoch-change".to_string(),
                 source: err.into(),
@@ -179,12 +184,12 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of prove_epoch_change proof...");
-        let snark_proof = client.prove_plonk(&pk, stdin).unwrap();
+        let snark_proof = client.prove(&pk, stdin).plonk().run().unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         let start = Instant::now();
         println!("Starting verification of prove_epoch_change proof...");
-        client.verify_plonk(&snark_proof, &vk).unwrap();
+        client.verify(&snark_proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

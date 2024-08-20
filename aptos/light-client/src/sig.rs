@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 use crate::error::LightClientError;
-use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
+use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
 
 #[allow(dead_code)]
 fn sig_verification(
     client: &ProverClient,
     ledger_info_w_sig: &[u8],
-) -> Result<(SphinxProof, bool), LightClientError> {
+) -> Result<(SphinxProofWithPublicValues, bool), LightClientError> {
     use sphinx_sdk::utils;
     utils::setup_logger();
 
@@ -17,12 +17,14 @@ fn sig_verification(
     stdin.write(&ledger_info_w_sig);
 
     let (pk, _) = client.setup(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM);
-    let mut proof = client
-        .prove(&pk, stdin)
-        .map_err(|err| LightClientError::ProvingError {
-            program: "signature-verification".to_string(),
-            source: err.into(),
-        })?;
+    let mut proof =
+        client
+            .prove(&pk, stdin)
+            .run()
+            .map_err(|err| LightClientError::ProvingError {
+                program: "signature-verification".to_string(),
+                source: err.into(),
+            })?;
 
     // Read output.
     let success = proof.public_values.read::<bool>();
@@ -45,10 +47,8 @@ mod test {
 
         let client = ProverClient::new();
         client
-            .execute(
-                aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM,
-                &stdin,
-            )
+            .execute(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM, stdin)
+            .run()
             .map_err(|err| LightClientError::ProvingError {
                 program: "signature-verification".to_string(),
                 source: err.into(),
@@ -141,12 +141,12 @@ mod test {
 
         let start = Instant::now();
         println!("Starting generation of signature verification proof...");
-        let snark_proof = client.prove_plonk(&pk, stdin).unwrap();
+        let snark_proof = client.prove(&pk, stdin).plonk().run().unwrap();
         println!("Proving took {:?}", start.elapsed());
 
         let start = Instant::now();
         println!("Starting verification of signature verification proof...");
-        client.verify_plonk(&snark_proof, &vk).unwrap();
+        client.verify(&snark_proof, &vk).unwrap();
         println!("Verification took {:?}", start.elapsed());
     }
 }

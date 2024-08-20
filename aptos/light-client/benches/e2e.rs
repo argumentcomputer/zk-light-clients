@@ -29,7 +29,7 @@ use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
 use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use sphinx_sdk::utils::setup_logger;
-use sphinx_sdk::{ProverClient, SphinxPlonkBn254Proof, SphinxProof, SphinxStdin};
+use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
 use std::env;
 use std::time::Instant;
 
@@ -51,8 +51,8 @@ struct BenchmarkResults {
 
 enum ProofType {
     #[allow(dead_code)]
-    Snark(SphinxPlonkBn254Proof),
-    Stark(SphinxProof),
+    Snark(SphinxProofWithPublicValues),
+    Stark(SphinxProofWithPublicValues),
 }
 
 fn main() {
@@ -254,9 +254,9 @@ fn prove_epoch_change(
     let (pk, _) = client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
 
     if snark {
-        Snark(client.prove_plonk(&pk, stdin).unwrap())
+        Snark(client.prove(&pk, stdin).plonk().run().unwrap())
     } else {
-        Stark(client.prove(&pk, stdin).unwrap())
+        Stark(client.prove(&pk, stdin).run().unwrap())
     }
 }
 
@@ -288,9 +288,9 @@ fn prove_inclusion(
     let (pk, _) = client.setup(aptos_programs::INCLUSION_PROGRAM);
 
     if snark {
-        Snark(client.prove_plonk(&pk, stdin).unwrap())
+        Snark(client.prove(&pk, stdin).plonk().run().unwrap())
     } else {
-        Stark(client.prove(&pk, stdin).unwrap())
+        Stark(client.prove(&pk, stdin).run().unwrap())
     }
 }
 

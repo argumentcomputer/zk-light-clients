@@ -5,7 +5,7 @@ use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use serde::{Deserialize, Serialize};
-use sphinx_sdk::{SphinxPlonkBn254Proof, SphinxProof};
+use sphinx_sdk::SphinxProofWithPublicValues;
 use std::fmt::Display;
 
 /// Data structure used as a payload to request an epoch change proof generation from the proof
@@ -31,12 +31,12 @@ pub struct InclusionData {
 pub enum Request {
     ProveInclusion(InclusionData),
     ProveEpochChange(EpochChangeData),
-    VerifyInclusion(SphinxProof),
-    VerifyEpochChange(SphinxProof),
+    VerifyInclusion(SphinxProofWithPublicValues),
+    VerifyEpochChange(SphinxProofWithPublicValues),
     SnarkProveInclusion(InclusionData),
     SnarkProveEpochChange(EpochChangeData),
-    SnarkVerifyInclusion(SphinxPlonkBn254Proof),
-    SnarkVerifyEpochChange(SphinxPlonkBn254Proof),
+    SnarkVerifyInclusion(SphinxProofWithPublicValues),
+    SnarkVerifyEpochChange(SphinxProofWithPublicValues),
 }
 
 impl Display for &Request {
@@ -59,7 +59,7 @@ impl Display for &Request {
 #[derive(Serialize, Deserialize)]
 pub enum SecondaryRequest {
     Prove(EpochChangeData),
-    Verify(SphinxProof),
+    Verify(SphinxProofWithPublicValues),
     SnarkProve(EpochChangeData),
-    SnarkVerify(SphinxPlonkBn254Proof),
+    SnarkVerify(SphinxProofWithPublicValues),
 }
