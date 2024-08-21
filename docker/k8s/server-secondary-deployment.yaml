@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: server-secondary
-          image: lurk-lab/aptos-light-client:latest
+          image: argumentcomputer/aptos-light-client:latest
           imagePullPolicy: IfNotPresent
           command: [ "sh", "-c", "/app/server_secondary --addr ${CONTAINER_SECONDARY_ADDR}:${CONTAINER_SECONDARY_PORT}" ]
           env:
@@ -22,14 +22,9 @@ spec:
               value: "debug"
             - name: CONTAINER_SECONDARY_ADDR
               valueFrom:
-                configMapKeyRef:
-                  name: aptos-config
-                  key: CONTAINER_SECONDARY_ADDR
+                fieldRef:
+                  fieldPath: status.podIP
             - name: CONTAINER_SECONDARY_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: aptos-config
-                  key: CONTAINER_SECONDARY_PORT
+              value: "8080"
           ports:
-            # The port is also set as 6380 in the server-secondary-service.yml file, if you change it here, make sure to change it there as well
-            - containerPort: 6380
+            - containerPort: 8080

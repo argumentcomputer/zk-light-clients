@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: lurk-lab/aptos-light-client:latest
+          image: argumentcomputer/aptos-light-client:latest
           imagePullPolicy: IfNotPresent
           command: [ "sh", "-c", "/app/client --proof-server-address server-primary:80 --aptos-node-url ${APTOS_NODE_URL}" ]
           env:

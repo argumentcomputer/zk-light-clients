@@ -8,5 +8,4 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      # The port is also set as 6380 in the server-secondary-deployment.yml file, if you change it here, make sure to change it there as well
-      targetPort: 6380
+      targetPort: 8080

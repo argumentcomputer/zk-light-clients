@@ -29,7 +29,7 @@ eval $(minikube -p minikube docker-env)
 3. Build the Docker image using the following command:
 
 ```bash
-docker build -t lurk-lab/<aptos|ethereum>-light-client:latest -f ./docker/Dockerfile --build-arg LIGHT_CLIENT=<aptos|ethereum> .
+docker build -t argumentcomputer/<aptos|ethereum>-light-client:latest -f ./docker/Dockerfile --build-arg LIGHT_CLIENT=<aptos|ethereum> .
 ```
 
 4. Apply the Kubernetes configuration files:
