@@ -12,12 +12,8 @@ name = "client"
 path = "src/bin/client.rs"
 
 [[bin]]
-name = "server_primary"
-path = "src/bin/server_primary.rs"
-
-[[bin]]
-name = "server_secondary"
-path = "src/bin/server_secondary.rs"
+name = "proof_server"
+path = "src/bin/proof_server.rs"
 
 [dependencies]
 # local

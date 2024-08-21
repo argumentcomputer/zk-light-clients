@@ -53,13 +53,3 @@ impl Display for &Request {
         }
     }
 }
-
-/// Secondary request type for the proof server. It is used to convey request from the primary
-/// server to the secondary one.
-#[derive(Serialize, Deserialize)]
-pub enum SecondaryRequest {
-    Prove(EpochChangeData),
-    Verify(SphinxProofWithPublicValues),
-    SnarkProve(EpochChangeData),
-    SnarkVerify(SphinxProofWithPublicValues),
-}
