@@ -89,7 +89,7 @@ dependencies = [
 [[package]]
 name = "bls12_381"
 version = "0.8.0"
-source = "git+https://github.com/argumentcomputer/bls12_381.git?branch=zkvm#d5eb6f66ab3b85209a5e78ef1c7ba62826b0156a"
+source = "git+https://github.com/argumentcomputer/bls12_381.git?branch=zkvm#132f6244b430c5c079d60691e0ed55fc9797be8e"
 dependencies = [
  "cfg-if",
  "digest 0.9.0",
