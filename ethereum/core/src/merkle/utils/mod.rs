@@ -1,12 +1,9 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-use std::mem::size_of;
-
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::{sha2_hash, sha2_hash_concat, HashValue};
 use crate::types::BYTES_32_LEN;
-use core::mem::size_of;
 
 pub mod rlp;
 

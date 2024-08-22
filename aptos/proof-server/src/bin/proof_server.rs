@@ -125,7 +125,7 @@ async fn main() -> Result<()> {
                     )
                     .await?;
                 }
-                Ok(Request::VerifyInclusion(proof)) | Ok(Request::SnarkVerifyInclusion(proof)) => {
+                Ok(Request::VerifyInclusion(proof) | Request::SnarkVerifyInclusion(proof)) => {
                     handle_inclusion_verification(
                         &proof,
                         &mut client_stream,
@@ -175,26 +175,27 @@ async fn main() -> Result<()> {
                         .await?;
                     }
                 },
-                Ok(Request::SnarkVerifyEpochChange(proof))
-                | Ok(Request::VerifyEpochChange(proof)) => match mode {
-                    Mode::Single => {
-                        handle_epoch_verification(
-                            &proof,
-                            &mut client_stream,
-                            &prover_client,
-                            &epoch_vk,
-                        )
-                        .await?;
+                Ok(Request::SnarkVerifyEpochChange(proof) | Request::VerifyEpochChange(proof)) => {
+                    match mode {
+                        Mode::Single => {
+                            handle_epoch_verification(
+                                &proof,
+                                &mut client_stream,
+                                &prover_client,
+                                &epoch_vk,
+                            )
+                            .await?;
+                        }
+                        Mode::Split => {
+                            forward_request(
+                                Request::VerifyEpochChange(proof.clone()),
+                                snd_addr.as_ref().unwrap(),
+                                &mut client_stream,
+                            )
+                            .await?;
+                        }
                     }
-                    Mode::Split => {
-                        forward_request(
-                            Request::VerifyEpochChange(proof.clone()),
-                            snd_addr.as_ref().unwrap(),
-                            &mut client_stream,
-                        )
-                        .await?;
-                    }
-                },
+                }
                 Err(e) => error!("Failed to deserialize request object: {e}"),
             }
             Ok::<(), Error>(())
