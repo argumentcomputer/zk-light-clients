@@ -26,7 +26,7 @@ const BLOCK_NONCE_TAG: u16 = 0x0020;
 // cf. https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree#merke-log-trees
 pub type ChainwebHash = Sha512Trunc256;
 
-pub fn tag_bytes(tag: u16) -> [u8; 2] {
+pub const fn tag_bytes(tag: u16) -> [u8; 2] {
     tag.to_be_bytes()
 }
 
@@ -106,7 +106,7 @@ pub struct AdjacentParent {
 }
 
 impl AdjacentParent {
-    pub fn from_raw(raw: &AdjacentParentRaw) -> Self {
+    pub const fn from_raw(raw: &AdjacentParentRaw) -> Self {
         let chain = u32::from_le_bytes(raw.chain);
         let hash = raw.hash;
 
@@ -319,7 +319,7 @@ mod test {
         let output = String::from_utf8_lossy(&output.stdout);
         let raw_headers = output.split_whitespace();
         raw_headers.for_each(|header_str| {
-            let header_str = header_str.replace(&[',', '[', ']', '\"'], "");
+            let header_str = header_str.replace([',', '[', ']', '\"'], "");
             let header_bytes = header_str.as_bytes();
             // skip "garbage" in headers
             if header_bytes.len() == RAW_HEADER_BYTES_LEN {

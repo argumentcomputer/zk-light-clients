@@ -2366,7 +2366,7 @@ dependencies = [
 
 [[package]]
 name = "kadena-lc"
-version = "1.0.0"
+version = "0.0.1"
 dependencies = [
  "kadena-lc-core",
  "kadena-programs",
@@ -2375,7 +2375,7 @@ dependencies = [
 
 [[package]]
 name = "kadena-lc-core"
-version = "1.0.1"
+version = "0.0.1"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -2386,7 +2386,7 @@ dependencies = [
 
 [[package]]
 name = "kadena-programs"
-version = "1.0.1"
+version = "0.0.1"
 dependencies = [
  "glob",
  "sphinx-helper",
