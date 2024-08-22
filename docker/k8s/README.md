@@ -34,9 +34,16 @@ docker build -t argumentcomputer/<aptos|ethereum>-light-client:latest -f ./docke
 
 4. Apply the Kubernetes configuration files:
 
+**Aptos**
+
 ```bash
-minikube kubectl -- apply -f ./docker/k8s/
+minikube kubectl apply -f k8s/aptos-client/aptos-node-configmap.yaml && \
+  minikube kubectl apply -f k8s/proof-server/proof-server-deployment.yaml && \
+  minikube kubectl apply -f k8s/proof-server/proof-server-service.yaml &&\
+  minikube kubectl apply -f k8s/proof-server/proof-server-hpa.yaml && \
+  minikube kubectl apply -f k8s/aptos-client/client-deployment.yaml
+
 ```
 
-After running these commands, the `client`, `server-primary`, and
-`server-secondary` should be up and running in your Minikube environment.
+After running these commands, the `client` and
+`proof-server` should be up and running in your Minikube environment.

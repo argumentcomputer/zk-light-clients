@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proof-server-deployment
+spec:
+  replicas: 1  # Initial number of replicas, can be adjusted by HPA
+  selector:
+    matchLabels:
+      app: proof-server
+  template:
+    metadata:
+      labels:
+        app: proof-server
+    spec:
+      containers:
+        - name: proof-server
+          image: argumentcomputer/aptos-light-client:latest
+          imagePullPolicy: IfNotPresent
+          command: [ "sh", "-c", "/app/proof_server --mode \"single\" --addr ${CONTAINER_ADDR}:${CONTAINER_PORT}" ]
+          env:
+            - name: RUST_LOG
+              value: "debug"
+            - name: CONTAINER_ADDR
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CONTAINER_PORT
+              value: "8080"  # Internal port for the server
+          ports:
+            - containerPort: 8080  # Ensure this matches CONTAINER_PORT

@@ -23,5 +23,5 @@ spec:
             - name: APTOS_NODE_URL
               valueFrom:
                 configMapKeyRef:
-                  name: aptos-config
+                  name: aptos-node-config
                   key: APTOS_NODE_URL

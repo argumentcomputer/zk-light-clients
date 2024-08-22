@@ -16,15 +16,16 @@ use clap::{Parser, ValueEnum};
 use log::{error, info};
 use proof_server::types::proof_server::{InclusionData, Request};
 use proof_server::{
-    types::proof_server::{EpochChangeData, SecondaryRequest},
+    types::proof_server::EpochChangeData,
     utils::{read_bytes, write_bytes},
 };
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxProvingKey, SphinxVerifyingKey};
+use std::cmp::PartialEq;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::{net::TcpListener, task::spawn_blocking};
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Debug, Eq, PartialEq)]
 enum Mode {
     Single,
     Split,
@@ -54,7 +55,7 @@ struct Cli {
     snd_addr: Option<String>,
 
     /// Mode of operation: either 'single' or 'split'
-    #[arg(short, long, arg_enum)]
+    #[arg(short, long)]
     mode: Mode,
 }
 
@@ -65,6 +66,12 @@ async fn main() -> Result<()> {
         snd_addr,
         mode,
     } = Cli::parse();
+
+    if mode == Mode::Split && snd_addr.is_none() {
+        return Err(Error::msg(
+            "Secondary server address is required in split mode",
+        ));
+    }
 
     env_logger::init();
 
@@ -106,7 +113,7 @@ async fn main() -> Result<()> {
                         &prover_client,
                         &inclusion_pk,
                     )
-                        .await?;
+                    .await?;
                 }
                 Ok(Request::SnarkProveInclusion(inclusion_data)) => {
                     handle_inclusion_proof(
@@ -116,7 +123,7 @@ async fn main() -> Result<()> {
                         &prover_client,
                         &inclusion_pk,
                     )
-                        .await?;
+                    .await?;
                 }
                 Ok(Request::VerifyInclusion(proof)) | Ok(Request::SnarkVerifyInclusion(proof)) => {
                     handle_inclusion_verification(
@@ -125,7 +132,7 @@ async fn main() -> Result<()> {
                         &prover_client,
                         &inclusion_vk,
                     )
-                        .await?;
+                    .await?;
                 }
                 Ok(Request::ProveEpochChange(epoch_change_data)) => match mode {
                     Mode::Single => {
@@ -136,7 +143,7 @@ async fn main() -> Result<()> {
                             &prover_client,
                             &epoch_pk,
                         )
-                            .await?;
+                        .await?;
                     }
                     Mode::Split => {
                         forward_request(
@@ -144,7 +151,7 @@ async fn main() -> Result<()> {
                             snd_addr.as_ref().unwrap(),
                             &mut client_stream,
                         )
-                            .await?;
+                        .await?;
                     }
                 },
 
@@ -157,7 +164,7 @@ async fn main() -> Result<()> {
                             &prover_client,
                             &epoch_pk,
                         )
-                            .await?;
+                        .await?;
                     }
                     Mode::Split => {
                         forward_request(
@@ -165,7 +172,7 @@ async fn main() -> Result<()> {
                             snd_addr.as_ref().unwrap(),
                             &mut client_stream,
                         )
-                            .await?;
+                        .await?;
                     }
                 },
                 Ok(Request::SnarkVerifyEpochChange(proof))
@@ -177,7 +184,7 @@ async fn main() -> Result<()> {
                             &prover_client,
                             &epoch_vk,
                         )
-                            .await?;
+                        .await?;
                     }
                     Mode::Split => {
                         forward_request(
@@ -185,7 +192,7 @@ async fn main() -> Result<()> {
                             snd_addr.as_ref().unwrap(),
                             &mut client_stream,
                         )
-                            .await?;
+                        .await?;
                     }
                 },
                 Err(e) => error!("Failed to deserialize request object: {e}"),
@@ -213,10 +220,14 @@ async fn handle_inclusion_proof(
         &validator_verifier_assets,
     );
     info!("Start proving");
+
+    let prover_client = Arc::clone(prover_client);
+    let pk = Arc::clone(pk);
+
     let proof_handle = if snark {
-        spawn_blocking(move || prover_client.prove(pk, stdin).plonk().run())
+        spawn_blocking(move || prover_client.prove(&pk, stdin).plonk().run())
     } else {
-        spawn_blocking(move || prover_client.prove(pk, stdin).run())
+        spawn_blocking(move || prover_client.prove(&pk, stdin).run())
     };
     let proof = proof_handle.await??;
     info!("Proof generated. Serializing");
@@ -253,10 +264,13 @@ async fn handle_epoch_proof(
     let stdin = epoch_change::generate_stdin(&trusted_state, &epoch_change_proof);
     info!("Start proving epoch change");
 
+    let prover_client = Arc::clone(prover_client);
+    let pk = Arc::clone(pk);
+
     let proof_handle = if snark {
-        spawn_blocking(move || prover_client.prove(pk, stdin).plonk().run())
+        spawn_blocking(move || prover_client.prove(&pk, stdin).plonk().run())
     } else {
-        spawn_blocking(move || prover_client.prove(pk, stdin).run())
+        spawn_blocking(move || prover_client.prove(&pk, stdin).run())
     };
     let proof = proof_handle.await??;
 
