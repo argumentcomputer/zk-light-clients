@@ -22,10 +22,14 @@ struct BenchResults {
     e2e_proving_time: u128,
     inclusion_proof: ProofData,
     epoch_change_proof: ProofData,
+    reconstruct_commitments: String,
+    shard_size: String,
+    shard_batch_size: String,
+    shard_chunking_multiplier: String,
+    rustflags: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
-
 struct ProofData {
     proving_time: u128,
     request_response_proof_size: usize,
@@ -33,15 +37,24 @@ struct ProofData {
 
 const ACCOUNT_INCLUSION_DATA_PATH: &str = "./benches/assets/account_inclusion_data.bcs";
 const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
-const SNARK_SHARD_SIZE: &str = "4194304";
-const STARK_SHARD_SIZE: &str = "1048576";
-const SHARD_BATCH_SIZE: &str = "0";
-const RUST_LOG: &str = "warn";
-const RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
+const DEFAULT_SNARK_SHARD_SIZE: &str = "4194304";
+const DEFAULT_STARK_SHARD_SIZE: &str = "1048576";
+const DEFAULT_SHARD_BATCH_SIZE: &str = "16";
+const DEFAULT_SHARD_CHUNKING_MULTIPLIER: &str = "1";
+const DEFAULT_RUST_LOG: &str = "warn";
+const DEFAULT_RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
+const DEFAULT_RECONSTRUCT_COMMITMENTS: &str = "true";
 
 fn main() -> Result<(), anyhow::Error> {
     let final_snark: bool = env::var("SNARK").unwrap_or_else(|_| "0".into()) == "1";
     let run_parallel: bool = env::var("RUN_PARALLEL").unwrap_or_else(|_| "0".into()) == "1";
+
+    let rust_log = env::var("RUST_LOG").ok();
+    let shard_size = env::var("SHARD_SIZE").ok();
+    let shard_batch_size = env::var("SHARD_BATCH_SIZE").ok();
+    let shard_chunking_multiplier = env::var("SHARD_CHUNKING_MULTIPLIER").ok();
+    let rustflags = env::var("RUSTFLAGS").ok();
+    let reconstruct_commitments = env::var("RECONSTRUCT_COMMITMENTS").ok();
 
     let rt = Runtime::new().unwrap();
 
@@ -51,10 +64,26 @@ fn main() -> Result<(), anyhow::Error> {
     }
 
     // Start secondary server
-    let mut secondary_server_process = rt.block_on(start_secondary_server(final_snark))?;
+    let mut secondary_server_process = rt.block_on(start_secondary_server(
+        final_snark,
+        rust_log.clone(),
+        rustflags.clone(),
+        shard_size.clone(),
+        shard_batch_size.clone(),
+        shard_chunking_multiplier.clone(),
+        reconstruct_commitments.clone(),
+    ))?;
 
     // Start primary server
-    let mut primary_server_process = rt.block_on(start_primary_server(final_snark))?;
+    let mut primary_server_process = rt.block_on(start_primary_server(
+        final_snark,
+        rust_log.clone(),
+        rustflags.clone(),
+        shard_size.clone(),
+        shard_batch_size.clone(),
+        shard_chunking_multiplier.clone(),
+        reconstruct_commitments.clone(),
+    ))?;
 
     // Join the benchmark tasks and block until they are done
     let (res_inclusion_proof, res_epoch_change_proof) = if run_parallel {
@@ -84,10 +113,32 @@ fn main() -> Result<(), anyhow::Error> {
         epoch_change_proof.proving_time
     };
 
+    let (
+        _,
+        reconstruct_commitments,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        rustflags,
+    ) = get_actual_sphinx_parameters(
+        final_snark,
+        rust_log,
+        rustflags,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        reconstruct_commitments,
+    );
+
     let bench_results = BenchResults {
         e2e_proving_time,
         inclusion_proof,
         epoch_change_proof,
+        reconstruct_commitments,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        rustflags,
     };
 
     let json_output = serde_json::to_string(&bench_results).unwrap();
@@ -99,17 +150,69 @@ fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error> {
+fn get_actual_sphinx_parameters(
+    final_snark: bool,
+    rust_log: Option<String>,
+    rustflags: Option<String>,
+    shard_size: Option<String>,
+    shard_batch_size: Option<String>,
+    shard_chunking_multiplier: Option<String>,
+    reconstruct_commitments: Option<String>,
+) -> (String, String, String, String, String, String) {
+    let shard_size = if final_snark {
+        shard_size.unwrap_or(DEFAULT_SNARK_SHARD_SIZE.to_string())
+    } else {
+        shard_size.unwrap_or(DEFAULT_STARK_SHARD_SIZE.to_string())
+    };
+
+    let rust_log = rust_log.unwrap_or(DEFAULT_RUST_LOG.to_string());
+    let rustflags = rustflags.unwrap_or(DEFAULT_RUSTFLAGS.to_string());
+    let shard_batch_size = shard_batch_size.unwrap_or(DEFAULT_SHARD_BATCH_SIZE.to_string());
+    let shard_chunking_multiplier =
+        shard_chunking_multiplier.unwrap_or(DEFAULT_SHARD_CHUNKING_MULTIPLIER.to_string());
+    let reconstruct_commitments =
+        reconstruct_commitments.unwrap_or(DEFAULT_RECONSTRUCT_COMMITMENTS.to_string());
+
+    (
+        rust_log,
+        reconstruct_commitments,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        rustflags,
+    )
+}
+
+async fn start_primary_server(
+    final_snark: bool,
+    rust_log: Option<String>,
+    rustflags: Option<String>,
+    shard_size: Option<String>,
+    shard_batch_size: Option<String>,
+    shard_chunking_multiplier: Option<String>,
+    reconstruct_commitments: Option<String>,
+) -> Result<Child, anyhow::Error> {
     let primary_addr =
         env::var("PRIMARY_ADDR").map_err(|_| anyhow::anyhow!("PRIMARY_ADDR not set"))?;
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
 
-    let shard_size = if final_snark {
-        SNARK_SHARD_SIZE
-    } else {
-        STARK_SHARD_SIZE
-    };
+    let (
+        rust_log,
+        reconstruct_commitments,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        rustflags,
+    ) = get_actual_sphinx_parameters(
+        final_snark,
+        rust_log,
+        rustflags,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        reconstruct_commitments,
+    );
 
     let process = Command::new("cargo")
         .args([
@@ -123,10 +226,12 @@ async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error>
             "--snd-addr",
             &secondary_addr,
         ])
-        .env("RUST_LOG", RUST_LOG)
-        .env("RUSTFLAGS", RUSTFLAGS)
+        .env("RUST_LOG", rust_log)
+        .env("RUSTFLAGS", rustflags)
         .env("SHARD_SIZE", shard_size)
-        .env("SHARD_BATCH_SIZE", SHARD_BATCH_SIZE)
+        .env("SHARD_BATCH_SIZE", shard_batch_size)
+        .env("SHARD_CHUNKING_MULTIPLIER", shard_chunking_multiplier)
+        .env("RECONSTRUCT_COMMITMENTS", reconstruct_commitments)
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
@@ -150,15 +255,34 @@ async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error>
     }
 }
 
-async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Error> {
+async fn start_secondary_server(
+    final_snark: bool,
+    rust_log: Option<String>,
+    rustflags: Option<String>,
+    shard_size: Option<String>,
+    shard_batch_size: Option<String>,
+    shard_chunking_multiplier: Option<String>,
+    reconstruct_commitments: Option<String>,
+) -> Result<Child, anyhow::Error> {
     let secondary_addr =
         env::var("SECONDARY_ADDR").map_err(|_| anyhow::anyhow!("SECONDARY_ADDR not set"))?;
 
-    let shard_size = if final_snark {
-        SNARK_SHARD_SIZE
-    } else {
-        STARK_SHARD_SIZE
-    };
+    let (
+        rust_log,
+        reconstruct_commitments,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        rustflags,
+    ) = get_actual_sphinx_parameters(
+        final_snark,
+        rust_log,
+        rustflags,
+        shard_size,
+        shard_batch_size,
+        shard_chunking_multiplier,
+        reconstruct_commitments,
+    );
 
     let process = Command::new("cargo")
         .args([
@@ -170,10 +294,12 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
             "-a",
             &secondary_addr,
         ])
-        .env("RUST_LOG", RUST_LOG)
-        .env("RUSTFLAGS", RUSTFLAGS)
+        .env("RUST_LOG", rust_log)
+        .env("RUSTFLAGS", rustflags)
         .env("SHARD_SIZE", shard_size)
-        .env("SHARD_BATCH_SIZE", SHARD_BATCH_SIZE)
+        .env("SHARD_BATCH_SIZE", shard_batch_size)
+        .env("SHARD_CHUNKING_MULTIPLIER", shard_chunking_multiplier)
+        .env("RECONSTRUCT_COMMITMENTS", reconstruct_commitments)
         .spawn()
         .map_err(|e| anyhow!(e))?;
 
