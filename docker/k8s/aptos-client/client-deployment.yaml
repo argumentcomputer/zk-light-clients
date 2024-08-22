@@ -16,7 +16,7 @@ spec:
         - name: client
           image: argumentcomputer/aptos-light-client:latest
           imagePullPolicy: IfNotPresent
-          command: [ "sh", "-c", "/app/client --proof-server-address server-primary:80 --aptos-node-url ${APTOS_NODE_URL}" ]
+          command: [ "sh", "-c", "/app/client --proof-server-address proof-server-service:80 --aptos-node-url ${APTOS_NODE_URL}" ]
           env:
             - name: RUST_LOG
               value: "debug"

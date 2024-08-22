@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ethereum-node-config
+data:
+  CHECKPOINT_PROVIDER_ADDRESS: "127.0.0.1:80" # Replace with the actual checkpoint provider address
+  BEACON_NODE_ADDRESS: "127.0.0.1:80" # Replace with the actual beacon node address
+  RPC_PROVIDER_ADDRESS: "127.0.0.1:80" # Replace with the actual RPC provider address
