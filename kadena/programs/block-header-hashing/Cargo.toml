@@ -1,6 +1,6 @@
 [workspace]
 [package]
-version = "1.0.1"
+version = "0.0.1"
 name = "block-header-hashing-program"
 edition = "2021"
 license = "Apache-2.0"

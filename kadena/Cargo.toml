@@ -16,7 +16,6 @@ uint = "0.9.5"
 chrono = "0.4.38"
 sha2 = "0.9"
 tiny-keccak = "2.0.2"
-#merkle-log = { version = "0.1.0", git = "https://github.com/kadena-io/merkle-log-rs.git" }
 
 # Crypto dependencies
 bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "zkvm" }
