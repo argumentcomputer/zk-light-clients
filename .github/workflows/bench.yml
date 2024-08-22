@@ -7,7 +7,7 @@ name: Manual benchmark
 on:
   workflow_dispatch:
     inputs:
-      # Which light client to bench, e.g. `aptos` or `ethereum`
+      # Which light client to bench, e.g. `aptos`, `ethereum` or `kadena`
       package:
         type: string
         required: true
@@ -41,7 +41,7 @@ on:
         required: false
   schedule:
     # Bench report on Tuesdays at 11pm EST/12pm EDT
-    - cron:  '0 16 * * 4'
+    - cron: '0 16 * * 4'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -50,7 +50,7 @@ concurrency:
 jobs:
   benchmark:
     name: Manual benchmark
-    runs-on: [self-hosted, bench, avx512]
+    runs-on: [ self-hosted, bench, avx512 ]
     steps:
       - uses: actions/checkout@v4
         with:
