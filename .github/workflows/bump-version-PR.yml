@@ -48,9 +48,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2024-05-31
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install `tq-rs`
         run: cargo install tq-rs
