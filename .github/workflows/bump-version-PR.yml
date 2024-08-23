@@ -92,6 +92,7 @@ jobs:
           else
             VERSION=$BASE_VERSION
             PR_BRANCH="version-bump"
+          fi
           git checkout -b $PR_BRANCH
 
           echo "VERSION=$VERSION" | tee -a $GITHUB_ENV
