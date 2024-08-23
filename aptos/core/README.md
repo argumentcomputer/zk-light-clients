@@ -22,7 +22,7 @@ chain. The code for this is located in the `aptos_test_utils` module.
 To run tests, we recommend the following command:
 
 ```shell
-SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
+SHARD_BATCH_SIZE=0 cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
 ```
 
 This command should be run with the following environment variable:
