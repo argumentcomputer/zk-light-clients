@@ -208,7 +208,7 @@ pub trait Prover {
     /// # Returns
     ///
     /// The Sphinx stdin.
-    fn generate_sphinx_stdin(&self, inputs: Self::StdIn) -> Result<SphinxStdin, Self::Error>;
+    fn generate_sphinx_stdin(&self, inputs: &Self::StdIn) -> Result<SphinxStdin, Self::Error>;
 
     /// Execute the program, useful to get the cycles that the program will take.
     ///
@@ -219,7 +219,7 @@ pub trait Prover {
     /// # Returns
     ///
     /// The output of the prover.
-    fn execute(&self, inputs: Self::StdIn) -> Result<Self::StdOut, Self::Error>;
+    fn execute(&self, inputs: &Self::StdIn) -> Result<Self::StdOut, Self::Error>;
 
     /// Generate a proof for the program. The proof can either be a STARK or a SNARK proof.
     ///
@@ -231,7 +231,7 @@ pub trait Prover {
     /// # Returns
     ///
     /// The proof.
-    fn prove(&self, inputs: Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error>;
+    fn prove(&self, inputs: &Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error>;
 
     /// Verify a proof for the program.
     ///

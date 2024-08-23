@@ -103,7 +103,7 @@ fn main() {
     let start_proving = Instant::now();
     let proof = benchmark_assets
         .prover
-        .prove(inputs, mode)
+        .prove(&inputs, mode)
         .expect("Failed to prove storage inclusion");
     let proving_time = start_proving.elapsed();
 
