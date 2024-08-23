@@ -1,19 +1,17 @@
+# Workflow to create a new tag release when a release branch is merged
 name: Tag release
 
 on:
   pull_request:
     types: [ closed ]
     branches:
-      - dev
       - release/*
 
 jobs:
-  # Creates a new tag if a release branch is merged
   tag-bump:
     if: |
       github.event.pull_request.merged == true &&
-      ((startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.base.ref == 'dev') ||
-      (startsWith(github.event.pull_request.head.ref, 'hotfix/') && startsWith(github.event.pull_request.base.ref, 'release/')))
+      ((github.event.pull_request.head.ref == 'version-bump') || startsWith(github.event.pull_request.head.ref, 'hotfix/'))
     runs-on: ubuntu-latest
     steps:
       - name: Git config
@@ -29,45 +27,39 @@ jobs:
       - name: Get version
         id: get-version
         run: |
-          VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
-          RELEASE_BRANCH="${{ startsWith(github.event.pull_request.head.ref, 'release/') && github.event.pull_request.head.ref || github.event.pull_request.base.ref }}"
-          PATH=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2 | cut -d'.' -f 1)
+          RELEASE_BRANCH=${{ github.event.pull_request.base.ref }}
+          TAG_VERSION=$(echo "$RELEASE_BRANCH" | cut -d'/' -f 2)
+          LC_PATH=$(echo "$RELEASE_BRANCH" | awk -F'/' '{split($2, arr, "-"); print arr[1]}')
 
-          if [[ "${{ startsWith(github.event.pull_request.head.ref, 'release/') }}" == "true" ]]; then
-            VERSION="${VERSION}.0"
-          fi
+          if [[ "${{ github.event.pull_request.head.ref }}" == "version-bump" ]]; then
+            TAG_VERSION=$(echo "$RELEASE_BRANCH" | cut -d'/' -f 2)
+            TAG_VERSION="${TAG_VERSION}.0"
+          else
+            TAG_VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
+           fi
 
-          git tag -a $VERSION -m "$VERSION" origin/$RELEASE_BRANCH
-          git push origin $VERSION --follow-tags          
-          echo "path=$PATH" | tee -a "$GITHUB_OUTPUT"
-          echo "version=$VERSION" | tee -a "$GITHUB_OUTPUT"
+          git tag -a $TAG_VERSION -m "$TAG_VERSION" origin/$RELEASE_BRANCH
+          git push origin $TAG_VERSION --follow-tags
+          echo "path=$LC_PATH" | tee -a "$GITHUB_OUTPUT"
+          echo "tag-version=$TAG_VERSION" | tee -a "$GITHUB_OUTPUT"
           echo "RELEASE_BRANCH=$RELEASE_BRANCH" | tee -a "$GITHUB_ENV"
 
 
       - name: Get latest release reference
         id: get-latest-release
         run: |
-          if [[ "${{ startsWith(github.event.pull_request.head.ref, 'release/') }}" == "true" ]]; then
-            REGEX=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2 | cut -d'.' -f 1)
-            LATEST_RELEASE=$(gh release list --repo $GITHUB_REPOSITORY --limit 100 | grep -Ei "$REGEX" | head -n 1)
+          LATEST_RELEASE=$(gh release list --repo ${{ github.repository }} --limit 100 | grep -Ei "${{ steps.get-version.outputs.path }}" | head -n 1 | awk '{ print $1 }')
 
-            if [ -z "$LATEST_RELEASE" ]; then
-              FIRST_COMMIT=$(git rev-list --max-parents=0 dev#refs/heads/)
-
-              echo "The first commit on branch dev is $FIRST_COMMIT"
-              echo "latest_release=$FIRST_COMMIT" | tee -a "$GITHUB_OUTPUT"      
-            else
-              echo "Found release: $LATEST_RELEASE"
-              echo "latest_release=$LATEST_RELEASE" | tee -a "$GITHUB_OUTPUT"      
-            fi
-
+          if [ -z "$LATEST_RELEASE" ]; then
+            LATEST_RELEASE=$(git rev-list --max-parents=0 HEAD)
+            echo "The first commit on branch ${{ env.RELEASE_BRANCH }} is $LATEST_RELEASE"
           else
-            REGEX=$(echo "${{ github.event.pull_request.base.ref }}" | cut -d'/' -f 2)
-            LATEST_RELEASE=$(gh release list --repo $GITHUB_REPOSITORY --limit 100 | grep -Ei "$REGEX" | head -n 1)
-
             echo "Found release: $LATEST_RELEASE"
-            echo "latest_release=$LATEST_RELEASE" | tee -a "$GITHUB_OUTPUT"
           fi
+
+          echo "latest_release=$LATEST_RELEASE" | tee -a "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Build Changelog
         id: github_release
@@ -75,7 +67,7 @@ jobs:
         with:
           path: "./${{ steps.get-version.outputs.path }}"
           fromTag: ${{ steps.get-latest-release.outputs.latest_release }}
-          toTag: ${{ steps.get-version.outputs.version }}
+          toTag: ${{ steps.get-version.outputs.tag-version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -83,6 +75,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           body: ${{ steps.github_release.outputs.changelog }}
-          tag: ${{ steps.get-version.outputs.version }}
+          tag: ${{ steps.get-version.outputs.tag-version }}
           commit: ${{ env.RELEASE_BRANCH }}
           allowUpdates: true

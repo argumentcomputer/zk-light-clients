@@ -42,8 +42,10 @@ jobs:
         id: get-packages
         run: |
           PACKAGES=$(echo '${{ steps.filter.outputs.changes }}' | jq -c '.')
+          # Remove `fixture-generator` if it exists, as we don't want to run tests or the cycle checker
           LC_PACKAGES=$(echo "$PACKAGES" | jq -c 'del(.[] | select(. == "fixture-generator"))')
 
+          # If any packages were changed, ensure we run clippy on `fixture-generator` as it imports all light clients
           if [ "$PACKAGES" != "[]" ]; then
             if ! echo "$PACKAGES" | jq -e '.[] | select(. == "fixture-generator")' > /dev/null; then
               PACKAGES=$(echo "$PACKAGES" | jq -c '. + ["fixture-generator"]')
@@ -60,7 +62,7 @@ jobs:
       fail-fast: false
       matrix:
         # Parse JSON array containing names of all changed light client packages,
-        # e.g. ['aptos', 'ethereum', 'kadena'] if `aptos`, `ethereum` and 'kadena' contain changes.
+        # e.g. ['aptos', 'ethereum', 'kadena'] if `aptos`, `ethereum` and `kadena` contain changes.
         package: ${{ fromJSON(needs.changes.outputs.lc-packages) }}
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +90,7 @@ jobs:
       fail-fast: false
       matrix:
         # Parse JSON array containing names of all changed packages,
-        # e.g. ['aptos', 'ethereum', 'kadena'] if `aptos`, `ethereum` and 'kadena' contain changes.
+        # e.g. ['aptos', 'ethereum', 'kadena', 'fixture-generator'] if `aptos`, `ethereum` and `kadena` contain changes.
         # We always run 'fixture-generator' clippy tests if it or any light client was changed.
         package: ${{ fromJSON(needs.changes.outputs.packages) }}
     steps:
