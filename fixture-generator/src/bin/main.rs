@@ -135,7 +135,7 @@ fn generate_fixture_inclusion_ethereum_lc() {
         test_assets.finality_update.into(),
         test_assets.eip1186_proof,
     );
-    let proof = match prover.prove(input, ProvingMode::SNARK).unwrap() {
+    let proof = match prover.prove(&input, ProvingMode::SNARK).unwrap() {
         ProofType::SNARK(inner_proof) => inner_proof,
         _ => {
             panic!("Unexpected proof")
@@ -231,7 +231,10 @@ fn generate_fixture_epoch_change_ethereum_lc() {
         test_assets.update_new_period,
     );
     let prover = CommitteeChangeProver::new();
-    let proof = match prover.prove(new_period_inputs, ProvingMode::SNARK).unwrap() {
+    let proof = match prover
+        .prove(&new_period_inputs, ProvingMode::SNARK)
+        .unwrap()
+    {
         ProofType::SNARK(inner_proof) => inner_proof,
         _ => {
             panic!("Unexpected proof")

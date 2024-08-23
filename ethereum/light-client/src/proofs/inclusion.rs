@@ -211,29 +211,30 @@ impl Prover for StorageInclusionProver {
     type StdIn = StorageInclusionIn;
     type StdOut = StorageInclusionOut;
 
-    fn generate_sphinx_stdin(&self, inputs: Self::StdIn) -> Result<SphinxStdin, Self::Error> {
+    fn generate_sphinx_stdin(&self, inputs: &Self::StdIn) -> Result<SphinxStdin, Self::Error> {
         let mut stdin = SphinxStdin::new();
 
         let update_sig_period = calc_sync_period(inputs.update.signature_slot());
         let store_period = calc_sync_period(inputs.store.finalized_header().beacon().slot());
 
         let finalized_beacon_slot = *inputs.store.finalized_header().beacon().slot();
-        let correct_sync_committee = if update_sig_period == store_period {
-            inputs.store.into_current_sync_committee()
-        } else {
-            inputs
-                .store
-                .into_next_sync_committee()
-                .ok_or_else(|| ProverError::SphinxInput {
-                    source: "Expected next sync committee".into(),
+        let correct_sync_committee =
+            if update_sig_period == store_period {
+                inputs.store.current_sync_committee()
+            } else {
+                inputs.store.next_sync_committee().as_ref().ok_or_else(|| {
+                    ProverError::SphinxInput {
+                        source: "Expected next sync committee".into(),
+                    }
                 })?
-        };
+            };
 
         stdin.write(
-            &CompactStore::new(finalized_beacon_slot, correct_sync_committee).to_ssz_bytes(),
+            &CompactStore::new(finalized_beacon_slot, correct_sync_committee.clone())
+                .to_ssz_bytes(),
         );
         stdin.write(
-            &CompactUpdate::from(inputs.update)
+            &CompactUpdate::from(inputs.update.clone())
                 .to_ssz_bytes()
                 .map_err(|err| ProverError::SphinxInput { source: err.into() })?,
         );
@@ -241,7 +242,7 @@ impl Prover for StorageInclusionProver {
         Ok(stdin)
     }
 
-    fn execute(&self, inputs: Self::StdIn) -> Result<Self::StdOut, Self::Error> {
+    fn execute(&self, inputs: &Self::StdIn) -> Result<Self::StdOut, Self::Error> {
         sphinx_sdk::utils::setup_logger();
 
         let stdin = self.generate_sphinx_stdin(inputs)?;
@@ -255,7 +256,7 @@ impl Prover for StorageInclusionProver {
         Ok(StorageInclusionOut::from(&mut public_values))
     }
 
-    fn prove(&self, inputs: Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
+    fn prove(&self, inputs: &Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
         let stdin = self.generate_sphinx_stdin(inputs)?;
 
         match mode {
@@ -315,7 +316,7 @@ mod test {
             eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
-        let inclusion_output = prover.execute(inclusion_input).unwrap();
+        let inclusion_output = prover.execute(&inclusion_input).unwrap();
 
         assert_eq!(
             inclusion_output.sync_committee_hash,
@@ -366,10 +367,10 @@ mod test {
             eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
-        println!("Starting STARK proving for sync committee change...");
+        println!("Starting STARK proving for storage inclusion...");
         let start = Instant::now();
 
-        let _ = prover.prove(inclusion_inputs, ProvingMode::STARK).unwrap();
+        let _ = prover.prove(&inclusion_inputs, ProvingMode::STARK).unwrap();
         println!("Proving took {:?}", start.elapsed());
     }
 
@@ -388,10 +389,10 @@ mod test {
             eip1186_proof: test_assets.eip1186_proof().clone(),
         };
 
-        println!("Starting SNARK proving for sync committee change...");
+        println!("Starting SNARK proving for storage inclusion...");
         let start = Instant::now();
 
-        let _ = prover.prove(inclusion_inputs, ProvingMode::SNARK).unwrap();
+        let _ = prover.prove(&inclusion_inputs, ProvingMode::SNARK).unwrap();
         println!("Proving took {:?}", start.elapsed());
     }
 }

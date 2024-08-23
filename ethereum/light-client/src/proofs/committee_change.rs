@@ -162,7 +162,7 @@ impl Prover for CommitteeChangeProver {
     type StdIn = CommitteeChangeIn;
     type StdOut = CommitteeChangeOut;
 
-    fn generate_sphinx_stdin(&self, inputs: Self::StdIn) -> Result<SphinxStdin, Self::Error> {
+    fn generate_sphinx_stdin(&self, inputs: &Self::StdIn) -> Result<SphinxStdin, Self::Error> {
         let mut stdin = SphinxStdin::new();
         stdin.write(
             &inputs
@@ -179,7 +179,7 @@ impl Prover for CommitteeChangeProver {
         Ok(stdin)
     }
 
-    fn execute(&self, inputs: Self::StdIn) -> Result<Self::StdOut, Self::Error> {
+    fn execute(&self, inputs: &Self::StdIn) -> Result<Self::StdOut, Self::Error> {
         sphinx_sdk::utils::setup_logger();
 
         let stdin = self.generate_sphinx_stdin(inputs)?;
@@ -193,7 +193,7 @@ impl Prover for CommitteeChangeProver {
         Ok(CommitteeChangeOut::from(&mut public_values))
     }
 
-    fn prove(&self, inputs: Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
+    fn prove(&self, inputs: &Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
         let stdin = self.generate_sphinx_stdin(inputs)?;
 
         match mode {
@@ -257,7 +257,7 @@ mod test {
             update: test_assets.update_new_period.clone(),
         };
 
-        let new_period_output = prover.execute(new_period_inputs).unwrap();
+        let new_period_output = prover.execute(&new_period_inputs).unwrap();
 
         assert_eq!(
             &new_period_output.finalized_block_height,
@@ -317,7 +317,9 @@ mod test {
         println!("Starting STARK proving for sync committee change...");
         let start = Instant::now();
 
-        let _ = prover.prove(new_period_inputs, ProvingMode::STARK).unwrap();
+        let _ = prover
+            .prove(&new_period_inputs, ProvingMode::STARK)
+            .unwrap();
         println!("Proving took {:?}", start.elapsed());
     }
 
@@ -343,7 +345,9 @@ mod test {
         println!("Starting SNARK proving for sync committee change...");
         let start = Instant::now();
 
-        let _ = prover.prove(new_period_inputs, ProvingMode::SNARK).unwrap();
+        let _ = prover
+            .prove(&new_period_inputs, ProvingMode::SNARK)
+            .unwrap();
         println!("Proving took {:?}", start.elapsed());
     }
 }
