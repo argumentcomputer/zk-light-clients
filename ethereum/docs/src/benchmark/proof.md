@@ -88,7 +88,7 @@ Enter benchmark name: committee_change
 Run the following command:
 
 ```shell
-SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 bench --bench execute -- <benchmark_name>
+SHARD_BATCH_SIZE=0 cargo bench --bench execute -- <benchmark_name>
 ```
 
 ## Interpreting the results
@@ -148,7 +148,7 @@ To run the test efficiently, first install
 `nextest` following [its documentation](https://nexte.st/book/installation). Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
-SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --package ethereum-lc --no-capture --all-features
+SHARD_BATCH_SIZE=0 cargo nextest run --verbose --release --profile ci --package ethereum-lc --no-capture --all-features
 ```
 
 > **Note**

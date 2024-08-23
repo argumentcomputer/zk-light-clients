@@ -14,7 +14,7 @@ With our deployment machine properly configured, we can run the client.
 ```bash
 git clone git@github.com:lurk-lab/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
-  RUST_LOG="debug" cargo +nightly-2024-05-31 run -p proof-server --release --bin client -- --proof-server-address <PRIMARY_SERVER_ADDRESS> --aptos-node-url <APTOS_NODE_URL>
+  RUST_LOG="debug" cargo run -p proof-server --release --bin client -- --proof-server-address <PRIMARY_SERVER_ADDRESS> --aptos-node-url <APTOS_NODE_URL>
 ```
 
 The client only needs to communicate with the primary proof server, since requests to the secondary server are automatically forwarded.

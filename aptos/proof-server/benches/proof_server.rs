@@ -113,7 +113,6 @@ async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error>
 
     let process = Command::new("cargo")
         .args([
-            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
@@ -163,7 +162,6 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
 
     let process = Command::new("cargo")
         .args([
-            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
