@@ -10,7 +10,4 @@ benchmark:
 BENCH ?= e2e
 
 bench-ci:
-	RUST_LOG="info" \
-	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native -C opt-level=3" \
-	SHARD_BATCH_SIZE=0 \
 	cargo bench --features aptos --bench $(BENCH)

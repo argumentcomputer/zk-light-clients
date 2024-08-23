@@ -4,7 +4,7 @@ version = "1.0.1"
 edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
-homepage = "https://github.com/wormhole-foundation/example-zk-light-clients"
+homepage = "https://github.com/argumentcomputer/zk-light-clients"
 
 [dependencies]
 anyhow = { workspace = true }
