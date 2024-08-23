@@ -96,5 +96,5 @@ To run the `fixture-generator` for the inclusion program, execute the following 
 
 ```bash
 cd fixture-generator
-RUST_LOG=info RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 run --release --bin generate-fixture -- --program inclusion --language move
+RUST_LOG=info RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 cargo run --release --bin generate-fixture -- --program inclusion --language move
 ```

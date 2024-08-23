@@ -17,7 +17,7 @@ environment variable `MODE` can be set to either `STARK` or `SNARK`. The default
 ```bash
 git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/ethereum && \
-  MODE=SNARK RUST_LOG="debug" cargo +nightly-2024-05-31 run -p light-client --release --bin client -- -c <CHECKPOINT_PROVIDER_ADDRESS> -b <BEACON_NODE_ADDRESS> -p <PROOF_SERVER_ADDRESS> -r <RPC_PROVIDER_ADDRESS>
+  MODE=SNARK RUST_LOG="debug" cargo run -p light-client --release --bin client -- -c <CHECKPOINT_PROVIDER_ADDRESS> -b <BEACON_NODE_ADDRESS> -p <PROOF_SERVER_ADDRESS> -r <RPC_PROVIDER_ADDRESS>
 ```
 
 The client only needs to communicate with the primary proof server, since requests to the secondary server are automatically forwarded.
