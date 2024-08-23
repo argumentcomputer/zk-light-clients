@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
                         info!("Start proving");
                         let proof_handle = spawn_blocking(move || {
                             let (proving_mode, inputs) = *boxed;
-                            inclusion_prover.prove(inputs, proving_mode)
+                            inclusion_prover.prove(&inputs, proving_mode)
                         });
                         let proof = proof_handle.await??;
                         info!("Proof generated. Serializing");
