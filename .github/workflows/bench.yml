@@ -40,15 +40,15 @@ on:
       # Zulip stream in which to send the message (optional)
       # Ignored if `private` input is specified
       # Defaults to `light_client` stream
-      stream:
-        description: 'Send message to stream (default is `light-client`). Ignored if DM'
+      channel:
+        description: 'Send message to channel (default is `light-client`). Ignored if `private` input is specified'
         type: string
         required: false
       # Zulip topic in which to send the message (optional)
       # Ignored if `private` input is specified
       # Defaults to `chat`
       topic:
-        description: 'Send message to topic (default is `chat`). Ignored if DM'
+        description: 'Send message to topic (default is `chat`). Ignored if `private` input is specified'
         type: string
         required: false
   schedule:
