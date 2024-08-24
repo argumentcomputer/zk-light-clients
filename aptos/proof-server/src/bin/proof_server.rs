@@ -104,100 +104,105 @@ async fn main() -> Result<()> {
             info!("Request received");
 
             info!("Deserializing request");
-            match bcs::from_bytes::<Request>(&request_bytes) {
-                Ok(Request::ProveInclusion(inclusion_data)) => {
-                    handle_inclusion_proof(
-                        inclusion_data,
-                        false,
-                        &mut client_stream,
-                        &prover_client,
-                        &inclusion_pk,
-                    )
-                    .await?;
-                }
-                Ok(Request::SnarkProveInclusion(inclusion_data)) => {
-                    handle_inclusion_proof(
-                        inclusion_data,
-                        true,
-                        &mut client_stream,
-                        &prover_client,
-                        &inclusion_pk,
-                    )
-                    .await?;
-                }
-                Ok(Request::VerifyInclusion(proof) | Request::SnarkVerifyInclusion(proof)) => {
-                    handle_inclusion_verification(
-                        &proof,
-                        &mut client_stream,
-                        &prover_client,
-                        &inclusion_vk,
-                    )
-                    .await?;
-                }
-                Ok(Request::ProveEpochChange(epoch_change_data)) => match mode {
-                    Mode::Single => {
-                        handle_epoch_proof(
-                            epoch_change_data,
+            let res = bcs::from_bytes::<Request>(&request_bytes);
+
+            if let Err(err) = res {
+                error!("Failed to deserialize request object: {err}")
+            } else if let Ok(request) = res {
+                match request {
+                    Request::ProveInclusion(inclusion_data) => {
+                        handle_inclusion_proof(
+                            inclusion_data,
                             false,
                             &mut client_stream,
                             &prover_client,
-                            &epoch_pk,
+                            &inclusion_pk,
                         )
                         .await?;
                     }
-                    Mode::Split => {
-                        forward_request(
-                            Request::ProveEpochChange(epoch_change_data),
-                            snd_addr.as_ref().unwrap(),
-                            &mut client_stream,
-                        )
-                        .await?;
-                    }
-                },
-
-                Ok(Request::SnarkProveEpochChange(epoch_change_data)) => match mode {
-                    Mode::Single => {
-                        handle_epoch_proof(
-                            epoch_change_data,
+                    Request::SnarkProveInclusion(inclusion_data) => {
+                        handle_inclusion_proof(
+                            inclusion_data,
                             true,
                             &mut client_stream,
                             &prover_client,
-                            &epoch_pk,
+                            &inclusion_pk,
                         )
                         .await?;
                     }
-                    Mode::Split => {
-                        forward_request(
-                            Request::SnarkProveEpochChange(epoch_change_data),
-                            snd_addr.as_ref().unwrap(),
+                    Request::VerifyInclusion(proof) | Request::SnarkVerifyInclusion(proof) => {
+                        handle_inclusion_verification(
+                            &proof,
                             &mut client_stream,
+                            &prover_client,
+                            &inclusion_vk,
                         )
                         .await?;
                     }
-                },
-                Ok(Request::SnarkVerifyEpochChange(proof) | Request::VerifyEpochChange(proof)) => {
-                    match mode {
+                    Request::ProveEpochChange(epoch_change_data) => match mode {
                         Mode::Single => {
-                            handle_epoch_verification(
-                                &proof,
+                            handle_epoch_proof(
+                                epoch_change_data,
+                                false,
                                 &mut client_stream,
                                 &prover_client,
-                                &epoch_vk,
+                                &epoch_pk,
                             )
                             .await?;
                         }
                         Mode::Split => {
                             forward_request(
-                                Request::VerifyEpochChange(proof.clone()),
+                                Request::ProveEpochChange(epoch_change_data),
                                 snd_addr.as_ref().unwrap(),
                                 &mut client_stream,
                             )
                             .await?;
                         }
+                    },
+                    Request::SnarkProveEpochChange(epoch_change_data) => match mode {
+                        Mode::Single => {
+                            handle_epoch_proof(
+                                epoch_change_data,
+                                true,
+                                &mut client_stream,
+                                &prover_client,
+                                &epoch_pk,
+                            )
+                            .await?;
+                        }
+                        Mode::Split => {
+                            forward_request(
+                                Request::SnarkProveEpochChange(epoch_change_data),
+                                snd_addr.as_ref().unwrap(),
+                                &mut client_stream,
+                            )
+                            .await?;
+                        }
+                    },
+                    Request::SnarkVerifyEpochChange(proof) | Request::VerifyEpochChange(proof) => {
+                        match mode {
+                            Mode::Single => {
+                                handle_epoch_verification(
+                                    &proof,
+                                    &mut client_stream,
+                                    &prover_client,
+                                    &epoch_vk,
+                                )
+                                .await?;
+                            }
+                            Mode::Split => {
+                                forward_request(
+                                    Request::VerifyEpochChange(proof.clone()),
+                                    snd_addr.as_ref().unwrap(),
+                                    &mut client_stream,
+                                )
+                                .await?;
+                            }
+                        }
                     }
                 }
-                Err(e) => error!("Failed to deserialize request object: {e}"),
             }
+
             Ok::<(), Error>(())
         });
     }

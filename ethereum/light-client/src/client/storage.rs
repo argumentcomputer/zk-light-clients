@@ -15,6 +15,7 @@
 //! authenticate the client with the RPC provider.
 
 use crate::client::error::ClientError;
+use crate::client::utils::test_connection;
 use crate::types::storage::GetProofResponse;
 use ethers_core::types::EIP1186ProofResponse;
 use getset::Getters;
@@ -55,26 +56,8 @@ impl StorageClient {
     ///
     /// A result indicating whether the connection was successful.
     pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
-        // Try to connect to the proof server
-        let mut retries = 0;
-        loop {
-            match self.inner.get(&self.storage_provider_address).send().await {
-                Ok(_) => {
-                    break;
-                }
-                Err(_) if retries < 10 => {
-                    retries += 1;
-                    tokio::time::sleep(Duration::from_secs(5)).await;
-                }
-                Err(_) => {
-                    return Err(ClientError::Connection {
-                        address: self.storage_provider_address.clone(),
-                    });
-                }
-            }
-        }
-
-        Ok(())
+        // Try to connect to the RPC provider.
+        test_connection(self.inner.get(&self.storage_provider_address).send())
     }
 
     /// `get_proof` makes an HTTP request to the RPC Provider API to get the proof of inclusion

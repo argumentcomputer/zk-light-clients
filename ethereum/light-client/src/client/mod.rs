@@ -31,6 +31,7 @@ pub(crate) mod checkpoint;
 pub mod error;
 pub(crate) mod proof_server;
 pub mod storage;
+mod utils;
 
 /// The client for the light client. It is the entrypoint for any needed remote call.
 #[derive(Debug, Clone)]

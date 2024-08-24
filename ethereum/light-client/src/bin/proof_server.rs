@@ -73,13 +73,17 @@ async fn main() -> Result<()> {
             info!("Request received");
 
             info!("Deserializing request");
-            match Request::from_bytes(&request_bytes) {
-                Ok(request) => match request {
+            let res = Request::from_bytes(&request_bytes);
+
+            if let Err(err) = res {
+                error!("Failed to deserialize request object: {err}")
+            } else if let Ok(request) = res {
+                match request {
                     Request::ProveInclusion(boxed) => {
                         info!("Start proving");
                         let proof_handle = spawn_blocking(move || {
                             let (proving_mode, inputs) = *boxed;
-                            inclusion_prover.prove(inputs, proving_mode)
+                            inclusion_prover.prove(&inputs, proving_mode)
                         });
                         let proof = proof_handle.await??;
                         info!("Proof generated. Serializing");
@@ -100,7 +104,7 @@ async fn main() -> Result<()> {
                             info!("Start proving");
                             let proof_handle = spawn_blocking(move || {
                                 let (proving_mode, inputs) = *boxed;
-                                committee_prover.prove(inputs, proving_mode)
+                                committee_prover.prove(&inputs, proving_mode)
                             });
                             let proof = proof_handle.await??;
                             info!("Proof generated. Serializing");
@@ -131,9 +135,9 @@ async fn main() -> Result<()> {
                             info!("Response forwarded");
                         }
                     },
-                },
-                Err(err) => error!("Failed to deserialize request object: {err}"),
+                }
             }
+
             Ok::<(), Error>(())
         });
     }

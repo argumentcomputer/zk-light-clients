@@ -9,6 +9,7 @@
 //! It maintains an internal HTTP client to handle communication with the Checkpoint Provider API.
 
 use crate::client::error::ClientError;
+use crate::client::utils::test_connection;
 use crate::types::checkpoint::{Checkpoint, SlotsResponse};
 use reqwest::header::ACCEPT;
 use reqwest::Client;
@@ -37,26 +38,8 @@ impl CheckpointClient {
     ///
     /// A result indicating whether the connection was successful.
     pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
-        // Try to connect to the proof server
-        let mut retries = 0;
-        loop {
-            match self.inner.get(&self.address).send().await {
-                Ok(_) => {
-                    break;
-                }
-                Err(_) if retries < 10 => {
-                    retries += 1;
-                    tokio::time::sleep(Duration::from_secs(5)).await;
-                }
-                Err(_) => {
-                    return Err(ClientError::Connection {
-                        address: self.address.clone(),
-                    });
-                }
-            }
-        }
-
-        Ok(())
+        // Try to connect to the checkpoint provider
+        test_connection(self.inner.get(&self.address).send())
     }
 
     /// `get_checkpoint` makes an HTTP request to the Checkpoint Provider API to get the checkpoint

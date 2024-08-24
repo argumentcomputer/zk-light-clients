@@ -38,6 +38,7 @@ use anyhow::{anyhow, Result};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::waypoint::Waypoint;
+use backoff::ExponentialBackoff;
 use clap::Parser;
 use log::{debug, error, info};
 use proof_server::error::ClientError;
@@ -236,30 +237,17 @@ async fn main() -> Result<()> {
 /// This method returns an error if the connection to the proof server fails.
 async fn connect_to_proof_server(proof_server_address: &str) -> Result<(), ClientError> {
     debug!("Connecting to the proof server at {}", proof_server_address);
-    // Try to connect to the proof server
-    let mut retries = 0;
-    loop {
-        match TcpStream::connect(proof_server_address).await {
-            Ok(_) => {
-                debug!("Successfully connected to the proof server");
-                break;
-            }
-            Err(e) if retries < 10 => {
-                debug!(
-                    "Failed to connect to the proof server (attempt {}/{}): {}",
-                    retries + 1,
-                    10,
-                    e
-                );
-                retries += 1;
-                tokio::time::sleep(Duration::from_secs(5)).await;
-            }
-            Err(e) => {
-                return Err(ClientError::Internal {
-                    source: format!("Failed to connect to the proof server: {}", e).into(),
-                });
-            }
-        }
+
+    let res = backoff::future::retry(
+        ExponentialBackoff::default(),
+        TcpStream::connect(proof_server_address),
+    )
+    .await;
+
+    if let Err(err) = res {
+        return Err(ClientError::Internal {
+            source: format!("Failed to connect to the proof server: {}", err).into(),
+        });
     }
 
     Ok(())

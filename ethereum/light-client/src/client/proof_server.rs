@@ -7,6 +7,7 @@
 //! connections to the Proof Server to generate and verify our proofs.
 
 use crate::client::error::ClientError;
+use crate::client::utils::test_connection;
 use crate::proofs::committee_change::CommitteeChangeIn;
 use crate::proofs::inclusion::StorageInclusionIn;
 use crate::proofs::{ProofType, ProvingMode};
@@ -48,25 +49,7 @@ impl ProofServerClient {
     /// A result indicating whether the connection was successful.
     pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
         // Try to connect to the proof server
-        let mut retries = 0;
-        loop {
-            match TcpStream::connect(&self.address).await {
-                Ok(_) => {
-                    break;
-                }
-                Err(_) if retries < 10 => {
-                    retries += 1;
-                    tokio::time::sleep(Duration::from_secs(5)).await;
-                }
-                Err(_) => {
-                    return Err(ClientError::Connection {
-                        address: self.address.clone(),
-                    });
-                }
-            }
-        }
-
-        Ok(())
+        test_connection(TcpStream::connect(&self.address))
     }
 
     /// Prove a sync committee change by executing the [`LightClientStore::process_light_client_update`]
