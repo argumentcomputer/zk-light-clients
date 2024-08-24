@@ -1,7 +1,7 @@
 use crate::client::error::ClientError;
 use anyhow::Result;
 use backoff::ExponentialBackoff;
-use std::future::Future;
+use tokio::net::TcpStream;
 
 /// Tries to execute a future related to a connection to an endpoint.
 /// It retries to connect following an exponential policy.
@@ -13,13 +13,16 @@ use std::future::Future;
 /// # Returns
 ///
 /// Returns an error if the connection failed.
-pub(crate) async fn test_connection(connection: impl Future) -> Result<(), ClientError> {
+pub(crate) async fn test_connection(address: &str) -> Result<(), ClientError> {
     // Try to connect to the proof server
-    let res = backoff::future::retry(ExponentialBackoff::default(), connection).await;
+    let res = backoff::future::retry(ExponentialBackoff::default(), || async {
+        Ok(TcpStream::connect(address).await?)
+    })
+    .await;
 
     if res.is_err() {
         return Err(ClientError::Connection {
-            address: self.beacon_node_address.clone(),
+            address: address.to_string(),
         });
     }
 

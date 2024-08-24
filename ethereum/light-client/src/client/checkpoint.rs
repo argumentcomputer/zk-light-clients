@@ -13,7 +13,6 @@ use crate::client::utils::test_connection;
 use crate::types::checkpoint::{Checkpoint, SlotsResponse};
 use reqwest::header::ACCEPT;
 use reqwest::Client;
-use std::time::Duration;
 
 /// An internal client to handle communication with a Checkpoint Provider.
 #[derive(Debug, Clone)]
@@ -39,7 +38,7 @@ impl CheckpointClient {
     /// A result indicating whether the connection was successful.
     pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
         // Try to connect to the checkpoint provider
-        test_connection(self.inner.get(&self.address).send())
+        test_connection(&self.address).await
     }
 
     /// `get_checkpoint` makes an HTTP request to the Checkpoint Provider API to get the checkpoint

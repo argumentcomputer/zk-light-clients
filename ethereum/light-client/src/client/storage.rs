@@ -21,7 +21,6 @@ use ethers_core::types::EIP1186ProofResponse;
 use getset::Getters;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::Client;
-use std::time::Duration;
 
 /// An internal client to handle communication with the RPC Provider.
 #[derive(Debug, Clone, Getters)]
@@ -57,7 +56,7 @@ impl StorageClient {
     /// A result indicating whether the connection was successful.
     pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
         // Try to connect to the RPC provider.
-        test_connection(self.inner.get(&self.storage_provider_address).send())
+        test_connection(&self.storage_provider_address).await
     }
 
     /// `get_proof` makes an HTTP request to the RPC Provider API to get the proof of inclusion

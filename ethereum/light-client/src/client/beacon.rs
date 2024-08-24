@@ -11,14 +11,11 @@
 use crate::client::error::ClientError;
 use crate::client::utils::test_connection;
 use crate::types::beacon::update::UpdateResponse;
-use backoff::ExponentialBackoff;
 use ethereum_lc_core::types::bootstrap::Bootstrap;
 use ethereum_lc_core::types::update::FinalityUpdate;
 use getset::Getters;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
-use std::time::Duration;
-use tokio::net::TcpStream;
 
 /// An internal client to handle communication with a Beacon Node.
 #[derive(Debug, Clone, Getters)]
@@ -54,7 +51,7 @@ impl BeaconClient {
     /// A result indicating whether the connection was successful.
     pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
         // Try to connect to the beacon node server
-        test_connection(self.inner.get(&self.beacon_node_address).send())
+        test_connection(&self.beacon_node_address).await
     }
 
     /// `get_bootstrap_data` makes an HTTP request to the Beacon Node API to get the bootstrap data.

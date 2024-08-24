@@ -16,7 +16,6 @@ use crate::utils::{read_bytes, write_bytes};
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
-use std::time::Duration;
 use tokio::net::TcpStream;
 
 /// An internal client to handle communication with a Checkpoint Provider.
@@ -49,7 +48,7 @@ impl ProofServerClient {
     /// A result indicating whether the connection was successful.
     pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
         // Try to connect to the proof server
-        test_connection(TcpStream::connect(&self.address))
+        test_connection(&self.address).await
     }
 
     /// Prove a sync committee change by executing the [`LightClientStore::process_light_client_update`]

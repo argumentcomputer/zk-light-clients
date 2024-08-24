@@ -238,10 +238,9 @@ async fn main() -> Result<()> {
 async fn connect_to_proof_server(proof_server_address: &str) -> Result<(), ClientError> {
     debug!("Connecting to the proof server at {}", proof_server_address);
 
-    let res = backoff::future::retry(
-        ExponentialBackoff::default(),
-        TcpStream::connect(proof_server_address),
-    )
+    let res = backoff::future::retry(ExponentialBackoff::default(), || async {
+        Ok(TcpStream::connect(proof_server_address).await?)
+    })
     .await;
 
     if let Err(err) = res {
