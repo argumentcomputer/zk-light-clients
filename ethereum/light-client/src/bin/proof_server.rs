@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use axum::body::Body;
+use axum::body::{Body, Bytes};
 use axum::http::header::CONTENT_TYPE;
 use axum::http::Response;
 use axum::{
@@ -17,6 +17,7 @@ use ethereum_lc::proofs::committee_change::CommitteeChangeProver;
 use ethereum_lc::proofs::inclusion::StorageInclusionProver;
 use ethereum_lc::proofs::Prover;
 use ethereum_lc::types::network::Request;
+use ethers_core::k256::elliptic_curve::ff::derive::bitvec::macros::internal::funty::Fundamental;
 use log::{error, info};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -102,9 +103,13 @@ async fn health_check() -> impl IntoResponse {
 
 async fn inclusion_proof(
     State(state): State<ServerState>,
-    Json(payload): Json<ProofRequestPayload>,
+    request: axum::extract::Request,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let res = Request::from_bytes(&payload.request_bytes);
+    let bytes = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let res = Request::from_bytes(&bytes);
 
     if let Err(err) = res {
         error!("Failed to deserialize request object: {err}");
@@ -123,11 +128,13 @@ async fn inclusion_proof(
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-                serde_json::to_vec(&proof).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+                proof
+                    .to_bytes()
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
             }
             Mode::Split => {
                 let snd_addr = state.snd_addr.as_ref().clone().unwrap();
-                forward_request(&payload.request_bytes, &snd_addr).await
+                forward_request(&bytes, &snd_addr).await
             }
         }
     } else {
@@ -137,7 +144,7 @@ async fn inclusion_proof(
 
     let response = Response::builder()
         .status(StatusCode::OK)
-        .header(CONTENT_TYPE, "application/json")
+        .header(CONTENT_TYPE, "application/octet-stream")
         .body(Body::from(res))
         .map_err(|err| {
             error!("Could not construct response for client: {err}");
@@ -170,7 +177,9 @@ async fn committee_proof(
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-                serde_json::to_vec(&proof).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+                proof
+                    .to_bytes()
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
             }
             Mode::Split => {
                 let snd_addr = state.snd_addr.as_ref().clone().unwrap();
@@ -184,7 +193,7 @@ async fn committee_proof(
 
     let response = Response::builder()
         .status(StatusCode::OK)
-        .header(CONTENT_TYPE, "application/json")
+        .header(CONTENT_TYPE, "application/octet-stream")
         .body(Body::from(res))
         .map_err(|err| {
             error!("Could not construct response for client: {err}");
@@ -208,7 +217,7 @@ async fn inclusion_verify(
     let request = res.unwrap();
     let res = if let Request::VerifyInclusion(proof) = request {
         let is_valid = state.inclusion_prover.verify(&proof).is_ok();
-        serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        Ok(vec![is_valid.as_u8()])
     } else {
         error!("Invalid request type");
         Err(StatusCode::BAD_REQUEST)
@@ -216,7 +225,7 @@ async fn inclusion_verify(
 
     let response = Response::builder()
         .status(StatusCode::OK)
-        .header(CONTENT_TYPE, "application/json")
+        .header(CONTENT_TYPE, "application/octet-stream")
         .body(Body::from(res))
         .map_err(|err| {
             error!("Could not construct response for client: {err}");
@@ -240,7 +249,7 @@ async fn committee_verify(
     let request = res.unwrap();
     let res = if let Request::VerifyCommitteeChange(proof) = request {
         let is_valid = state.committee_prover.verify(&proof).is_ok();
-        serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        Ok(vec![is_valid.as_u8()])
     } else {
         error!("Invalid request type");
         Err(StatusCode::BAD_REQUEST)
@@ -248,7 +257,7 @@ async fn committee_verify(
 
     let response = Response::builder()
         .status(StatusCode::OK)
-        .header(CONTENT_TYPE, "application/json")
+        .header(CONTENT_TYPE, "application/octet-stream")
         .body(Body::from(res))
         .map_err(|err| {
             error!("Could not construct response for client: {err}");
@@ -264,6 +273,7 @@ async fn forward_request(request_bytes: &[u8], snd_addr: &str) -> Result<Vec<u8>
     let res = client
         .post(format!("http://{}/proof", snd_addr))
         .body(request_bytes.to_vec())
+        .header(CONTENT_TYPE, "application/octet-stream")
         .send()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
