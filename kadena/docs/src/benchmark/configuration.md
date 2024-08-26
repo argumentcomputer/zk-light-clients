@@ -37,7 +37,7 @@ Here are the standard config variables that are worth setting for any benchmark:
 
 - `RUST_LOG=debug` _(optional)_
 
-  This prints out useful Sphinx metrics, such as cycle counts, iteration speed, proof size, etc.
+  This prints out useful Sphinx metrics, such as cycle counts, iteration speed, proof size, etc. NOTE: This may cause a significant performance degradation, and is only recommended for collecting metrics other than wall clock time.
 
 ## SNARK proofs
 
