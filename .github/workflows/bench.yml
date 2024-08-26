@@ -40,8 +40,8 @@ on:
       # Zulip stream in which to send the message (optional)
       # Ignored if `private` input is specified
       # Defaults to `light_client` stream
-      channel:
-        description: 'Send message to channel (default is `light-client`). Ignored if DM'
+      stream:
+        description: 'Send message to stream (default is `light-client`). Ignored if DM'
         type: string
         required: false
       # Zulip topic in which to send the message (optional)
@@ -144,11 +144,11 @@ jobs:
           echo "report<<EOF" >> $GITHUB_OUTPUT
           cat summary.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/${{ inputs.package }}/light-client
+        working-directory: ${{ github.workspace }}/${{ inputs.light-client }}/light-client
       - name: Write bench on commit comment
         uses: peter-evans/commit-comment@v3
         with:
-          body-path: ${{ github.workspace }}/${{ inputs.package }}/light-client/summary.md
+          body-path: ${{ github.workspace }}/${{ inputs.light-client }}/light-client/summary.md
       - name: Send report to Zulip
         if: inputs.zulip
         uses: zulip/github-actions-zulip/send-message@v1
