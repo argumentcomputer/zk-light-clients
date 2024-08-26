@@ -15,6 +15,7 @@ use crate::types::network::Request;
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
+use reqwest::header::CONTENT_TYPE;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 
@@ -72,7 +73,7 @@ impl ProofServerClient {
         store: LightClientStore,
         update: Update,
     ) -> Result<ProofType, ClientError> {
-        let url = format!("{}/committee/proof", self.address);
+        let url = format!("http://{}/committee/proof", self.address);
 
         let inputs = CommitteeChangeIn::new(store, update);
         let request = Request::ProveCommitteeChange(Box::new((proving_mode, inputs)));
@@ -100,7 +101,7 @@ impl ProofServerClient {
         &self,
         proof: ProofType,
     ) -> Result<bool, ClientError> {
-        let url = format!("{}/committee/verify", self.address);
+        let url = format!("http://{}/committee/verify", self.address);
 
         let request = Request::VerifyCommitteeChange(proof);
 
@@ -134,7 +135,7 @@ impl ProofServerClient {
         update: Update,
         eip1186_proof: EIP1186Proof,
     ) -> Result<ProofType, ClientError> {
-        let url = format!("{}/inclusion/proof", self.address);
+        let url = format!("http://{}/inclusion/proof", self.address);
 
         let inputs = StorageInclusionIn::new(store, update, eip1186_proof);
         let request = Request::ProveInclusion(Box::new((proving_mode, inputs)));
@@ -162,7 +163,7 @@ impl ProofServerClient {
         &self,
         proof: ProofType,
     ) -> Result<bool, ClientError> {
-        let url = format!("{}/inclusion/verify", self.address);
+        let url = format!("http://{}/inclusion/verify", self.address);
 
         let request = Request::VerifyInclusion(proof);
 
@@ -196,13 +197,14 @@ impl ProofServerClient {
             .inner
             .post(url)
             .body(request)
+            .header(CONTENT_TYPE, "application/octet-stream")
             .send()
             .await
             .map_err(|err| ClientError::Request {
                 endpoint: url.into(),
                 source: Box::new(err),
             })?;
-
+        dbg!(response.status());
         // Store the bytes in a variable first.
         let bytes = response
             .bytes()
