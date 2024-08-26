@@ -2,15 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use axum::body::Body;
+use axum::http::header::CONTENT_TYPE;
+use axum::http::Response;
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
+};
 use clap::{Parser, ValueEnum};
 use ethereum_lc::proofs::committee_change::CommitteeChangeProver;
 use ethereum_lc::proofs::inclusion::StorageInclusionProver;
 use ethereum_lc::proofs::Prover;
 use ethereum_lc::types::network::Request;
-use ethereum_lc::utils::{read_bytes, write_bytes};
 use log::{error, info};
+use serde::Deserialize;
 use std::sync::Arc;
-use tokio::net::{TcpListener, TcpStream};
+use tokio::net::TcpListener;
 use tokio::task::spawn_blocking;
 
 #[derive(ValueEnum, Clone, Debug, Eq, PartialEq)]
@@ -34,6 +44,19 @@ struct Cli {
     mode: Mode,
 }
 
+#[derive(Deserialize)]
+struct ProofRequestPayload {
+    request_bytes: Vec<u8>,
+}
+
+#[derive(Clone)]
+struct ServerState {
+    committee_prover: Arc<CommitteeChangeProver>,
+    inclusion_prover: Arc<StorageInclusionProver>,
+    snd_addr: Arc<Option<String>>,
+    mode: Mode,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let Cli {
@@ -50,114 +73,111 @@ async fn main() -> Result<()> {
 
     env_logger::init();
 
+    let state = ServerState {
+        committee_prover: Arc::new(CommitteeChangeProver::new()),
+        inclusion_prover: Arc::new(StorageInclusionProver::new()),
+        snd_addr: Arc::new(snd_addr),
+        mode,
+    };
+
+    let app = Router::new()
+        .route("/health", get(health_check))
+        .route("/proof", post(proof_handler))
+        .with_state(state);
+
+    info!("Server running on {}", addr);
+
     let listener = TcpListener::bind(addr).await?;
-    info!("Server is running on {}", listener.local_addr()?);
+    axum::serve(listener, app).await?;
 
-    let snd_addr = Arc::new(snd_addr.unwrap_or(String::new()));
-    let committee_prover = Arc::new(CommitteeChangeProver::new());
-    let inclusion_prover = Arc::new(StorageInclusionProver::new());
-
-    loop {
-        let (mut client_stream, _) = listener.accept().await?;
-        info!("Received a connection");
-
-        let committee_prover = committee_prover.clone();
-        let inclusion_prover = inclusion_prover.clone();
-
-        let snd_addr = snd_addr.clone();
-        let mode = mode.clone();
-
-        tokio::spawn(async move {
-            info!("Awaiting request");
-            let request_bytes = read_bytes(&mut client_stream).await?;
-            info!("Request received");
-
-            info!("Deserializing request");
-            let res = Request::from_bytes(&request_bytes);
-
-            if let Err(err) = res {
-                error!("Failed to deserialize request object: {err}")
-            } else if let Ok(request) = res {
-                match request {
-                    Request::ProveInclusion(boxed) => {
-                        info!("Start proving");
-                        let proof_handle = spawn_blocking(move || {
-                            let (proving_mode, inputs) = *boxed;
-                            inclusion_prover.prove(&inputs, proving_mode)
-                        });
-                        let proof = proof_handle.await??;
-                        info!("Proof generated. Serializing");
-                        let proof_bytes = proof.to_bytes()?;
-                        info!("Sending proof");
-                        write_bytes(&mut client_stream, &proof_bytes).await?;
-                        info!("Proof sent");
-                    }
-                    Request::VerifyInclusion(proof) => {
-                        write_bytes(
-                            &mut client_stream,
-                            &[u8::from(inclusion_prover.verify(&proof).is_ok())],
-                        )
-                        .await?;
-                    }
-                    Request::ProveCommitteeChange(boxed) => match mode {
-                        Mode::Single => {
-                            info!("Start proving");
-                            let proof_handle = spawn_blocking(move || {
-                                let (proving_mode, inputs) = *boxed;
-                                committee_prover.prove(&inputs, proving_mode)
-                            });
-                            let proof = proof_handle.await??;
-                            info!("Proof generated. Serializing");
-                            let proof_bytes = proof.to_bytes()?;
-                            info!("Sending proof");
-                            write_bytes(&mut client_stream, &proof_bytes).await?;
-                            info!("Proof sent");
-                        }
-                        Mode::Split => {
-                            let response = forward_request(&request_bytes, &snd_addr).await?;
-                            info!("Received response from the secondary server. Sending result");
-                            write_bytes(&mut client_stream, &response).await?;
-                            info!("Response forwarded");
-                        }
-                    },
-                    Request::VerifyCommitteeChange(proof) => match mode {
-                        Mode::Single => {
-                            write_bytes(
-                                &mut client_stream,
-                                &[u8::from(committee_prover.verify(&proof).is_ok())],
-                            )
-                            .await?;
-                        }
-                        Mode::Split => {
-                            let response = forward_request(&request_bytes, &snd_addr).await?;
-                            info!("Received response from the secondary server. Sending result");
-                            write_bytes(&mut client_stream, &response).await?;
-                            info!("Response forwarded");
-                        }
-                    },
-                }
-            }
-
-            Ok::<(), Error>(())
-        });
-    }
+    Ok(())
 }
 
-/// Forward the request to the secondary server and return the response.
-///
-/// # Arguments
-///
-/// * `request_bytes` - The request to forward.
-/// * `snd_addr` - The address of the secondary server.
-///
-/// # Returns
-///
-/// The response from the secondary server.
-async fn forward_request(request_bytes: &[u8], snd_addr: &str) -> Result<Vec<u8>> {
+async fn health_check() -> impl IntoResponse {
+    "OK"
+}
+
+async fn proof_handler(
+    State(state): State<ServerState>,
+    Json(payload): Json<ProofRequestPayload>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let res = Request::from_bytes(&payload.request_bytes);
+
+    if let Err(err) = res {
+        error!("Failed to deserialize request object: {err}");
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let request = res.unwrap();
+    let res = match request {
+        Request::ProveInclusion(boxed) => {
+            let (proving_mode, inputs) = *boxed;
+            let proof_handle =
+                spawn_blocking(move || state.inclusion_prover.prove(&inputs, proving_mode));
+            let proof = proof_handle
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+            serde_json::to_vec(&proof).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Request::VerifyInclusion(proof) => {
+            let is_valid = state.inclusion_prover.verify(&proof).is_ok();
+            serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Request::ProveCommitteeChange(boxed) => match state.mode {
+            Mode::Single => {
+                let (proving_mode, inputs) = *boxed;
+                let proof_handle =
+                    spawn_blocking(move || state.committee_prover.prove(&inputs, proving_mode));
+                let proof = proof_handle
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+                serde_json::to_vec(&proof).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+            }
+            Mode::Split => {
+                let snd_addr = state.snd_addr.as_ref().clone().unwrap();
+                forward_request(&payload.request_bytes, &snd_addr).await
+            }
+        },
+        Request::VerifyCommitteeChange(proof) => match state.mode {
+            Mode::Single => {
+                let is_valid = state.committee_prover.verify(&proof).is_ok();
+
+                serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+            }
+            Mode::Split => {
+                let snd_addr = state.snd_addr.as_ref().clone().unwrap();
+                forward_request(&payload.request_bytes, &snd_addr).await
+            }
+        },
+    }?;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::from(res))
+        .map_err(|err| {
+            error!("Could not construct response for client: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    Ok(response)
+}
+
+async fn forward_request(request_bytes: &[u8], snd_addr: &str) -> Result<Vec<u8>, StatusCode> {
     info!("Connecting to the secondary server");
-    let mut secondary_stream = TcpStream::connect(snd_addr).await?;
-    info!("Sending secondary request");
-    write_bytes(&mut secondary_stream, request_bytes).await?;
-    info!("Awaiting response from secondary server");
-    read_bytes(&mut secondary_stream).await
+    let client = reqwest::Client::new();
+    let res = client
+        .post(format!("http://{}/proof", snd_addr))
+        .body(request_bytes.to_vec())
+        .send()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    res.bytes()
+        .await
+        .map(|b| b.to_vec())
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }

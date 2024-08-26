@@ -1433,6 +1433,7 @@ name = "ethereum-lc"
 version = "1.0.1"
 dependencies = [
  "anyhow",
+ "axum",
  "backoff",
  "clap",
  "env_logger",

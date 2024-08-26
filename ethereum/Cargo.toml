@@ -10,6 +10,7 @@ repository = "https://github.com/argumentcomputer/zk-light-clients"
 
 [workspace.dependencies]
 anyhow = "1.0.86"
+axum = "0.7.5"
 backoff = { version = "0.4.0", features = ["tokio"] }
 clap = "4.5.8"
 env_logger = "0.11.3"

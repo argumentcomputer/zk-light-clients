@@ -12,8 +12,10 @@
 
 use anyhow::{Error, Result};
 use aptos_lc::{epoch_change, inclusion};
+use axum::body::Body;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::header::CONTENT_TYPE;
+use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -257,7 +259,7 @@ async fn forward_request(request: Request, snd_addr: &str) -> Result<Vec<u8>, St
     })?;
     info!("Sending secondary request");
     let res_bytes = client
-        .post(&format!("http://{}/proof", snd_addr))
+        .post(format!("http://{}/proof", snd_addr))
         .body(secondary_request_bytes)
         .send()
         .await
@@ -293,7 +295,7 @@ async fn proof_handler(
     } else {
         let request = res.unwrap();
 
-        match request {
+        let res = match request {
             Request::ProveInclusion(inclusion_data) => {
                 handle_inclusion_proof(
                     inclusion_data,
@@ -367,6 +369,16 @@ async fn proof_handler(
                     }
                 }
             }
-        }
+        }?;
+
+        let response = Response::builder()
+            .status(StatusCode::OK)
+            .header(CONTENT_TYPE, "application/x-bcs")
+            .body(Body::from(res))
+            .map_err(|err| {
+                error!("Could not construct response for client: {err}");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+        Ok(response)
     }
 }
