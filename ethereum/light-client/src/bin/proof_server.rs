@@ -82,7 +82,10 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/health", get(health_check))
-        .route("/proof", post(proof_handler))
+        .route("/inclusion/proof", post(inclusion_proof))
+        .route("/committee/proof", post(committee_proof))
+        .route("/committee/verify", post(committee_verify))
+        .route("/inclusion/verify", post(inclusion_verify))
         .with_state(state);
 
     info!("Server running on {}", addr);
@@ -97,7 +100,7 @@ async fn health_check() -> impl IntoResponse {
     "OK"
 }
 
-async fn proof_handler(
+async fn inclusion_proof(
     State(state): State<ServerState>,
     Json(payload): Json<ProofRequestPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
@@ -109,23 +112,55 @@ async fn proof_handler(
     }
 
     let request = res.unwrap();
-    let res = match request {
-        Request::ProveInclusion(boxed) => {
-            let (proving_mode, inputs) = *boxed;
-            let proof_handle =
-                spawn_blocking(move || state.inclusion_prover.prove(&inputs, proving_mode));
-            let proof = proof_handle
-                .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let res = if let Request::ProveInclusion(boxed) = request {
+        match state.mode {
+            Mode::Single => {
+                let (proving_mode, inputs) = *boxed;
+                let proof_handle =
+                    spawn_blocking(move || state.inclusion_prover.prove(&inputs, proving_mode));
+                let proof = proof_handle
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-            serde_json::to_vec(&proof).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+                serde_json::to_vec(&proof).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+            }
+            Mode::Split => {
+                let snd_addr = state.snd_addr.as_ref().clone().unwrap();
+                forward_request(&payload.request_bytes, &snd_addr).await
+            }
         }
-        Request::VerifyInclusion(proof) => {
-            let is_valid = state.inclusion_prover.verify(&proof).is_ok();
-            serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Request::ProveCommitteeChange(boxed) => match state.mode {
+    } else {
+        error!("Invalid request type");
+        Err(StatusCode::BAD_REQUEST)
+    }?;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::from(res))
+        .map_err(|err| {
+            error!("Could not construct response for client: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(response)
+}
+
+async fn committee_proof(
+    State(state): State<ServerState>,
+    Json(payload): Json<ProofRequestPayload>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let res = Request::from_bytes(&payload.request_bytes);
+
+    if let Err(err) = res {
+        error!("Failed to deserialize request object: {err}");
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let request = res.unwrap();
+    let res = if let Request::ProveCommitteeChange(boxed) = request {
+        match state.mode {
             Mode::Single => {
                 let (proving_mode, inputs) = *boxed;
                 let proof_handle =
@@ -141,18 +176,10 @@ async fn proof_handler(
                 let snd_addr = state.snd_addr.as_ref().clone().unwrap();
                 forward_request(&payload.request_bytes, &snd_addr).await
             }
-        },
-        Request::VerifyCommitteeChange(proof) => match state.mode {
-            Mode::Single => {
-                let is_valid = state.committee_prover.verify(&proof).is_ok();
-
-                serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-            }
-            Mode::Split => {
-                let snd_addr = state.snd_addr.as_ref().clone().unwrap();
-                forward_request(&payload.request_bytes, &snd_addr).await
-            }
-        },
+        }
+    } else {
+        error!("Invalid request type");
+        Err(StatusCode::BAD_REQUEST)
     }?;
 
     let response = Response::builder()
@@ -163,6 +190,71 @@ async fn proof_handler(
             error!("Could not construct response for client: {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    Ok(response)
+}
+
+async fn inclusion_verify(
+    State(state): State<ServerState>,
+    Json(payload): Json<ProofRequestPayload>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let res = Request::from_bytes(&payload.request_bytes);
+
+    if let Err(err) = res {
+        error!("Failed to deserialize request object: {err}");
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let request = res.unwrap();
+    let res = if let Request::VerifyInclusion(proof) = request {
+        let is_valid = state.inclusion_prover.verify(&proof).is_ok();
+        serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    } else {
+        error!("Invalid request type");
+        Err(StatusCode::BAD_REQUEST)
+    }?;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::from(res))
+        .map_err(|err| {
+            error!("Could not construct response for client: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(response)
+}
+
+async fn committee_verify(
+    State(state): State<ServerState>,
+    Json(payload): Json<ProofRequestPayload>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let res = Request::from_bytes(&payload.request_bytes);
+
+    if let Err(err) = res {
+        error!("Failed to deserialize request object: {err}");
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let request = res.unwrap();
+    let res = if let Request::VerifyCommitteeChange(proof) = request {
+        let is_valid = state.committee_prover.verify(&proof).is_ok();
+        serde_json::to_vec(&is_valid).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    } else {
+        error!("Invalid request type");
+        Err(StatusCode::BAD_REQUEST)
+    }?;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::from(res))
+        .map_err(|err| {
+            error!("Could not construct response for client: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
     Ok(response)
 }
 
