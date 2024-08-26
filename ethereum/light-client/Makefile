@@ -2,12 +2,12 @@
 
 benchmark:
 	@read -p "Enter benchmark name: " bench; \
-	RUST_LOG="debug" \
-	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native -C opt-level=3" \
-	SHARD_BATCH_SIZE=0 \
+	RUSTFLAGS="-C target-cpu=native -C opt-level=3" \
+	SHARD_SIZE=4194304 \
+	SHARD_CHUNKING_MULTIPLIER=256 \
 	cargo bench --features ethereum --bench $$bench
 
-BENCH ?= e2e
+BENCH ?= committee_change
 
 bench-ci:
 	cargo bench --features ethereum --bench $(BENCH)
