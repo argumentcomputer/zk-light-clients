@@ -8098,6 +8098,7 @@ dependencies = [
  "anyhow",
  "aptos-lc",
  "aptos-lc-core",
+ "axum 0.7.5",
  "backoff",
  "bcs 0.1.4",
  "chrono",

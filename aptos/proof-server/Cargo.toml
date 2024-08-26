@@ -22,6 +22,7 @@ aptos-lc-core = { path = "../core" }
 
 # workspace
 anyhow = { workspace = true }
+axum = { workspace = true }
 backoff = { workspace = true, features = ["tokio"] }
 bcs = { workspace = true }
 chrono = { workspace = true }

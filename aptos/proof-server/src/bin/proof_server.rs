@@ -12,17 +12,19 @@
 
 use anyhow::{Error, Result};
 use aptos_lc::{epoch_change, inclusion};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::routing::{get, post};
+use axum::{Json, Router};
 use clap::{Parser, ValueEnum};
 use log::{error, info};
+use proof_server::types::proof_server::EpochChangeData;
 use proof_server::types::proof_server::{InclusionData, Request};
-use proof_server::{
-    types::proof_server::EpochChangeData,
-    utils::{read_bytes, write_bytes},
-};
+use serde::Deserialize;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxProvingKey, SphinxVerifyingKey};
 use std::cmp::PartialEq;
 use std::sync::Arc;
-use tokio::net::TcpStream;
 use tokio::{net::TcpListener, task::spawn_blocking};
 
 #[derive(ValueEnum, Clone, Debug, Eq, PartialEq)]
@@ -59,6 +61,22 @@ struct Cli {
     mode: Mode,
 }
 
+#[derive(Deserialize)]
+struct ProofRequestPayload {
+    request_bytes: Vec<u8>,
+}
+
+#[derive(Clone)]
+struct ProofServerState {
+    prover_client: Arc<ProverClient>,
+    inclusion_pk: Arc<SphinxProvingKey>,
+    inclusion_vk: Arc<SphinxVerifyingKey>,
+    epoch_pk: Arc<SphinxProvingKey>,
+    epoch_vk: Arc<SphinxVerifyingKey>,
+    snd_addr: Arc<Option<String>>,
+    mode: Mode,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let Cli {
@@ -75,146 +93,40 @@ async fn main() -> Result<()> {
 
     env_logger::init();
 
-    let listener = TcpListener::bind(addr).await?;
-
-    info!("Server is running on {}", listener.local_addr()?);
-
     let prover_client = Arc::new(ProverClient::default());
     let (inclusion_pk, inclusion_vk) = inclusion::generate_keys(&prover_client);
     let (epoch_pk, epoch_vk) = epoch_change::generate_keys(&prover_client);
-    let (inclusion_pk, inclusion_vk) = (Arc::new(inclusion_pk), Arc::new(inclusion_vk));
-    let (epoch_pk, epoch_vk) = (Arc::new(epoch_pk), Arc::new(epoch_vk));
 
-    loop {
-        let (mut client_stream, _) = listener.accept().await?;
-        info!("Received a connection");
+    let state = ProofServerState {
+        prover_client,
+        inclusion_pk: Arc::new(inclusion_pk),
+        inclusion_vk: Arc::new(inclusion_vk),
+        epoch_pk: Arc::new(epoch_pk),
+        epoch_vk: Arc::new(epoch_vk),
+        snd_addr: Arc::new(snd_addr),
+        mode,
+    };
 
-        let prover_client = prover_client.clone();
-        let inclusion_pk = inclusion_pk.clone();
-        let inclusion_vk = inclusion_vk.clone();
-        let epoch_pk = epoch_pk.clone();
-        let epoch_vk = epoch_vk.clone();
+    let app = Router::new()
+        .route("/health", get(health_check))
+        .route("/proof", post(proof_handler))
+        .with_state(state);
 
-        let snd_addr = snd_addr.clone();
-        let mode = mode.clone();
+    info!("Server running on {}", addr);
 
-        tokio::spawn(async move {
-            info!("Awaiting request");
-            let request_bytes = read_bytes(&mut client_stream).await?;
-            info!("Request received");
+    let listener = TcpListener::bind(addr).await?;
 
-            info!("Deserializing request");
-            let res = bcs::from_bytes::<Request>(&request_bytes);
+    axum::serve(listener, app).await?;
 
-            if let Err(err) = res {
-                error!("Failed to deserialize request object: {err}")
-            } else if let Ok(request) = res {
-                match request {
-                    Request::ProveInclusion(inclusion_data) => {
-                        handle_inclusion_proof(
-                            inclusion_data,
-                            false,
-                            &mut client_stream,
-                            &prover_client,
-                            &inclusion_pk,
-                        )
-                        .await?;
-                    }
-                    Request::SnarkProveInclusion(inclusion_data) => {
-                        handle_inclusion_proof(
-                            inclusion_data,
-                            true,
-                            &mut client_stream,
-                            &prover_client,
-                            &inclusion_pk,
-                        )
-                        .await?;
-                    }
-                    Request::VerifyInclusion(proof) | Request::SnarkVerifyInclusion(proof) => {
-                        handle_inclusion_verification(
-                            &proof,
-                            &mut client_stream,
-                            &prover_client,
-                            &inclusion_vk,
-                        )
-                        .await?;
-                    }
-                    Request::ProveEpochChange(epoch_change_data) => match mode {
-                        Mode::Single => {
-                            handle_epoch_proof(
-                                epoch_change_data,
-                                false,
-                                &mut client_stream,
-                                &prover_client,
-                                &epoch_pk,
-                            )
-                            .await?;
-                        }
-                        Mode::Split => {
-                            forward_request(
-                                Request::ProveEpochChange(epoch_change_data),
-                                snd_addr.as_ref().unwrap(),
-                                &mut client_stream,
-                            )
-                            .await?;
-                        }
-                    },
-                    Request::SnarkProveEpochChange(epoch_change_data) => match mode {
-                        Mode::Single => {
-                            handle_epoch_proof(
-                                epoch_change_data,
-                                true,
-                                &mut client_stream,
-                                &prover_client,
-                                &epoch_pk,
-                            )
-                            .await?;
-                        }
-                        Mode::Split => {
-                            forward_request(
-                                Request::SnarkProveEpochChange(epoch_change_data),
-                                snd_addr.as_ref().unwrap(),
-                                &mut client_stream,
-                            )
-                            .await?;
-                        }
-                    },
-                    Request::SnarkVerifyEpochChange(proof) | Request::VerifyEpochChange(proof) => {
-                        match mode {
-                            Mode::Single => {
-                                handle_epoch_verification(
-                                    &proof,
-                                    &mut client_stream,
-                                    &prover_client,
-                                    &epoch_vk,
-                                )
-                                .await?;
-                            }
-                            Mode::Split => {
-                                forward_request(
-                                    Request::VerifyEpochChange(proof.clone()),
-                                    snd_addr.as_ref().unwrap(),
-                                    &mut client_stream,
-                                )
-                                .await?;
-                            }
-                        }
-                    }
-                }
-            }
-
-            Ok::<(), Error>(())
-        });
-    }
+    Ok(())
 }
 
 async fn handle_inclusion_proof(
     inclusion_data: InclusionData,
     snark: bool,
-    client_stream: &mut TcpStream,
     prover_client: &Arc<ProverClient>,
     pk: &Arc<SphinxProvingKey>,
-) -> Result<()> {
+) -> Result<Vec<u8>, StatusCode> {
     let InclusionData {
         sparse_merkle_proof_assets,
         transaction_proof_assets,
@@ -235,33 +147,50 @@ async fn handle_inclusion_proof(
     } else {
         spawn_blocking(move || prover_client.prove(&pk, stdin).run())
     };
-    let proof = proof_handle.await??;
+    let proof = proof_handle
+        .await
+        .map_err(|_| {
+            error!("Failed to handle generate inclusion proof task");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .map_err(|err| {
+            error!("Failed to generate inclusion proof: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     info!("Proof generated. Serializing");
-    let proof_bytes = bcs::to_bytes(&proof)?;
+    let proof_bytes = bcs::to_bytes(&proof).map_err(|err| {
+        error!("Failed to serialize epoch change proof: {err}");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     info!("Sending proof");
-    write_bytes(client_stream, &proof_bytes).await?;
-    info!("Proof sent");
-    Ok(())
+    Ok(proof_bytes)
 }
 
 async fn handle_inclusion_verification(
     proof: &SphinxProofWithPublicValues,
-    client_stream: &mut TcpStream,
     prover_client: &Arc<ProverClient>,
     vk: &Arc<SphinxVerifyingKey>,
-) -> Result<()> {
+) -> Result<Vec<u8>, StatusCode> {
+    info!("Start verifying inclusion proof");
+
     let is_valid = prover_client.verify(proof, vk).is_ok();
-    write_bytes(client_stream, &bcs::to_bytes(&is_valid)?).await?;
-    Ok(())
+
+    info!("Inclusion verification result: {}", is_valid);
+
+    let verification_bytes = bcs::to_bytes(&is_valid).map_err(|_| {
+        error!("Failed to serialize inclusion verification result");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(verification_bytes)
 }
 
 async fn handle_epoch_proof(
     epoch_change_data: EpochChangeData,
     snark: bool,
-    client_stream: &mut TcpStream,
     prover_client: &Arc<ProverClient>,
     pk: &Arc<SphinxProvingKey>,
-) -> Result<()> {
+) -> Result<Vec<u8>, StatusCode> {
     let EpochChangeData {
         trusted_state,
         epoch_change_proof,
@@ -278,53 +207,166 @@ async fn handle_epoch_proof(
     } else {
         spawn_blocking(move || prover_client.prove(&pk, stdin).run())
     };
-    let proof = proof_handle.await??;
+    let proof = proof_handle
+        .await
+        .map_err(|_| {
+            error!("Failed to handle generate epoch change proof task");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .map_err(|err| {
+            error!("Failed to generate epoch change proof: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     info!("Epoch change proof generated. Serializing");
-    let proof_bytes = bcs::to_bytes(&proof)?;
+    let proof_bytes = bcs::to_bytes(&proof).map_err(|err| {
+        error!("Failed to serialize epoch change proof: {err}");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     info!("Sending epoch change proof");
-    write_bytes(client_stream, &proof_bytes).await?;
-    info!("Epoch change proof sent");
-
-    Ok(())
+    Ok(proof_bytes)
 }
 
 async fn handle_epoch_verification(
     proof: &SphinxProofWithPublicValues,
-    client_stream: &mut TcpStream,
     prover_client: &Arc<ProverClient>,
     vk: &Arc<SphinxVerifyingKey>,
-) -> Result<()> {
+) -> Result<Vec<u8>, StatusCode> {
     info!("Start verifying epoch change proof");
 
     let is_valid = prover_client.verify(proof, vk).is_ok();
 
     info!("Epoch change verification result: {}", is_valid);
-    let verification_bytes = bcs::to_bytes(&is_valid)?;
 
-    info!("Sending epoch change verification result");
-    write_bytes(client_stream, &verification_bytes).await?;
-    info!("Epoch change verification result sent");
+    let verification_bytes = bcs::to_bytes(&is_valid).map_err(|_| {
+        error!("Failed to serialize epoch change verification result");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    Ok(())
+    Ok(verification_bytes)
 }
 
-async fn forward_request(
-    request: Request,
-    snd_addr: &str,
-    client_stream: &mut TcpStream,
-) -> Result<()> {
+async fn forward_request(request: Request, snd_addr: &str) -> Result<Vec<u8>, StatusCode> {
     info!("Connecting to the secondary server");
-    let mut secondary_stream = TcpStream::connect(snd_addr).await?;
+    let client = reqwest::Client::new();
     info!("Serializing secondary request");
-    let secondary_request_bytes = bcs::to_bytes(&request)?;
+    let secondary_request_bytes = bcs::to_bytes(&request).map_err(|err| {
+        error!("Failed to serialize secondary request: {err}");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     info!("Sending secondary request");
-    write_bytes(&mut secondary_stream, &secondary_request_bytes).await?;
-    info!("Awaiting response");
-    let response_bytes = read_bytes(&mut secondary_stream).await?;
+    let res_bytes = client
+        .post(&format!("http://{}/proof", snd_addr))
+        .body(secondary_request_bytes)
+        .send()
+        .await
+        .map_err(|err| {
+            error!("Failed to send request to secondary server: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .bytes()
+        .await
+        .map_err(|err| {
+            error!("Failed to receive response from secondary server: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
     info!("Response received. Sending it to the client");
-    write_bytes(client_stream, &response_bytes).await?;
-    info!("Response sent");
-    Ok(())
+
+    Ok(res_bytes.to_vec())
+}
+
+async fn health_check() -> impl IntoResponse {
+    "OK"
+}
+
+async fn proof_handler(
+    State(state): State<ProofServerState>,
+    Json(payload): Json<ProofRequestPayload>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let res = bcs::from_bytes::<Request>(&payload.request_bytes);
+
+    if let Err(err) = res {
+        error!("Failed to deserialize request object: {err}");
+        Err(StatusCode::BAD_REQUEST)
+    } else {
+        let request = res.unwrap();
+
+        match request {
+            Request::ProveInclusion(inclusion_data) => {
+                handle_inclusion_proof(
+                    inclusion_data,
+                    false,
+                    &state.prover_client,
+                    &state.inclusion_pk,
+                )
+                .await
+            }
+            Request::SnarkProveInclusion(inclusion_data) => {
+                handle_inclusion_proof(
+                    inclusion_data,
+                    true,
+                    &state.prover_client,
+                    &state.inclusion_pk,
+                )
+                .await
+            }
+            Request::VerifyInclusion(proof) | Request::SnarkVerifyInclusion(proof) => {
+                handle_inclusion_verification(&proof, &state.prover_client, &state.inclusion_vk)
+                    .await
+            }
+            Request::ProveEpochChange(epoch_change_data) => match state.mode {
+                Mode::Single => {
+                    handle_epoch_proof(
+                        epoch_change_data,
+                        false,
+                        &state.prover_client,
+                        &state.epoch_pk,
+                    )
+                    .await
+                }
+                Mode::Split => {
+                    forward_request(
+                        Request::ProveEpochChange(epoch_change_data),
+                        &state.snd_addr.as_ref().clone().unwrap(),
+                    )
+                    .await
+                }
+            },
+            Request::SnarkProveEpochChange(epoch_change_data) => match state.mode {
+                Mode::Single => {
+                    handle_epoch_proof(
+                        epoch_change_data,
+                        true,
+                        &state.prover_client,
+                        &state.epoch_pk,
+                    )
+                    .await
+                }
+                Mode::Split => {
+                    forward_request(
+                        Request::SnarkProveEpochChange(epoch_change_data),
+                        &state.snd_addr.as_ref().clone().unwrap(),
+                    )
+                    .await
+                }
+            },
+            Request::SnarkVerifyEpochChange(proof) | Request::VerifyEpochChange(proof) => {
+                match state.mode {
+                    Mode::Single => {
+                        handle_epoch_verification(&proof, &state.prover_client, &state.epoch_vk)
+                            .await
+                    }
+                    Mode::Split => {
+                        forward_request(
+                            Request::VerifyEpochChange(proof.clone()),
+                            &state.snd_addr.as_ref().clone().unwrap(),
+                        )
+                        .await
+                    }
+                }
+            }
+        }
+    }
 }
