@@ -156,9 +156,13 @@ async fn inclusion_proof(
 
 async fn committee_proof(
     State(state): State<ServerState>,
-    Json(payload): Json<ProofRequestPayload>,
+    request: axum::extract::Request,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let res = Request::from_bytes(&payload.request_bytes);
+    let bytes = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let res = Request::from_bytes(&bytes);
 
     if let Err(err) = res {
         error!("Failed to deserialize request object: {err}");
@@ -183,7 +187,7 @@ async fn committee_proof(
             }
             Mode::Split => {
                 let snd_addr = state.snd_addr.as_ref().clone().unwrap();
-                forward_request(&payload.request_bytes, &snd_addr).await
+                forward_request(&bytes, &snd_addr).await
             }
         }
     } else {
@@ -205,9 +209,13 @@ async fn committee_proof(
 
 async fn inclusion_verify(
     State(state): State<ServerState>,
-    Json(payload): Json<ProofRequestPayload>,
+    request: axum::extract::Request,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let res = Request::from_bytes(&payload.request_bytes);
+    let bytes = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let res = Request::from_bytes(&bytes);
 
     if let Err(err) = res {
         error!("Failed to deserialize request object: {err}");
@@ -237,9 +245,13 @@ async fn inclusion_verify(
 
 async fn committee_verify(
     State(state): State<ServerState>,
-    Json(payload): Json<ProofRequestPayload>,
+    request: axum::extract::Request,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let res = Request::from_bytes(&payload.request_bytes);
+    let bytes = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let res = Request::from_bytes(&bytes);
 
     if let Err(err) = res {
         error!("Failed to deserialize request object: {err}");
