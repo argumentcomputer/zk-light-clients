@@ -82,7 +82,7 @@ jobs:
       - name: Set env
         run: |
           # Default benchmark settings optimized for light clients, can be overwritten with `env` input
-          echo "RUSTFLAGS='-C target-cpu=native --cfg tokio_unstable -C opt-level=3'" | tee -a $GITHUB_ENV
+          echo "RUSTFLAGS=-C target-cpu=native --cfg tokio_unstable -C opt-level=3" | tee -a $GITHUB_ENV
           echo "SHARD_SIZE=4194304" | tee -a $GITHUB_ENV
           echo "SHARD_BATCH_SIZE=0" | tee -a $GITHUB_ENV
           echo "RECONSTRUCT_COMMITMENTS=false" | tee -a $GITHUB_ENV
