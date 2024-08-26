@@ -12,7 +12,7 @@ on:
         description: 'Name of the light client to benchmark'
         type: string
         required: true
-      # Name of the `light-client` benchmark to run, e.g. `inclusion`
+      # Name of the `light-client` benchmark to run, e.g. `inclusion`, `epoch_change` (for Aptos), `committee_change` (for Ethereum)
       # Runs in the `light-client` directory, so it cannot benchmark `proof_server` or `programs`
       bench-name:
         description: 'Name of the benchmark to run'
@@ -41,14 +41,14 @@ on:
       # Ignored if `private` input is specified
       # Defaults to `light_client` stream
       channel:
-        description: 'Send message to channel (default is `light-client`). Ignored if `private`'
+        description: 'Send message to channel (default is `light-client`). Ignored if DM'
         type: string
         required: false
       # Zulip topic in which to send the message (optional)
       # Ignored if `private` input is specified
       # Defaults to `chat`
       topic:
-        description: 'Send message to topic (default is `chat`). Ignored if `private`'
+        description: 'Send message to topic (default is `chat`). Ignored if DM'
         type: string
         required: false
   schedule:
@@ -73,7 +73,7 @@ jobs:
         uses: ./.github/actions/setup
       - name: Install extra deps
         run: |
-          sudo apt-get update && sudo apt-get install -y python3-pip
+          which pip3
           pip3 install jtbl
       - name: Set env
         run: |
