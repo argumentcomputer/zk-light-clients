@@ -78,14 +78,22 @@ impl ProofServerClient {
         let inputs = CommitteeChangeIn::new(store, update);
         let request = Request::ProveCommitteeChange(Box::new((proving_mode, inputs)));
 
-        self.post_request(
-            &url,
-            request.to_bytes().map_err(|err| ClientError::Request {
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::ProveCommitteeChange".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
+
+        Ok(
+            ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
                 endpoint: "ProofServer::ProveCommitteeChange".into(),
                 source: err.into(),
             })?,
         )
-        .await
     }
 
     /// Verify a proof of a sync committee change.
@@ -105,14 +113,17 @@ impl ProofServerClient {
 
         let request = Request::VerifyCommitteeChange(proof);
 
-        self.post_request(
-            &url,
-            request.to_bytes().map_err(|err| ClientError::Request {
-                endpoint: "ProofServer::VerifyCommitteeChange".into(),
-                source: err.into(),
-            })?,
-        )
-        .await
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::VerifyCommitteeChange".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
+
+        Ok(response.get(0).unwrap_or(&0) == &1)
     }
 
     /// Prove the inclusion of a given value in the chain storage by executing [`EIP1186Proof::verify`]
@@ -140,14 +151,22 @@ impl ProofServerClient {
         let inputs = StorageInclusionIn::new(store, update, eip1186_proof);
         let request = Request::ProveInclusion(Box::new((proving_mode, inputs)));
 
-        self.post_request(
-            &url,
-            request.to_bytes().map_err(|err| ClientError::Request {
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::ProveInclusion".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
+
+        Ok(
+            ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
                 endpoint: "ProofServer::ProveInclusion".into(),
                 source: err.into(),
             })?,
         )
-        .await
     }
 
     /// Verify a proof for storage inclusion.
@@ -167,14 +186,17 @@ impl ProofServerClient {
 
         let request = Request::VerifyInclusion(proof);
 
-        self.post_request(
-            &url,
-            request.to_bytes().map_err(|err| ClientError::Request {
-                endpoint: "ProofServer::VerifyInclusion".into(),
-                source: err.into(),
-            })?,
-        )
-        .await
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::VerifyInclusion".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
+
+        Ok(response.get(0).unwrap_or(&0) == &1)
     }
 
     /// Send a POST request to the given URL with the given request body.
@@ -187,11 +209,7 @@ impl ProofServerClient {
     /// # Returns
     ///
     /// The response from the server.
-    async fn post_request<T: DeserializeOwned>(
-        &self,
-        url: &str,
-        request: Vec<u8>,
-    ) -> Result<T, ClientError> {
+    async fn post_request(&self, url: &str, request: Vec<u8>) -> Result<Vec<u8>, ClientError> {
         // Call the endpoint.
         let response = self
             .inner
@@ -204,20 +222,18 @@ impl ProofServerClient {
                 endpoint: url.into(),
                 source: Box::new(err),
             })?;
+
+        dbg!(&response);
         dbg!(response.status());
+        dbg!(response.content_length());
         // Store the bytes in a variable first.
-        let bytes = response
+        response
             .bytes()
             .await
+            .map(|bytes| bytes.to_vec())
             .map_err(|err| ClientError::Response {
                 endpoint: url.into(),
                 source: err.into(),
-            })?;
-
-        // Deserialize from the stored bytes.
-        serde_json::from_slice(&bytes).map_err(|err| ClientError::Response {
-            endpoint: url.into(),
-            source: err.into(),
-        })
+            })
     }
 }
