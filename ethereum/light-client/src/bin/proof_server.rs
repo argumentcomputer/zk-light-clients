@@ -308,8 +308,9 @@ async fn count_requests_middleware(
     req: axum::http::Request<Body>,
     next: Next,
 ) -> Result<impl IntoResponse, StatusCode> {
+    let is_health = req.uri().path() != "/health";
     // Check if the request is for the health endpoint.
-    if req.uri().path() != "/health" {
+    if is_health {
         // Increment the active requests counter.
         state.active_requests.fetch_add(1, Ordering::SeqCst);
     }
@@ -318,7 +319,7 @@ async fn count_requests_middleware(
     let response = next.run(req).await;
 
     // Decrement the active requests counter if not a health check.
-    if req.uri().path() != "/health" {
+    if is_health {
         state.active_requests.fetch_sub(1, Ordering::SeqCst);
     }
 
