@@ -17,7 +17,6 @@ use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::Client;
-use serde::de::DeserializeOwned;
 
 /// An internal client to handle communication with a Checkpoint Provider.
 #[derive(Debug, Clone)]
@@ -88,12 +87,10 @@ impl ProofServerClient {
             )
             .await?;
 
-        Ok(
-            ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
-                endpoint: "ProofServer::ProveCommitteeChange".into(),
-                source: err.into(),
-            })?,
-        )
+        ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
+            endpoint: "ProofServer::ProveCommitteeChange".into(),
+            source: err.into(),
+        })
     }
 
     /// Verify a proof of a sync committee change.
@@ -123,7 +120,7 @@ impl ProofServerClient {
             )
             .await?;
 
-        Ok(response.get(0).unwrap_or(&0) == &1)
+        Ok(response.first().unwrap_or(&0) == &1)
     }
 
     /// Prove the inclusion of a given value in the chain storage by executing [`EIP1186Proof::verify`]
@@ -161,12 +158,10 @@ impl ProofServerClient {
             )
             .await?;
 
-        Ok(
-            ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
-                endpoint: "ProofServer::ProveInclusion".into(),
-                source: err.into(),
-            })?,
-        )
+        ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
+            endpoint: "ProofServer::ProveInclusion".into(),
+            source: err.into(),
+        })
     }
 
     /// Verify a proof for storage inclusion.
@@ -196,7 +191,7 @@ impl ProofServerClient {
             )
             .await?;
 
-        Ok(response.get(0).unwrap_or(&0) == &1)
+        Ok(response.first().unwrap_or(&0) == &1)
     }
 
     /// Send a POST request to the given URL with the given request body.
@@ -223,9 +218,6 @@ impl ProofServerClient {
                 source: Box::new(err),
             })?;
 
-        dbg!(&response);
-        dbg!(response.status());
-        dbg!(response.content_length());
         // Store the bytes in a variable first.
         response
             .bytes()

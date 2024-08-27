@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use axum::body::{Body, Bytes};
+use axum::body::Body;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::Response;
+use axum::middleware::Next;
 use axum::{
     extract::State,
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
-    Json, Router,
+    Router,
 };
 use clap::{Parser, ValueEnum};
 use ethereum_lc::proofs::committee_change::CommitteeChangeProver;
@@ -19,7 +20,7 @@ use ethereum_lc::proofs::Prover;
 use ethereum_lc::types::network::Request;
 use ethers_core::k256::elliptic_curve::ff::derive::bitvec::macros::internal::funty::Fundamental;
 use log::{error, info};
-use serde::Deserialize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::task::spawn_blocking;
@@ -45,17 +46,13 @@ struct Cli {
     mode: Mode,
 }
 
-#[derive(Deserialize)]
-struct ProofRequestPayload {
-    request_bytes: Vec<u8>,
-}
-
 #[derive(Clone)]
 struct ServerState {
     committee_prover: Arc<CommitteeChangeProver>,
     inclusion_prover: Arc<StorageInclusionProver>,
     snd_addr: Arc<Option<String>>,
     mode: Mode,
+    active_requests: Arc<AtomicUsize>,
 }
 
 #[tokio::main]
@@ -79,6 +76,7 @@ async fn main() -> Result<()> {
         inclusion_prover: Arc::new(StorageInclusionProver::new()),
         snd_addr: Arc::new(snd_addr),
         mode,
+        active_requests: Arc::new(AtomicUsize::new(0)),
     };
 
     let app = Router::new()
@@ -87,6 +85,10 @@ async fn main() -> Result<()> {
         .route("/committee/proof", post(committee_proof))
         .route("/committee/verify", post(committee_verify))
         .route("/inclusion/verify", post(inclusion_verify))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            count_requests_middleware,
+        ))
         .with_state(state);
 
     info!("Server running on {}", addr);
@@ -97,8 +99,13 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn health_check() -> impl IntoResponse {
-    "OK"
+async fn health_check(State(state): State<ServerState>) -> impl IntoResponse {
+    let active_requests = state.active_requests.load(Ordering::SeqCst);
+    if active_requests > 0 {
+        StatusCode::CONFLICT
+    } else {
+        StatusCode::OK
+    }
 }
 
 async fn inclusion_proof(
@@ -294,4 +301,21 @@ async fn forward_request(request_bytes: &[u8], snd_addr: &str) -> Result<Vec<u8>
         .await
         .map(|b| b.to_vec())
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+async fn count_requests_middleware(
+    State(state): State<ServerState>,
+    req: axum::http::Request<Body>,
+    next: Next,
+) -> Result<impl IntoResponse, StatusCode> {
+    // Increment the active requests counter.
+    state.active_requests.fetch_add(1, Ordering::SeqCst);
+
+    // Proceed with the request.
+    let response = next.run(req).await;
+
+    // Decrement the active requests counter.
+    state.active_requests.fetch_sub(1, Ordering::SeqCst);
+
+    Ok(response)
 }
