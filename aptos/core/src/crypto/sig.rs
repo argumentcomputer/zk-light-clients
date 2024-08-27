@@ -120,7 +120,7 @@ impl PublicKey {
     /// A `Vec<u8>` representing the public key.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = BytesMut::new();
-        let pub_key_bytes = self.compressed_pubkey.as_ref();
+        let pub_key_bytes: &[u8] = self.compressed_pubkey.as_ref();
 
         bytes.put_slice(&write_leb128(pub_key_bytes.len() as u64));
         bytes.put_slice(pub_key_bytes);
