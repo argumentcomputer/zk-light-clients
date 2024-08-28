@@ -47,7 +47,7 @@ const DEFAULT_STARK_SHARD_SIZE: &str = "1048576";
 const DEFAULT_SHARD_BATCH_SIZE: &str = "0";
 const DEFAULT_SHARD_CHUNKING_MULTIPLIER: &str = "32";
 const DEFAULT_RUST_LOG: &str = "warn";
-const DEFAULT_RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
+const DEFAULT_RUSTFLAGS: &str = "\"-C target-cpu=native --cfg tokio_unstable -C opt-level=3\"";
 const DEFAULT_RECONSTRUCT_COMMITMENTS: &str = "false";
 
 fn main() -> Result<(), anyhow::Error> {
