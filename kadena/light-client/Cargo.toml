@@ -6,6 +6,8 @@ repository = { workspace = true }
 license = { workspace = true }
 
 [dependencies]
+sha2 = { workspace = true }
+
 # LC crates
 kadena-lc-core = { path = "../core" }
 kadena-programs = { path = "../kadena-programs" }
