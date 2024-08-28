@@ -125,25 +125,17 @@ async fn inclusion_proof(
 
     let request = res.unwrap();
     let res = if let Request::ProveInclusion(boxed) = request {
-        match state.mode {
-            Mode::Single => {
-                let (proving_mode, inputs) = *boxed;
-                let proof_handle =
-                    spawn_blocking(move || state.inclusion_prover.prove(&inputs, proving_mode));
-                let proof = proof_handle
-                    .await
-                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        let (proving_mode, inputs) = *boxed;
+        let proof_handle =
+            spawn_blocking(move || state.inclusion_prover.prove(&inputs, proving_mode));
+        let proof = proof_handle
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-                proof
-                    .to_bytes()
-                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-            }
-            Mode::Split => {
-                let snd_addr = state.snd_addr.as_ref().clone().unwrap();
-                forward_request(&bytes, &snd_addr).await
-            }
-        }
+        proof
+            .to_bytes()
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
     } else {
         error!("Invalid request type");
         Err(StatusCode::BAD_REQUEST)

@@ -25,7 +25,6 @@
 //! - [`client`] : The client that can be used to coordinate data fetching from the remote services.
 //! - [`proofs`]: The utilities to generate and verify proofs for the light client.
 //! - [`types`]: Types and utilities to leverage data from the remote services.
-//! - [`utils`]: Utilities to help with the light client.
 //!
 //! For more detailed information, users should refer to the specific documentation for each
 //! sub-module.
@@ -35,4 +34,3 @@ pub mod proofs;
 #[cfg(feature = "ethereum")]
 pub use ethereum_lc_core::test_utils;
 pub mod types;
-pub mod utils;
