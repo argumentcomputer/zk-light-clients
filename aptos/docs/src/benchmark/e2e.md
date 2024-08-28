@@ -72,3 +72,10 @@ For our [production configuration](../run/overview.md), we currently get the fol
   }
 }
 ```
+## Looking for optimal Sphinx parametrs
+
+Sometimes it is possible to get some boost in performance on a specific benchmarking machine tuning
+`SHARD_CHUNKING_MULTIPLIER` variable. It's optimal value has some dependency on the number of CPU cores
+and hence must be obtained empirically (e.g. by running e2e bench multiple times varying value of
+`SHARD_CHUNKING_MULTIPLIER`). The `e2e_bench.sh` script is provided in the root of the workspace, specifically
+for this case. For `r7iz.metal-16xl` AWS EC2 instance, its optimal value is 32.
