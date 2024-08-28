@@ -35,15 +35,20 @@ struct ProofData {
     request_response_proof_size: usize,
 }
 
+///
+/// Those "default" values have been obtained empirically, e.g. by tuning Sphinx environment
+/// variables and running the bench on r7iz.metal-16xl AWS EC2 instance
+///
+
 const ACCOUNT_INCLUSION_DATA_PATH: &str = "./benches/assets/account_inclusion_data.bcs";
 const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
 const DEFAULT_SNARK_SHARD_SIZE: &str = "4194304";
 const DEFAULT_STARK_SHARD_SIZE: &str = "1048576";
-const DEFAULT_SHARD_BATCH_SIZE: &str = "16";
-const DEFAULT_SHARD_CHUNKING_MULTIPLIER: &str = "1";
+const DEFAULT_SHARD_BATCH_SIZE: &str = "0";
+const DEFAULT_SHARD_CHUNKING_MULTIPLIER: &str = "32";
 const DEFAULT_RUST_LOG: &str = "warn";
 const DEFAULT_RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
-const DEFAULT_RECONSTRUCT_COMMITMENTS: &str = "true";
+const DEFAULT_RECONSTRUCT_COMMITMENTS: &str = "false";
 
 fn main() -> Result<(), anyhow::Error> {
     let final_snark: bool = env::var("SNARK").unwrap_or_else(|_| "0".into()) == "1";
