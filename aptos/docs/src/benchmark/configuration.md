@@ -21,7 +21,7 @@ Here are the standard config variables that are worth setting for any benchmark:
     rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native", "-C", "opt-level=3"]
     ```
 
-- `SHARD_SIZE=4194304`
+- `SHARD_SIZE=4194304` (for SNARK), `SHARD_SIZE=1048576` (for STARK)
 
   The highest possible setting, giving the fewest shards. Because the compression phase dominates the timing of the
   SNARK proofs, we need as few shards as possible.
@@ -29,6 +29,16 @@ Here are the standard config variables that are worth setting for any benchmark:
 - `SHARD_BATCH_SIZE=0`
 
   This disables checkpointing making proving faster at the expense of higher memory usage
+
+- `RECONSTRUCT_COMMITMENTS=false`
+
+  This setting enables keeping the FFT's data and the entire Merkle Tree in memory without necessity to recompute them
+  in every shard.
+
+- `SHARD_CHUNKING_MULTIPLIER=32` (for SNARK), `SHARD_CHUNKING_MULTIPLIER=1` (for STARK)
+
+  This settings is usually selected depending on specific hardware where proving is executed. It is used to determine
+- how many shards get chunked per core on the CPU. For STARK
 
 - `cargo bench --release <...>`
 
