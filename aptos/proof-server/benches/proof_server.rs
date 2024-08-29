@@ -45,7 +45,8 @@ const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
 const DEFAULT_SNARK_SHARD_SIZE: &str = "4194304";
 const DEFAULT_STARK_SHARD_SIZE: &str = "1048576";
 const DEFAULT_SHARD_BATCH_SIZE: &str = "0";
-const DEFAULT_SHARD_CHUNKING_MULTIPLIER: &str = "32";
+const DEFAULT_STARK_SHARD_CHUNKING_MULTIPLIER: &str = "1";
+const DEFAULT_SNARK_SHARD_CHUNKING_MULTIPLIER: &str = "32";
 const DEFAULT_RUST_LOG: &str = "warn";
 const DEFAULT_RUSTFLAGS: &str = "-C target-cpu=native --cfg tokio_unstable -C opt-level=3";
 const DEFAULT_RECONSTRUCT_COMMITMENTS: &str = "false";
@@ -170,11 +171,15 @@ fn get_actual_sphinx_parameters(
         shard_size.unwrap_or(DEFAULT_STARK_SHARD_SIZE.to_string())
     };
 
+    let shard_chunking_multiplier = if final_snark {
+        shard_chunking_multiplier.unwrap_or(DEFAULT_SNARK_SHARD_CHUNKING_MULTIPLIER.to_string())
+    } else {
+        shard_chunking_multiplier.unwrap_or(DEFAULT_STARK_SHARD_CHUNKING_MULTIPLIER.to_string())
+    };
+
     let rust_log = rust_log.unwrap_or(DEFAULT_RUST_LOG.to_string());
     let rustflags = rustflags.unwrap_or(DEFAULT_RUSTFLAGS.to_string());
     let shard_batch_size = shard_batch_size.unwrap_or(DEFAULT_SHARD_BATCH_SIZE.to_string());
-    let shard_chunking_multiplier =
-        shard_chunking_multiplier.unwrap_or(DEFAULT_SHARD_CHUNKING_MULTIPLIER.to_string());
     let reconstruct_commitments =
         reconstruct_commitments.unwrap_or(DEFAULT_RECONSTRUCT_COMMITMENTS.to_string());
 

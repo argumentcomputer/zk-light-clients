@@ -10,7 +10,7 @@ the [`proof-server`](https://github.com/argumentcomputer/zk-light-clients/blob/d
 crate. It can be run with the following command:
 
 ```bash
-SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo bench --bench proof_server
+RECONSTRUCT_COMMITMENTS=false SHARD_CHUNKING_MULTIPLIER=1 SHARD_SIZE=1048576 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo bench --bench proof_server
 ```
 
 This benchmark will spawn the two servers locally and make two requests in sequence to them. This generates both proofs
@@ -37,45 +37,50 @@ For our [production configuration](../run/overview.md), we currently get the fol
 
 ```json
 {
-  "e2e_proving_time": 51489,
+  "e2e_proving_time": 56828,
   "inclusion_proof": {
-    "proving_time": 46636,
-    "request_response_proof_size": 22830628
+    "proving_time": 47724,
+    "request_response_proof_size": 17520651
   },
   "epoch_change_proof": {
-    "proving_time": 51489,
-    "request_response_proof_size": 25482668
+    "proving_time": 56828,
+    "request_response_proof_size": 20154137
   }
 }
 ```
+
+on `r7iz.metal-16xl` AWS EC2 instance. The sphinx's commit used is: [d392acc](https://github.com/argumentcomputer/sphinx/commit/d392acca56fbaa0e4dd0b73cfab0414b4e321348)
 
 ## SNARK proofs
 
 To enable SNARK proving, just pass the environment variable `SNARK=1` when running:
 
 ```bash
-SNARK=1 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo bench --bench proof_server
+SNARK=1 RECONSTRUCT_COMMITMENTS=false SHARD_CHUNKING_MULTIPLIER=32 SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo bench --bench proof_server
 ```
 
 For our [production configuration](../run/overview.md), we currently get the following results:
 
 ```json
 {
-  "e2e_proving_time": 694809,
+  "e2e_proving_time": 593330,
   "inclusion_proof": {
-    "proving_time": 689228,
-    "request_response_proof_size": 18454
+    "proving_time": 591475,
+    "request_response_proof_size": 18600
   },
   "epoch_change_proof": {
-    "proving_time": 694809,
-    "request_response_proof_size": 28661
+    "proving_time": 593330,
+    "request_response_proof_size": 28710
   }
 }
 ```
+
+on `r7iz.metal-16xl` AWS EC2 instance. The sphinx's commit used is: [d392acc](https://github.com/argumentcomputer/sphinx/commit/d392acca56fbaa0e4dd0b73cfab0414b4e321348)
+
 ## Looking for optimal Sphinx parametrs
 
 Sometimes it is possible to get some boost in performance on a specific benchmarking machine tuning
-`SHARD_CHUNKING_MULTIPLIER` variable. It's optimal value has some dependency on the number of CPU cores
+`SHARD_CHUNKING_MULTIPLIER` variable. It's optimal value depends on the number of CPU cores
 and hence must be obtained empirically (e.g. by running e2e bench multiple times varying value of
 `SHARD_CHUNKING_MULTIPLIER`). The `e2e_bench.sh` script is provided in the root of the workspace, specifically
-for this case. For `r7iz.metal-16xl` AWS EC2 instance, its optimal value is 32.
+for this case. For `r7iz.metal-16xl` AWS EC2 instance, its optimal value is 32 (for SNARK).
