@@ -145,7 +145,11 @@ async fn inclusion_proof(
 
     let request = res.unwrap();
 
-    let res = if let Request::ProveInclusion(boxed) = request {
+    let Request::ProveInclusion(boxed) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
         info!("Start proving");
 
         let (proof_type, inclusion_data) = boxed.as_ref();
@@ -184,9 +188,6 @@ async fn inclusion_proof(
             error!("Failed to serialize epoch change proof: {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         })
-    } else {
-        error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
     }?;
 
     let response = Response::builder()
@@ -218,7 +219,11 @@ async fn inclusion_verify(
 
     let request = res.unwrap();
 
-    let res = if let Request::VerifyInclusion(proof) = request {
+    let Request::VerifyInclusion(proof) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
         info!("Start verifying inclusion proof");
 
         let is_valid = state
@@ -232,9 +237,6 @@ async fn inclusion_verify(
             error!("Failed to serialize inclusion verification result");
             StatusCode::INTERNAL_SERVER_ERROR
         })
-    } else {
-        error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
     }?;
 
     let response = Response::builder()
@@ -266,7 +268,11 @@ async fn epoch_proof(
 
     let request = res.unwrap();
 
-    let res = if let Request::ProveEpochChange(boxed) = request {
+    let Request::ProveEpochChange(boxed) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
         match state.mode {
             Mode::Single => {
                 let (proof_type, epoch_change_data) = boxed.as_ref();
@@ -309,9 +315,6 @@ async fn epoch_proof(
                 forward_request(bytes.to_vec(), &snd_addr).await
             }
         }
-    } else {
-        error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
     }?;
 
     let response = Response::builder()
@@ -345,7 +348,11 @@ async fn epoch_verify(
 
     let request = res.unwrap();
 
-    let res = if let Request::VerifyEpochChange(proof) = request {
+    let Request::VerifyEpochChange(proof) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
         let is_valid = state.prover_client.verify(&proof, &state.epoch_vk).is_ok();
 
         info!("Epoch change verification result: {}", is_valid);
@@ -354,9 +361,6 @@ async fn epoch_verify(
             error!("Failed to serialize epoch change verification result");
             StatusCode::INTERNAL_SERVER_ERROR
         })
-    } else {
-        error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
     }?;
 
     let response = Response::builder()
