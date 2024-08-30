@@ -1,6 +1,16 @@
+# Rust assets
 **/target
+Cargo.lock
+
+# IDE config
 .idea
 
+# Secrets
+*secret*
+*.env
+!.example.env
+
+# Contract assets
 ethereum/move/build/*
 ethereum/move/gas-profiling/*
 

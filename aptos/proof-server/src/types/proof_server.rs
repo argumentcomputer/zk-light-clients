@@ -1,12 +1,80 @@
 // Copyright (c) Yatima, Inc.
 // SPDX-License-Identifier: BUSL-1.1
 
+use anyhow::{anyhow, Result};
 use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use serde::{Deserialize, Serialize};
 use sphinx_sdk::SphinxProofWithPublicValues;
 use std::fmt::Display;
+
+/// The proving mode for the prover.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ProvingMode {
+    STARK,
+    SNARK,
+}
+
+impl ProvingMode {
+    /// Returns a boolean indicating if the proving mode is STARK.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating if the proving mode is STARK.
+    pub const fn is_stark(&self) -> bool {
+        matches!(self, ProvingMode::STARK)
+    }
+
+    /// Returns a serialized representation of the enum.
+    ///
+    /// # Returns
+    ///
+    /// A u8 representing the enum.
+    pub const fn to_bytes(&self) -> u8 {
+        match self {
+            ProvingMode::STARK => 0,
+            ProvingMode::SNARK => 1,
+        }
+    }
+
+    /// Returns a ProvingMode from a serialized representation.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The serialized representation of the enum.
+    ///
+    /// # Returns
+    ///
+    /// The ProvingMode.
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        match bytes[0] {
+            0 => Ok(ProvingMode::STARK),
+            1 => Ok(ProvingMode::SNARK),
+            _ => Err(anyhow!("Invalid proving mode")),
+        }
+    }
+}
+impl From<ProvingMode> for String {
+    fn from(mode: ProvingMode) -> String {
+        match mode {
+            ProvingMode::STARK => "STARK".to_string(),
+            ProvingMode::SNARK => "SNARK".to_string(),
+        }
+    }
+}
+
+impl TryFrom<&str> for ProvingMode {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+        match value {
+            "STARK" => Ok(ProvingMode::STARK),
+            "SNARK" => Ok(ProvingMode::SNARK),
+            _ => Err(anyhow!("Invalid proving mode")),
+        }
+    }
+}
 
 /// Data structure used as a payload to request an epoch change proof generation from the proof
 /// server.
@@ -29,14 +97,10 @@ pub struct InclusionData {
 /// one using the [`SphinxProof`] type and another using the [`SphinxGroth16Proof`] type.
 #[derive(Serialize, Deserialize)]
 pub enum Request {
-    ProveInclusion(InclusionData),
-    ProveEpochChange(EpochChangeData),
+    ProveInclusion(Box<(ProvingMode, InclusionData)>),
+    ProveEpochChange(Box<(ProvingMode, EpochChangeData)>),
     VerifyInclusion(SphinxProofWithPublicValues),
     VerifyEpochChange(SphinxProofWithPublicValues),
-    SnarkProveInclusion(InclusionData),
-    SnarkProveEpochChange(EpochChangeData),
-    SnarkVerifyInclusion(SphinxProofWithPublicValues),
-    SnarkVerifyEpochChange(SphinxProofWithPublicValues),
 }
 
 impl Display for &Request {
@@ -46,20 +110,6 @@ impl Display for &Request {
             Request::ProveEpochChange(_) => write!(f, "ProveEpochChange"),
             Request::VerifyInclusion(_) => write!(f, "VerifyInclusion"),
             Request::VerifyEpochChange(_) => write!(f, "VerifyEpochChange"),
-            Request::SnarkProveInclusion(_) => write!(f, "SnarkProveInclusion"),
-            Request::SnarkProveEpochChange(_) => write!(f, "SnarkProveEpochChange"),
-            Request::SnarkVerifyInclusion(_) => write!(f, "SnarkVerifyInclusion"),
-            Request::SnarkVerifyEpochChange(_) => write!(f, "SnarkVerifyEpochChange"),
         }
     }
-}
-
-/// Secondary request type for the proof server. It is used to convey request from the primary
-/// server to the secondary one.
-#[derive(Serialize, Deserialize)]
-pub enum SecondaryRequest {
-    Prove(EpochChangeData),
-    Verify(SphinxProofWithPublicValues),
-    SnarkProve(EpochChangeData),
-    SnarkVerify(SphinxProofWithPublicValues),
 }

@@ -14,7 +14,7 @@
 //!   Aptos Public Full Node and the proof server.
 //! - [primary server](./bin/server_primary.rs): The main entrypoint for our proof server, in charge
 //!   of load balancing the incoming requests and handling proofs about account inclusion.
-//! - [secondary server](./bin/server_secondary.rs): A secondary server that is in charge of handling
+//! - [secondary server](./bin/server): A secondary server that is in charge of handling
 //!   requests about epoch changes.
 
 /// Module containing the errors that can be thrown while using the client and the proof server.

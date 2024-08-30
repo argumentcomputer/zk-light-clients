@@ -31,6 +31,7 @@ pub(crate) mod checkpoint;
 pub mod error;
 pub(crate) mod proof_server;
 pub mod storage;
+mod utils;
 
 /// The client for the light client. It is the entrypoint for any needed remote call.
 #[derive(Debug, Clone)]
@@ -66,6 +67,22 @@ impl Client {
             proof_server_client: ProofServerClient::new(proof_server_address),
             storage_client: StorageClient::new(storage_provider_address),
         }
+    }
+
+    /// Test the connection to all the endpoints.
+    ///
+    /// # Returns
+    ///
+    /// A result indicating whether the connections were successful.
+    pub async fn test_endpoints(&self) -> Result<(), ClientError> {
+        tokio::try_join!(
+            self.beacon_client.test_endpoint(),
+            self.checkpoint_client.test_endpoint(),
+            self.proof_server_client.test_endpoint(),
+            self.storage_client.test_endpoint()
+        )?;
+
+        Ok(())
     }
 
     /// `get_bootstrap_data` makes an HTTP request to the Beacon Node API to get the bootstrap data.

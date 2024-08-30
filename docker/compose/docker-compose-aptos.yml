@@ -1,0 +1,12 @@
+services:
+  client:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+    command: sh -c "/app/client --proof-server-address server-primary:${PRIMARY_PORT} --aptos-node-url ${APTOS_NODE_URL}"
+    environment:
+      - RUST_LOG=debug
+    restart: always
+    depends_on:
+      - server-primary
+      - server-secondary
