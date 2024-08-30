@@ -1,6 +1,5 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
-
 use std::mem::size_of;
 
 use crate::crypto::error::CryptoError;

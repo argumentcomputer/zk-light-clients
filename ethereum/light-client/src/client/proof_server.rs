@@ -7,21 +7,24 @@
 //! connections to the Proof Server to generate and verify our proofs.
 
 use crate::client::error::ClientError;
+use crate::client::utils::test_connection;
 use crate::proofs::committee_change::CommitteeChangeIn;
 use crate::proofs::inclusion::StorageInclusionIn;
 use crate::proofs::{ProofType, ProvingMode};
 use crate::types::network::Request;
-use crate::utils::{read_bytes, write_bytes};
 use ethereum_lc_core::merkle::storage_proofs::EIP1186Proof;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
-use tokio::net::TcpStream;
+use reqwest::header::CONTENT_TYPE;
+use reqwest::Client;
 
 /// An internal client to handle communication with a Checkpoint Provider.
 #[derive(Debug, Clone)]
 pub(crate) struct ProofServerClient {
     /// The address of the Proof Server.
     address: String,
+    /// The inner HTTP client.
+    inner: Client,
 }
 
 impl ProofServerClient {
@@ -37,7 +40,18 @@ impl ProofServerClient {
     pub(crate) fn new(proof_server_address: &str) -> Self {
         Self {
             address: proof_server_address.to_string(),
+            inner: Client::new(),
         }
+    }
+
+    /// Test the connection to the proof server.
+    ///
+    /// # Returns
+    ///
+    /// A result indicating whether the connection was successful.
+    pub(crate) async fn test_endpoint(&self) -> Result<(), ClientError> {
+        // Try to connect to the proof server
+        test_connection(&self.address).await
     }
 
     /// Prove a sync committee change by executing the [`LightClientStore::process_light_client_update`]
@@ -58,37 +72,22 @@ impl ProofServerClient {
         store: LightClientStore,
         update: Update,
     ) -> Result<ProofType, ClientError> {
-        let mut stream =
-            TcpStream::connect(&self.address)
-                .await
-                .map_err(|err| ClientError::Request {
-                    endpoint: "ProofServer::ProveCommitteeChange".into(),
-                    source: err.into(),
-                })?;
+        let url = format!("http://{}/committee/proof", self.address);
+
         let inputs = CommitteeChangeIn::new(store, update);
         let request = Request::ProveCommitteeChange(Box::new((proving_mode, inputs)));
 
-        write_bytes(
-            &mut stream,
-            &request.to_bytes().map_err(|err| ClientError::Request {
-                endpoint: "ProofServer::ProveCommitteeChange".into(),
-                source: err.into(),
-            })?,
-        )
-        .await
-        .map_err(|err| ClientError::Request {
-            endpoint: "prover".into(),
-            source: err.into(),
-        })?;
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::ProveCommitteeChange".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
 
-        let res = read_bytes(&mut stream)
-            .await
-            .map_err(|err| ClientError::Response {
-                endpoint: "ProofServer::ProveCommitteeChange".into(),
-                source: err.into(),
-            })?;
-
-        ProofType::from_bytes(&res).map_err(|err| ClientError::Response {
+        ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
             endpoint: "ProofServer::ProveCommitteeChange".into(),
             source: err.into(),
         })
@@ -107,44 +106,21 @@ impl ProofServerClient {
         &self,
         proof: ProofType,
     ) -> Result<bool, ClientError> {
-        let mut stream =
-            TcpStream::connect(&self.address)
-                .await
-                .map_err(|err| ClientError::Request {
-                    endpoint: "ProofServer::VerifyCommitteeChange".into(),
-                    source: err.into(),
-                })?;
+        let url = format!("http://{}/committee/verify", self.address);
 
         let request = Request::VerifyCommitteeChange(proof);
 
-        write_bytes(
-            &mut stream,
-            &request.to_bytes().map_err(|err| ClientError::Request {
-                endpoint: "ProofServer::VerifyCommitteeChange".into(),
-                source: err.into(),
-            })?,
-        )
-        .await
-        .map_err(|err| ClientError::Request {
-            endpoint: "prover".into(),
-            source: err.into(),
-        })?;
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::VerifyCommitteeChange".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
 
-        let res = read_bytes(&mut stream)
-            .await
-            .map_err(|err| ClientError::Response {
-                endpoint: "ProofServer::VerifyCommitteeChange".into(),
-                source: err.into(),
-            })?;
-
-        if res.len() != 1 {
-            return Err(ClientError::Response {
-                endpoint: "ProofServer::VerifyCommitteeChange".into(),
-                source: "Invalid response length".into(),
-            });
-        }
-
-        Ok(res[0] == 1)
+        Ok(response.first().unwrap_or(&0) == &1)
     }
 
     /// Prove the inclusion of a given value in the chain storage by executing [`EIP1186Proof::verify`]
@@ -167,37 +143,22 @@ impl ProofServerClient {
         update: Update,
         eip1186_proof: EIP1186Proof,
     ) -> Result<ProofType, ClientError> {
-        let mut stream =
-            TcpStream::connect(&self.address)
-                .await
-                .map_err(|err| ClientError::Request {
-                    endpoint: "ProofServer::ProveInclusion".into(),
-                    source: err.into(),
-                })?;
+        let url = format!("http://{}/inclusion/proof", self.address);
+
         let inputs = StorageInclusionIn::new(store, update, eip1186_proof);
         let request = Request::ProveInclusion(Box::new((proving_mode, inputs)));
 
-        write_bytes(
-            &mut stream,
-            &request.to_bytes().map_err(|err| ClientError::Request {
-                endpoint: "ProofServer::ProveInclusion".into(),
-                source: err.into(),
-            })?,
-        )
-        .await
-        .map_err(|err| ClientError::Request {
-            endpoint: "prover".into(),
-            source: err.into(),
-        })?;
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::ProveInclusion".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
 
-        let res = read_bytes(&mut stream)
-            .await
-            .map_err(|err| ClientError::Response {
-                endpoint: "ProofServer::ProveInclusion".into(),
-                source: err.into(),
-            })?;
-
-        ProofType::from_bytes(&res).map_err(|err| ClientError::Response {
+        ProofType::from_bytes(&response).map_err(|err| ClientError::Response {
             endpoint: "ProofServer::ProveInclusion".into(),
             source: err.into(),
         })
@@ -216,43 +177,55 @@ impl ProofServerClient {
         &self,
         proof: ProofType,
     ) -> Result<bool, ClientError> {
-        let mut stream =
-            TcpStream::connect(&self.address)
-                .await
-                .map_err(|err| ClientError::Request {
-                    endpoint: "ProofServer::VerifyInclusiona".into(),
-                    source: err.into(),
-                })?;
+        let url = format!("http://{}/inclusion/verify", self.address);
 
         let request = Request::VerifyInclusion(proof);
 
-        write_bytes(
-            &mut stream,
-            &request.to_bytes().map_err(|err| ClientError::Request {
-                endpoint: "ProofServer::VerifyInclusiona".into(),
-                source: err.into(),
-            })?,
-        )
-        .await
-        .map_err(|err| ClientError::Request {
-            endpoint: "prover".into(),
-            source: err.into(),
-        })?;
+        let response = self
+            .post_request(
+                &url,
+                request.to_bytes().map_err(|err| ClientError::Request {
+                    endpoint: "ProofServer::VerifyInclusion".into(),
+                    source: err.into(),
+                })?,
+            )
+            .await?;
 
-        let res = read_bytes(&mut stream)
+        Ok(response.first().unwrap_or(&0) == &1)
+    }
+
+    /// Send a POST request to the given URL with the given request body.
+    ///
+    /// # Arguments
+    ///
+    /// * `url` - The URL to send the request to.
+    /// * `request` - The request body to send.
+    ///
+    /// # Returns
+    ///
+    /// The response from the server.
+    async fn post_request(&self, url: &str, request: Vec<u8>) -> Result<Vec<u8>, ClientError> {
+        // Call the endpoint.
+        let response = self
+            .inner
+            .post(url)
+            .body(request)
+            .header(CONTENT_TYPE, "application/octet-stream")
+            .send()
             .await
-            .map_err(|err| ClientError::Response {
-                endpoint: "ProofServer::VerifyInclusiona".into(),
-                source: err.into(),
+            .map_err(|err| ClientError::Request {
+                endpoint: url.into(),
+                source: Box::new(err),
             })?;
 
-        if res.len() != 1 {
-            return Err(ClientError::Response {
-                endpoint: "ProofServer::VerifyInclusiona".into(),
-                source: "Invalid response length".into(),
-            });
-        }
-
-        Ok(res[0] == 1)
+        // Store the bytes in a variable first.
+        response
+            .bytes()
+            .await
+            .map(|bytes| bytes.to_vec())
+            .map_err(|err| ClientError::Response {
+                endpoint: url.into(),
+                source: err.into(),
+            })
     }
 }

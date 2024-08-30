@@ -270,6 +270,8 @@ async fn initialize_light_client(
         &rpc_provider_address,
     );
 
+    info!("Testing connection to endpoints...");
+
     info!("Fetching latest state checkpoint and bootstrap data...");
 
     // Fetch latest state checkpoint.
