@@ -124,7 +124,11 @@ async fn inclusion_proof(
     }
 
     let request = res.unwrap();
-    let res = if let Request::ProveInclusion(boxed) = request {
+    let Request::ProveInclusion(boxed) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
         let (proving_mode, inputs) = *boxed;
         let proof_handle =
             spawn_blocking(move || state.inclusion_prover.prove(&inputs, proving_mode));
@@ -136,9 +140,6 @@ async fn inclusion_proof(
         proof
             .to_bytes()
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-    } else {
-        error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
     }?;
 
     let response = Response::builder()
@@ -169,7 +170,11 @@ async fn committee_proof(
     }
 
     let request = res.unwrap();
-    let res = if let Request::ProveCommitteeChange(boxed) = request {
+    let Request::ProveCommitteeChange(boxed) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
         match state.mode {
             Mode::Single => {
                 let (proving_mode, inputs) = *boxed;
@@ -189,9 +194,6 @@ async fn committee_proof(
                 forward_request(&bytes, &snd_addr).await
             }
         }
-    } else {
-        error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
     }?;
 
     let response = Response::builder()
@@ -222,13 +224,14 @@ async fn inclusion_verify(
     }
 
     let request = res.unwrap();
-    let res = if let Request::VerifyInclusion(proof) = request {
-        let is_valid = state.inclusion_prover.verify(&proof).is_ok();
-        Ok(vec![is_valid.as_u8()])
-    } else {
+    let Request::VerifyInclusion(proof) = request else {
         error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
-    }?;
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
+        let is_valid = state.inclusion_prover.verify(&proof).is_ok();
+        vec![is_valid.as_u8()]
+    };
 
     let response = Response::builder()
         .status(StatusCode::OK)
@@ -258,13 +261,14 @@ async fn committee_verify(
     }
 
     let request = res.unwrap();
-    let res = if let Request::VerifyCommitteeChange(proof) = request {
-        let is_valid = state.committee_prover.verify(&proof).is_ok();
-        Ok(vec![is_valid.as_u8()])
-    } else {
+    let Request::VerifyCommitteeChange(proof) = request else {
         error!("Invalid request type");
-        Err(StatusCode::BAD_REQUEST)
-    }?;
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
+        let is_valid = state.committee_prover.verify(&proof).is_ok();
+        vec![is_valid.as_u8()]
+    };
 
     let response = Response::builder()
         .status(StatusCode::OK)
