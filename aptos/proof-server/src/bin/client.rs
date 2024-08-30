@@ -38,20 +38,21 @@ use anyhow::{anyhow, Result};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::waypoint::Waypoint;
+use backoff::ExponentialBackoff;
 use clap::Parser;
 use log::{debug, error, info};
 use proof_server::error::ClientError;
 use proof_server::types::aptos::{
     AccountInclusionProofResponse, EpochChangeProofResponse, LedgerInfoResponse,
 };
+use proof_server::types::proof_server::ProvingMode;
 use proof_server::utils::validate_and_format_url;
 use proof_server::{
-    aptos_inclusion_proof_endpoint,
-    types::proof_server::Request,
-    utils::{read_bytes, write_bytes},
+    aptos_inclusion_proof_endpoint, types::proof_server::Request,
     APTOS_EPOCH_CHANGE_PROOF_ENDPOINT, APTOS_LEDGER_INFO_ENDPOINT,
 };
 use sphinx_sdk::SphinxProofWithPublicValues;
+use std::env;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -133,6 +134,8 @@ async fn main() -> Result<()> {
     let aptos_node_url = Arc::new(aptos_node_url);
 
     debug!("Initializing client");
+    // Try to connect to proof server.
+    connect_to_proof_server(&proof_server_address).await?;
     // Initialize the client.
     let (client_state, verififer_state) = init(&proof_server_address, &aptos_node_url).await?;
     debug!("Client initialized successfully");
@@ -226,6 +229,27 @@ async fn main() -> Result<()> {
                 .unwrap();
         }
     }
+}
+
+/// This method tries to connect to the proof server and returns an error if it fails.
+///
+/// # Errors
+/// This method returns an error if the connection to the proof server fails.
+async fn connect_to_proof_server(proof_server_address: &str) -> Result<(), ClientError> {
+    debug!("Connecting to the proof server at {}", proof_server_address);
+
+    let res = backoff::future::retry(ExponentialBackoff::default(), || async {
+        Ok(TcpStream::connect(proof_server_address).await?)
+    })
+    .await;
+
+    if let Err(err) = res {
+        return Err(ClientError::Internal {
+            source: format!("Failed to connect to the proof server: {}", err).into(),
+        });
+    }
+
+    Ok(())
 }
 
 /// Method to initialize the client. It fetches the initial data from the Aptos node and generates
@@ -414,11 +438,7 @@ async fn request_prover(
     request: &Request,
 ) -> Result<Vec<u8>, ClientError> {
     debug!("Connecting to the proof server at {}", proof_server_address);
-    let mut stream = TcpStream::connect(&proof_server_address)
-        .await
-        .map_err(|err| ClientError::Internal {
-            source: format!("Error while connecting to proof server: {err}").into(),
-        })?;
+    let client = reqwest::Client::new();
     debug!("Successfully connected to the proof server");
 
     info!("Sending request to prover: {}", request);
@@ -426,16 +446,23 @@ async fn request_prover(
     let request_bytes =
         bcs::to_bytes(request).map_err(|err| ClientError::Internal { source: err.into() })?;
 
-    write_bytes(&mut stream, &request_bytes)
+    let response = client
+        .post(proof_server_address)
+        .header("Accept", "application/octet-stream")
+        .body(request_bytes)
+        .send()
         .await
         .map_err(|err| ClientError::Request {
-            endpoint: "prover".into(),
+            endpoint: proof_server_address.into(),
             source: err.into(),
         })?;
 
-    read_bytes(&mut stream)
+    let response_bytes = response
+        .bytes()
         .await
-        .map_err(|err| ClientError::Internal { source: err.into() })
+        .map_err(|err| ClientError::Internal { source: err.into() })?;
+
+    Ok(response_bytes.to_vec())
 }
 
 /// This method verifies the validator verifier predicate, ie: that the validator committee that
@@ -510,10 +537,17 @@ async fn epoch_change_proving_task(
     // Request a proof generation for  the latest epoch change.
     debug!("Sending epoch change proof request to the prover");
 
-    let request = Request::ProveEpochChange(epoch_change_proof_data.clone().into());
+    let request = Request::ProveEpochChange(Box::new((
+        get_proving_mode(),
+        epoch_change_proof_data.clone().into(),
+    )));
 
     let epoch_change_proof: SphinxProofWithPublicValues = bcs::from_bytes(
-        &request_prover(&proof_server_address, &request).await?,
+        &request_prover(
+            &format!("http://{}/epoch/proof", proof_server_address),
+            &request,
+        )
+        .await?,
     )
     .map_err(|err| ClientError::ResponsePayload {
         endpoint: format!("{}", &request),
@@ -566,13 +600,16 @@ async fn epoch_change_verifying_task(
     info!("Starting epoch change verification task");
     // Verifying the received epoch change proof and the validator verifier hash.
     let request = Request::VerifyEpochChange(epoch_change_proof.clone());
-    let epoch_change_proof_verified = *request_prover(&proof_server_address, &request)
-        .await?
-        .first()
-        .ok_or_else(|| ClientError::ResponsePayload {
-            endpoint: format!("{}", &request),
-            source: "No response from prover".into(),
-        })?;
+    let epoch_change_proof_verified = *request_prover(
+        &format!("http://{}/epoch/verify", proof_server_address),
+        &request,
+    )
+    .await?
+    .first()
+    .ok_or_else(|| ClientError::ResponsePayload {
+        endpoint: format!("{}", &request),
+        source: "No response from prover".into(),
+    })?;
 
     if epoch_change_proof_verified != 1 {
         return Err(ClientError::Verification(String::from(
@@ -614,9 +651,14 @@ async fn inclusion_proving_task(
     let inclusion_proof_data = fetch_inclusion_proof_data(&aptos_node_url).await?;
 
     debug!("Sending account inclusion proof request to the prover");
-    let request = Request::ProveInclusion(inclusion_proof_data.into());
+    let request =
+        Request::ProveInclusion(Box::new((get_proving_mode(), inclusion_proof_data.into())));
     let account_inclusion_proof: SphinxProofWithPublicValues = bcs::from_bytes(
-        &request_prover(&proof_server_address, &request).await?,
+        &request_prover(
+            &format!("http://{}/inclusion/proof", proof_server_address),
+            &request,
+        )
+        .await?,
     )
     .map_err(|err| ClientError::ResponsePayload {
         endpoint: format!("{}", &request),
@@ -647,13 +689,16 @@ async fn inclusion_verifying_task(
     info!("Verifying account inclusion proof");
     // Verifying the received account inclusion proof and the validator verifier hash.
     let request = Request::VerifyInclusion(account_inclusion_proof.clone());
-    let inclusion_proof_verified = *request_prover(&proof_server_address, &request)
-        .await?
-        .first()
-        .ok_or_else(|| ClientError::ResponsePayload {
-            endpoint: format!("{}", &request),
-            source: "No response from prover".into(),
-        })?;
+    let inclusion_proof_verified = *request_prover(
+        &format!("http://{}/inclusion/verify", proof_server_address),
+        &request,
+    )
+    .await?
+    .first()
+    .ok_or_else(|| ClientError::ResponsePayload {
+        endpoint: format!("{}", &request),
+        source: "No response from prover".into(),
+    })?;
 
     if inclusion_proof_verified != 1 {
         return Err(ClientError::Verification(String::from(
@@ -758,4 +803,10 @@ async fn verifier_task(
             }
         }
     }
+}
+
+fn get_proving_mode() -> ProvingMode {
+    // Get proving mode for the light client.
+    let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
+    ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK")
 }
