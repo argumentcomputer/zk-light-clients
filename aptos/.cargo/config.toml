@@ -48,6 +48,7 @@ xclippy = [
     "-Wunreachable_pub",
     "-Wtrivial_numeric_casts",
     "-Wunused_qualifications",
+    "-Aclippy::too_long_first_doc_paragraph"
 ]
 
 # The tokio flag is necessary when building aptos-runtime: https://github.com/aptos-labs/aptos-core/pull/11889
