@@ -64,10 +64,30 @@ impl KadenaHeaderRaw {
         }
     }
 
+    pub fn to_base64(&self) -> Vec<u8> {
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&self.flags);
+        encoded.extend_from_slice(&self.time);
+        encoded.extend_from_slice(&self.parent);
+        encoded.extend_from_slice(&self.adjacents);
+        encoded.extend_from_slice(&self.target);
+        encoded.extend_from_slice(&self.payload);
+        encoded.extend_from_slice(&self.chain);
+        encoded.extend_from_slice(&self.weight);
+        encoded.extend_from_slice(&self.height);
+        encoded.extend_from_slice(&self.version);
+        encoded.extend_from_slice(&self.epoch_start);
+        encoded.extend_from_slice(&self.nonce);
+        encoded.extend_from_slice(&self.hash);
+        URL_SAFE_NO_PAD.encode(&encoded).into_bytes()
+    }
+
     pub fn header_root(&self) -> Vec<u8> {
-        let header = KadenaHeader::from(self.clone());
-        // TODO can directly extract
-        let adjacents = header.adjacents().hashes();
+        let adjacent_hashes: Vec<[u8; 32]> = vec![
+            self.adjacents[6..38].try_into().unwrap(),
+            self.adjacents[42..74].try_into().unwrap(),
+            self.adjacents[78..110].try_into().unwrap(),
+        ];
 
         // Bottom leaves
         let hashes = vec![
@@ -82,7 +102,7 @@ impl KadenaHeaderRaw {
             hash_data(CHAINWEB_VERSION_TAG, self.version()),
             hash_data(EPOCH_START_TIME_TAG, self.epoch_start()),
             hash_data(BLOCK_NONCE_TAG, self.nonce()),
-            hash_root(&adjacents[0]),
+            hash_root(&adjacent_hashes[0]),
         ];
         // Hash bottom leaves pairs
         let mut intermediate_hashes = hashes
@@ -91,8 +111,8 @@ impl KadenaHeaderRaw {
             .collect::<Vec<_>>();
 
         // Include additional adjacent nodes at the correct level
-        intermediate_hashes.push(hash_root(&adjacents[1]));
-        intermediate_hashes.push(hash_root(&adjacents[2]));
+        intermediate_hashes.push(hash_root(&adjacent_hashes[1]));
+        intermediate_hashes.push(hash_root(&adjacent_hashes[2]));
 
         // Hash pairs of intermediate nodes until only one hash remains (the root)
         while intermediate_hashes.len() > 1 {
@@ -184,6 +204,11 @@ mod test {
     #[test]
     fn test_decode_binary_no_panic() {
         let header_raw = KadenaHeaderRaw::from_base64(RAW_HEADER);
+
+        let encoded_header_raw = header_raw.to_base64();
+
+        assert_eq!(RAW_HEADER.to_vec(), encoded_header_raw);
+
         let _ = KadenaHeader::from(header_raw);
     }
 
