@@ -1,3 +1,6 @@
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 pub struct AdjacentParentRaw {
     chain: [u8; 4],
     hash: [u8; 32],

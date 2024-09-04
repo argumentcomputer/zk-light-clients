@@ -1,3 +1,8 @@
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+mod types;
+
 #[cfg(test)]
 mod tests {
     use kadena_programs::{bench::SHA512_256_PROGRAM, BLOCK_HEADER_HASHING_PROGRAM};
