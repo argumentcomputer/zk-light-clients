@@ -6,18 +6,18 @@ use crate::crypto::{U256, U256_BYTES_LENGTH};
 use crate::types::adjacent::{
     AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH,
 };
-use crate::types::error::TypesError;
+use crate::types::error::{TypesError, ValidationError};
 use crate::types::utils::extract_fixed_bytes;
 use crate::types::{
     BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG, BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG,
     CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
     U32_BYTES_LENGTH, U64_BYTES_LENGTH,
 };
+use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use getset::Getters;
-use std::convert::TryInto;
 
 pub const RAW_HEADER_BYTES_LEN: usize = 424;
 pub const RAW_HEADER_DECODED_BYTES_LENGTH: usize = FLAGS_BYTES_LENGTH
@@ -33,7 +33,6 @@ pub const RAW_HEADER_DECODED_BYTES_LENGTH: usize = FLAGS_BYTES_LENGTH
     + EPOCH_START_BYTES_LENGTH
     + NONCE_BYTES_LENGTH
     + HASH_BYTES_LENGTH;
-
 pub const FLAGS_BYTES_LENGTH: usize = 8;
 pub const TIME_BYTES_LENGTH: usize = 8;
 pub const PARENT_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
@@ -47,7 +46,7 @@ pub const EPOCH_START_BYTES_LENGTH: usize = U64_BYTES_LENGTH;
 pub const NONCE_BYTES_LENGTH: usize = U64_BYTES_LENGTH;
 pub const HASH_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
 
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Copy, Getters)]
 #[getset(get = "pub")]
 pub struct KadenaHeaderRaw {
     flags: [u8; FLAGS_BYTES_LENGTH],
@@ -95,42 +94,45 @@ impl KadenaHeaderRaw {
                     source: err.into(),
                 })?;
 
-        if decoded.len() != RAW_HEADER_DECODED_BYTES_LENGTH {
+        Self::from_bytes(&decoded)
+    }
+
+    pub fn from_bytes(input: &[u8]) -> Result<Self, TypesError> {
+        if input.len() != RAW_HEADER_DECODED_BYTES_LENGTH {
             return Err(TypesError::InvalidLength {
                 structure: "KadenaHeaderRaw".to_string(),
                 expected: RAW_HEADER_DECODED_BYTES_LENGTH,
-                actual: decoded.len(),
+                actual: input.len(),
             });
         }
 
         let cursor = 0;
 
         let (cursor, flags) =
-            extract_fixed_bytes::<FLAGS_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<FLAGS_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, time) =
-            extract_fixed_bytes::<TIME_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<TIME_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, parent) =
-            extract_fixed_bytes::<PARENT_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<PARENT_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, adjacents) =
-            extract_fixed_bytes::<ADJACENTS_RAW_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<ADJACENTS_RAW_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, target) =
-            extract_fixed_bytes::<TARGET_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<TARGET_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, payload) =
-            extract_fixed_bytes::<PAYLOAD_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<PAYLOAD_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, chain) =
-            extract_fixed_bytes::<CHAIN_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<CHAIN_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, weight) =
-            extract_fixed_bytes::<WEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<WEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, height) =
-            extract_fixed_bytes::<HEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<HEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, version) =
-            extract_fixed_bytes::<VERSION_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<VERSION_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, epoch_start) =
-            extract_fixed_bytes::<EPOCH_START_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<EPOCH_START_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, nonce) =
-            extract_fixed_bytes::<NONCE_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
-        let (_, hash) =
-            extract_fixed_bytes::<HASH_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<NONCE_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
+        let (_, hash) = extract_fixed_bytes::<HASH_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
 
         Ok(Self {
             flags,
@@ -150,21 +152,27 @@ impl KadenaHeaderRaw {
     }
 
     pub fn to_base64(&self) -> Vec<u8> {
-        let mut encoded = Vec::new();
-        encoded.extend_from_slice(&self.flags);
-        encoded.extend_from_slice(&self.time);
-        encoded.extend_from_slice(&self.parent);
-        encoded.extend_from_slice(&self.adjacents);
-        encoded.extend_from_slice(&self.target);
-        encoded.extend_from_slice(&self.payload);
-        encoded.extend_from_slice(&self.chain);
-        encoded.extend_from_slice(&self.weight);
-        encoded.extend_from_slice(&self.height);
-        encoded.extend_from_slice(&self.version);
-        encoded.extend_from_slice(&self.epoch_start);
-        encoded.extend_from_slice(&self.nonce);
-        encoded.extend_from_slice(&self.hash);
-        URL_SAFE_NO_PAD.encode(&encoded).into_bytes()
+        let bytes = self.to_bytes();
+        URL_SAFE_NO_PAD.encode(&bytes).into_bytes()
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut serialized = Vec::new();
+        serialized.extend_from_slice(&self.flags);
+        serialized.extend_from_slice(&self.time);
+        serialized.extend_from_slice(&self.parent);
+        serialized.extend_from_slice(&self.adjacents);
+        serialized.extend_from_slice(&self.target);
+        serialized.extend_from_slice(&self.payload);
+        serialized.extend_from_slice(&self.chain);
+        serialized.extend_from_slice(&self.weight);
+        serialized.extend_from_slice(&self.height);
+        serialized.extend_from_slice(&self.version);
+        serialized.extend_from_slice(&self.epoch_start);
+        serialized.extend_from_slice(&self.nonce);
+        serialized.extend_from_slice(&self.hash);
+
+        serialized
     }
 
     pub fn header_root(&self) -> Result<Vec<u8>, TypesError> {
@@ -215,6 +223,20 @@ impl KadenaHeaderRaw {
 
         // The last remaining hash is the root
         Ok(intermediate_hashes[0].clone())
+    }
+
+    pub fn produced_work(&self) -> Result<U256, ValidationError> {
+        let target = U256::from_little_endian(&self.target);
+        let hash = U256::from_little_endian(&self.hash);
+
+        if hash <= target {
+            Ok(target)
+        } else {
+            Err(ValidationError::TargetNotMet {
+                target: target.to_string(),
+                hash: hash.to_string(),
+            })
+        }
     }
 }
 
@@ -286,52 +308,9 @@ impl TryFrom<KadenaHeaderRaw> for KadenaHeader {
     }
 }
 
-#[derive(Debug, Clone, Getters)]
-#[getset(get = "pub")]
-pub struct CompactHeaderRaw {
-    time: [u8; 8],
-    payload: [u8; 32],
-    nonce: [u8; 8],
-}
-
-impl CompactHeaderRaw {
-    pub fn from_base64(input: &[u8]) -> Result<Self, TypesError> {
-        let decoded =
-            URL_SAFE_NO_PAD
-                .decode(input)
-                .map_err(|err| TypesError::DeserializationError {
-                    structure: "CompactHeaderRaw".to_string(),
-                    source: err.into(),
-                })?;
-
-        if decoded.len() != TIME_BYTES_LENGTH + PAYLOAD_BYTES_LENGTH + NONCE_BYTES_LENGTH {
-            return Err(TypesError::InvalidLength {
-                structure: "CompactHeaderRaw".to_string(),
-                expected: TIME_BYTES_LENGTH + PAYLOAD_BYTES_LENGTH + NONCE_BYTES_LENGTH,
-                actual: decoded.len(),
-            });
-        }
-
-        let cursor = 0;
-
-        let (cursor, time) =
-            extract_fixed_bytes::<TIME_BYTES_LENGTH>("CompactHeaderRaw", &decoded, cursor)?;
-        let (cursor, payload) =
-            extract_fixed_bytes::<PAYLOAD_BYTES_LENGTH>("CompactHeaderRaw", &decoded, cursor)?;
-        let (_, nonce) =
-            extract_fixed_bytes::<NONCE_BYTES_LENGTH>("CompactHeaderRaw", &decoded, cursor)?;
-
-        Ok(Self {
-            time,
-            payload,
-            nonce,
-        })
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use crate::types::header::{KadenaHeader, KadenaHeaderRaw, RAW_HEADER_BYTES_LEN};
+    use crate::types::header::chain::{KadenaHeader, KadenaHeaderRaw, RAW_HEADER_BYTES_LEN};
     use std::process::Stdio;
 
     // this binary data comes from this block header: https://explorer.chainweb.com/testnet/chain/0/block/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg
@@ -390,5 +369,48 @@ mod test {
                 assert_eq!(actual, expected.to_vec());
             }
         });
+    }
+}
+
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
+pub struct CompactHeaderRaw {
+    time: [u8; 8],
+    payload: [u8; 32],
+    nonce: [u8; 8],
+}
+
+impl CompactHeaderRaw {
+    pub fn from_base64(input: &[u8]) -> Result<Self, TypesError> {
+        let decoded =
+            URL_SAFE_NO_PAD
+                .decode(input)
+                .map_err(|err| TypesError::DeserializationError {
+                    structure: "CompactHeaderRaw".to_string(),
+                    source: err.into(),
+                })?;
+
+        if decoded.len() != TIME_BYTES_LENGTH + PAYLOAD_BYTES_LENGTH + NONCE_BYTES_LENGTH {
+            return Err(TypesError::InvalidLength {
+                structure: "CompactHeaderRaw".to_string(),
+                expected: TIME_BYTES_LENGTH + PAYLOAD_BYTES_LENGTH + NONCE_BYTES_LENGTH,
+                actual: decoded.len(),
+            });
+        }
+
+        let cursor = 0;
+
+        let (cursor, time) =
+            extract_fixed_bytes::<TIME_BYTES_LENGTH>("CompactHeaderRaw", &decoded, cursor)?;
+        let (cursor, payload) =
+            extract_fixed_bytes::<PAYLOAD_BYTES_LENGTH>("CompactHeaderRaw", &decoded, cursor)?;
+        let (_, nonce) =
+            extract_fixed_bytes::<NONCE_BYTES_LENGTH>("CompactHeaderRaw", &decoded, cursor)?;
+
+        Ok(Self {
+            time,
+            payload,
+            nonce,
+        })
     }
 }

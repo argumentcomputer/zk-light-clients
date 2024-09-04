@@ -1,5 +1,5 @@
 use kadena_lc_core::types::error::TypesError;
-use kadena_lc_core::types::header::KadenaHeaderRaw;
+use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]

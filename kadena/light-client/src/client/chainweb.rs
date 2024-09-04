@@ -12,13 +12,15 @@ use crate::client::error::ClientError;
 use crate::client::utils::test_connection;
 use crate::types::chainweb::BlockHeaderResponse;
 use getset::Getters;
-use kadena_lc_core::types::header::KadenaHeaderRaw;
+use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
+use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
 use std::sync::Arc;
 use tokio::task::JoinSet;
 
 const CHAINWEB_API_VERSION: &str = "0.0";
+const CHAINWEB_CHAIN_COUNT: usize = 20;
 
 /// An internal client to handle communication with a Chainweb Node.
 #[derive(Debug, Clone, Getters)]
@@ -71,11 +73,11 @@ impl ChainwebClient {
         &self,
         target_block: usize,
         block_window: usize,
-    ) -> Result<Vec<Vec<KadenaHeaderRaw>>, ClientError> {
+    ) -> Result<Vec<ChainwebLayerHeader>, ClientError> {
         let mut set = JoinSet::new();
 
         // Spawn tasks for fetching block headers for each chain (0 to 19).
-        for chain in 0..20 {
+        for chain in 0..CHAINWEB_CHAIN_COUNT {
             let client = self.inner.clone();
             let address = self.chainweb_node_address.clone();
             set.spawn(get_block_headers(
@@ -88,7 +90,8 @@ impl ChainwebClient {
         }
 
         // Initialize a vector with 20 elements (for chains 0 to 19), each holding the result (Vec<KadenaHeaderRaw>).
-        let mut output: Vec<Vec<KadenaHeaderRaw>> = vec![vec![KadenaHeaderRaw::default(); 20]; 7];
+        let mut response: Vec<Vec<KadenaHeaderRaw>> =
+            vec![vec![KadenaHeaderRaw::default(); CHAINWEB_CHAIN_COUNT]; 1 + block_window * 2];
 
         // Collect results as they complete.
         while let Some(res) = set.join_next().await {
@@ -113,8 +116,15 @@ impl ChainwebClient {
                             .chain(),
                     ) as usize;
 
+                    if chain >= CHAINWEB_CHAIN_COUNT {
+                        return Err(ClientError::Response {
+                            endpoint: "get_layer_block_headers".to_string(),
+                            source: format!("Invalid chain number: {}", chain).into(),
+                        });
+                    }
+
                     for (position, header) in headers.into_iter().enumerate() {
-                        output[position][chain] = header;
+                        response[position][chain] = header;
                     }
                 }
                 Ok(Err(err)) => {
@@ -134,7 +144,22 @@ impl ChainwebClient {
             }
         }
 
-        Ok(output)
+        let layer_headers = response
+            .into_iter()
+            .map(|headers| {
+                // We can unwrap here as if the previous code section did not return an
+                // error we should have at least one header per height
+                let height = u64::from_le_bytes(
+                    *headers
+                        .first()
+                        .expect("Should be able to access element 0 of slice")
+                        .height(),
+                );
+                ChainwebLayerHeader::new(height, headers)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(layer_headers)
     }
 }
 

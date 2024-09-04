@@ -3,7 +3,7 @@
 
 use kadena_lc_core::crypto::hash::hash_from_base64;
 use kadena_lc_core::types::error::TypesError;
-use kadena_lc_core::types::header::{CompactHeaderRaw, KadenaHeaderRaw};
+use kadena_lc_core::types::header::chain::{CompactHeaderRaw, KadenaHeaderRaw};
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]

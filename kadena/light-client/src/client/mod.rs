@@ -12,7 +12,7 @@
 
 use crate::client::chainweb::ChainwebClient;
 use crate::client::error::ClientError;
-use kadena_lc_core::types::header::KadenaHeaderRaw;
+use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 
 pub(crate) mod chainweb;
 pub mod error;
@@ -55,7 +55,7 @@ impl Client {
         &self,
         target_block: usize,
         block_window: usize,
-    ) -> Result<Vec<Vec<KadenaHeaderRaw>>, ClientError> {
+    ) -> Result<Vec<ChainwebLayerHeader>, ClientError> {
         self.chainweb_client
             .get_layer_block_headers(target_block, block_window)
             .await

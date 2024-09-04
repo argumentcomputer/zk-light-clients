@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crypto::hash::DIGEST_BYTES_LENGTH;
-use crate::types::header::CHAIN_BYTES_LENGTH;
+use crate::types::header::chain::CHAIN_BYTES_LENGTH;
 use crate::types::U16_BYTES_LENGTH;
 
 pub const ADJACENTS_RAW_BYTES_LENGTH: usize = 110;

@@ -39,10 +39,10 @@ async fn main() -> Result<()> {
         .get_layer_block_headers(TARGET_BLOCK, BLOCK_WINDOW)
         .await?;
 
-    for (pos, headers) in kadena_headers.iter().enumerate() {
-        info!("Block for position {}", pos);
-        for header in headers {
-            info!("{}", URL_SAFE_NO_PAD.encode(header.hash()));
+    for layer_header in kadena_headers.iter() {
+        info!("Block height {}", layer_header.height());
+        for chain_header in layer_header.chain_headers() {
+            info!("{}", URL_SAFE_NO_PAD.encode(chain_header.hash()));
         }
     }
 
