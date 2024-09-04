@@ -1,15 +1,25 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::crypto::hash::DIGEST_BYTES_LENGTH;
+use crate::types::header::CHAIN_BYTES_LENGTH;
+use crate::types::U16_BYTES_LENGTH;
+
+pub const ADJACENTS_RAW_BYTES_LENGTH: usize = 110;
+pub const ADJACENT_RECORD_RAW_BYTES_LENGTH: usize = 108;
+pub const ADJACENT_RECORD_PER_BLOCK: usize = 3;
+
 pub struct AdjacentParentRaw {
-    chain: [u8; 4],
-    hash: [u8; 32],
+    chain: [u8; CHAIN_BYTES_LENGTH],
+    hash: [u8; DIGEST_BYTES_LENGTH],
 }
 
 impl AdjacentParentRaw {
     pub fn from_bytes(bytes: &[u8]) -> Self {
-        let chain: [u8; 4] = bytes[0..4].try_into().unwrap();
-        let hash: [u8; 32] = bytes[4..36].try_into().unwrap();
+        let chain: [u8; 4] = bytes[0..CHAIN_BYTES_LENGTH].try_into().unwrap();
+        let hash: [u8; 32] = bytes[CHAIN_BYTES_LENGTH..CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH]
+            .try_into()
+            .unwrap();
 
         Self { chain, hash }
     }
@@ -18,7 +28,7 @@ impl AdjacentParentRaw {
 #[derive(Debug)]
 pub struct AdjacentParent {
     chain: u32,
-    hash: [u8; 32],
+    hash: [u8; DIGEST_BYTES_LENGTH],
 }
 
 impl From<&AdjacentParentRaw> for AdjacentParent {
@@ -31,14 +41,17 @@ impl From<&AdjacentParentRaw> for AdjacentParent {
 }
 
 pub struct AdjacentParentRecordRaw {
-    length: [u8; 2],
-    adjacents: [u8; 108],
+    length: [u8; U16_BYTES_LENGTH],
+    adjacents: [u8; ADJACENT_RECORD_RAW_BYTES_LENGTH],
 }
 
 impl AdjacentParentRecordRaw {
     pub fn from_bytes(bytes: &[u8]) -> Self {
-        let length: [u8; 2] = bytes[0..2].try_into().unwrap();
-        let adjacents: [u8; 108] = bytes[2..110].try_into().unwrap();
+        let length: [u8; U16_BYTES_LENGTH] = bytes[0..U16_BYTES_LENGTH].try_into().unwrap();
+        let adjacents: [u8; ADJACENT_RECORD_RAW_BYTES_LENGTH] = bytes
+            [U16_BYTES_LENGTH..ADJACENTS_RAW_BYTES_LENGTH]
+            .try_into()
+            .unwrap();
 
         Self { length, adjacents }
     }
@@ -58,7 +71,7 @@ impl From<AdjacentParent> for AdjacentParentRaw {
 #[allow(dead_code)]
 pub struct AdjacentParentRecord {
     length: u16,
-    adjacents: [AdjacentParent; 3],
+    adjacents: [AdjacentParent; ADJACENT_RECORD_PER_BLOCK],
 }
 
 impl AdjacentParentRecord {
@@ -66,13 +79,21 @@ impl AdjacentParentRecord {
         let length = u16::from_le_bytes(raw.length);
         let mut adjacents = [
             AdjacentParent::from(&AdjacentParentRaw::from_bytes(
-                raw.adjacents[0..36].try_into().unwrap(),
+                raw.adjacents[0..CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH]
+                    .try_into()
+                    .expect("Should be able to convert raw adjacent parent to fixed slice"),
             )),
             AdjacentParent::from(&AdjacentParentRaw::from_bytes(
-                raw.adjacents[36..72].try_into().unwrap(),
+                raw.adjacents[CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH
+                    ..(CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH) * 2]
+                    .try_into()
+                    .expect("Should be able to convert raw adjacent parent to fixed slice"),
             )),
             AdjacentParent::from(&AdjacentParentRaw::from_bytes(
-                raw.adjacents[72..108].try_into().unwrap(),
+                raw.adjacents[(CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH) * 2
+                    ..(CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH) * 3]
+                    .try_into()
+                    .expect("Should be able to convert raw adjacent parent to fixed slice"),
             )),
         ];
 

@@ -18,5 +18,6 @@ pub const HASH_TARGET_TAG: u16 = 0x0011;
 pub const EPOCH_START_TIME_TAG: u16 = 0x0019;
 pub const BLOCK_NONCE_TAG: u16 = 0x0020;
 
+pub const U16_BYTES_LENGTH: usize = 2;
 pub const U32_BYTES_LENGTH: usize = 4;
 pub const U64_BYTES_LENGTH: usize = 8;

@@ -3,7 +3,9 @@
 
 use crate::crypto::hash::{hash_data, hash_inner, hash_root, DIGEST_BYTES_LENGTH};
 use crate::crypto::{U256, U256_BYTES_LENGTH};
-use crate::types::adjacent::{AdjacentParentRecord, AdjacentParentRecordRaw};
+use crate::types::adjacent::{
+    AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH,
+};
 use crate::types::error::TypesError;
 use crate::types::utils::extract_fixed_bytes;
 use crate::types::{
@@ -21,7 +23,7 @@ pub const RAW_HEADER_BYTES_LEN: usize = 424;
 pub const RAW_HEADER_DECODED_BYTES_LENGTH: usize = FLAGS_BYTES_LENGTH
     + TIME_BYTES_LENGTH
     + PARENT_BYTES_LENGTH
-    + ADJACENTS_BYTES_LENGTH
+    + ADJACENTS_RAW_BYTES_LENGTH
     + TARGET_BYTES_LENGTH
     + PAYLOAD_BYTES_LENGTH
     + CHAIN_BYTES_LENGTH
@@ -35,7 +37,6 @@ pub const RAW_HEADER_DECODED_BYTES_LENGTH: usize = FLAGS_BYTES_LENGTH
 pub const FLAGS_BYTES_LENGTH: usize = 8;
 pub const TIME_BYTES_LENGTH: usize = 8;
 pub const PARENT_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
-pub const ADJACENTS_BYTES_LENGTH: usize = 110;
 pub const TARGET_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
 pub const PAYLOAD_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
 pub const CHAIN_BYTES_LENGTH: usize = 4;
@@ -52,7 +53,7 @@ pub struct KadenaHeaderRaw {
     flags: [u8; FLAGS_BYTES_LENGTH],
     time: [u8; TIME_BYTES_LENGTH],
     parent: [u8; PARENT_BYTES_LENGTH],
-    adjacents: [u8; ADJACENTS_BYTES_LENGTH],
+    adjacents: [u8; ADJACENTS_RAW_BYTES_LENGTH],
     target: [u8; TARGET_BYTES_LENGTH],
     payload: [u8; PAYLOAD_BYTES_LENGTH],
     chain: [u8; CHAIN_BYTES_LENGTH],
@@ -91,7 +92,7 @@ impl KadenaHeaderRaw {
         let (cursor, parent) =
             extract_fixed_bytes::<PARENT_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
         let (cursor, adjacents) =
-            extract_fixed_bytes::<ADJACENTS_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<ADJACENTS_RAW_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
         let (cursor, target) =
             extract_fixed_bytes::<TARGET_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
         let (cursor, payload) =
