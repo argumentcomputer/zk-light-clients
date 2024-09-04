@@ -34,14 +34,14 @@
   )
 
   ;; constants for public value management of committee change -- units in hex-encoded string characters, i.e. 1 byte is 2 characters
-  (defconst COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES 208)
-  (defconst INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES 236)
-  (defconst BLOCK_HEIGHT_BYTE_SIZE 16)
-  (defconst COMMITTEE_HASH_BYTE_SIZE 64)
-  (defconst EIP1186_PROOF_ADDRESS_BYTE_SIZE 40)
-  (defconst EIP1186_PROOF_ADDRESS_HASH_BYTE_SIZE 64)
-  (defconst U64_ENCODED_BYTE_SIZE 16)
-  (defconst PROOF_VERSION_SIZE 8)
+  (defconst COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH 208)
+  (defconst INCLUSION_PUBLIC_VALUES_MIN_LENGTH 236)
+  (defconst BLOCK_HEIGHT_LENGTH 16)
+  (defconst COMMITTEE_HASH_LENGTH 64)
+  (defconst EIP1186_PROOF_ADDRESS_LENGTH 40)
+  (defconst EIP1186_PROOF_ADDRESS_HASH_LENGTH 64)
+  (defconst U64_ENCODED_LENGTH 16)
+  (defconst PROOF_VERSION_LENGTH 8)
 
   ;; These should be fixed to the expected verifier keys for the trusted programs (i.e. hash of ELF file)
   (defconst EXPECTED_COMMITTEE_CHANGE_VERIFIER_KEY "0028418ec600456b3768cd78d1af143a057fc71a3cf522c557c7b473762946ee")
@@ -56,18 +56,18 @@
           (verifier-key (at 'verifier-key proof))
           (proof (at 'proof proof))
           )
-      (let ((proof-version (take PROOF_VERSION_SIZE proof)))
+      (let ((proof-version (take PROOF_VERSION_LENGTH proof)))
         (enforce (= proof-version EXPECTED_SPHINX_PROOF_PREFIX_V101_TESTNET) "Proof with incorrect version")
       )
 
-      (enforce (> (length public-values) INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES) "Incorrect public values length")
+      (enforce (> (length public-values) INCLUSION_PUBLIC_VALUES_MIN_LENGTH) "Incorrect public values length")
 
       (enforce (= verifier-key EXPECTED_INCLUSION_VERIFIER_KEY) "Proof for incorrect program")
 
-      (let ((block-height (take BLOCK_HEIGHT_BYTE_SIZE public-values))
-        (signer-committee (take COMMITTEE_HASH_BYTE_SIZE (drop BLOCK_HEIGHT_BYTE_SIZE public-values)))
-        (eip1186_proof_address (take EIP1186_PROOF_ADDRESS_BYTE_SIZE (drop (+ COMMITTEE_HASH_BYTE_SIZE BLOCK_HEIGHT_BYTE_SIZE) public-values)))
-        (eip1186_proof_address_hash (take EIP1186_PROOF_ADDRESS_BYTE_SIZE (drop (+ (+ COMMITTEE_HASH_BYTE_SIZE BLOCK_HEIGHT_BYTE_SIZE) EIP1186_PROOF_ADDRESS_BYTE_SIZE) public-values)))
+      (let ((block-height (take BLOCK_HEIGHT_LENGTH public-values))
+        (signer-committee (take COMMITTEE_HASH_LENGTH (drop BLOCK_HEIGHT_LENGTH public-values)))
+        (eip1186_proof_address (take EIP1186_PROOF_ADDRESS_LENGTH (drop (+ COMMITTEE_HASH_LENGTH BLOCK_HEIGHT_LENGTH) public-values)))
+        (eip1186_proof_address_hash (take EIP1186_PROOF_ADDRESS_LENGTH (drop (+ (+ COMMITTEE_HASH_LENGTH BLOCK_HEIGHT_LENGTH) EIP1186_PROOF_ADDRESS_LENGTH) public-values)))
         )
         (with-read state STATE_KEY { 'current-hash := current-hash, 'next-hash := next-hash }
           ;; Check that the signer committee is one of the two stored hashes
@@ -88,19 +88,19 @@
           (verifier-key (at 'verifier-key proof))
           (proof (at 'proof proof))
           )
-      (let ((proof-version (take PROOF_VERSION_SIZE proof)))
+      (let ((proof-version (take PROOF_VERSION_LENGTH proof)))
         (enforce (= proof-version EXPECTED_SPHINX_PROOF_PREFIX_V101_TESTNET) "Proof with incorrect version")
       )
 
-      (enforce (= (length public-values) COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES) "Incorrect public values length")
+      (enforce (= (length public-values) COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH) "Incorrect public values length")
 
       (enforce (= verifier-key EXPECTED_COMMITTEE_CHANGE_VERIFIER_KEY) "Proof for incorrect program")
 
       ;; Extract the values out of the public values string
-      (let ((block-height (take BLOCK_HEIGHT_BYTE_SIZE public-values))
-        (signer-committee (take COMMITTEE_HASH_BYTE_SIZE (drop BLOCK_HEIGHT_BYTE_SIZE public-values)))
-        (updated-committee (take COMMITTEE_HASH_BYTE_SIZE (drop (+ COMMITTEE_HASH_BYTE_SIZE BLOCK_HEIGHT_BYTE_SIZE) public-values)))
-        (next-committee (take COMMITTEE_HASH_BYTE_SIZE (drop (+ (* COMMITTEE_HASH_BYTE_SIZE 2) BLOCK_HEIGHT_BYTE_SIZE) public-values))))
+      (let ((block-height (take BLOCK_HEIGHT_LENGTH public-values))
+        (signer-committee (take COMMITTEE_HASH_LENGTH (drop BLOCK_HEIGHT_LENGTH public-values)))
+        (updated-committee (take COMMITTEE_HASH_LENGTH (drop (+ COMMITTEE_HASH_LENGTH BLOCK_HEIGHT_LENGTH) public-values)))
+        (next-committee (take COMMITTEE_HASH_LENGTH (drop (+ (* COMMITTEE_HASH_LENGTH 2) BLOCK_HEIGHT_LENGTH) public-values))))
 
         (with-read state STATE_KEY { 'current-hash := current-hash, 'next-hash := next-hash }
           ;; Check that the signer committee is one of the two stored hashes
