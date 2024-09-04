@@ -2477,6 +2477,7 @@ dependencies = [
  "clap",
  "env_logger",
  "getset",
+ "hex",
  "kadena-lc-core",
  "kadena-programs",
  "log",

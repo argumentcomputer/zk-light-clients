@@ -41,7 +41,7 @@ macro_rules! deserialization_error {
 /// Errors possible while validating data.
 #[derive(Debug, Error)]
 pub enum ValidationError {
-    #[error("Target for block was not reached: expected less or equal than{target} got {hash}")]
+    #[error("Target for block was not reached: expected less or equal than {target} got {hash}")]
     TargetNotMet { target: String, hash: String },
     #[error("Error while trying to set chain block header: currently handling {size} chains, got chain {chain}"
     )]
