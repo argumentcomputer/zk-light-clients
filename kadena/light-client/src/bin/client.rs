@@ -35,10 +35,15 @@ async fn main() -> Result<()> {
 
     let client = Client::new(chainweb_node_address.as_str());
 
-    let kadena_headers = client.get_block_headers(TARGET_BLOCK, BLOCK_WINDOW).await?;
+    let kadena_headers = client
+        .get_layer_block_headers(TARGET_BLOCK, BLOCK_WINDOW)
+        .await?;
 
-    for header in kadena_headers {
-        info!("{}", URL_SAFE_NO_PAD.encode(header.hash()));
+    for (pos, headers) in kadena_headers.iter().enumerate() {
+        info!("Block for position {}", pos);
+        for header in headers {
+            info!("{}", URL_SAFE_NO_PAD.encode(header.hash()));
+        }
     }
 
     Ok(())

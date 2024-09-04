@@ -51,13 +51,13 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_block_headers(
+    pub async fn get_layer_block_headers(
         &self,
         target_block: usize,
         block_window: usize,
-    ) -> Result<Vec<KadenaHeaderRaw>, ClientError> {
+    ) -> Result<Vec<Vec<KadenaHeaderRaw>>, ClientError> {
         self.chainweb_client
-            .get_block_headers(target_block, block_window)
+            .get_layer_block_headers(target_block, block_window)
             .await
     }
 }

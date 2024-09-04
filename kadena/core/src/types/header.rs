@@ -65,6 +65,26 @@ pub struct KadenaHeaderRaw {
     hash: [u8; HASH_BYTES_LENGTH],
 }
 
+impl Default for KadenaHeaderRaw {
+    fn default() -> Self {
+        Self {
+            flags: [0; FLAGS_BYTES_LENGTH],
+            time: [0; TIME_BYTES_LENGTH],
+            parent: [0; PARENT_BYTES_LENGTH],
+            adjacents: [0; ADJACENTS_RAW_BYTES_LENGTH],
+            target: [0; TARGET_BYTES_LENGTH],
+            payload: [0; PAYLOAD_BYTES_LENGTH],
+            chain: [0; CHAIN_BYTES_LENGTH],
+            weight: [0; WEIGHT_BYTES_LENGTH],
+            height: [0; HEIGHT_BYTES_LENGTH],
+            version: [0; VERSION_BYTES_LENGTH],
+            epoch_start: [0; EPOCH_START_BYTES_LENGTH],
+            nonce: [0; NONCE_BYTES_LENGTH],
+            hash: [0; HASH_BYTES_LENGTH],
+        }
+    }
+}
+
 impl KadenaHeaderRaw {
     pub fn from_base64(input: &[u8]) -> Result<Self, TypesError> {
         let decoded =
