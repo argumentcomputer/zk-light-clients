@@ -1,7 +1,9 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-mod types;
+pub mod client;
+pub mod proofs;
+pub mod types;
 
 #[cfg(test)]
 mod tests {
