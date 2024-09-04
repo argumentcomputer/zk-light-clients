@@ -6,7 +6,12 @@ repository = { workspace = true }
 license = { workspace = true }
 
 [dependencies]
+anyhow = { workspace = true }
+base64 = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 sha2 = { workspace = true }
+thiserror = { workspace = true }
 
 # LC crates
 kadena-lc-core = { path = "../core" }
@@ -14,3 +19,6 @@ kadena-programs = { path = "../kadena-programs" }
 
 # Sphinx crates
 sphinx-sdk = { workspace = true }
+
+[dev-dependencies]
+kadena-lc-core = { path = "../core", features = ["kadena"] }

@@ -2370,10 +2370,15 @@ dependencies = [
 name = "kadena-lc"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
+ "base64 0.22.1",
  "kadena-lc-core",
  "kadena-programs",
+ "serde",
+ "serde_json",
  "sha2 0.9.9",
  "sphinx-sdk",
+ "thiserror",
 ]
 
 [[package]]
@@ -2384,6 +2389,7 @@ dependencies = [
  "chrono",
  "getset",
  "sha2 0.9.9",
+ "thiserror",
  "uint",
 ]
 

@@ -11,3 +11,8 @@ getset = { workspace = true }
 base64 = { workspace = true }
 uint = { workspace = true }
 chrono = { workspace = true }
+thiserror = { workspace = true }
+
+[features]
+default = []
+kadena = []
