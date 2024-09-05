@@ -1,3 +1,6 @@
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 use thiserror::Error;
 
 /// Errors possible while validating data.

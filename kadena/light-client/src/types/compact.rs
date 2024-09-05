@@ -6,6 +6,7 @@ use kadena_lc_core::types::error::TypesError;
 use kadena_lc_core::types::header::chain::{CompactHeaderRaw, KadenaHeaderRaw};
 use serde::Deserialize;
 
+/// Response received while querying compact headers from a Chainweb
 #[derive(Clone, Debug, Deserialize)]
 struct CompactLayerResponse {
     base: Vec<String>,
@@ -13,6 +14,7 @@ struct CompactLayerResponse {
     hashes: Vec<String>,
 }
 
+/// Decoded compact header in Rust types.
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
 struct CompactLayerDecoded {

@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crypto::error::CryptoError;
-use crate::crypto::hash::sha512::{hash_data, hash_inner, hash_root};
+use crate::crypto::hash::sha512::{hash_data, hash_inner};
 use crate::crypto::hash::DIGEST_BYTES_LENGTH;
 use crate::crypto::{U256, U256_BYTES_LENGTH};
+use crate::merkle::{
+    BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG, BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG,
+    CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
+};
 use crate::types::adjacent::{
     AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH,
 };
 use crate::types::error::{TypesError, ValidationError};
 use crate::types::utils::extract_fixed_bytes;
-use crate::types::{
-    BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG, BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG,
-    CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
-    U32_BYTES_LENGTH, U64_BYTES_LENGTH,
-};
+use crate::types::{U32_BYTES_LENGTH, U64_BYTES_LENGTH};
 use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -253,16 +253,16 @@ impl KadenaHeaderRaw {
         let hashes = vec![
             hash_data(FEATURE_FLAGS_TAG, self.flags()),
             hash_data(BLOCK_CREATION_TIME_TAG, self.time()),
-            hash_root(self.parent()),
+            self.parent().to_vec(),
             hash_data(HASH_TARGET_TAG, self.target()),
-            hash_root(self.payload()),
+            self.payload().to_vec(),
             hash_data(CHAIN_ID_TAG, self.chain()),
             hash_data(BLOCK_WEIGHT_TAG, self.weight()),
             hash_data(BLOCK_HEIGHT_TAG, self.height()),
             hash_data(CHAINWEB_VERSION_TAG, self.version()),
             hash_data(EPOCH_START_TIME_TAG, self.epoch_start()),
             hash_data(BLOCK_NONCE_TAG, self.nonce()),
-            hash_root(&adjacent_hashes[0]),
+            adjacent_hashes[0].to_vec(),
         ];
         // Hash bottom leaves pairs
         let mut intermediate_hashes = hashes
@@ -271,8 +271,8 @@ impl KadenaHeaderRaw {
             .collect::<Vec<_>>();
 
         // Include additional adjacent nodes at the correct level
-        intermediate_hashes.push(hash_root(&adjacent_hashes[1]));
-        intermediate_hashes.push(hash_root(&adjacent_hashes[2]));
+        intermediate_hashes.push(adjacent_hashes[1].to_vec());
+        intermediate_hashes.push(adjacent_hashes[2].to_vec());
 
         // Hash pairs of intermediate nodes until only one hash remains (the root)
         while intermediate_hashes.len() > 1 {
@@ -367,7 +367,7 @@ impl TryFrom<KadenaHeaderRaw> for KadenaHeader {
             })?;
         let parent = U256::from_little_endian(&raw.parent);
         let adjacents =
-            AdjacentParentRecord::from_raw(&AdjacentParentRecordRaw::from_bytes(&raw.adjacents));
+            AdjacentParentRecord::from(AdjacentParentRecordRaw::from_bytes(&raw.adjacents));
 
         let target = U256::from_little_endian(&raw.target);
         let payload = raw.payload;

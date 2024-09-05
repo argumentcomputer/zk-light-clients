@@ -2,4 +2,4 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod chainweb;
-mod compact;
+pub mod compact;

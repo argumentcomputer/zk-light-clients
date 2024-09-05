@@ -1,3 +1,6 @@
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::client::error::ClientError;
 use anyhow::Result;
 use backoff::ExponentialBackoff;

@@ -6,6 +6,7 @@ pub mod hash;
 
 use uint::construct_uint;
 
+/// Size in bytes of a U256.
 pub const U256_BYTES_LENGTH: usize = 32;
 
 construct_uint! {

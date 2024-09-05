@@ -3,21 +3,11 @@
 
 //! # Proofs Module
 //!
-//! This module contains the logic for generating, executing, proving, and verifying proofs for the
-//! light client. The light client is responsible for fetching the data necessary to prove sync
-//! committee changes and value inclusion in the state of the Ethereum network, and to leverage this
-//! data to generate proofs for them using Sphinx.
-//!
-//! We have one prover for each proof, sync committee change and inclusion. Those prover have two
-//! modes: execution and proof generation (that can either generate STARK or SNARK proofs). The prover
-//! also serves as a verifier for the proofs.
-//!
-//! ## Sub-modules
-//!
-//! - `committee_change`: The prover for the sync committee change proof.
-//!
-//! For more detailed information, users should refer to the specific documentation for each
-//! sub-module.
+//! This module contains the logic for generating, executing, proving,
+//! and verifying proofs for the light client. The light client is responsible
+//! for fetching the data necessary to prove the work produced on
+//! the chain and the inclusion of a value in the state of the Chainweb
+//! network.
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};

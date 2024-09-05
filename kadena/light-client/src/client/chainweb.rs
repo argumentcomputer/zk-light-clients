@@ -4,9 +4,10 @@
 //! # Chainweb client module
 //!
 //! This module contains the client for the Chainweb Node API. It is responsible for fetching the data
-//! necessary to prove sync committee changes and value inclusion in the state of the Ethereum network.
+//! necessary to prove produced work of the Chainweb network and inclusion of
+//! data in its state.
 //!
-//! It maintains an internal HTTP client to handle communication with the Beacon Node.
+//! It maintains an internal HTTP client to handle communication with the Chainweb Node.
 
 use crate::client::error::ClientError;
 use crate::client::utils::test_connection;
@@ -19,7 +20,9 @@ use reqwest::Client;
 use std::sync::Arc;
 use tokio::task::JoinSet;
 
+/// The version of the Chainweb API.
 const CHAINWEB_API_VERSION: &str = "0.0";
+/// The number of chains in the Chainweb network.
 const CHAINWEB_CHAIN_COUNT: usize = 20;
 
 /// An internal client to handle communication with a Chainweb Node.
@@ -49,7 +52,7 @@ impl ChainwebClient {
         }
     }
 
-    /// Test the connection to the chainweb node.
+    /// Test the connection to the Chainweb node.
     ///
     /// # Returns
     ///
@@ -62,9 +65,14 @@ impl ChainwebClient {
     /// `get_layer_block_headers` leverages `get_block_headers` to
     /// get the block headers for each chain of the Chainweb network (0 to 19).
     ///
+    /// # Arguments
+    ///
+    /// * `target_block` - The target block to get the headers for.
+    /// * `block_window` - The number of blocks to get before and after the target block.
+    ///
     /// # Returns
     ///
-    /// The finality update.
+    /// The layer block headers.
     ///
     /// # Errors
     ///
@@ -174,7 +182,7 @@ impl ChainwebClient {
 ///
 /// # Returns
 ///
-/// The finality update.
+/// The block headers.
 ///
 /// # Errors
 ///

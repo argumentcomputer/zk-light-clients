@@ -29,7 +29,7 @@ impl Client {
     ///
     /// # Arguments
     ///
-    /// * `chainweb_node_address: ` - The address of the Checkpoint Provider API.
+    /// * `chainweb_node_address: ` - The address of the Chainweb Node API.
     ///
     /// # Returns
     ///
@@ -51,6 +51,17 @@ impl Client {
         Ok(())
     }
 
+    /// Get the layer block headers according to the given block height
+    /// and window.
+    ///
+    /// # Arguments
+    ///
+    /// * `target_block` - The target block height.
+    /// * `block_window` - The window of blocks to fetch.
+    ///
+    /// # Returns
+    ///
+    /// The layer block headers.
     pub async fn get_layer_block_headers(
         &self,
         target_block: usize,
