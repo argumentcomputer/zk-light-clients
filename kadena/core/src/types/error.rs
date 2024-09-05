@@ -49,4 +49,9 @@ pub enum ValidationError {
     #[error("Error while trying to set chain block header: expected block height {expected}, got {actual} "
     )]
     DifferentHeight { expected: usize, actual: usize },
+    #[error("Error while trying to compute the PoW Hash: {source}")]
+    PowHashError {
+        #[source]
+        source: Box<dyn std::error::Error + Sync + Send>,
+    },
 }

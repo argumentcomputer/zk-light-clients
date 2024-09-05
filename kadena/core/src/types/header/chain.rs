@@ -1,7 +1,9 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crypto::hash::{hash_data, hash_inner, hash_root, ChainwebHash, DIGEST_BYTES_LENGTH};
+use crate::crypto::error::CryptoError;
+use crate::crypto::hash::sha512::{hash_data, hash_inner, hash_root};
+use crate::crypto::hash::DIGEST_BYTES_LENGTH;
 use crate::crypto::{U256, U256_BYTES_LENGTH};
 use crate::types::adjacent::{
     AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH,
@@ -18,7 +20,6 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use getset::Getters;
-use sha2::Digest;
 
 pub const RAW_HEADER_BYTES_LEN: usize = 424;
 pub const RAW_HEADER_DECODED_BYTES_LENGTH: usize = FLAGS_BYTES_LENGTH
@@ -228,11 +229,11 @@ impl KadenaHeaderRaw {
 
     pub fn produced_work(&self) -> Result<U256, ValidationError> {
         let target = U256::from_little_endian(&self.target);
-        let hash = U256::from_little_endian(&self.hash);
-
-        println!("{target}");
-        println!("{hash}");
-        println!("{}", U256::from_little_endian(&self.weight));
+        let hash = U256::from_little_endian(
+            &self
+                .pow_hash()
+                .map_err(|err| ValidationError::PowHashError { source: err.into() })?,
+        );
 
         if hash <= target {
             Ok(target)
@@ -244,12 +245,22 @@ impl KadenaHeaderRaw {
         }
     }
 
-    pub fn pow_hash(&self) -> Result<[u8; 32]> {
-        let mut buff = [0; 286];
-        buff[8..16].copy_from_slice(&self.time);
-        buff[278..286].copy_from_slice(&self.nonce);
+    pub fn pow_hash(&self) -> Result<[u8; 32], CryptoError> {
+        let mut serialized = Vec::new();
+        serialized.extend_from_slice(&self.flags);
+        serialized.extend_from_slice(&self.time);
+        serialized.extend_from_slice(&self.parent);
+        serialized.extend_from_slice(&self.adjacents);
+        serialized.extend_from_slice(&self.target);
+        serialized.extend_from_slice(&self.payload);
+        serialized.extend_from_slice(&self.chain);
+        serialized.extend_from_slice(&self.weight);
+        serialized.extend_from_slice(&self.height);
+        serialized.extend_from_slice(&self.version);
+        serialized.extend_from_slice(&self.epoch_start);
+        serialized.extend_from_slice(&self.nonce);
 
-        Ok(ChainwebHash::digest(&buff).as_slice().try_into().unwrap())
+        crate::crypto::hash::blake2::hash_data(&serialized)
     }
 }
 
@@ -366,8 +377,10 @@ impl CompactHeaderRaw {
 
 #[cfg(test)]
 mod test {
+    use crate::crypto::U256;
     use crate::types::header::chain::{KadenaHeader, KadenaHeaderRaw, RAW_HEADER_BYTES_LEN};
     use std::process::Stdio;
+    use uint::hex;
 
     // this binary data comes from this block header: https://explorer.chainweb.com/testnet/chain/0/block/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg
     // Extracted using the p2p REST API:
@@ -377,7 +390,10 @@ mod test {
     // export BLOCKHEADER_HASH=PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg=
     // export HEADER_ENCODING=''
     // curl -sk "https://${NODE}/chainweb/0.0/${CHAINWEB_VERSION}/chain/${CHAIN_ID}/header/${BLOCKHEADER_HASH}" ${HEADER_ENCODING}
-    const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAAB97UtijQ4GABZadGj_lZHt2_fPGA0latJzV5-A68ZxHHj5vuSqaitWAwAFAAAAuIdT1f1Ljy2RW4pfv_qQZT701v9NiUO78l_ISWa5WE8KAAAAtgbgjwjxNIlyNxzVJFCZj3MSd-cC4tHEwPP4AMkndQYPAAAAQqZj-Xbeb0flE-pPUzZHnKIff0omUW3EHWk1pETh17Dt0Z6VjZnWIy6fsZz20SslSPE0ar6qTbHKG97AigIAAK-C-MGqrNxklX1UaYDYY7Ghvz3XNrv1XdHUyWktBmIpAAAAAFMcLVUmJQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXRk8AAAAAAAHAAAAC6UQSI0OBgDOgg0AAAAAAD40yGxliuhpyaLDEbwXjdmKMrnvc1NrcLlgkmENSEUY";
+    const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAADD1nMoSCEGADwKaIUvrCBSw_x2E9gX8A6rfivaaLn1THmW84IVvdo0AwAFAAAA6ZwPwQh0J3kWxTtIHblGP-_lhfv6O93V5Z9X0MsAQxsKAAAAnzoFM2164175njvXT-WtFkI_EosVHYwQxCFBlsF3rzgPAAAAEACJMSvkDii6F6dO-_XPuKMMARIWp8zknQrNBVxRsjZidblKf3wbSh4GAAJhfP1BSX3rTDvx24QQAAAAAAAAAFd1EK_a_MHBiCdaexBxLz6cPvFtRYnF2ouOGtl9rB6NAAAAAKQEL9M9aOtZf2kBAAAAAAAAAAAAAAAAAAAAAAAAAAAATs9NAAAAAAAFAAAABjGCuEchBgADABULZ3D1rgPVKrDUtdRd5tLvtefzWK7MktQWIaH8OIm5WFPQ-cnv";
+    const RAW_HEADER_POW_HASH_HEX: &[u8; 64] =
+        b"6c589060676f0acb4fe034266bc083f854e4c627e11433693000000000000000";
+
     const TESTNET_CHAIN_3_HEADERS_URL: &str =
         "https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/3/header/";
 
@@ -390,6 +406,14 @@ mod test {
         assert_eq!(RAW_HEADER.to_vec(), encoded_header_raw);
 
         let _ = KadenaHeader::try_from(header_raw).unwrap();
+    }
+
+    #[test]
+    fn test_compute_pow_hash() {
+        let header_raw = KadenaHeaderRaw::from_base64(RAW_HEADER).unwrap();
+        let actual = U256::from_little_endian(&header_raw.pow_hash().unwrap());
+        let expected = U256::from_little_endian(&hex::decode(RAW_HEADER_POW_HASH_HEX).unwrap());
+        assert_eq!(actual, expected);
     }
 
     #[test]

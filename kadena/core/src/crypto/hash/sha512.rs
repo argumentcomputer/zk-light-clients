@@ -1,6 +1,7 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::crypto::hash::DIGEST_BYTES_LENGTH;
 use crate::types::error::TypesError;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -11,7 +12,6 @@ use sha2::{Digest, Sha512Trunc256};
 pub type ChainwebHash = Sha512Trunc256;
 
 pub const TAG_BYTES_LENGTH: usize = 2;
-pub const DIGEST_BYTES_LENGTH: usize = 32;
 
 pub fn hash_from_base64(base64: &[u8]) -> Result<[u8; DIGEST_BYTES_LENGTH], TypesError> {
     let decoded =

@@ -8,6 +8,7 @@ license = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 base64 = { workspace = true }
+blake2 = { workspace = true }
 chrono = { workspace = true }
 getset = { workspace = true }
 thiserror = { workspace = true }

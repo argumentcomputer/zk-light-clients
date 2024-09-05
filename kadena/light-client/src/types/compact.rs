@@ -1,7 +1,7 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-use kadena_lc_core::crypto::hash::hash_from_base64;
+use kadena_lc_core::crypto::hash::sha512::hash_from_base64;
 use kadena_lc_core::types::error::TypesError;
 use kadena_lc_core::types::header::chain::{CompactHeaderRaw, KadenaHeaderRaw};
 use serde::Deserialize;

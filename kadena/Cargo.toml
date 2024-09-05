@@ -13,6 +13,7 @@ anyhow = "1.0.86"
 axum = "0.7.5"
 backoff = "0.4.0"
 base64 = "0.22.1"
+blake2 = "0.11.0-pre.4"
 chrono = "0.4.38"
 clap = { version = "4.5.16", features = ["derive"] }
 env_logger = "0.11.5"
