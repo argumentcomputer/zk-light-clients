@@ -9,6 +9,7 @@ license = "Apache-2.0"
 aptos-lc-core = { path = "../../../core", package = "aptos-lc-core", default-features = false }
 sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
 sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
+sphinx-lib = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
 
 [patch.crates-io]
 # Sphinx patch

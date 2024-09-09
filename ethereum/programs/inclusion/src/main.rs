@@ -11,17 +11,17 @@ use ethereum_lc_core::types::update::CompactUpdate;
 sphinx_zkvm::entrypoint!(main);
 
 pub fn main() {
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: read_inputs");
     }
     let compact_store_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
     let compact_update_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
     let eip1186_proof_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
 
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: deserialize_inputs");
     }
     let compact_store = CompactStore::from_ssz_bytes(&compact_store_bytes)
@@ -30,23 +30,23 @@ pub fn main() {
         .expect("CompactUpdate::from_ssz_bytes: could not create update");
     let eip1186_proof = EIP1186Proof::from_ssz_bytes(&eip1186_proof_bytes)
         .expect("EIP1186Proof::from_ssz_bytes: could not create proof");
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: deserialize_inputs");
     }
 
     // Validate the received update
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: validate_update");
     }
     compact_store
         .validate_compact_update(&compact_update)
         .expect("validate_light_client_update: could not validate update");
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
             println!("cycle-tracker-end: validate_update");
     }
 
     // Check execution inclusion in the beacon header
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: check_execution_inclusion");
     }
     let is_valid = compact_update
@@ -56,23 +56,23 @@ pub fn main() {
         is_valid,
         "is_execution_payload_proof_valid: proof is invalid"
     );
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: check_execution_inclusion");
     }
 
     // Verify proof against finalized state root
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: verify_proof");
     }
     eip1186_proof
         .verify(compact_update.finalized_execution_state_root())
         .expect("verify: could not verify proof");
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: verify_proof");
     }
 
     // Output the signers sync committee hash, the attested block number, the hash of address + storage keys
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: output");
     }
     let sync_committee_hash = keccak256_hash(&compact_store.sync_committee().to_ssz_bytes())
@@ -98,7 +98,7 @@ pub fn main() {
         sphinx_zkvm::io::commit(&storage_proof.value);
     }
 
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: output");
     }
 }
