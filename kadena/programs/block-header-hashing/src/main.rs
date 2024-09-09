@@ -3,7 +3,7 @@
 
 #![no_main]
 
-use kadena_lc_core::{header_root, KadenaHeaderRaw};
+use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
 
 sphinx_zkvm::entrypoint!(main);
 
@@ -18,11 +18,12 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-start: deserialize_inputs");
     }
-    let header = KadenaHeaderRaw::from_base64(&header_bytes_base64);
+    let header =
+        KadenaHeaderRaw::from_base64(&header_bytes_base64).expect("Failed to deserialize header");
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: deserialize_inputs");
     }
-    let actual = header_root(&header);
+    let actual = header.header_root().expect("Failed to compute header root");
     assert_eq!(header.hash().to_vec(), actual);
     sphinx_zkvm::io::commit(&actual);
 }
