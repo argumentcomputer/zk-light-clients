@@ -12,9 +12,11 @@ blake2 = { workspace = true }
 chrono = { workspace = true }
 getset = { workspace = true }
 thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, optional = true }
 sha2 = { workspace = true }
 uint = { workspace = true }
 
 [features]
 default = []
-kadena = []
+kadena = ["dep:serde_json"]
