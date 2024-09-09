@@ -199,7 +199,7 @@ fn main() {
     set_snark_environment();
 
     // Install PLONK artifacts.
-    try_install_plonk_bn254_artifacts(false);
+    try_install_plonk_bn254_artifacts();
 
     // Execute snark generation for epoch change.
     let start_epoch_change_snark_proving = Instant::now();
