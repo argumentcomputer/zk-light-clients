@@ -65,7 +65,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     if final_snark {
         // Install PLONK artifacts.
-        try_install_plonk_bn254_artifacts(false);
+        try_install_plonk_bn254_artifacts();
     }
 
     // Start secondary server

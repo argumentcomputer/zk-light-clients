@@ -333,7 +333,7 @@ mod test {
         );
 
         // Install PLONK artifacts.
-        try_install_plonk_bn254_artifacts(false);
+        try_install_plonk_bn254_artifacts();
 
         let start = Instant::now();
         println!("Starting generation of inclusion proof...");
