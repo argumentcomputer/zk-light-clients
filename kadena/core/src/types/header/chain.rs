@@ -1,25 +1,30 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crypto::hash::{hash_data, hash_inner, hash_root, DIGEST_BYTES_LENGTH};
+use crate::crypto::error::CryptoError;
+use crate::crypto::hash::sha512::{hash_data, hash_inner};
+use crate::crypto::hash::DIGEST_BYTES_LENGTH;
 use crate::crypto::{U256, U256_BYTES_LENGTH};
+use crate::merkle::{
+    BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG, BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG,
+    CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
+};
 use crate::types::adjacent::{
     AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH,
 };
-use crate::types::error::TypesError;
+use crate::types::error::{TypesError, ValidationError};
 use crate::types::utils::extract_fixed_bytes;
-use crate::types::{
-    BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG, BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG,
-    CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
-    U32_BYTES_LENGTH, U64_BYTES_LENGTH,
-};
+use crate::types::{U32_BYTES_LENGTH, U64_BYTES_LENGTH};
+use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use getset::Getters;
-use std::convert::TryInto;
 
+/// Size in bytes of a Kadena header represented as a base64 string
 pub const RAW_HEADER_BYTES_LEN: usize = 424;
+
+///  Size in bytes of a Kadena header represented as a byte array
 pub const RAW_HEADER_DECODED_BYTES_LENGTH: usize = FLAGS_BYTES_LENGTH
     + TIME_BYTES_LENGTH
     + PARENT_BYTES_LENGTH
@@ -34,20 +39,47 @@ pub const RAW_HEADER_DECODED_BYTES_LENGTH: usize = FLAGS_BYTES_LENGTH
     + NONCE_BYTES_LENGTH
     + HASH_BYTES_LENGTH;
 
+/// Size in bytes of the flags property of a Kadena header
 pub const FLAGS_BYTES_LENGTH: usize = 8;
+
+/// Size in bytes of the time property of a Kadena header
 pub const TIME_BYTES_LENGTH: usize = 8;
+
+/// Size in bytes of the parent property of a Kadena header
 pub const PARENT_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
+
+/// Size in bytes of the target property of a Kadena header
 pub const TARGET_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
+
+/// Size in bytes of the payload property of a Kadena header
 pub const PAYLOAD_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
+
+/// Size in bytes of the chain property of a Kadena header
 pub const CHAIN_BYTES_LENGTH: usize = 4;
+
+/// Size in bytes of the weight property of a Kadena header
 pub const WEIGHT_BYTES_LENGTH: usize = U256_BYTES_LENGTH;
+
+/// Size in bytes of the height property of a Kadena header
 pub const HEIGHT_BYTES_LENGTH: usize = U64_BYTES_LENGTH;
+
+/// Size in bytes of the version property of a Kadena header
 pub const VERSION_BYTES_LENGTH: usize = U32_BYTES_LENGTH;
+
+/// Size in bytes of the epoch_start property of a Kadena header
 pub const EPOCH_START_BYTES_LENGTH: usize = U64_BYTES_LENGTH;
+
+/// Size in bytes of the nonce property of a Kadena header
 pub const NONCE_BYTES_LENGTH: usize = U64_BYTES_LENGTH;
+
+/// Size in bytes of the hash property of a Kadena header
 pub const HASH_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
 
-#[derive(Debug, Clone, Getters)]
+/// Representation of a Kadena header with its properties as bytes
+/// arrays.
+///
+/// From [the`chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Block-Header-Binary-Encoding#blockheader-binary-format-for-chain-graphs-of-degree-three-without-hash).
+#[derive(Debug, Clone, Copy, Getters)]
 #[getset(get = "pub")]
 pub struct KadenaHeaderRaw {
     flags: [u8; FLAGS_BYTES_LENGTH],
@@ -65,7 +97,36 @@ pub struct KadenaHeaderRaw {
     hash: [u8; HASH_BYTES_LENGTH],
 }
 
+impl Default for KadenaHeaderRaw {
+    fn default() -> Self {
+        Self {
+            flags: [0; FLAGS_BYTES_LENGTH],
+            time: [0; TIME_BYTES_LENGTH],
+            parent: [0; PARENT_BYTES_LENGTH],
+            adjacents: [0; ADJACENTS_RAW_BYTES_LENGTH],
+            target: [0; TARGET_BYTES_LENGTH],
+            payload: [0; PAYLOAD_BYTES_LENGTH],
+            chain: [0; CHAIN_BYTES_LENGTH],
+            weight: [0; WEIGHT_BYTES_LENGTH],
+            height: [0; HEIGHT_BYTES_LENGTH],
+            version: [0; VERSION_BYTES_LENGTH],
+            epoch_start: [0; EPOCH_START_BYTES_LENGTH],
+            nonce: [0; NONCE_BYTES_LENGTH],
+            hash: [0; HASH_BYTES_LENGTH],
+        }
+    }
+}
+
 impl KadenaHeaderRaw {
+    /// Creates a new `KadenaHeaderRaw` from a base64 encoded string bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - A slice of bytes representing the base64 encoded string.
+    ///
+    /// # Returns
+    ///
+    /// A new `KadenaHeaderRaw` instance.
     pub fn from_base64(input: &[u8]) -> Result<Self, TypesError> {
         let decoded =
             URL_SAFE_NO_PAD
@@ -75,42 +136,54 @@ impl KadenaHeaderRaw {
                     source: err.into(),
                 })?;
 
-        if decoded.len() != RAW_HEADER_DECODED_BYTES_LENGTH {
+        Self::from_bytes(&decoded)
+    }
+
+    /// Creates a new `KadenaHeaderRaw` from a slice of bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - A slice of bytes representing the header.
+    ///
+    /// # Returns
+    ///
+    /// A new `KadenaHeaderRaw` instance.
+    pub fn from_bytes(input: &[u8]) -> Result<Self, TypesError> {
+        if input.len() != RAW_HEADER_DECODED_BYTES_LENGTH {
             return Err(TypesError::InvalidLength {
                 structure: "KadenaHeaderRaw".to_string(),
                 expected: RAW_HEADER_DECODED_BYTES_LENGTH,
-                actual: decoded.len(),
+                actual: input.len(),
             });
         }
 
         let cursor = 0;
 
         let (cursor, flags) =
-            extract_fixed_bytes::<FLAGS_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<FLAGS_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, time) =
-            extract_fixed_bytes::<TIME_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<TIME_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, parent) =
-            extract_fixed_bytes::<PARENT_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<PARENT_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, adjacents) =
-            extract_fixed_bytes::<ADJACENTS_RAW_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<ADJACENTS_RAW_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, target) =
-            extract_fixed_bytes::<TARGET_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<TARGET_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, payload) =
-            extract_fixed_bytes::<PAYLOAD_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<PAYLOAD_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, chain) =
-            extract_fixed_bytes::<CHAIN_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<CHAIN_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, weight) =
-            extract_fixed_bytes::<WEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<WEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, height) =
-            extract_fixed_bytes::<HEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<HEIGHT_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, version) =
-            extract_fixed_bytes::<VERSION_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<VERSION_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, epoch_start) =
-            extract_fixed_bytes::<EPOCH_START_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<EPOCH_START_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
         let (cursor, nonce) =
-            extract_fixed_bytes::<NONCE_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
-        let (_, hash) =
-            extract_fixed_bytes::<HASH_BYTES_LENGTH>("KadenaHeaderRaw", &decoded, cursor)?;
+            extract_fixed_bytes::<NONCE_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
+        let (_, hash) = extract_fixed_bytes::<HASH_BYTES_LENGTH>("KadenaHeaderRaw", input, cursor)?;
 
         Ok(Self {
             flags,
@@ -129,24 +202,40 @@ impl KadenaHeaderRaw {
         })
     }
 
+    /// Encodes the `KadenaHeaderRaw` instance as a base64 string bytes.
+    ///
+    /// # Returns
+    ///
+    /// The bytes of  the Kadena header encoded as a base64. .
     pub fn to_base64(&self) -> Vec<u8> {
-        let mut encoded = Vec::new();
-        encoded.extend_from_slice(&self.flags);
-        encoded.extend_from_slice(&self.time);
-        encoded.extend_from_slice(&self.parent);
-        encoded.extend_from_slice(&self.adjacents);
-        encoded.extend_from_slice(&self.target);
-        encoded.extend_from_slice(&self.payload);
-        encoded.extend_from_slice(&self.chain);
-        encoded.extend_from_slice(&self.weight);
-        encoded.extend_from_slice(&self.height);
-        encoded.extend_from_slice(&self.version);
-        encoded.extend_from_slice(&self.epoch_start);
-        encoded.extend_from_slice(&self.nonce);
-        encoded.extend_from_slice(&self.hash);
-        URL_SAFE_NO_PAD.encode(&encoded).into_bytes()
+        let bytes = self.to_bytes();
+        URL_SAFE_NO_PAD.encode(&bytes).into_bytes()
     }
 
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut serialized = Vec::new();
+        serialized.extend_from_slice(&self.flags);
+        serialized.extend_from_slice(&self.time);
+        serialized.extend_from_slice(&self.parent);
+        serialized.extend_from_slice(&self.adjacents);
+        serialized.extend_from_slice(&self.target);
+        serialized.extend_from_slice(&self.payload);
+        serialized.extend_from_slice(&self.chain);
+        serialized.extend_from_slice(&self.weight);
+        serialized.extend_from_slice(&self.height);
+        serialized.extend_from_slice(&self.version);
+        serialized.extend_from_slice(&self.epoch_start);
+        serialized.extend_from_slice(&self.nonce);
+        serialized.extend_from_slice(&self.hash);
+
+        serialized
+    }
+
+    /// Computes the root hash of the header.
+    ///
+    /// # Returns
+    ///
+    /// The root hash of the header.
     pub fn header_root(&self) -> Result<Vec<u8>, TypesError> {
         let adjacent_hashes: Vec<[u8; 32]> = vec![
             self.adjacents[6..6 + DIGEST_BYTES_LENGTH]
@@ -164,16 +253,16 @@ impl KadenaHeaderRaw {
         let hashes = vec![
             hash_data(FEATURE_FLAGS_TAG, self.flags()),
             hash_data(BLOCK_CREATION_TIME_TAG, self.time()),
-            hash_root(self.parent()),
+            self.parent().to_vec(),
             hash_data(HASH_TARGET_TAG, self.target()),
-            hash_root(self.payload()),
+            self.payload().to_vec(),
             hash_data(CHAIN_ID_TAG, self.chain()),
             hash_data(BLOCK_WEIGHT_TAG, self.weight()),
             hash_data(BLOCK_HEIGHT_TAG, self.height()),
             hash_data(CHAINWEB_VERSION_TAG, self.version()),
             hash_data(EPOCH_START_TIME_TAG, self.epoch_start()),
             hash_data(BLOCK_NONCE_TAG, self.nonce()),
-            hash_root(&adjacent_hashes[0]),
+            adjacent_hashes[0].to_vec(),
         ];
         // Hash bottom leaves pairs
         let mut intermediate_hashes = hashes
@@ -182,8 +271,8 @@ impl KadenaHeaderRaw {
             .collect::<Vec<_>>();
 
         // Include additional adjacent nodes at the correct level
-        intermediate_hashes.push(hash_root(&adjacent_hashes[1]));
-        intermediate_hashes.push(hash_root(&adjacent_hashes[2]));
+        intermediate_hashes.push(adjacent_hashes[1].to_vec());
+        intermediate_hashes.push(adjacent_hashes[2].to_vec());
 
         // Hash pairs of intermediate nodes until only one hash remains (the root)
         while intermediate_hashes.len() > 1 {
@@ -196,8 +285,56 @@ impl KadenaHeaderRaw {
         // The last remaining hash is the root
         Ok(intermediate_hashes[0].clone())
     }
+
+    /// Computes the work produced to mine the block. The work produced
+    /// should be inferior or equal to the target of the block.
+    ///
+    /// # Returns
+    ///
+    /// The work produced to mine the block.
+    pub fn produced_work(&self) -> Result<U256, ValidationError> {
+        let target = U256::from_little_endian(&self.target);
+        let hash = U256::from_little_endian(
+            &self
+                .pow_hash()
+                .map_err(|err| ValidationError::PowHashError { source: err.into() })?,
+        );
+
+        if hash <= target {
+            Ok(target)
+        } else {
+            Err(ValidationError::TargetNotMet {
+                target: target.to_string(),
+                hash: hash.to_string(),
+            })
+        }
+    }
+
+    /// Computes the proof of work hash of the header.
+    ///
+    /// # Returns
+    ///
+    /// The proof of work hash of the header.
+    pub fn pow_hash(&self) -> Result<[u8; 32], CryptoError> {
+        let mut serialized = Vec::new();
+        serialized.extend_from_slice(&self.flags);
+        serialized.extend_from_slice(&self.time);
+        serialized.extend_from_slice(&self.parent);
+        serialized.extend_from_slice(&self.adjacents);
+        serialized.extend_from_slice(&self.target);
+        serialized.extend_from_slice(&self.payload);
+        serialized.extend_from_slice(&self.chain);
+        serialized.extend_from_slice(&self.weight);
+        serialized.extend_from_slice(&self.height);
+        serialized.extend_from_slice(&self.version);
+        serialized.extend_from_slice(&self.epoch_start);
+        serialized.extend_from_slice(&self.nonce);
+
+        crate::crypto::hash::blake2::hash_data(&serialized)
+    }
 }
 
+/// Representation of a Kadena header with its properties as Rust types.
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
 #[allow(dead_code)]
@@ -230,7 +367,7 @@ impl TryFrom<KadenaHeaderRaw> for KadenaHeader {
             })?;
         let parent = U256::from_little_endian(&raw.parent);
         let adjacents =
-            AdjacentParentRecord::from_raw(&AdjacentParentRecordRaw::from_bytes(&raw.adjacents));
+            AdjacentParentRecord::from(AdjacentParentRecordRaw::from_bytes(&raw.adjacents));
 
         let target = U256::from_little_endian(&raw.target);
         let payload = raw.payload;
@@ -266,6 +403,7 @@ impl TryFrom<KadenaHeaderRaw> for KadenaHeader {
     }
 }
 
+/// A compact representation of a Kadena header.
 #[derive(Debug, Clone, Getters)]
 #[getset(get = "pub")]
 pub struct CompactHeaderRaw {
@@ -275,6 +413,15 @@ pub struct CompactHeaderRaw {
 }
 
 impl CompactHeaderRaw {
+    /// Creates a new `CompactHeaderRaw` from a base64 encoded string bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - A slice of bytes representing the base64 encoded string.
+    ///
+    /// # Returns
+    ///
+    /// A new `CompactHeaderRaw` instance.
     pub fn from_base64(input: &[u8]) -> Result<Self, TypesError> {
         let decoded =
             URL_SAFE_NO_PAD
@@ -311,18 +458,24 @@ impl CompactHeaderRaw {
 
 #[cfg(test)]
 mod test {
-    use crate::types::header::{KadenaHeader, KadenaHeaderRaw, RAW_HEADER_BYTES_LEN};
+    use crate::crypto::U256;
+    use crate::types::header::chain::{KadenaHeader, KadenaHeaderRaw, RAW_HEADER_BYTES_LEN};
     use std::process::Stdio;
+    use uint::hex;
 
     // this binary data comes from this block header: https://explorer.chainweb.com/testnet/chain/0/block/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg
     // Extracted using the p2p REST API:
-    // export NODE=us1.testnet.chainweb.com
-    // export CHAINWEB_VERSION=testnet04
+    // export NODE=api.chainweb.com
+    // export CHAINWEB_VERSION=mainnet01
     // export CHAIN_ID=0
-    // export BLOCKHEADER_HASH=PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg=
+    // export LIMIT=1
+    // export HEIGHT=5099342
     // export HEADER_ENCODING=''
-    // curl -sk "https://${NODE}/chainweb/0.0/${CHAINWEB_VERSION}/chain/${CHAIN_ID}/header/${BLOCKHEADER_HASH}" ${HEADER_ENCODING}
-    const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAAB97UtijQ4GABZadGj_lZHt2_fPGA0latJzV5-A68ZxHHj5vuSqaitWAwAFAAAAuIdT1f1Ljy2RW4pfv_qQZT701v9NiUO78l_ISWa5WE8KAAAAtgbgjwjxNIlyNxzVJFCZj3MSd-cC4tHEwPP4AMkndQYPAAAAQqZj-Xbeb0flE-pPUzZHnKIff0omUW3EHWk1pETh17Dt0Z6VjZnWIy6fsZz20SslSPE0ar6qTbHKG97AigIAAK-C-MGqrNxklX1UaYDYY7Ghvz3XNrv1XdHUyWktBmIpAAAAAFMcLVUmJQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXRk8AAAAAAAHAAAAC6UQSI0OBgDOgg0AAAAAAD40yGxliuhpyaLDEbwXjdmKMrnvc1NrcLlgkmENSEUY";
+    // curl -sk "https://${NODE}/chainweb/0.0/${CHAINWEB_VERSION}/chain/${CHAIN_ID}/header?limit=${LIMIT}&minheight=${HEIGHT}" ${HEADER_ENCODING}
+    const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAADD1nMoSCEGADwKaIUvrCBSw_x2E9gX8A6rfivaaLn1THmW84IVvdo0AwAFAAAA6ZwPwQh0J3kWxTtIHblGP-_lhfv6O93V5Z9X0MsAQxsKAAAAnzoFM2164175njvXT-WtFkI_EosVHYwQxCFBlsF3rzgPAAAAEACJMSvkDii6F6dO-_XPuKMMARIWp8zknQrNBVxRsjZidblKf3wbSh4GAAJhfP1BSX3rTDvx24QQAAAAAAAAAFd1EK_a_MHBiCdaexBxLz6cPvFtRYnF2ouOGtl9rB6NAAAAAKQEL9M9aOtZf2kBAAAAAAAAAAAAAAAAAAAAAAAAAAAATs9NAAAAAAAFAAAABjGCuEchBgADABULZ3D1rgPVKrDUtdRd5tLvtefzWK7MktQWIaH8OIm5WFPQ-cnv";
+    const RAW_HEADER_POW_HASH_HEX: &[u8; 64] =
+        b"00000000000000039633411e726c4e458f380cb662430ef4bca0f676060985c6";
+
     const TESTNET_CHAIN_3_HEADERS_URL: &str =
         "https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/3/header/";
 
@@ -335,6 +488,14 @@ mod test {
         assert_eq!(RAW_HEADER.to_vec(), encoded_header_raw);
 
         let _ = KadenaHeader::try_from(header_raw).unwrap();
+    }
+
+    #[test]
+    fn test_compute_pow_hash() {
+        let header_raw = KadenaHeaderRaw::from_base64(RAW_HEADER).unwrap();
+        let actual = U256::from_little_endian(&header_raw.pow_hash().unwrap());
+        let expected = U256::from_big_endian(&hex::decode(RAW_HEADER_POW_HASH_HEX).unwrap());
+        assert_eq!(actual, expected);
     }
 
     #[test]

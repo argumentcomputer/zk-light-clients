@@ -6,18 +6,9 @@ pub mod error;
 pub mod header;
 pub mod utils;
 
-// Tag values can be found here:
-// https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree#chainweb-merkle-hash-function
-pub const CHAIN_ID_TAG: u16 = 0x0002;
-pub const BLOCK_HEIGHT_TAG: u16 = 0x0003;
-pub const BLOCK_WEIGHT_TAG: u16 = 0x0004;
-pub const FEATURE_FLAGS_TAG: u16 = 0x0006;
-pub const BLOCK_CREATION_TIME_TAG: u16 = 0x0007;
-pub const CHAINWEB_VERSION_TAG: u16 = 0x0008;
-pub const HASH_TARGET_TAG: u16 = 0x0011;
-pub const EPOCH_START_TIME_TAG: u16 = 0x0019;
-pub const BLOCK_NONCE_TAG: u16 = 0x0020;
-
+/// Size in bytes of a u16.
 pub const U16_BYTES_LENGTH: usize = 2;
+/// Size in bytes of a u32.
 pub const U32_BYTES_LENGTH: usize = 4;
+/// Size in bytes of a u64.
 pub const U64_BYTES_LENGTH: usize = 8;

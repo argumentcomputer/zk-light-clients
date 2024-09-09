@@ -37,3 +37,21 @@ macro_rules! deserialization_error {
         }
     };
 }
+
+/// Errors possible while validating data.
+#[derive(Debug, Error)]
+pub enum ValidationError {
+    #[error("Target for block was not reached: expected less or equal than {target} got {hash}")]
+    TargetNotMet { target: String, hash: String },
+    #[error("Error while trying to set chain block header: currently handling {size} chains, got chain {chain}"
+    )]
+    NonValidChain { size: usize, chain: usize },
+    #[error("Error while trying to set chain block header: expected block height {expected}, got {actual} "
+    )]
+    DifferentHeight { expected: usize, actual: usize },
+    #[error("Error while trying to compute the PoW Hash: {source}")]
+    PowHashError {
+        #[source]
+        source: Box<dyn std::error::Error + Sync + Send>,
+    },
+}

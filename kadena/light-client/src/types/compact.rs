@@ -1,11 +1,12 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-use kadena_lc_core::crypto::hash::hash_from_base64;
+use kadena_lc_core::crypto::hash::sha512::hash_from_base64;
 use kadena_lc_core::types::error::TypesError;
-use kadena_lc_core::types::header::{CompactHeaderRaw, KadenaHeaderRaw};
+use kadena_lc_core::types::header::chain::{CompactHeaderRaw, KadenaHeaderRaw};
 use serde::Deserialize;
 
+/// Response received while querying compact headers from a Chainweb
 #[derive(Clone, Debug, Deserialize)]
 struct CompactLayerResponse {
     base: Vec<String>,
@@ -13,6 +14,7 @@ struct CompactLayerResponse {
     hashes: Vec<String>,
 }
 
+/// Decoded compact header in Rust types.
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
 struct CompactLayerDecoded {
