@@ -187,7 +187,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     // save fixture
     let fixture = BaseFixture {
         vkey: vk.bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: proof_bytes(&proof),
     };
 
@@ -235,7 +235,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
                     MoveArg {
                         // public values
                         type_: String::from("hex"),
-                        value: proof.public_values.bytes().to_string(),
+                        value: proof.public_values.raw().to_string(),
                     },
                     MoveArg {
                         // proof
@@ -252,7 +252,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
             println!("// From inclusion fixture");
             println!(
                 "const ValidSignerSyncCommitteeHashInclusion: u256 = 0x{};",
-                &proof.public_values.bytes().to_string().as_str()[2 + 16..2 + 16 + 64]
+                &proof.public_values.raw().to_string().as_str()[2 + 16..2 + 16 + 64]
             );
             println!(
                 "const InclusionVk: vector<u8> = x\"{}\";",
@@ -260,7 +260,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
             );
             println!(
                 "const InclusionPublicValues: vector<u8> = x\"{}\";",
-                &proof.public_values.bytes().to_string().as_str()[2..]
+                &proof.public_values.raw().to_string().as_str()[2..]
             );
             println!(
                 "const InclusionProof: vector<u8> = x\"{}\";",
@@ -279,7 +279,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
         PACT => {
             let fixture = BaseFixture {
                 vkey: prover.get_vk().bytes32().to_string(),
-                public_values: proof.public_values.bytes().to_string(),
+                public_values: proof.public_values.raw().to_string(),
                 proof: raw_proof_bytes(&proof),
             };
 
@@ -315,7 +315,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     // save fixture
     let fixture = BaseFixture {
         vkey: vk.bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: proof_bytes(&proof),
     };
 
@@ -480,7 +480,7 @@ fn generate_fixture_longest_chain() {
     // save fixture
     let fixture = BaseFixture {
         vkey: prover.get_vk().bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: proof_bytes(&proof),
     };
 
