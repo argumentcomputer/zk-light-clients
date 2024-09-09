@@ -94,6 +94,8 @@ ignore = [
     "RUSTSEC-2023-0049",
     # yaml_rust is unmaintained
     "RUSTSEC-2024-0320",
+    # proc-macro-error is unmaintained
+    "RUSTSEC-2024-0370"
 ]
 
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
@@ -158,8 +160,8 @@ exceptions = [
 # and the crate will be checked normally, which may produce warnings or errors
 # depending on the rest of your configuration
 #license-files = [
-    # Each entry is a crate relative path, and the (opaque) hash of its contents
-    #{ path = "LICENSE", hash = 0xbd0eed23 }
+# Each entry is a crate relative path, and the (opaque) hash of its contents
+#{ path = "LICENSE", hash = 0xbd0eed23 }
 #]
 [[licenses.clarify]]
 name = "ring"
@@ -334,8 +336,7 @@ allow-git = []
 
 [sources.allow-org]
 # 1 or more github.com organizations to allow git sources for
-# TODO: Enforce the below?
-# github = ["argumentcomputer"]
+github = ["argumentcomputer"]
 # 1 or more gitlab.com organizations to allow git sources for
 # gitlab = [""]
 # 1 or more bitbucket.org organizations to allow git sources for
