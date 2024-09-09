@@ -12,8 +12,8 @@ name = "generate-fixture"
 path = "src/bin/main.rs"
 
 [dependencies]
-sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev", features = ["plonk"] }
-sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44", features = ["plonk"] }
+sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
 ethereum-lc = { path = "../ethereum/light-client",  features = ["ethereum"] }
 aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
 kadena-lc = { path = "../kadena/light-client", features = ["kadena"] }
