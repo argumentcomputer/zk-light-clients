@@ -206,7 +206,6 @@ mod test {
     use kadena_lc_core::test_utils::get_layer_block_headers;
 
     #[test]
-    #[ignore = "This test is too slow for CI as long as Sha512t and Blake2s do not have precompiles"]
     fn test_execute_committee_change() {
         let headers = get_layer_block_headers();
 
