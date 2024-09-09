@@ -22,13 +22,13 @@ pub fn main() {
         .verifier;
     let agg_sig = ledger_info_with_sig.signatures();
 
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: verify_multi_signatures");
     }
     validator_verifier
         .verify_multi_signatures(&ledger_info, &agg_sig)
         .expect("verify_multi_signatures: could not verify multi signatures");
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: verify_multi_signatures");
     }
     sphinx_zkvm::io::commit(&true);
