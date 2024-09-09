@@ -109,7 +109,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     // save fixture
     let fixture = SolidityFixture {
         vkey: vk.bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: bytes(&proof),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
@@ -156,7 +156,7 @@ fn generate_fixture_inclusion_ethereum_lc() {
             MoveArg {
                 // public values
                 type_: String::from("hex"),
-                value: proof.public_values.bytes().to_string(),
+                value: proof.public_values.raw().to_string(),
             },
             MoveArg {
                 // proof
@@ -198,7 +198,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     // save fixture
     let fixture = SolidityFixture {
         vkey: vk.bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: bytes(&proof),
     };
     std::fs::create_dir_all(&fixture_path).expect("failed to create fixture path");
@@ -251,7 +251,7 @@ fn generate_fixture_epoch_change_ethereum_lc() {
             MoveArg {
                 // public values
                 type_: String::from("hex"),
-                value: proof.public_values.bytes().to_string(),
+                value: proof.public_values.raw().to_string(),
             },
             MoveArg {
                 // proof
