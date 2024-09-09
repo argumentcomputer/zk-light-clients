@@ -292,7 +292,7 @@ impl ChainwebLayerHeader {
             // Compute cumulative work
             let produced_work = list[i].produced_work()?;
 
-            if i >= target_block_idx {
+            if i > target_block_idx {
                 confirmation_work += produced_work;
             }
         }
