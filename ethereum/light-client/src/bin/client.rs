@@ -71,7 +71,7 @@ pub enum VerificationTask {
         permit: OwnedSemaphorePermit,
     },
     StorageInclusion {
-        task: JoinHandle<Result<(Update, ProofType), ClientError>>,
+        task: JoinHandle<Result<ProofType, ClientError>>,
         permit: OwnedSemaphorePermit,
     },
 }
@@ -79,8 +79,8 @@ pub enum VerificationTask {
 impl VerificationTask {
     pub fn task_finished(&self) -> bool {
         match self {
-            VerificationTask::CommitteeChange { task, .. }
-            | VerificationTask::StorageInclusion { task, .. } => task.is_finished(),
+            VerificationTask::CommitteeChange { task, .. } => task.is_finished(),
+            VerificationTask::StorageInclusion { task, .. } => task.is_finished(),
         }
     }
 }
@@ -165,18 +165,16 @@ async fn main() -> Result<()> {
 
             info!("Fetching proof of storage inclusion for the latest block...");
             // Fetch latest finality update.
-            let finality_update = client
-                .get_finality_update()
+            let finality_update = Box::pin(client.get_finality_update())
                 .await
                 .expect("Failed to fetch finality update");
 
             info!("Fetching EIP1186 proof...");
             // Fetch EIP1186 proof.
-            let inclusion_merkle_proof = client
-                .get_proof(
-                    UNISWAP_V2_ADDRESS,
-                    &[String::from(ALL_PAIRS_STORAGE_KEY)],
-                    &format!(
+            let inclusion_merkle_proof = Box::pin(client.get_proof(
+                UNISWAP_V2_ADDRESS,
+                &[String::from(ALL_PAIRS_STORAGE_KEY)],
+                &format!(
                         "0x{}",
                         hex::encode(
                             finality_update
@@ -186,9 +184,9 @@ async fn main() -> Result<()> {
                                 .as_ref()
                         )
                     ),
-                )
-                .await
-                .expect("Failed to fetch storage inclusion proof");
+            ))
+            .await
+            .expect("Failed to fetch storage inclusion proof");
 
             let light_client_internal = EIP1186Proof::try_from(inclusion_merkle_proof)
                 .expect("Failed to convert to EIP1186Proof");
@@ -196,23 +194,22 @@ async fn main() -> Result<()> {
             info!("Generating proof of inclusion...");
 
             let mode_clone = mode;
-            let store_clone = store.clone();
+            let store_clone = store.read().await.clone();
             let client_clone = client.clone();
+            let update = Update::from(finality_update);
 
             // Spawn proving task for inclusion proof, and send it to the verifier task.
             let task = tokio::spawn(async move {
-                let store = store_clone.read().await.clone();
-                let update = Update::from(finality_update);
                 let proof = Box::pin(client_clone.prove_storage_inclusion(
                     mode_clone,
-                    store,
-                    update.clone(),
+                    store_clone,
+                    update,
                     light_client_internal,
                 ))
                 .await?;
                 info!("Proof of storage inclusion generated successfully");
 
-                Ok((update, proof))
+                Ok(proof)
             });
 
             task_sender
@@ -222,7 +219,7 @@ async fn main() -> Result<()> {
 
         info!("Looking for potential update....");
 
-        let potential_update = check_update(client.clone(), store.clone()).await?;
+        let potential_update = Box::pin(check_update(client.clone(), store.clone())).await?;
 
         if potential_update.is_some() && committee_change_semaphore.available_permits() > 0 {
             // Acquire a permit from the semaphore before starting the committee change task.
@@ -261,7 +258,7 @@ async fn initialize_light_client(
     beacon_node_address: Arc<String>,
     proof_server_address: Arc<String>,
     rpc_provider_address: Arc<String>,
-) -> Result<(Client, LightClientStore, VerifierState)> {
+) -> Result<(Client, Box<LightClientStore>, VerifierState)> {
     // Instantiate client.
     let client = Client::new(
         &checkpoint_provider_address,
@@ -308,8 +305,10 @@ async fn initialize_light_client(
     .try_into()
     .expect("Failed to convert checkpoint bytes to Bytes32");
 
-    let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap)
-        .expect("Could not initialize the store based on bootstrap data");
+    let mut store = Box::new(
+        LightClientStore::initialize(trusted_block_root, &bootstrap)
+            .expect("Could not initialize the store based on bootstrap data"),
+    );
 
     info!("Fetching updates...");
 
@@ -385,7 +384,7 @@ async fn verifier_task(
     mut task_receiver: mpsc::Receiver<VerificationTask>,
     initial_verifier_state: VerifierState,
     client: Arc<Client>,
-    store: Arc<RwLock<LightClientStore>>,
+    store: Arc<RwLock<Box<LightClientStore>>>,
 ) {
     let mut verifier_state = initial_verifier_state;
 
@@ -460,7 +459,7 @@ async fn verifier_task(
                 // Wait for the task to finish and handle the result.
                 match task.await {
                     Ok(result) => match result {
-                        Ok((_update, proof)) => {
+                        Ok(proof) => {
                             info!("Start verifying inclusion proof");
                             let res = client.verify_storage_inclusion(proof.clone()).await;
 
@@ -518,7 +517,7 @@ async fn verifier_task(
 /// An optional update if a new update is available.
 async fn check_update(
     client: Arc<Client>,
-    store: Arc<RwLock<LightClientStore>>,
+    store: Arc<RwLock<Box<LightClientStore>>>,
 ) -> Result<Option<Update>> {
     let store = store.read().await;
     let known_period = calc_sync_period(store.finalized_header().beacon().slot());

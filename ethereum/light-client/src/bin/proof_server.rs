@@ -286,7 +286,7 @@ async fn forward_request(request_bytes: &[u8], snd_addr: &str) -> Result<Vec<u8>
     info!("Connecting to the secondary server");
     let client = reqwest::Client::new();
     let res = client
-        .post(format!("http://{}/proof", snd_addr))
+        .post(format!("http://{}/committee/proof", snd_addr))
         .body(request_bytes.to_vec())
         .header(CONTENT_TYPE, "application/octet-stream")
         .send()
