@@ -69,12 +69,12 @@ impl ProofServerClient {
     pub(crate) async fn prove_committee_change(
         &self,
         proving_mode: ProvingMode,
-        store: LightClientStore,
+        store: Box<LightClientStore>,
         update: Update,
     ) -> Result<ProofType, ClientError> {
         let url = format!("http://{}/committee/proof", self.address);
 
-        let inputs = CommitteeChangeIn::new(store, update);
+        let inputs = CommitteeChangeIn::new(*store, update);
         let request = Request::ProveCommitteeChange(Box::new((proving_mode, inputs)));
 
         let response = self
@@ -139,13 +139,13 @@ impl ProofServerClient {
     pub(crate) async fn prove_storage_inclusion(
         &self,
         proving_mode: ProvingMode,
-        store: LightClientStore,
+        store: Box<LightClientStore>,
         update: Update,
         eip1186_proof: EIP1186Proof,
     ) -> Result<ProofType, ClientError> {
         let url = format!("http://{}/inclusion/proof", self.address);
 
-        let inputs = StorageInclusionIn::new(store, update, eip1186_proof);
+        let inputs = StorageInclusionIn::new(*store, update, eip1186_proof);
         let request = Request::ProveInclusion(Box::new((proving_mode, inputs)));
 
         let response = self
