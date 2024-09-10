@@ -154,13 +154,7 @@ async fn main() -> Result<()> {
     ));
 
     debug!("Start listening for Eth data");
-    dbg!(store
-        .as_ref()
-        .read()
-        .await
-        .to_ssz_bytes()
-        .expect("Failed to serialize store")
-        .len());
+
     loop {
         interval.tick().await;
 
@@ -264,7 +258,7 @@ async fn initialize_light_client(
     beacon_node_address: Arc<String>,
     proof_server_address: Arc<String>,
     rpc_provider_address: Arc<String>,
-) -> Result<(Client, LightClientStore, VerifierState)> {
+) -> Result<(Client, Box<LightClientStore>, VerifierState)> {
     // Instantiate client.
     let client = Client::new(
         &checkpoint_provider_address,
@@ -311,8 +305,10 @@ async fn initialize_light_client(
     .try_into()
     .expect("Failed to convert checkpoint bytes to Bytes32");
 
-    let mut store = LightClientStore::initialize(trusted_block_root, &bootstrap)
-        .expect("Could not initialize the store based on bootstrap data");
+    let mut store = Box::new(
+        LightClientStore::initialize(trusted_block_root, &bootstrap)
+            .expect("Could not initialize the store based on bootstrap data"),
+    );
 
     info!("Fetching updates...");
 
@@ -388,7 +384,7 @@ async fn verifier_task(
     mut task_receiver: mpsc::Receiver<VerificationTask>,
     initial_verifier_state: VerifierState,
     client: Arc<Client>,
-    store: Arc<RwLock<LightClientStore>>,
+    store: Arc<RwLock<Box<LightClientStore>>>,
 ) {
     let mut verifier_state = initial_verifier_state;
 
@@ -521,7 +517,7 @@ async fn verifier_task(
 /// An optional update if a new update is available.
 async fn check_update(
     client: Arc<Client>,
-    store: Arc<RwLock<LightClientStore>>,
+    store: Arc<RwLock<Box<LightClientStore>>>,
 ) -> Result<Option<Update>> {
     let store = store.read().await;
     let known_period = calc_sync_period(store.finalized_header().beacon().slot());

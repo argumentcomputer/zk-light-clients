@@ -173,7 +173,7 @@ impl Client {
     pub async fn prove_committee_change(
         &self,
         proving_mode: ProvingMode,
-        store: LightClientStore,
+        store: Box<LightClientStore>,
         update: Update,
     ) -> Result<ProofType, ClientError> {
         Box::pin(
@@ -247,7 +247,7 @@ impl Client {
     pub async fn prove_storage_inclusion(
         &self,
         proving_mode: ProvingMode,
-        store: LightClientStore,
+        store: Box<LightClientStore>,
         update: Update,
         eip1186_proof: EIP1186Proof,
     ) -> Result<ProofType, ClientError> {
