@@ -71,7 +71,7 @@ pub enum VerificationTask {
         permit: OwnedSemaphorePermit,
     },
     StorageInclusion {
-        task: JoinHandle<Result<(Update, ProofType), ClientError>>,
+        task: JoinHandle<Result<ProofType, ClientError>>,
         permit: OwnedSemaphorePermit,
     },
 }
@@ -79,8 +79,8 @@ pub enum VerificationTask {
 impl VerificationTask {
     pub fn task_finished(&self) -> bool {
         match self {
-            VerificationTask::CommitteeChange { task, .. }
-            | VerificationTask::StorageInclusion { task, .. } => task.is_finished(),
+            VerificationTask::CommitteeChange { task, .. } => task.is_finished(),
+            VerificationTask::StorageInclusion { task, .. } => task.is_finished(),
         }
     }
 }
@@ -154,7 +154,13 @@ async fn main() -> Result<()> {
     ));
 
     debug!("Start listening for Eth data");
-
+    dbg!(store
+        .as_ref()
+        .read()
+        .await
+        .to_ssz_bytes()
+        .expect("Failed to serialize store")
+        .len());
     loop {
         interval.tick().await;
 
@@ -165,18 +171,16 @@ async fn main() -> Result<()> {
 
             info!("Fetching proof of storage inclusion for the latest block...");
             // Fetch latest finality update.
-            let finality_update = client
-                .get_finality_update()
+            let finality_update = Box::pin(client.get_finality_update())
                 .await
                 .expect("Failed to fetch finality update");
 
             info!("Fetching EIP1186 proof...");
             // Fetch EIP1186 proof.
-            let inclusion_merkle_proof = client
-                .get_proof(
-                    UNISWAP_V2_ADDRESS,
-                    &[String::from(ALL_PAIRS_STORAGE_KEY)],
-                    &format!(
+            let inclusion_merkle_proof = Box::pin(client.get_proof(
+                UNISWAP_V2_ADDRESS,
+                &[String::from(ALL_PAIRS_STORAGE_KEY)],
+                &format!(
                         "0x{}",
                         hex::encode(
                             finality_update
@@ -186,9 +190,9 @@ async fn main() -> Result<()> {
                                 .as_ref()
                         )
                     ),
-                )
-                .await
-                .expect("Failed to fetch storage inclusion proof");
+            ))
+            .await
+            .expect("Failed to fetch storage inclusion proof");
 
             let light_client_internal = EIP1186Proof::try_from(inclusion_merkle_proof)
                 .expect("Failed to convert to EIP1186Proof");
@@ -196,23 +200,22 @@ async fn main() -> Result<()> {
             info!("Generating proof of inclusion...");
 
             let mode_clone = mode;
-            let store_clone = store.clone();
+            let store_clone = store.read().await.clone();
             let client_clone = client.clone();
+            let update = Update::from(finality_update);
 
             // Spawn proving task for inclusion proof, and send it to the verifier task.
             let task = tokio::spawn(async move {
-                let store = store_clone.read().await.clone();
-                let update = Update::from(finality_update);
                 let proof = Box::pin(client_clone.prove_storage_inclusion(
                     mode_clone,
-                    store,
-                    update.clone(),
+                    store_clone,
+                    update,
                     light_client_internal,
                 ))
                 .await?;
                 info!("Proof of storage inclusion generated successfully");
 
-                Ok((update, proof))
+                Ok(proof)
             });
 
             task_sender
@@ -222,7 +225,7 @@ async fn main() -> Result<()> {
 
         info!("Looking for potential update....");
 
-        let potential_update = check_update(client.clone(), store.clone()).await?;
+        let potential_update = Box::pin(check_update(client.clone(), store.clone())).await?;
 
         if potential_update.is_some() && committee_change_semaphore.available_permits() > 0 {
             // Acquire a permit from the semaphore before starting the committee change task.
@@ -460,7 +463,7 @@ async fn verifier_task(
                 // Wait for the task to finish and handle the result.
                 match task.await {
                     Ok(result) => match result {
-                        Ok((_update, proof)) => {
+                        Ok(proof) => {
                             info!("Start verifying inclusion proof");
                             let res = client.verify_storage_inclusion(proof.clone()).await;
 
