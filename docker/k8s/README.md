@@ -35,9 +35,18 @@ eval $(minikube -p minikube docker-env)
 docker build -t argumentcomputer/<aptos|ethereum>-light-client:latest -f ./docker/Dockerfile --build-arg LIGHT_CLIENT=<aptos|ethereum> .
 ```
 
-4. Apply the Kubernetes configuration files:
+4. Update `proof-server-deployment.yaml` with the image name and tag:
 
-**Aptos**
+```yaml
+    spec:
+      containers:
+        - name: proof-server
+          image: argumentcomputer/<aptos|ethereum>-light-client:latest
+          imagePullPolicy: IfNotPresent
+          command: [ "sh", "-c", "/app/proof_server --mode \"single\" --addr ${CONTAINER_ADDR}:${CONTAINER_PORT}" ]
+```
+
+5. Apply the Kubernetes configuration files:
 
 ```bash
 minikube kubectl apply -f k8s/proof-server/proof-server-service.yaml &&\

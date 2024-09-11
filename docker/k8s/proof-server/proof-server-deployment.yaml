@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
         - name: proof-server
+          # Change the image to the one you want to deploy
           image: argumentcomputer/aptos-light-client:latest
           imagePullPolicy: IfNotPresent
           command: [ "sh", "-c", "/app/proof_server --mode \"single\" --addr ${CONTAINER_ADDR}:${CONTAINER_PORT}" ]
