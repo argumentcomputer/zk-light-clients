@@ -7,7 +7,7 @@ use proof_server::error::ClientError;
 use proof_server::types::aptos::{AccountInclusionProofResponse, EpochChangeProofResponse};
 use proof_server::types::proof_server::{EpochChangeData, InclusionData, ProvingMode, Request};
 use serde::Serialize;
-use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
+use sphinx_sdk::install::try_install_plonk_bn254_artifacts;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -66,7 +66,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     if final_snark {
         // Install PLONK artifacts.
-        try_install_plonk_bn254_artifacts(false);
+        try_install_plonk_bn254_artifacts();
     }
 
     // Start secondary server
