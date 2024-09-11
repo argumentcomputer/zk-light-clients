@@ -4,7 +4,7 @@
 name: Update fixtures
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   # Once per day at 00:00 UTC
   schedule:
     - cron: "0 0 * * *"
@@ -19,23 +19,24 @@ jobs:
     timeout-minutes: 90
     strategy:
       matrix:
-        fixture: [inclusion, epoch_change]
-        language: [solidity, move]
+        fixture: [ inclusion, epoch_change ]
+        language: [ solidity, move, pact ]
         include:
           - fixture-path: aptos/solidity/contracts/src/plonk_fixtures
             language: solidity
           - fixture-path: ethereum/move/sources/fixtures
             language: move
+          - fixture-path: ethereum/pact/fixtures
+            language: pact
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
       - name: Setup CI
         uses: ./.github/actions/setup
-        with:
-          pull_token: ${{ secrets.REPO_TOKEN }}
       - name: Generate ${{ matrix.language }} fixtures
         run: |
           cargo run --release -- --program ${{ matrix.fixture }} --language ${{ matrix.language }}
@@ -48,6 +49,15 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 1
+      - uses: JasonEtco/create-an-issue@v2
+        if: ${{ failure() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_URL:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          update_existing: true
+          filename: .github/FIXTURES.md
 
   create-pull-request:
     needs: generate-fixtures
@@ -55,6 +65,7 @@ jobs:
     env:
       SOLIDITY_FIXTURE_PATH: aptos/solidity/contracts/src/plonk_fixtures
       MOVE_FIXTURE_PATH: ethereum/move/sources/fixtures
+      PACT_FIXTURE_PATH: ethereum/pact/fixtures
     steps:
       - uses: actions/checkout@v4
       - name: Download Solidity fixtures
@@ -69,9 +80,44 @@ jobs:
           path: ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}
           pattern: "move_*"
           merge-multiple: true
+      - name: Download Pact fixtures
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ github.workspace }}/${{ env.PACT_FIXTURE_PATH }}
+          pattern: "pact_*"
+          merge-multiple: true
+      - name: Test fixtures invariant
+        run: |
+          for fixture in epoch_change_fixture.json inclusion_fixture.json; do
+            echo "Testing $fixture"
+            jq -s '
+              (.[0].proof | length) as $proof_len |
+              (.[1].args[2].value | length) as $arg_value_len |
+              { is_proof_longer: ($proof_len > $arg_value_len) }
+            ' ${{ github.workspace }}/${{ env.PACT_FIXTURE_PATH }}/$fixture ${{ github.workspace }}/${{ env.MOVE_FIXTURE_PATH }}/$fixture | 
+              jq -e '.is_proof_longer' > /dev/null || {
+                echo "Length assertion failed for $fixture."
+                exit 1
+              }
+          done
+      - uses: JasonEtco/create-an-issue@v2
+        if: ${{ failure() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_URL:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          update_existing: true
+          filename: .github/FIXTURES.md
+      - uses: tibdex/github-app-token@v2
+        id: generate-token
+        with:
+          app_id: ${{ secrets.TOKEN_APP_ID }}
+          private_key: ${{ secrets.TOKEN_APP_PRIVATE_KEY }}
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ steps.generate-token.outputs.token }}
           branch: "ci-update-fixtures"
           title: "chore: Update fixtures"
           commit-message: "chore: Update fixtures"
