@@ -41,12 +41,10 @@
   (defconst EIP1186_PROOF_ADDRESS_LENGTH 40)
   (defconst EIP1186_PROOF_ADDRESS_HASH_LENGTH 64)
   (defconst U64_ENCODED_LENGTH 16)
-  (defconst PROOF_VERSION_LENGTH 8)
 
   ;; These should be fixed to the expected verifier keys for the trusted programs (i.e. hash of ELF file)
   (defconst EXPECTED_COMMITTEE_CHANGE_VERIFIER_KEY "0028418ec600456b3768cd78d1af143a057fc71a3cf522c557c7b473762946ee")
   (defconst EXPECTED_INCLUSION_VERIFIER_KEY "005835dfcad599fa418a0df2b5ecde903b801f7e0706e9530959119ec75aa9e3")
-  (defconst EXPECTED_SPHINX_PROOF_PREFIX_V101_TESTNET "a8558442")
 
   (defun inclusion-event-processing (proof:object)
     ;; First: we verify the Sphinx proof with the FFI verifier plugin
@@ -56,9 +54,6 @@
           (verifier-key (at 'verifier-key proof))
           (proof (at 'proof proof))
           )
-      (let ((proof-version (take PROOF_VERSION_LENGTH proof)))
-        (enforce (= proof-version EXPECTED_SPHINX_PROOF_PREFIX_V101_TESTNET) "Proof with incorrect version")
-      )
 
       (enforce (> (length public-values) INCLUSION_PUBLIC_VALUES_MIN_LENGTH) "Incorrect public values length")
 
@@ -88,9 +83,6 @@
           (verifier-key (at 'verifier-key proof))
           (proof (at 'proof proof))
           )
-      (let ((proof-version (take PROOF_VERSION_LENGTH proof)))
-        (enforce (= proof-version EXPECTED_SPHINX_PROOF_PREFIX_V101_TESTNET) "Proof with incorrect version")
-      )
 
       (enforce (= (length public-values) COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH) "Incorrect public values length")
 
