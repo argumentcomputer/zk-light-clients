@@ -4,7 +4,7 @@
 name: Update fixtures
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   # Once per day at 00:00 UTC
   schedule:
     - cron: "0 0 * * *"
@@ -19,8 +19,8 @@ jobs:
     timeout-minutes: 90
     strategy:
       matrix:
-        fixture: [inclusion, epoch_change]
-        language: [solidity, move]
+        fixture: [ inclusion, epoch_change ]
+        language: [ solidity, move, pact ]
         include:
           - fixture-path: aptos/solidity/contracts/src/plonk_fixtures
             language: solidity
@@ -55,7 +55,7 @@ jobs:
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           update_existing: true
-          filename: .github/FIXTURES.md 
+          filename: .github/FIXTURES.md
 
   create-pull-request:
     needs: generate-fixtures
