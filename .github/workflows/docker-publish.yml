@@ -1,4 +1,13 @@
+# This workflow is used to build and publish docker images for the proof servers
+# of our Light Clients. It is triggered manually and requires the user to provide
+# the Light Client and the version of the image to be published.
 #
+# The workflow can be triggered here: https://github.com/argumentcomputer/zk-light-clients/actions/workflows/docker-publish.yml
+#
+# The workflow is configured to run on the latest version of Ubuntu, and it uses
+# the `docker/build-push-action` action to build the image and push it to the
+# GitHub Container Registry. The image is tagged with the Light Client and the
+# version provided by the user.
 name: Create and publish a Docker image
 
 on:
