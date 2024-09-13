@@ -75,6 +75,7 @@ async fn main() -> Result<()> {
         .route("/longest-chain/proof", post(committee_proof))
         .route("/longest-chain/verify", post(committee_verify))
         .route("/health", get(health_check))
+        .route("/ready", get(ready_check))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             count_requests_middleware,
@@ -90,6 +91,10 @@ async fn main() -> Result<()> {
 }
 
 async fn health_check(State(state): State<ServerState>) -> impl IntoResponse {
+    StatusCode::OK
+}
+
+async fn ready_check(State(state): State<ServerState>) -> impl IntoResponse {
     let active_requests = state.active_requests.load(Ordering::SeqCst);
     if active_requests > 0 {
         StatusCode::CONFLICT

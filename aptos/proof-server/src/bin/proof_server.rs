@@ -109,6 +109,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/health", get(health_check))
+        .route("/ready", get(ready_check))
         .route("/inclusion/proof", post(inclusion_proof))
         .route("/epoch/proof", post(epoch_proof))
         .route("/epoch/verify", post(epoch_verify))
@@ -126,6 +127,19 @@ async fn main() -> Result<()> {
     axum::serve(listener, app).await?;
 
     Ok(())
+}
+
+async fn health_check(State(state): State<ServerState>) -> impl IntoResponse {
+    StatusCode::OK
+}
+
+async fn ready_check(State(state): State<ServerState>) -> impl IntoResponse {
+    let active_requests = state.active_requests.load(Ordering::SeqCst);
+    if active_requests > 0 {
+        StatusCode::CONFLICT
+    } else {
+        StatusCode::OK
+    }
 }
 
 async fn inclusion_proof(
@@ -401,15 +415,6 @@ async fn forward_request(
     info!("Response received. Sending it to the client");
 
     Ok(res_bytes.to_vec())
-}
-
-async fn health_check(State(state): State<ServerState>) -> impl IntoResponse {
-    let active_requests = state.active_requests.load(Ordering::SeqCst);
-    if active_requests > 0 {
-        StatusCode::CONFLICT
-    } else {
-        StatusCode::OK
-    }
 }
 
 async fn count_requests_middleware(

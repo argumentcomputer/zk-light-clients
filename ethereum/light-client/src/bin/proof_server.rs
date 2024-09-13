@@ -81,6 +81,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/health", get(health_check))
+        .route("/ready", get(ready_check))
         .route("/inclusion/proof", post(inclusion_proof))
         .route("/committee/proof", post(committee_proof))
         .route("/committee/verify", post(committee_verify))
@@ -100,6 +101,10 @@ async fn main() -> Result<()> {
 }
 
 async fn health_check(State(state): State<ServerState>) -> impl IntoResponse {
+        StatusCode::OK
+}
+
+async fn ready_check(State(state): State<ServerState>) -> impl IntoResponse {
     let active_requests = state.active_requests.load(Ordering::SeqCst);
     if active_requests > 0 {
         StatusCode::CONFLICT
