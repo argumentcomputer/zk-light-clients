@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/Dockerfile
-    command: sh -c "/app/proof_server --mode "split" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT} --snd-addr server-secondary:${SECONDARY_PORT}"
+    command: sh -c "/app/proof_server --mode "single" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}
     environment:
       - RUST_LOG=debug
     restart: always
@@ -11,14 +11,3 @@ services:
       - server-secondary
     ports:
       - "${PRIMARY_PORT}:${PRIMARY_PORT}"
-
-  server-secondary:
-    build:
-      context: ../..
-      dockerfile: docker/Dockerfile
-    command: sh -c "/app/proof_server --mode "single" --addr ${SECONDARY_ADDR}:${SECONDARY_PORT}"
-    environment:
-      - RUST_LOG=debug
-    restart: always
-    ports:
-      - "${SECONDARY_PORT}:${SECONDARY_PORT}"

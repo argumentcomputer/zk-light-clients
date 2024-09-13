@@ -7,13 +7,13 @@ deployment:
       repository: ghcr.io/argumentcomputer/ethereum-proof-server
       tag: latest
     imagePullPolicy: IfNotPresent
+    nodeSelector:
+      instance-type: r7iz.metal-32xl
   replicas: 1
 kubernetesClusterDomain: cluster.local
-nodeSelector:
-  instance-type: r7iz.metal-32xl
 service:
   ports:
     - port: 80
       protocol: TCP
       targetPort: 8080
-  type: ClusterIP
+  type: LoadBalancer
