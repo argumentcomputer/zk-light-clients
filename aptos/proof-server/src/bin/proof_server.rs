@@ -129,7 +129,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn health_check(State(state): State<ServerState>) -> impl IntoResponse {
+async fn health_check() -> impl IntoResponse {
     StatusCode::OK
 }
 
