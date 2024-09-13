@@ -3,6 +3,7 @@ deployment:
     env:
       containerPort: "8080"
       rustLog: debug
+      rustMinStack: 16777216
     image:
       repository: ghcr.io/argumentcomputer/ethereum-proof-server
       tag: latest

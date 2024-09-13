@@ -26,6 +26,8 @@ spec:
         env:
         - name: RUST_LOG
           value: {{ quote .Values.deployment.proofServer.env.rustLog }}
+        - name: RUST_MIN_STACK
+          value: {{ quote .Values.deployment.proofServer.env.rustMinStack }}
         - name: CONTAINER_ADDR
           valueFrom:
             fieldRef:
