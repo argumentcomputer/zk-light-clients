@@ -1,8 +1,6 @@
 services:
   server-primary:
-    build:
-      context: ../..
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/argumentcomputer/ethereum-proof-server:latest
     command: sh -c "/app/proof_server --mode "single" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}
     environment:
       - RUST_LOG=debug
