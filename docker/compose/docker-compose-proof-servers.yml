@@ -2,7 +2,7 @@ services:
   server-primary:
     image: ghcr.io/argumentcomputer/ethereum-proof-server:latest
     pull_policy: always
-    command: sh -c "/app/proof_server --mode "split" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT} --snd-addr server-secondary:${SECONDARY_PORT}"
+    command: sh -c "/app/proof_server --mode \"single\" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}"
     environment:
       - RUST_LOG=debug
     restart: always
