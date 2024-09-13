@@ -6,18 +6,5 @@ services:
     environment:
       - RUST_LOG=debug
     restart: always
-    depends_on:
-      - server-secondary
     ports:
       - "${PRIMARY_PORT}:${PRIMARY_PORT}"
-
-  server-secondary:
-    build:
-      context: ../..
-      dockerfile: docker/Dockerfile
-    command: sh -c "/app/proof_server --mode "single" --addr ${SECONDARY_ADDR}:${SECONDARY_PORT}"
-    environment:
-      - RUST_LOG=debug
-    restart: always
-    ports:
-      - "${SECONDARY_PORT}:${SECONDARY_PORT}"
