@@ -70,7 +70,7 @@ RUN apt update && apt install -y openssl libssl-dev
 WORKDIR /app
 
 # Copy only the binaries from the builder stage
-COPY --from=builder /app/$LIGHT_CLIENT/target/release/proof_server ./
+COPY --from=builder /app/$LIGHT_CLIENT/target/x86_64-unknown-linux-gnu/release/proof_server ./
 
 # Create group and user
 RUN groupadd execgroup && useradd -m -g execgroup execuser
