@@ -6,7 +6,7 @@ deployment:
     image:
       repository: ghcr.io/argumentcomputer/ethereum-proof-server
       tag: latest
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     nodeSelector:
       instance-type: r7iz.metal-32xl
   replicas: 1
