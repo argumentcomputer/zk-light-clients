@@ -1,7 +1,7 @@
 services:
   server-primary:
     image: ghcr.io/argumentcomputer/ethereum-proof-server:latest
-    command: sh -c "/app/proof_server --mode "single" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}
+    command: sh -c "/app/proof_server --mode \"single\" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}"
     environment:
       - RUST_LOG=debug
     restart: always
