@@ -1,8 +1,7 @@
 services:
   server-primary:
-    build:
-      context: ../..
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/argumentcomputer/ethereum-proof-server:latest
+    pull_policy: always
     command: sh -c "/app/proof_server --mode "split" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT} --snd-addr server-secondary:${SECONDARY_PORT}"
     environment:
       - RUST_LOG=debug
