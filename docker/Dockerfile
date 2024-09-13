@@ -48,10 +48,12 @@ COPY ./$LIGHT_CLIENT .
 # Determine the package name based on the value of LIGHT_CLIENT
 RUN if [ "$LIGHT_CLIENT" = "aptos" ]; then \
         PACKAGE_NAME="proof-server"; \
+        RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3";\
     else \
         PACKAGE_NAME="ethereum-lc"; \
+        RUSTFLAGS="-C target-cpu=native -C opt-level=3";\
     fi && \
-    RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native" cargo +nightly build --release --bins -p $PACKAGE_NAME
+    SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 SHARD_CHUNKING_MULTIPLIER=32 RECONSTRUCT_COMMITMENTS=false cargo +nightly build --release --bins -p $PACKAGE_NAME
 
 # Start a new stage from scratch
 FROM debian:stable-slim
