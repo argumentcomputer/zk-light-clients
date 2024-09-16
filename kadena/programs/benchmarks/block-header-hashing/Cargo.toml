@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
-kadena-lc-core = { path = "../../core", package = "kadena-lc-core" }
+kadena-lc-core = { path = "../../../core", package = "kadena-lc-core" }
 
 [patch.crates-io]
 # Sphinx patch

@@ -163,9 +163,12 @@ impl ChainwebClient {
                         .expect("Should be able to access element 0 of slice")
                         .height(),
                 );
-                ChainwebLayerHeader::new(height, headers)
+                ChainwebLayerHeader::new(height, headers).map_err(|err| ClientError::Response {
+                    endpoint: "get_layer_block_headers".to_string(),
+                    source: Box::new(err),
+                })
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(layer_headers)
     }
@@ -196,7 +199,7 @@ pub(crate) async fn get_block_headers(
 ) -> Result<Vec<KadenaHeaderRaw>, ClientError> {
     // Format the endpoint for the call
     let url = format!(
-        "{}/{CHAINWEB_API_VERSION}/mainnet01/chain/{chain}/header",
+        "{}/chainweb/{CHAINWEB_API_VERSION}/mainnet01/chain/{chain}/header",
         chainweb_node_address
     );
 
