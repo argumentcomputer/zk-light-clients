@@ -28,6 +28,14 @@ spec:
           value: {{ quote .Values.deployment.proofServer.env.rustLog }}
         - name: RUST_MIN_STACK
           value: {{ quote .Values.deployment.proofServer.env.rustMinStack }}
+        - name: SHARD_SIZE
+          value: {{ quote .Values.deployment.proofServer.env.shardSize }}
+        - name: SHARD_BATCH_SIZE
+          value: {{ quote .Values.deployment.proofServer.env.shardBatchSize }}
+        - name: SHARD_CHUNKING_MULTIPLIER
+          value: {{ quote .Values.deployment.proofServer.env.shardChunkingMultiplier }}
+        - name: RECONSTRUCT_COMMITMENTS
+          value: {{ quote .Values.deployment.proofServer.env.reconstructCommitments }}
         - name: CONTAINER_ADDR
           valueFrom:
             fieldRef:

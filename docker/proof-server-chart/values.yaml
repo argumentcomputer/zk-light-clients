@@ -2,8 +2,12 @@ deployment:
   proofServer:
     env:
       containerPort: "8080"
-      rustLog: debug
+      rustLog: "debug"
       rustMinStack: "16777216"
+      shardSize: "4194304"
+      shardBatchSize: "0"
+      shardChunkingMultiplier: "32"
+      reconstructCommitments: "false"
     image:
       repository: ghcr.io/argumentcomputer/ethereum-proof-server
       tag: latest

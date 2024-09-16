@@ -11,9 +11,6 @@ RUN --mount=type=secret,id=github_token \
     git config --global url."https://$(cat /run/secrets/github_token)@github.com/".insteadOf ssh://git@github.com && \
     git config --global url."https://$(cat /run/secrets/github_token)@github.com".insteadOf https://github.com
 
-# Install rust nightly
-RUN rustup install nightly
-
 # Add x86_64-unknown-linux-gnu target
 RUN rustup target add x86_64-unknown-linux-gnu
 
@@ -51,12 +48,12 @@ COPY ./$LIGHT_CLIENT .
 # Determine the package name based on the value of LIGHT_CLIENT
 RUN if [ "$LIGHT_CLIENT" = "aptos" ]; then \
         PACKAGE_NAME="proof-server"; \
-        RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3"; \
+        RUSTFLAGS="-C target-cpu=x86-64-v4 --cfg tokio_unstable -C opt-level=3"; \
     else \
         PACKAGE_NAME="ethereum-lc"; \
-        RUSTFLAGS="-C target-cpu=native -C opt-level=3"; \
+        RUSTFLAGS="-C target-cpu=x86-64-v4 -C opt-level=3"; \
     fi && \
-    SHARD_SIZE=4194304 SHARD_BATCH_SIZE=0 SHARD_CHUNKING_MULTIPLIER=32 RECONSTRUCT_COMMITMENTS=false RUSTFLAGS="$RUSTFLAGS" cargo +nightly build --release --target x86_64-unknown-linux-gnu --bins -p $PACKAGE_NAME
+    RUSTFLAGS="$RUSTFLAGS" cargo build --release --target x86_64-unknown-linux-gnu --bins -p $PACKAGE_NAME
 
 # Start a new stage from scratch
 FROM debian:stable-slim
