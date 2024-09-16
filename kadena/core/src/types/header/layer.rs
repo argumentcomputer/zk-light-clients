@@ -14,7 +14,7 @@ use std::cmp::Ordering;
 
 /// A layer header for a Chainweb network. It contains the height of the layer and the headers of
 /// all the chains in the Chainweb network at the given height.
-#[derive(Debug, Clone, Default, Eq, PartialEq, Getters)]
+#[derive(Debug, Clone, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct ChainwebLayerHeader {
     height: u64,
@@ -32,11 +32,15 @@ impl ChainwebLayerHeader {
     /// # Returns
     ///
     /// A new `ChainwebLayerHeader`.
-    pub const fn new(height: u64, chain_headers: Vec<KadenaHeaderRaw>) -> Self {
-        Self {
+    pub fn new(height: u64, chain_headers: Vec<KadenaHeaderRaw>) -> Result<Self, ValidationError> {
+        if chain_headers.is_empty() {
+            return Err(ValidationError::InvalidChainBlockHeadersList);
+        }
+
+        Ok(Self {
             height,
             chain_headers,
-        }
+        })
     }
 
     /// Get the total amount of work produced by all the chains in the layer.
@@ -76,41 +80,35 @@ impl ChainwebLayerHeader {
     /// # Returns
     ///
     /// A `ChainwebLayerHeader` deserialized from the byte vector.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
-        let mut offset = 0;
-
-        let height =
-            u64::from_le_bytes(bytes[offset..offset + U64_BYTES_LENGTH].try_into().unwrap());
-        offset += U64_BYTES_LENGTH;
+    pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        let height = u64::from_le_bytes(bytes[..U64_BYTES_LENGTH].try_into().unwrap());
+        bytes = &bytes[U64_BYTES_LENGTH..];
 
         let headers_vec_len =
-            u16::from_le_bytes(bytes[offset..offset + U16_BYTES_LENGTH].try_into().unwrap())
-                as usize;
-        offset += U16_BYTES_LENGTH;
+            u16::from_le_bytes(bytes[..U16_BYTES_LENGTH].try_into().unwrap()) as usize;
+        bytes = &bytes[U16_BYTES_LENGTH..];
 
-        match bytes
-            .len()
-            .cmp(&(offset + headers_vec_len * RAW_HEADER_DECODED_BYTES_LENGTH))
-        {
+        let expected_len = headers_vec_len * RAW_HEADER_DECODED_BYTES_LENGTH;
+
+        // Error handling for overlength and underlength cases
+        match bytes.len().cmp(&expected_len) {
             Ordering::Greater => Err(TypesError::OverLength {
                 structure: "ChainwebLayerHeader".to_string(),
-                maximum: offset + headers_vec_len * RAW_HEADER_DECODED_BYTES_LENGTH,
+                maximum: U64_BYTES_LENGTH + U16_BYTES_LENGTH + expected_len,
                 actual: bytes.len(),
             }),
             Ordering::Less => Err(TypesError::UnderLength {
                 structure: "ChainwebLayerHeader".to_string(),
-                minimum: offset + headers_vec_len * RAW_HEADER_DECODED_BYTES_LENGTH,
+                minimum: U64_BYTES_LENGTH + U16_BYTES_LENGTH + expected_len,
                 actual: bytes.len(),
             }),
             Ordering::Equal => {
                 let mut chain_headers: Vec<KadenaHeaderRaw> = Vec::with_capacity(headers_vec_len);
-
                 for _ in 0..headers_vec_len {
-                    let header = KadenaHeaderRaw::from_bytes(
-                        &bytes[offset..offset + RAW_HEADER_DECODED_BYTES_LENGTH],
-                    )?;
+                    let header =
+                        KadenaHeaderRaw::from_bytes(&bytes[..RAW_HEADER_DECODED_BYTES_LENGTH])?;
                     chain_headers.push(header);
-                    offset += RAW_HEADER_DECODED_BYTES_LENGTH;
+                    bytes = &bytes[RAW_HEADER_DECODED_BYTES_LENGTH..];
                 }
 
                 Ok(Self {
@@ -150,9 +148,8 @@ impl ChainwebLayerHeader {
     /// # Returns
     ///
     /// A list of `ChainwebLayerHeader`s deserialized from the byte vector.
-    pub fn deserialize_list(bytes: &[u8]) -> Result<Vec<Self>, TypesError> {
-        let mut offset = 0;
-
+    pub fn deserialize_list(mut bytes: &[u8]) -> Result<Vec<Self>, TypesError> {
+        // Ensure we have enough bytes for the length of the list
         if bytes.len() < U16_BYTES_LENGTH {
             return Err(TypesError::UnderLength {
                 structure: "Vec<ChainwebLayerHeader>".to_string(),
@@ -161,38 +158,41 @@ impl ChainwebLayerHeader {
             });
         }
 
-        let list_len =
-            u16::from_le_bytes(bytes[offset..offset + U16_BYTES_LENGTH].try_into().unwrap())
-                as usize;
-        offset += U16_BYTES_LENGTH;
+        // Read the length of the list
+        let list_len = u16::from_le_bytes(bytes[..U16_BYTES_LENGTH].try_into().unwrap()) as usize;
+        bytes = &bytes[U16_BYTES_LENGTH..];
 
         let mut list: Vec<Self> = Vec::with_capacity(list_len);
 
         for _ in 0..list_len {
-            if offset + U16_BYTES_LENGTH > bytes.len() {
+            // Ensure we have enough bytes for the next item size
+            if bytes.len() < U16_BYTES_LENGTH {
                 return Err(TypesError::UnderLength {
                     structure: "Vec<ChainwebLayerHeader>".to_string(),
-                    minimum: offset + U16_BYTES_LENGTH,
+                    minimum: U16_BYTES_LENGTH,
                     actual: bytes.len(),
                 });
             }
 
-            let size =
-                u16::from_le_bytes(bytes[offset..offset + U16_BYTES_LENGTH].try_into().unwrap())
-                    as usize;
-            offset += U16_BYTES_LENGTH;
+            // Read the size of the next item
+            let size = u16::from_le_bytes(bytes[..U16_BYTES_LENGTH].try_into().unwrap()) as usize;
+            bytes = &bytes[U16_BYTES_LENGTH..];
 
-            if offset + size > bytes.len() {
+            // Ensure we have enough bytes for the full item
+            if bytes.len() < size {
                 return Err(TypesError::UnderLength {
                     structure: "Vec<ChainwebLayerHeader>".to_string(),
-                    minimum: offset + size,
+                    minimum: size,
                     actual: bytes.len(),
                 });
             }
 
-            let header = Self::from_bytes(&bytes[offset..offset + size])?;
+            // Deserialize the item and add it to the list
+            let header = Self::from_bytes(&bytes[..size])?;
             list.push(header);
-            offset += size;
+
+            // Consume the bytes for this item
+            bytes = &bytes[size..];
         }
 
         Ok(list)
@@ -207,10 +207,14 @@ impl ChainwebLayerHeader {
     /// # Returns
     ///
     /// The cumulative amount of work produced by all the chains in the list of layer headers.
-    pub fn cumulative_produced_work(list: &[Self]) -> Result<U256, ValidationError> {
-        list.iter().try_fold(U256::zero(), |acc, header| {
-            header.produced_work().map(|work| acc + work)
-        })
+    pub fn cumulative_produced_work<I>(headers: I) -> Result<U256, ValidationError>
+    where
+        I: IntoIterator<Item = Self>,
+    {
+        headers
+            .into_iter()
+            .map(|header| header.produced_work())
+            .try_fold(U256::zero(), |acc, work| work.map(|w| acc + w))
     }
 
     /// Get the root of the headers in the layer.
@@ -226,9 +230,7 @@ impl ChainwebLayerHeader {
             .collect::<Vec<_>>();
 
         // Balance the tree
-        while !hashes.len().is_power_of_two() {
-            hashes.push(HashValue::new([0; 32]));
-        }
+        hashes.resize(hashes.len().next_power_of_two(), HashValue::new([0; 32]));
 
         // Hash pairs of intermediate nodes until only one hash remains (the root)
         while hashes.len() > 1 {
@@ -251,7 +253,7 @@ impl ChainwebLayerHeader {
         // Target block has central position in the list of headers
         let target_block_idx = list.len() / 2;
 
-        let mut confirmation_work = U256::from(0);
+        let mut confirmation_work = U256::zero();
         for i in 0..list.len() {
             for (j, chain_header) in list[i].chain_headers().iter().enumerate() {
                 if u64::from_le_bytes(*chain_header.height()) != *list[i].height() {
@@ -274,16 +276,16 @@ impl ChainwebLayerHeader {
                 }
 
                 // Check that parent is right
-                if i > 0 {
-                    let parent = list[i - 1]
+                if let Some(previous_layer) = list.get(i.wrapping_sub(1)) {
+                    let parent_chain_header = previous_layer
                         .chain_headers()
                         .get(j)
-                        .expect("Should be able to get the parent header");
+                        .ok_or_else(|| ValidationError::MissingParentHeader { index: j })?;
 
-                    if chain_header.parent() != parent.hash() {
+                    if chain_header.parent() != parent_chain_header.hash() {
                         return Err(ValidationError::InvalidParentHash {
                             computed: HashValue::new(*chain_header.parent()),
-                            stored: HashValue::new(*parent.hash()),
+                            stored: HashValue::new(*parent_chain_header.hash()),
                         });
                     }
                 }
@@ -297,15 +299,16 @@ impl ChainwebLayerHeader {
             }
         }
 
-        Ok((
-            list[0]
-                .header_root()
-                .map_err(|err| ValidationError::HashError { source: err.into() })?,
-            list[target_block_idx]
-                .header_root()
-                .map_err(|err| ValidationError::HashError { source: err.into() })?,
-            confirmation_work,
-        ))
+        // Retrieve the root hashes for the first and target headers
+        let first_header_root = list[0]
+            .header_root()
+            .map_err(|err| ValidationError::HashError { source: err.into() })?;
+
+        let target_header_root = list[target_block_idx]
+            .header_root()
+            .map_err(|err| ValidationError::HashError { source: err.into() })?;
+
+        Ok((first_header_root, target_header_root, confirmation_work))
     }
 }
 
@@ -317,7 +320,8 @@ mod test {
     #[test]
     fn test_serde_chainweb_layer_header() {
         let header = KadenaHeaderRaw::from_base64(RAW_HEADER).unwrap();
-        let layer_header = ChainwebLayerHeader::new(1, vec![KadenaHeaderRaw::default(), header]);
+        let layer_header =
+            ChainwebLayerHeader::new(1, vec![KadenaHeaderRaw::default(), header]).unwrap();
 
         let bytes = layer_header.to_bytes();
         let deserialized = ChainwebLayerHeader::from_bytes(&bytes).unwrap();
@@ -328,7 +332,8 @@ mod test {
     #[test]
     fn test_serde_list_chainweb_layer_header() {
         let header = KadenaHeaderRaw::from_base64(RAW_HEADER).unwrap();
-        let layer_header = ChainwebLayerHeader::new(1, vec![KadenaHeaderRaw::default(), header]);
+        let layer_header =
+            ChainwebLayerHeader::new(1, vec![KadenaHeaderRaw::default(), header]).unwrap();
 
         let list = vec![layer_header.clone(), layer_header];
 
@@ -342,6 +347,72 @@ mod test {
     fn test_verify_layer_block_header_list_no_panic() {
         let headers = get_layer_block_headers();
 
-        ChainwebLayerHeader::verify(&headers).unwrap();
+        let (first_hash, target_hash, confirmation_work) =
+            ChainwebLayerHeader::verify(&headers).unwrap();
+
+        assert_eq!(first_hash, headers[0].header_root().unwrap());
+        assert_eq!(
+            target_hash,
+            headers[headers.len() / 2].header_root().unwrap()
+        );
+        assert_eq!(
+            confirmation_work,
+            ChainwebLayerHeader::cumulative_produced_work(
+                headers[headers.len() / 2..headers.len() - 1].to_vec()
+            )
+            .unwrap()
+        );
+    }
+
+    fn hash_list(mut list: Vec<HashValue>) -> HashValue {
+        while list.len() > 1 {
+            list = list
+                .chunks(2)
+                .map(|pair| hash_inner(pair[0].as_ref(), pair[1].as_ref()))
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap();
+        }
+
+        list[0]
+    }
+
+    #[test]
+    fn test_layer_root_no_chain_headers() {
+        assert!(ChainwebLayerHeader::new(1, vec![]).is_err());
+    }
+
+    #[test]
+    fn test_layer_root_chain_headers_pwr_of_two() {
+        let layer_header =
+            ChainwebLayerHeader::new(1, vec![KadenaHeaderRaw::default(); 4]).unwrap();
+
+        let layer_root = layer_header.header_root().unwrap();
+        let expected_root = hash_list(
+            layer_header
+                .chain_headers
+                .iter()
+                .map(|h| HashValue::new(*h.hash()))
+                .collect(),
+        );
+
+        assert_eq!(layer_root, expected_root);
+    }
+
+    #[test]
+    fn test_layer_root_chain_headers_not_pwr_of_two() {
+        let layer_header =
+            ChainwebLayerHeader::new(1, vec![KadenaHeaderRaw::default(); 3]).unwrap();
+
+        let layer_root = layer_header.header_root().unwrap();
+
+        let mut list_hashed = layer_header
+            .chain_headers
+            .iter()
+            .map(|h| HashValue::new(*h.hash()))
+            .collect::<Vec<HashValue>>();
+        list_hashed.push(HashValue::new([0; 32]));
+        let expected_root = hash_list(list_hashed);
+
+        assert_eq!(layer_root, expected_root);
     }
 }

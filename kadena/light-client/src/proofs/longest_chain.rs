@@ -188,11 +188,7 @@ impl Prover for LongestChainProver {
         let vk = &self.keys.1;
 
         match proof {
-            ProofType::STARK(proof) => self
-                .client
-                .verify(proof, vk)
-                .map_err(|err| ProverError::Verification { source: err.into() }),
-            ProofType::SNARK(proof) => self
+            ProofType::STARK(proof) | ProofType::SNARK(proof) => self
                 .client
                 .verify(proof, vk)
                 .map_err(|err| ProverError::Verification { source: err.into() }),
@@ -218,7 +214,7 @@ mod test {
         let new_period_output = prover.execute(&new_period_inputs).unwrap();
 
         let confirmation_work = ChainwebLayerHeader::cumulative_produced_work(
-            &headers[headers.len() / 2..headers.len() - 1],
+            headers[headers.len() / 2..headers.len() - 1].to_vec(),
         )
         .expect("Should be able to calculate cumulative work");
 

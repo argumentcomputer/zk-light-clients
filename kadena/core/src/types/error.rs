@@ -73,6 +73,8 @@ pub enum ValidationError {
         "Expected at least 3 layer block headers  and an odd total number of elements. Got {size}"
     )]
     InvalidLayerBlockHeadersList { size: usize },
+    #[error("Expects at least 1 layer block headers.")]
+    InvalidChainBlockHeadersList,
     #[error(
         "Invalid chain block height. Got layer height {layer_height}, chain height {chain_height}"
     )]
@@ -90,4 +92,6 @@ pub enum ValidationError {
         computed: HashValue,
         stored: HashValue,
     },
+    #[error("Missing parent hash in the chain block header list at index {index}")]
+    MissingParentHeader { index: usize },
 }
