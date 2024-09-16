@@ -14,9 +14,12 @@ deployment:
     imagePullPolicy: Always
     nodeSelector:
       instance-type: r7iz.metal-32xl
+    terminationGracePeriodSeconds: 600
   replicas: 1
 kubernetesClusterDomain: cluster.local
 service:
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "600"
   ports:
     - port: 80
       protocol: TCP

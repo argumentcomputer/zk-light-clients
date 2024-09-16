@@ -16,6 +16,7 @@ spec:
         app: proof-server
       {{- include "proof-server.selectorLabels" . | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ .Values.deployment.proofServer.terminationGracePeriodSeconds }}
       nodeSelector:
         {{- toYaml .Values.deployment.proofServer.nodeSelector | nindent 8 }}
       containers:
