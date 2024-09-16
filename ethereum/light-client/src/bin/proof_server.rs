@@ -101,7 +101,7 @@ async fn main() -> Result<()> {
 }
 
 async fn health_check() -> impl IntoResponse {
-        StatusCode::OK
+    StatusCode::OK
 }
 
 async fn ready_check(State(state): State<ServerState>) -> impl IntoResponse {
