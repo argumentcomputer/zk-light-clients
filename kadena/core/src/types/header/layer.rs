@@ -254,12 +254,12 @@ impl ChainwebLayerHeader {
         let target_block_idx = list.len() / 2;
 
         let mut confirmation_work = U256::zero();
-        for i in 0..list.len() {
-            for (j, chain_header) in list[i].chain_headers().iter().enumerate() {
-                if u64::from_le_bytes(*chain_header.height()) != *list[i].height() {
+        for (i, layer_header) in list.iter().enumerate() {
+            for (j, chain_header) in layer_header.chain_headers().iter().enumerate() {
+                if u64::from_le_bytes(*chain_header.height()) != *layer_header.height() {
                     return Err(ValidationError::InvalidChainBlockHeight {
                         chain_height: u64::from_le_bytes(*chain_header.height()),
-                        layer_height: *list[i].height(),
+                        layer_height: *layer_header.height(),
                     });
                 }
 
@@ -292,7 +292,7 @@ impl ChainwebLayerHeader {
             }
 
             // Compute cumulative work
-            let produced_work = list[i].produced_work()?;
+            let produced_work = layer_header.produced_work()?;
 
             if i > target_block_idx {
                 confirmation_work += produced_work;
