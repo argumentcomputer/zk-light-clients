@@ -7,7 +7,8 @@ pub const SPV_PROGRAM: &[u8] = include_bytes!("../artifacts/spv-program");
 pub mod bench {
     pub const SHA512_256_PROGRAM: &[u8] =
         include_bytes!("../artifacts/benchmarks/sha512-caller-program");
-
     pub const BLOCK_HEADER_HASHING_PROGRAM: &[u8] =
         include_bytes!("../artifacts/benchmarks/block-header-hashing-program");
+    pub const BLAKE2S_PROGRAM: &[u8] =
+        include_bytes!("../artifacts/benchmarks/blake2s-caller-program");
 }

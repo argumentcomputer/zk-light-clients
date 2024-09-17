@@ -1,0 +1,11 @@
+[workspace]
+[package]
+version = "0.1.0"
+name = "blake2s-caller"
+edition = "2021"
+repository = "https://github.com/argumentcomputer/zk-light-clients"
+resolver = "2"
+
+[dependencies]
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
+blake2 = { git = "https://github.com/argumentcomputer/RustCrypto-hashes", branch = "zkvm" }

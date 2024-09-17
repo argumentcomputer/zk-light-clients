@@ -3,11 +3,11 @@
 
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::HashValue;
-use sha2::{Digest, Sha512Trunc256};
+use sha2::{Digest, Sha512_256};
 
 // Hash functions for Merkle tree nodes
 // cf. https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree#merke-log-trees
-pub type ChainwebHash = Sha512Trunc256;
+pub type ChainwebHash = Sha512_256;
 
 /// Size in bytes of a tag in the context of the Kadena chain.
 ///

@@ -13,12 +13,13 @@ base64 = { workspace = true }
 clap = { workspace = true }
 env_logger = { workspace = true }
 getset = { workspace = true }
-hex = "0.4.3"
+hex = { workspace = true }
 log = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
+blake2 = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 
@@ -31,6 +32,7 @@ sphinx-sdk = { workspace = true }
 
 [dev-dependencies]
 kadena-lc-core = { path = "../core", features = ["kadena"] }
+rand = "0.8.5"
 
 [features]
 default = []

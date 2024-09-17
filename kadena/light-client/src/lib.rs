@@ -9,15 +9,69 @@ pub use kadena_lc_core::test_utils;
 
 #[cfg(test)]
 mod tests {
-    use kadena_programs::bench::{BLOCK_HEADER_HASHING_PROGRAM, SHA512_256_PROGRAM};
-    use sha2::{Digest, Sha512Trunc256};
+    use blake2::Blake2s256;
+    use kadena_programs::bench::{
+        BLAKE2S_PROGRAM, BLOCK_HEADER_HASHING_PROGRAM, SHA512_256_PROGRAM,
+    };
+    use rand::Rng;
+    use sha2::{Digest, Sha512_256};
     use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};
 
     #[test]
+    fn test_blake2s_sphinx_program_execute() {
+        let input = rand::thread_rng().gen::<[u8; 32]>().to_vec();
+
+        // out-of-sphinx
+        let mut hasher = Blake2s256::new();
+        hasher.update(&input);
+        let hash = hasher.finalize();
+        let mut expected = [0u8; 32];
+        expected.copy_from_slice(&hash);
+
+        // in-sphinx
+        let prover = ProverClient::new();
+        let mut stdin = SphinxStdin::new();
+        stdin.write(&input.clone());
+        let (mut public_values, _) = prover.execute(BLAKE2S_PROGRAM, stdin).run().unwrap();
+        let mut actual = vec![1u8; 32];
+        public_values.read_slice(&mut actual);
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_blake2s_sphinx_program_prove_stark() {
+        setup_logger();
+
+        let prover = ProverClient::new();
+        let mut stdin = SphinxStdin::new();
+        stdin.write(&Vec::<u8>::new());
+
+        let (pk, vk) = prover.setup(BLAKE2S_PROGRAM);
+        let proof = prover.prove(&pk, stdin).core().run().unwrap();
+        prover.verify(&proof, &vk).unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_blake2s_sphinx_program_prove_snark() {
+        setup_logger();
+
+        let prover = ProverClient::new();
+        let mut stdin = SphinxStdin::new();
+        stdin.write(&Vec::<u8>::new());
+
+        let (pk, vk) = prover.setup(BLAKE2S_PROGRAM);
+        let proof = prover.prove(&pk, stdin).plonk().run().unwrap();
+        prover.verify(&proof, &vk).unwrap();
+    }
+
+    #[test]
     fn test_sha512_256_sphinx_program_execute() {
         fn test_inner(input: &[u8]) {
-            let hash = Sha512Trunc256::digest(input);
+            let hash = Sha512_256::digest(input);
             let mut expected = [0u8; 32];
             expected.copy_from_slice(&hash);
 
