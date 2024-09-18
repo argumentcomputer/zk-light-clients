@@ -8,4 +8,9 @@ use thiserror::Error;
 pub enum CryptoError {
     #[error("Invalid digest length: expected {expected}, got {actual}")]
     DigestLength { expected: usize, actual: usize },
+    #[error("Invalid base64 encoded hash: {source}")]
+    Base64Error {
+        #[source]
+        source: Box<dyn std::error::Error + Sync + Send>,
+    },
 }

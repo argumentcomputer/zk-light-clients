@@ -15,7 +15,10 @@ use crate::client::chainweb::ChainwebClient;
 use crate::client::error::ClientError;
 use crate::client::proof_server::ProofServerClient;
 use crate::proofs::{ProofType, ProvingMode};
+use crate::types::chainweb::BlockPayloadResponse;
+use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
+use serde_json::Value;
 
 pub(crate) mod chainweb;
 pub mod error;
@@ -113,5 +116,20 @@ impl Client {
     /// A boolean indicating whether the proof is valid.
     pub async fn verify_longest_chain(&self, proof: ProofType) -> Result<bool, ClientError> {
         self.proof_server_client.verify_longest_chain(proof).await
+    }
+
+    pub async fn get_block_payload(
+        &self,
+        chain: u32,
+        block_height: u64,
+        payload_hash: HashValue,
+    ) -> Result<BlockPayloadResponse, ClientError> {
+        self.chainweb_client
+            .get_block_payload(chain, block_height, payload_hash)
+            .await
+    }
+
+    pub async fn get_spv(&self, chain: u32, request_key: String) -> Result<String, ClientError> {
+        self.chainweb_client.get_spv(chain, request_key).await
     }
 }

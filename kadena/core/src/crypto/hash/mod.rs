@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crypto::error::CryptoError;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use std::fmt;
 
 pub mod blake2;
@@ -46,6 +48,15 @@ impl HashValue {
     /// The hash value as a vector.
     pub fn to_vec(&self) -> Vec<u8> {
         self.hash.to_vec()
+    }
+
+    /// Dumps into a base64 string.
+    ///
+    /// # Returns
+    ///
+    /// The hash value as a base64 string.
+    pub fn to_base64_str(&self) -> String {
+        URL_SAFE_NO_PAD.encode(self.hash)
     }
 }
 
