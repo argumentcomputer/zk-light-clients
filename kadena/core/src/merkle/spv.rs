@@ -42,9 +42,9 @@ impl Spv {
         for step in self.object().steps().iter() {
             // Combine the current hash with the proof hash based on the position (left/right)
             current_hash = match step.side() {
-                0x00 => hash_inner(&current_hash.to_vec(), &step.hash().to_vec())
+                0x00 => hash_inner(&step.hash().to_vec(), &current_hash.to_vec())
                     .map_err(|err| ValidationError::HashError { source: err.into() })?,
-                0x01 => hash_inner(&step.hash().to_vec(), &current_hash.to_vec())
+                0x01 => hash_inner(&current_hash.to_vec(), &step.hash().to_vec())
                     .map_err(|err| ValidationError::HashError { source: err.into() })?,
                 _ => {
                     return Err(ValidationError::InvalidPosition {
