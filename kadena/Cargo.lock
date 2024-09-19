@@ -2498,6 +2498,7 @@ dependencies = [
  "blake2",
  "chrono",
  "getset",
+ "rand",
  "serde",
  "serde_json",
  "sha2 0.9.9",

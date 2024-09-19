@@ -6,6 +6,9 @@ use crate::types::header::layer::ChainwebLayerHeader;
 use std::fs;
 use std::path::PathBuf;
 
+#[cfg(test)]
+use crate::crypto::hash::HashValue;
+
 // this binary data comes from this block header: https://explorer.chainweb.com/testnet/chain/0/block/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg
 // Extracted using the p2p REST API:
 // export NODE=api.chainweb.com
@@ -40,4 +43,24 @@ pub fn get_layer_block_headers() -> Vec<ChainwebLayerHeader> {
     let bytes: Vec<u8> = serde_json::from_slice(&fs::read(test_asset_path).unwrap()).unwrap();
 
     ChainwebLayerHeader::deserialize_list(&bytes).unwrap()
+}
+
+#[cfg(test)]
+pub fn random_hash() -> HashValue {
+    use rand::Rng;
+
+    let mut rng = rand::thread_rng();
+    let mut arr = [0u8; 32];
+    rng.fill(&mut arr); // Fill the array with random bytes
+    HashValue::new(arr)
+}
+
+#[cfg(test)]
+pub fn random_string(len: usize) -> String {
+    use rand::Rng;
+
+    let mut rng = rand::thread_rng();
+    (0..len)
+        .map(|_| rng.sample(rand::distributions::Alphanumeric) as char) // Generate random alphanumeric chars
+        .collect()
 }

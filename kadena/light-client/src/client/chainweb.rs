@@ -11,15 +11,18 @@
 
 use crate::client::error::ClientError;
 use crate::client::utils::test_connection;
-use crate::types::chainweb::{BlockHeaderResponse, BlockPayloadResponse};
+use crate::types::chainweb::{BlockHeaderResponse, BlockPayloadResponse, SpvResponse};
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use getset::Getters;
 use kadena_lc_core::crypto::hash::HashValue;
+use kadena_lc_core::merkle::spv::Spv;
+use kadena_lc_core::types::error::TypesError;
 use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use reqwest::{Body, Client};
-use serde_json::{json, Value};
-use std::str::FromStr;
+use serde_json::json;
 use std::sync::Arc;
 use tokio::task::JoinSet;
 
@@ -224,7 +227,7 @@ impl ChainwebClient {
         &self,
         chain: u32,
         request_key: String,
-    ) -> Result<String, ClientError> {
+    ) -> Result<Spv, ClientError> {
         // Format the endpoint for the call
         let url = format!(
             "{}/chainweb/{CHAINWEB_API_VERSION}/mainnet01/chain/{chain}/pact/spv",
@@ -232,11 +235,11 @@ impl ChainwebClient {
         );
 
         let payload = json!(
-                    {
-            "requestKey": "Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M",
-            "targetChainId": "0"
-        }
-                );
+            {
+                "requestKey": request_key,
+                "targetChainId": "0"
+            }
+        );
 
         // Send the HTTP request
         let response = self
@@ -263,10 +266,31 @@ impl ChainwebClient {
         }
 
         // Deserialize the response
-        response.json().await.map_err(|err| ClientError::Request {
-            endpoint: url.clone(),
-            source: Box::new(err),
-        })
+        let encoded_spv_response: String =
+            response.json().await.map_err(|err| ClientError::Request {
+                endpoint: url.clone(),
+                source: Box::new(err),
+            })?;
+
+        let decoded_spv_response = URL_SAFE_NO_PAD
+            .decode(encoded_spv_response.as_bytes())
+            .map_err(|err| ClientError::Response {
+                endpoint: url.clone(),
+                source: err.into(),
+            })?;
+
+        let spv_response: SpvResponse =
+            serde_json::from_slice(&decoded_spv_response).map_err(|err| ClientError::Response {
+                endpoint: url.clone(),
+                source: err.into(),
+            })?;
+
+        spv_response
+            .try_into()
+            .map_err(|err: TypesError| ClientError::Response {
+                endpoint: url,
+                source: err.into(),
+            })
     }
 }
 

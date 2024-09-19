@@ -1,11 +1,11 @@
-use crate::proofs::longest_chain::LongestChainIn;
+use crate::proofs::spv::SpvIn;
 use crate::proofs::{ProofType, ProvingMode};
 use anyhow::{anyhow, Error};
 
 #[derive(Debug)]
 pub enum Request {
     /// Request to prove the longest chain for Kadena.
-    ProveLongestChain(Box<(ProvingMode, LongestChainIn)>),
+    ProveLongestChain(Box<(ProvingMode, SpvIn)>),
     /// Request to verify the validity of a proof for the longest chain
     VerifyLongestChain(Box<ProofType>),
 }
@@ -49,7 +49,7 @@ impl Request {
             0 => {
                 let proving_mode = ProvingMode::from_bytes(&bytes[1..2])?;
 
-                let longest_chain_in = LongestChainIn::from_bytes(&bytes[2..])?;
+                let longest_chain_in = SpvIn::from_bytes(&bytes[2..])?;
 
                 Ok(Request::ProveLongestChain(Box::new((
                     proving_mode,

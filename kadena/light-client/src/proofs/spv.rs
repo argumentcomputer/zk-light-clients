@@ -1,9 +1,9 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-//! # Longest Chain Prover module
+//! # SPV Prover module
 //!
-//! This module provides the prover implementation for the longest chain change proof. The prover
+//! This module provides the prover implementation for the lSPV proof. The prover
 //! is responsible for generating, executing, proving, and verifying proofs for the light client.
 
 use crate::proofs::error::ProverError;
@@ -14,32 +14,32 @@ use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::crypto::U256;
 use kadena_lc_core::types::error::TypesError;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
-use kadena_programs::LONGEST_CHAIN_PROGRAM;
+use kadena_programs::SPV_PROGRAM;
 use sphinx_sdk::{
     ProverClient, SphinxProvingKey, SphinxPublicValues, SphinxStdin, SphinxVerifyingKey,
 };
 
 /// The prover for the longest chain proof.
-pub struct LongestChainProver {
+pub struct SpvProver {
     client: ProverClient,
     keys: (SphinxProvingKey, SphinxVerifyingKey),
 }
 
-impl Default for LongestChainProver {
+impl Default for SpvProver {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl LongestChainProver {
-    /// Create a new `LongestChainProver`.
+impl SpvProver {
+    /// Create a new `SpvProver`.
     ///
     /// # Returns
     ///
-    /// A new `LongestChainProver`.
+    /// A new `SpvProver`.
     pub fn new() -> Self {
         let client = ProverClient::new();
-        let keys = client.setup(LONGEST_CHAIN_PROGRAM);
+        let keys = client.setup(SPV_PROGRAM);
 
         Self { client, keys }
     }
@@ -48,20 +48,20 @@ impl LongestChainProver {
     ///
     /// # Returns
     ///
-    /// A `SphinxVerifyingKey` that can be used for verifying the committee-change proof.
+    /// A `SphinxVerifyingKey` that can be used for verifying the spv proof.
     pub const fn get_vk(&self) -> &SphinxVerifyingKey {
         &self.keys.1
     }
 }
 
-/// The input for the sync committee change proof.
+/// The input for the spv proof.
 #[derive(Debug, Eq, PartialEq)]
-pub struct LongestChainIn {
+pub struct SpvIn {
     layer_block_headers: Vec<ChainwebLayerHeader>,
 }
 
-impl LongestChainIn {
-    /// Create a new `LongestChainIn`.
+impl SpvIn {
+    /// Create a new `SpvIn`.
     ///
     /// # Arguments
     ///
@@ -69,18 +69,18 @@ impl LongestChainIn {
     ///
     /// # Returns
     ///
-    /// A new `CommitteeChangeIn`.
+    /// A new `SpvIn`.
     pub const fn new(layer_block_headers: Vec<ChainwebLayerHeader>) -> Self {
         Self {
             layer_block_headers,
         }
     }
 
-    /// Serialize the `LongestChainIn` struct to bytes.
+    /// Serialize the `SpvIn` struct to bytes.
     ///
     /// # Returns
     ///
-    /// A `Vec<u8>` containing the serialized `LongestChainIn` struct.
+    /// A `Vec<u8>` containing the serialized `SpvIn` struct.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
 
@@ -91,7 +91,7 @@ impl LongestChainIn {
         bytes
     }
 
-    /// Deserialize a `LongestChainIn` struct from bytes.
+    /// Deserialize a `SpvIn` struct from bytes.
     ///
     /// # Arguments
     ///
@@ -99,7 +99,7 @@ impl LongestChainIn {
     ///
     /// # Returns
     ///
-    /// A `Result` containing either the deserialized `LongestChainIn` struct or a `TypesError`.
+    /// A `Result` containing either the deserialized `SpvIn` struct or a `TypesError`.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
         Ok(Self {
             layer_block_headers: ChainwebLayerHeader::deserialize_list(bytes)?,
@@ -107,16 +107,16 @@ impl LongestChainIn {
     }
 }
 
-/// The output for the sync committee change proof.
+/// The output for the spv proof.
 #[derive(Debug, Clone, Copy, CopyGetters)]
 #[getset(get_copy = "pub")]
-pub struct CommitteeChangeOut {
+pub struct SpvOut {
     first_layer_block_header_hash: HashValue,
     target_layer_block_header_hash: HashValue,
     confirmation_work: U256,
 }
 
-impl From<&mut SphinxPublicValues> for CommitteeChangeOut {
+impl From<&mut SphinxPublicValues> for SpvOut {
     fn from(public_values: &mut SphinxPublicValues) -> Self {
         let confirmation_work = U256::from_little_endian(&public_values.read::<[u8; 32]>());
         let first_layer_block_header_hash = HashValue::new(public_values.read::<[u8; 32]>());
@@ -130,11 +130,11 @@ impl From<&mut SphinxPublicValues> for CommitteeChangeOut {
     }
 }
 
-impl Prover for LongestChainProver {
-    const PROGRAM: &'static [u8] = LONGEST_CHAIN_PROGRAM;
+impl Prover for SpvProver {
+    const PROGRAM: &'static [u8] = SPV_PROGRAM;
     type Error = ProverError;
-    type StdIn = LongestChainIn;
-    type StdOut = CommitteeChangeOut;
+    type StdIn = SpvIn;
+    type StdOut = SpvOut;
 
     fn generate_sphinx_stdin(&self, inputs: &Self::StdIn) -> Result<SphinxStdin, Self::Error> {
         let mut stdin = SphinxStdin::new();
@@ -155,7 +155,7 @@ impl Prover for LongestChainProver {
             .run()
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
-        Ok(CommitteeChangeOut::from(&mut public_values))
+        Ok(SpvOut::from(&mut public_values))
     }
 
     fn prove(&self, inputs: &Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
@@ -202,12 +202,12 @@ mod test {
     use kadena_lc_core::test_utils::get_layer_block_headers;
 
     #[test]
-    fn test_execute_committee_change() {
+    fn test_execute_spv() {
         let headers = get_layer_block_headers();
 
-        let prover = LongestChainProver::new();
+        let prover = SpvProver::new();
 
-        let new_period_inputs = LongestChainIn {
+        let new_period_inputs = SpvIn {
             layer_block_headers: headers.clone(),
         };
 
@@ -237,18 +237,18 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_prove_stark_committee_change() {
+    fn test_prove_stark_spv() {
         use std::time::Instant;
 
         let layer_block_headers = get_layer_block_headers();
 
-        let prover = LongestChainProver::new();
+        let prover = SpvProver::new();
 
-        let new_period_inputs = LongestChainIn {
+        let new_period_inputs = SpvIn {
             layer_block_headers,
         };
 
-        println!("Starting STARK proving for sync committee change...");
+        println!("Starting STARK proving for spv...");
         let start = Instant::now();
 
         let _ = prover
@@ -259,18 +259,18 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_prove_snark_committee_change() {
+    fn test_prove_snark_spv() {
         use std::time::Instant;
 
         let layer_block_headers = get_layer_block_headers();
 
-        let prover = LongestChainProver::new();
+        let prover = SpvProver::new();
 
-        let new_period_inputs = LongestChainIn {
+        let new_period_inputs = SpvIn {
             layer_block_headers,
         };
 
-        println!("Starting SNARK proving for sync committee change...");
+        println!("Starting SNARK proving for spv...");
         let start = Instant::now();
 
         let _ = prover

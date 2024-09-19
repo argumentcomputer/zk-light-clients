@@ -17,6 +17,9 @@ serde_json = { workspace = true, optional = true }
 sha2 = { workspace = true }
 uint = { workspace = true }
 
+[dev-dependencies]
+rand = { workspace = true }
+
 [features]
 default = []
 kadena = ["dep:serde_json"]

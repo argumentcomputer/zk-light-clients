@@ -1,7 +1,7 @@
 [workspace]
 [package]
 version = "0.0.1"
-name = "longest-chain-program"
+name = "spv-program"
 edition = "2021"
 license = "Apache-2.0"
 

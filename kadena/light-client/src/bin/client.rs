@@ -3,16 +3,11 @@
 
 use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::Engine;
 use clap::Parser;
 use kadena_lc::client::Client;
 use kadena_lc::proofs::ProvingMode;
-use kadena_lc::types::chainweb::SpvResponse;
-use kadena_lc_core::crypto::hash::sha512::{hash_data, hash_inner, hash_tagged_data};
 use kadena_lc_core::crypto::hash::HashValue;
-use kadena_lc_core::merkle::spv::Spv;
-use kadena_lc_core::merkle::TRANSACTION_TAG;
 use std::env;
 use std::sync::Arc;
 
@@ -35,7 +30,7 @@ struct Cli {
 async fn main() -> Result<()> {
     // Get proving mode for the light client.
     let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
-    let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+    let _mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
 
     // Extract all addresses from the command.
     let Cli {
@@ -76,20 +71,13 @@ async fn main() -> Result<()> {
     // Fetch SPV proof for the target block height of chain 0
     // Fetching SPV for request key "Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M"
     // https://explorer.chainweb.com/mainnet/txdetail/Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M
-    let base64_spv_response = client
+    let spv = client
         .get_spv(
             0,
             String::from("Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M"),
         )
         .await
         .unwrap();
-    let decoded_spv_response = URL_SAFE_NO_PAD
-        .decode(base64_spv_response.as_bytes())
-        .unwrap();
-    let spv_response: SpvResponse = serde_json::from_slice(&decoded_spv_response).unwrap();
-
-    // Convert to our own SPV deserialized structure
-    let spv: Spv = spv_response.try_into().unwrap();
 
     // Verify the SPV proof against multiple hashes
     println!("Transaction Hash");

@@ -17,8 +17,8 @@ use crate::client::proof_server::ProofServerClient;
 use crate::proofs::{ProofType, ProvingMode};
 use crate::types::chainweb::BlockPayloadResponse;
 use kadena_lc_core::crypto::hash::HashValue;
+use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
-use serde_json::Value;
 
 pub(crate) mod chainweb;
 pub mod error;
@@ -129,7 +129,7 @@ impl Client {
             .await
     }
 
-    pub async fn get_spv(&self, chain: u32, request_key: String) -> Result<String, ClientError> {
+    pub async fn get_spv(&self, chain: u32, request_key: String) -> Result<Spv, ClientError> {
         self.chainweb_client.get_spv(chain, request_key).await
     }
 }

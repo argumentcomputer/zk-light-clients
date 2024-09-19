@@ -8,7 +8,7 @@
 
 use crate::client::error::ClientError;
 use crate::client::utils::test_connection;
-use crate::proofs::longest_chain::LongestChainIn;
+use crate::proofs::spv::SpvIn;
 use crate::proofs::{ProofType, ProvingMode};
 use crate::types::network::Request;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
@@ -69,7 +69,7 @@ impl ProofServerClient {
     ) -> Result<ProofType, ClientError> {
         let url = format!("http://{}/longest-chain/proof", self.address);
 
-        let inputs = LongestChainIn::new(layer_block_headers);
+        let inputs = SpvIn::new(layer_block_headers);
         let request = Request::ProveLongestChain(Box::new((proving_mode, inputs)));
 
         let response = self

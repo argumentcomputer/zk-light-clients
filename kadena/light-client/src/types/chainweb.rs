@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use getset::Getters;
-use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::merkle::proof::MerkleProof;
 use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::merkle::subject::Subject;
@@ -45,17 +44,8 @@ pub struct BlockPayloadResponse {
     transactions_hash: String,
 }
 
-pub struct Payload {
-    payload_hash: HashValue,
-    transactions_hash: HashValue,
-    outputs_hash: HashValue,
-    transactions: Vec<(Transaction, Output)>,
-}
-
-pub struct Transaction {}
-
-pub struct Output {}
-
+/// Response received while querying a SPV proof from a Chainweb
+/// node.
 #[derive(Clone, Debug, Deserialize)]
 pub struct SpvResponse {
     algorithm: String,
@@ -64,6 +54,7 @@ pub struct SpvResponse {
     pub subject: EncodedSubject,
 }
 
+/// Encoded subject.
 #[derive(Clone, Debug, Deserialize)]
 pub struct EncodedSubject {
     pub input: String,

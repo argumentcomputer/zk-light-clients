@@ -9,7 +9,7 @@ use axum::middleware::Next;
 use axum::routing::post;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::get, Router};
 use clap::{Parser, ValueEnum};
-use kadena_lc::proofs::longest_chain::LongestChainProver;
+use kadena_lc::proofs::spv::SpvProver;
 use kadena_lc::proofs::Prover;
 use kadena_lc::types::network::Request;
 use log::{error, info};
@@ -45,7 +45,7 @@ struct ServerState {
     snd_addr: Arc<Option<String>>,
     mode: Mode,
     active_requests: Arc<AtomicUsize>,
-    longest_chain_prover: Arc<LongestChainProver>,
+    longest_chain_prover: Arc<SpvProver>,
 }
 
 #[tokio::main]
@@ -68,12 +68,12 @@ async fn main() -> Result<()> {
         snd_addr: Arc::new(snd_addr),
         mode,
         active_requests: Arc::new(AtomicUsize::new(0)),
-        longest_chain_prover: Arc::new(LongestChainProver::new()),
+        longest_chain_prover: Arc::new(SpvProver::new()),
     };
 
     let app = Router::new()
-        .route("/longest-chain/proof", post(committee_proof))
-        .route("/longest-chain/verify", post(committee_verify))
+        .route("/spv/proof", post(spv_proof))
+        .route("/spv/verify", post(spv_verify))
         .route("/health", get(health_check))
         .route("/ready", get(ready_check))
         .layer(axum::middleware::from_fn_with_state(
@@ -103,7 +103,7 @@ async fn ready_check(State(state): State<ServerState>) -> impl IntoResponse {
     }
 }
 
-async fn committee_proof(
+async fn spv_proof(
     State(state): State<ServerState>,
     request: axum::extract::Request,
 ) -> Result<impl IntoResponse, StatusCode> {
@@ -148,7 +148,7 @@ async fn committee_proof(
     Ok(response)
 }
 
-async fn committee_verify(
+async fn spv_verify(
     State(state): State<ServerState>,
     request: axum::extract::Request,
 ) -> Result<impl IntoResponse, StatusCode> {
