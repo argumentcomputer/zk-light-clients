@@ -10,6 +10,12 @@ To ease the execution and deployment of our Light Client implementation, we prov
 
 ⚠️ The following commands should be run in the context of the root of the repository.
 
+The current state of the Helm Chart template expects the user to be using AWS EKS
+as the Kubernetes provider. The Helm Chart is not yet compatible with other providers.
+
+It also expects the user to label the nodes with the following `r7iz.metal-32xl`
+label.
+
 ## Dockerfile
 
 The Dockerfile leverages multi-stage builds to create an image that contains the `proof-server` binary.

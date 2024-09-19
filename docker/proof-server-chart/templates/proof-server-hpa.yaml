@@ -5,15 +5,15 @@ metadata:
   labels:
   {{- include "proof-server.labels" . | nindent 4 }}
 spec:
-  maxReplicas: 5
+  minReplicas: {{ .Values.hpa.minReplicas  }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
   metrics:
   - resource:
       name: cpu
       target:
-        averageUtilization: 50
+        averageUtilization: {{ .Values.hpa.metrics.averageUtilization }}
         type: Utilization
     type: Resource
-  minReplicas: 2
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
