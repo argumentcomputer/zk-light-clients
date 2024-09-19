@@ -70,7 +70,7 @@ them as defined in the project documentation.
 To deploy the proof servers and the client using Kubernetes, we provide a Helm chart in the `proof-server-chart`
 directory. The pre-requisite to run the Helm chart is to have a Kubernetes cluster running.
 To help get one running we have a dedicated `eksctl` configuration file in the `k8s` directory.
-It leverages [`AWS EKS`](https://aws.amazon.com/eks/) to create a cluster taht we can leverage  to deploy the Helm chart.
+It leverages [`AWS EKS`](https://aws.amazon.com/eks/) to create a cluster that we can leverage to deploy the Helm chart.
 
 To install `eksctl`, follow the instructions from their [official documentation](https://eksctl.io/installation/).
 Also, make sure that the user you are using have the sufficient permissions to create an EKS cluster.
