@@ -1,0 +1,59 @@
+deployment:
+  proofServer:
+    # Environment variables for proof generation optimization
+    # Change `rustLog` to `info` for less verbose logging and small performance improvement
+    env:
+      containerPort: "8080"
+      rustLog: "debug"
+      rustMinStack: "16777216"
+      shardSize: "4194304"
+      shardBatchSize: "0"
+      shardChunkingMultiplier: "32"
+      reconstructCommitments: "false"
+
+    # Image that will be used for the deployment
+    image:
+      repository: ghcr.io/argumentcomputer/ethereum-proof-server
+      tag: latest
+
+    # Ensures that the image deployed is always at the latest version
+    imagePullPolicy: Always
+
+    # Node selector for the deployment, ensures that we leverage proper hardware
+    nodeSelector:
+      instance-type: r7iz.metal-32xl
+
+    # Grace period for the termination of the pods
+    terminationGracePeriodSeconds: 600
+
+    # Path for the K8S probes, corresponds to the one set in our `proof-server` bins
+    livenessProbePath: "/health"
+    readinessProbePath: "/ready"
+
+  # Number of replicas for the deployment
+  replicas: 1
+kubernetesClusterDomain: cluster.local
+
+service:
+  annotations:
+    # This is necessary to ensure that the proof request does not time out
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "600"
+
+  # Ports for the service
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080
+
+  # Type of service
+  type: LoadBalancer
+
+hpa:
+  # Minimum and maximum number of replicas for the HPA
+  minReplicas: 2
+  maxReplicas: 5
+
+  # Metrics  settings for the HPA
+  metrics:
+    averageUtilization: 50
+
