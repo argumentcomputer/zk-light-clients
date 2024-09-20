@@ -1,24 +1,12 @@
 services:
   server-primary:
-    build:
-      context: ../..
-      dockerfile: docker/Dockerfile
-    command: sh -c "/app/proof_server --mode "split" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT} --snd-addr server-secondary:${SECONDARY_PORT}"
+    image: ghcr.io/argumentcomputer/ethereum-proof-server:latest
+    pull_policy: always
+    command: sh -c "/app/proof_server --mode \"single\" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}"
     environment:
       - RUST_LOG=debug
+      # Prevent stack overflow
+      - RUST_MIN_STACK=16777216
     restart: always
-    depends_on:
-      - server-secondary
     ports:
       - "${PRIMARY_PORT}:${PRIMARY_PORT}"
-
-  server-secondary:
-    build:
-      context: ../..
-      dockerfile: docker/Dockerfile
-    command: sh -c "/app/proof_server --mode "single" --addr ${SECONDARY_ADDR}:${SECONDARY_PORT}"
-    environment:
-      - RUST_LOG=debug
-    restart: always
-    ports:
-      - "${SECONDARY_PORT}:${SECONDARY_PORT}"
