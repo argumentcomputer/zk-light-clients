@@ -1,10 +1,6 @@
-## ZK Light Clients
+## zk Light Clients
 
-This repository contains implementation for Light Clients leveraging [Sphinx](https://github.com/argumentcomputer/sphinx) to
-keep its development under the radar.
-
-Once Sphinx is deemed ready for public release, the code contained in this repository should be publicly released as
-well.
+This repository contains the implementation for Light Clients leveraging [Sphinx](https://github.com/argumentcomputer/sphinx).
 
 For more information about each Light Client, refer to their respective folder.
 

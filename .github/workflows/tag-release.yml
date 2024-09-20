@@ -11,70 +11,59 @@ jobs:
   tag-bump:
     if: |
       github.event.pull_request.merged == true &&
-      ((github.event.pull_request.head.ref == 'version-bump') || startsWith(github.event.pull_request.head.ref, 'hotfix/'))
+      (startsWith(github.event.pull_request.head.ref, 'release-pr') || startsWith(github.event.pull_request.head.ref, 'patch/'))
     runs-on: ubuntu-latest
     steps:
       - name: Git config
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Get version
-        id: get-version
-        run: |
-          RELEASE_BRANCH=${{ github.event.pull_request.base.ref }}
-          TAG_VERSION=$(echo "$RELEASE_BRANCH" | cut -d'/' -f 2)
-          LC_PATH=$(echo "$RELEASE_BRANCH" | awk -F'/' '{split($2, arr, "-"); print arr[1]}')
-
-          if [[ "${{ github.event.pull_request.head.ref }}" == "version-bump" ]]; then
-            TAG_VERSION=$(echo "$RELEASE_BRANCH" | cut -d'/' -f 2)
-            TAG_VERSION="${TAG_VERSION}.0"
-          else
-            TAG_VERSION=$(echo "${{ github.event.pull_request.head.ref }}" | cut -d'/' -f 2)
-           fi
-
-          git tag -a $TAG_VERSION -m "$TAG_VERSION" origin/$RELEASE_BRANCH
-          git push origin $TAG_VERSION --follow-tags
-          echo "path=$LC_PATH" | tee -a "$GITHUB_OUTPUT"
-          echo "tag-version=$TAG_VERSION" | tee -a "$GITHUB_OUTPUT"
-          echo "RELEASE_BRANCH=$RELEASE_BRANCH" | tee -a "$GITHUB_ENV"
-
-
-      - name: Get latest release reference
-        id: get-latest-release
-        run: |
-          LATEST_RELEASE=$(gh release list --repo ${{ github.repository }} --limit 100 | grep -Ei "${{ steps.get-version.outputs.path }}" | head -n 1 | awk '{ print $1 }')
-
-          if [ -z "$LATEST_RELEASE" ]; then
-            LATEST_RELEASE=$(git rev-list --max-parents=0 HEAD)
-            echo "The first commit on branch ${{ env.RELEASE_BRANCH }} is $LATEST_RELEASE"
-          else
-            echo "Found release: $LATEST_RELEASE"
-          fi
-
-          echo "latest_release=$LATEST_RELEASE" | tee -a "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Build Changelog
-        id: github_release
-        uses: mikepenz/release-changelog-builder-action@v4
+      - uses: actions/checkout@v4
         with:
-          path: "./${{ steps.get-version.outputs.path }}"
-          fromTag: ${{ steps.get-latest-release.outputs.latest_release }}
-          toTag: ${{ steps.get-version.outputs.tag-version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
+          repository: argumentcomputer/ci-workflows
+          path: ci-workflows
+          # Remove after https://github.com/argumentcomputer/ci-workflows/pull/76 is merged
+          ref: release-workflow
+      - name: Get light client prefix from branch
+        run: |
+          echo "TAG_PREFIX=$(echo ${{ github.event.pull_request.base.ref }} | awk -F'[/\-]' '{ print $2 }')" | tee -a $GITHUB_ENV
+      - name: Create changelog config
+        run: |
+          cat << 'EOF' > config.json
+          {
+            "template": "#{{CHANGELOG}}",
+            "categories": [
+              {
+                  "title": "## Feature",
+                  "labels": ["feat", "feature"]
+              },
+              {
+                  "title": "## Fix",
+                  "labels": ["fix", "bug"]
+              },
+              {
+                  "title": "## 🤖 CI",
+                  "labels": ["automated-issue", "ci"]
+              },
+              {
+                  "title": "## Other",
+                  "labels": []
+              }
+            ]
+          }
+          EOF
+      - uses: tibdex/github-app-token@v2
+        id: generate-token
         with:
-          body: ${{ steps.github_release.outputs.changelog }}
-          tag: ${{ steps.get-version.outputs.tag-version }}
-          commit: ${{ env.RELEASE_BRANCH }}
-          allowUpdates: true
+          app_id: ${{ secrets.TOKEN_APP_ID }}
+          private_key: ${{ secrets.TOKEN_APP_PRIVATE_KEY }}
+      - name: Publish release
+        uses: ./ci-workflows/.github/actions/tag-release
+        with:
+          tag-prefix: ${{ env.TAG_PREFIX }}
+          changelog-config-file: ./config.json
+
