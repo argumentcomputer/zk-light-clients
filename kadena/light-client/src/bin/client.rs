@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
 use clap::Parser;
 use kadena_lc::client::Client;
-use kadena_lc_core::crypto::U256;
-use log::info;
+use kadena_lc::proofs::ProvingMode;
+use std::env;
 use std::sync::Arc;
 
 pub const TARGET_BLOCK: usize = 5099345;
@@ -19,46 +17,45 @@ struct Cli {
     /// The address of the chainweb node API.
     #[arg(short, long)]
     chainweb_node_address: String,
+
+    /// The address of the proof server
+    #[arg(short, long)]
+    proof_server_address: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Get proving mode for the light client.
+    let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
+    let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+
     // Extract all addresses from the command.
     let Cli {
         chainweb_node_address,
+        proof_server_address,
         ..
     } = Cli::parse();
 
     // Initialize the logger.
     env_logger::init();
 
+    let proof_server_address = Arc::new(proof_server_address);
     let chainweb_node_address = Arc::new(chainweb_node_address);
 
-    let client = Client::new(chainweb_node_address.as_str());
+    let client = Client::new(
+        chainweb_node_address.as_str(),
+        proof_server_address.as_str(),
+    );
 
     let kadena_headers = client
         .get_layer_block_headers(TARGET_BLOCK, BLOCK_WINDOW)
         .await?;
 
-    for layer_header in kadena_headers.iter() {
-        info!("Block height {}", layer_header.height());
-        info!(
-            "Block difficulty: {}",
-            U256::from_little_endian(layer_header.chain_headers().first().unwrap().target())
-                .to_string()
-        );
-        info!("Produced work: {}", layer_header.produced_work()?);
-        for chain_header in layer_header.chain_headers() {
-            info!(
-                "     Chain ID {}",
-                u32::from_le_bytes(*chain_header.chain())
-            );
-            info!(
-                "     Block hash {}",
-                URL_SAFE_NO_PAD.encode(chain_header.hash())
-            );
-        }
-    }
+    let proof = client.prove_longest_chain(mode, kadena_headers).await?;
+
+    let valid = client.verify_longest_chain(proof).await?;
+
+    assert!(valid);
 
     Ok(())
 }

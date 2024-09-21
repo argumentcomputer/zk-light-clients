@@ -4,13 +4,19 @@
 use anyhow::{Error, Result};
 use axum::body::Body;
 use axum::http::header::CONTENT_TYPE;
+use axum::http::Response;
 use axum::middleware::Next;
+use axum::routing::post;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::get, Router};
 use clap::{Parser, ValueEnum};
-use log::info;
+use kadena_lc::proofs::longest_chain::LongestChainProver;
+use kadena_lc::proofs::Prover;
+use kadena_lc::types::network::Request;
+use log::{error, info};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::net::TcpListener;
+use tokio::task::spawn_blocking;
 
 #[derive(ValueEnum, Clone, Debug, Eq, PartialEq)]
 enum Mode {
@@ -39,6 +45,7 @@ struct ServerState {
     snd_addr: Arc<Option<String>>,
     mode: Mode,
     active_requests: Arc<AtomicUsize>,
+    longest_chain_prover: Arc<LongestChainProver>,
 }
 
 #[tokio::main]
@@ -61,10 +68,14 @@ async fn main() -> Result<()> {
         snd_addr: Arc::new(snd_addr),
         mode,
         active_requests: Arc::new(AtomicUsize::new(0)),
+        longest_chain_prover: Arc::new(LongestChainProver::new()),
     };
 
     let app = Router::new()
+        .route("/longest-chain/proof", post(committee_proof))
+        .route("/longest-chain/verify", post(committee_verify))
         .route("/health", get(health_check))
+        .route("/ready", get(ready_check))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             count_requests_middleware,
@@ -79,13 +90,99 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn health_check(State(state): State<ServerState>) -> impl IntoResponse {
+async fn health_check() -> impl IntoResponse {
+    StatusCode::OK
+}
+
+async fn ready_check(State(state): State<ServerState>) -> impl IntoResponse {
     let active_requests = state.active_requests.load(Ordering::SeqCst);
     if active_requests > 0 {
         StatusCode::CONFLICT
     } else {
         StatusCode::OK
     }
+}
+
+async fn committee_proof(
+    State(state): State<ServerState>,
+    request: axum::extract::Request,
+) -> Result<impl IntoResponse, StatusCode> {
+    let bytes = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let res = Request::from_bytes(&bytes);
+
+    if let Err(err) = res {
+        error!("Failed to deserialize request object: {err}");
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let request = res.unwrap();
+    let Request::ProveLongestChain(boxed) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+
+    let (proving_mode, inputs) = *boxed;
+    let proof_handle =
+        spawn_blocking(move || state.longest_chain_prover.prove(&inputs, proving_mode));
+    let proof = proof_handle
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let res = proof
+        .to_bytes()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "application/octet-stream")
+        .body(Body::from(res))
+        .map_err(|err| {
+            error!("Could not construct response for client: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(response)
+}
+
+async fn committee_verify(
+    State(state): State<ServerState>,
+    request: axum::extract::Request,
+) -> Result<impl IntoResponse, StatusCode> {
+    let bytes = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let res = Request::from_bytes(&bytes);
+
+    if let Err(err) = res {
+        error!("Failed to deserialize request object: {err}");
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let request = res.unwrap();
+    let Request::VerifyLongestChain(boxed) = request else {
+        error!("Invalid request type");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let res = {
+        let is_valid = state.longest_chain_prover.verify(boxed.as_ref()).is_ok();
+        vec![u8::from(is_valid)]
+    };
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "application/octet-stream")
+        .body(Body::from(res))
+        .map_err(|err| {
+            error!("Could not construct response for client: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(response)
 }
 
 #[allow(dead_code)]
@@ -110,10 +207,10 @@ async fn count_requests_middleware(
     State(state): State<ServerState>,
     req: axum::http::Request<Body>,
     next: Next,
-) -> Result<impl IntoResponse, StatusCode> {
-    let is_health = req.uri().path() != "/health";
-    // Check if the request is for the health endpoint.
-    if is_health {
+) -> std::result::Result<impl IntoResponse, StatusCode> {
+    let is_ready = req.uri().path() != "/ready";
+    // Check if the request is for the ready endpoint.
+    if is_ready {
         // Increment the active requests counter.
         state.active_requests.fetch_add(1, Ordering::SeqCst);
     }
@@ -121,8 +218,8 @@ async fn count_requests_middleware(
     // Proceed with the request.
     let response = next.run(req).await;
 
-    // Decrement the active requests counter if not a health check.
-    if is_health {
+    // Decrement the active requests counter if not a ready check.
+    if is_ready {
         state.active_requests.fetch_sub(1, Ordering::SeqCst);
     }
 

@@ -3,3 +3,4 @@
 
 pub mod chainweb;
 pub mod compact;
+pub mod network;

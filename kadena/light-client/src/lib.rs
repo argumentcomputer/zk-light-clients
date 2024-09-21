@@ -7,7 +7,7 @@ pub mod types;
 
 #[cfg(test)]
 mod tests {
-    use kadena_programs::{bench::SHA512_256_PROGRAM, BLOCK_HEADER_HASHING_PROGRAM};
+    use kadena_programs::bench::{BLOCK_HEADER_HASHING_PROGRAM, SHA512_256_PROGRAM};
     use sha2::{Digest, Sha512Trunc256};
     use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};

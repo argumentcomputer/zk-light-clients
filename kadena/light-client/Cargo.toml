@@ -32,6 +32,10 @@ sphinx-sdk = { workspace = true }
 [dev-dependencies]
 kadena-lc-core = { path = "../core", features = ["kadena"] }
 
+[features]
+default = []
+kadena = ["kadena-lc-core/kadena"]
+
 [[bin]]
 name = "client"
 path = "src/bin/client.rs"

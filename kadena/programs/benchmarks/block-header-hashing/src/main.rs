@@ -23,7 +23,7 @@ pub fn main() {
     sphinx_zkvm::precompiles::unconstrained! {
                 println!("cycle-tracker-end: deserialize_inputs");
     }
-    let actual = header.header_root().expect("Failed to compute header root");
-    assert_eq!(header.hash().to_vec(), actual);
-    sphinx_zkvm::io::commit(&actual);
+    let actual = header.header_root().expect("Failed to hash header");
+    assert_eq!(header.hash(), actual.as_ref());
+    sphinx_zkvm::io::commit(actual.as_ref());
 }

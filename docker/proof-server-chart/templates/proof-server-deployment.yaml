@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "proof-server.fullname" . }}-deployment
+  labels:
+  {{- include "proof-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: proof-server
+    {{- include "proof-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: proof-server
+      {{- include "proof-server.selectorLabels" . | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.deployment.proofServer.terminationGracePeriodSeconds }}
+      # Node selector leveraged to ensure that the cluster dpeloys the pod on the
+      # correct hardware
+      nodeSelector:
+        {{- toYaml .Values.deployment.proofServer.nodeSelector | nindent 8 }}
+      containers:
+      # Commend that runs the proof server
+      - command:
+        - sh
+        - -c
+        - /app/proof_server --mode "single" --addr ${CONTAINER_ADDR}:${CONTAINER_PORT}
+        # Environment variable mostly set to optimize the proof generation process
+        env:
+        - name: RUST_LOG
+          value: {{ quote .Values.deployment.proofServer.env.rustLog }}
+        - name: RUST_MIN_STACK
+          value: {{ quote .Values.deployment.proofServer.env.rustMinStack }}
+        - name: SHARD_SIZE
+          value: {{ quote .Values.deployment.proofServer.env.shardSize }}
+        - name: SHARD_BATCH_SIZE
+          value: {{ quote .Values.deployment.proofServer.env.shardBatchSize }}
+        - name: SHARD_CHUNKING_MULTIPLIER
+          value: {{ quote .Values.deployment.proofServer.env.shardChunkingMultiplier }}
+        - name: RECONSTRUCT_COMMITMENTS
+          value: {{ quote .Values.deployment.proofServer.env.reconstructCommitments }}
+        # Proof server will listen for incoming traffic at the given pod IP and port
+        - name: CONTAINER_ADDR
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CONTAINER_PORT
+          value: {{ quote .Values.deployment.proofServer.env.containerPort }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.deployment.proofServer.image.repository }}:{{ .Values.deployment.proofServer.image.tag
+          | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.deployment.proofServer.imagePullPolicy }}
+        # Liveness probe for k8s to know if the pod should be restarted
+        livenessProbe:
+          httpGet:
+            path: {{ quote .Values.deployment.proofServer.livenessProbePath }}
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        # Readiness probe for k8s to know if the pod is ready to receive traffic, used
+        # to restrict one proog generation process per pod
+        readinessProbe:
+          httpGet:
+            path: {{ quote .Values.deployment.proofServer.readinessProbePath }}
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        name: proof-server
+        ports:
+        - containerPort: 8080
+        resources: {}

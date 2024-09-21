@@ -1,0 +1,17 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: proof-server
+  region: us-east-2
+
+nodeGroups:
+  - name: r7iz-metal-nodes
+    instanceType: r7iz.metal-32xl
+    desiredCapacity: 2
+    labels:
+      instance-type: r7iz.metal-32xl
+      environment: production
+    iam:
+      withAddonPolicies:
+        autoScaler: true

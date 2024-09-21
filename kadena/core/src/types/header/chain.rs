@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crypto::error::CryptoError;
-use crate::crypto::hash::sha512::{hash_data, hash_inner};
-use crate::crypto::hash::DIGEST_BYTES_LENGTH;
+use crate::crypto::hash::sha512::{hash_inner, hash_tagged_data};
+use crate::crypto::hash::{HashValue, DIGEST_BYTES_LENGTH};
 use crate::crypto::{U256, U256_BYTES_LENGTH};
 use crate::merkle::{
     BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG, BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG,
@@ -81,7 +81,7 @@ pub const HASH_BYTES_LENGTH: usize = DIGEST_BYTES_LENGTH;
 /// arrays.
 ///
 /// From [the`chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Block-Header-Binary-Encoding#blockheader-binary-format-for-chain-graphs-of-degree-three-without-hash).
-#[derive(Debug, Clone, Copy, Getters)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Getters)]
 #[getset(get = "pub")]
 pub struct KadenaHeaderRaw {
     flags: [u8; FLAGS_BYTES_LENGTH],
@@ -238,7 +238,7 @@ impl KadenaHeaderRaw {
     /// # Returns
     ///
     /// The root hash of the header.
-    pub fn header_root(&self) -> Result<Vec<u8>, TypesError> {
+    pub fn header_root(&self) -> Result<HashValue, TypesError> {
 
         let mut adjacent_hashes: Vec<[u8; 32]> = Vec::with_capacity(TWENTY_CHAIN_GRAPH_DEGREE);
         for i in 0..TWENTY_CHAIN_GRAPH_DEGREE {
@@ -254,39 +254,39 @@ impl KadenaHeaderRaw {
 
         // Bottom leaves
         let hashes = vec![
-            hash_data(FEATURE_FLAGS_TAG, self.flags()),
-            hash_data(BLOCK_CREATION_TIME_TAG, self.time()),
-            self.parent().to_vec(),
-            hash_data(HASH_TARGET_TAG, self.target()),
-            self.payload().to_vec(),
-            hash_data(CHAIN_ID_TAG, self.chain()),
-            hash_data(BLOCK_WEIGHT_TAG, self.weight()),
-            hash_data(BLOCK_HEIGHT_TAG, self.height()),
-            hash_data(CHAINWEB_VERSION_TAG, self.version()),
-            hash_data(EPOCH_START_TIME_TAG, self.epoch_start()),
-            hash_data(BLOCK_NONCE_TAG, self.nonce()),
-            adjacent_hashes[0].to_vec(),
+            hash_tagged_data(FEATURE_FLAGS_TAG, self.flags())?,
+            hash_tagged_data(BLOCK_CREATION_TIME_TAG, self.time())?,
+            HashValue::new(*self.parent()),
+            hash_tagged_data(HASH_TARGET_TAG, self.target())?,
+            HashValue::new(*self.payload()),
+            hash_tagged_data(CHAIN_ID_TAG, self.chain())?,
+            hash_tagged_data(BLOCK_WEIGHT_TAG, self.weight())?,
+            hash_tagged_data(BLOCK_HEIGHT_TAG, self.height())?,
+            hash_tagged_data(CHAINWEB_VERSION_TAG, self.version())?,
+            hash_tagged_data(EPOCH_START_TIME_TAG, self.epoch_start())?,
+            hash_tagged_data(BLOCK_NONCE_TAG, self.nonce())?,
+            HashValue::new(adjacent_hashes[0]),
         ];
         // Hash bottom leaves pairs
         let mut intermediate_hashes = hashes
             .chunks(2)
-            .map(|pair| hash_inner(&pair[0], &pair[1]))
-            .collect::<Vec<_>>();
+            .map(|pair| hash_inner(pair[0].as_ref(), pair[1].as_ref()))
+            .collect::<Result<Vec<_>, _>>()?;
 
         // Include additional adjacent nodes at the correct level
-        intermediate_hashes.push(adjacent_hashes[1].to_vec());
-        intermediate_hashes.push(adjacent_hashes[2].to_vec());
+        intermediate_hashes.push(HashValue::new(adjacent_hashes[1]));
+        intermediate_hashes.push(HashValue::new(adjacent_hashes[2]));
 
         // Hash pairs of intermediate nodes until only one hash remains (the root)
         while intermediate_hashes.len() > 1 {
             intermediate_hashes = intermediate_hashes
                 .chunks(2)
-                .map(|pair| hash_inner(&pair[0], &pair[1]))
-                .collect();
+                .map(|pair| hash_inner(pair[0].as_ref(), pair[1].as_ref()))
+                .collect::<Result<Vec<_>, _>>()?;
         }
 
         // The last remaining hash is the root
-        Ok(intermediate_hashes[0].clone())
+        Ok(intermediate_hashes[0])
     }
 
     /// Computes the work produced to mine the block. The work produced
@@ -300,7 +300,8 @@ impl KadenaHeaderRaw {
         let hash = U256::from_little_endian(
             &self
                 .pow_hash()
-                .map_err(|err| ValidationError::PowHashError { source: err.into() })?,
+                .map(|hash| hash.to_vec())
+                .map_err(|err| ValidationError::HashError { source: err.into() })?,
         );
 
         if hash <= target {
@@ -318,7 +319,7 @@ impl KadenaHeaderRaw {
     /// # Returns
     ///
     /// The proof of work hash of the header.
-    pub fn pow_hash(&self) -> Result<[u8; 32], CryptoError> {
+    pub fn pow_hash(&self) -> Result<HashValue, CryptoError> {
         let mut serialized = Vec::new();
         serialized.extend_from_slice(&self.flags);
         serialized.extend_from_slice(&self.time);
@@ -347,14 +348,14 @@ struct KadenaHeader {
     parent: U256,
     adjacents: AdjacentParentRecord,
     target: U256,
-    payload: [u8; DIGEST_BYTES_LENGTH],
+    payload: HashValue,
     chain: [u8; 4],
     weight: U256,
     height: u64,
     version: u32,
     epoch_start: DateTime<Utc>,
     nonce: [u8; 8],
-    hash: [u8; DIGEST_BYTES_LENGTH],
+    hash: HashValue,
 }
 
 impl TryFrom<KadenaHeaderRaw> for KadenaHeader {
@@ -373,7 +374,7 @@ impl TryFrom<KadenaHeaderRaw> for KadenaHeader {
             AdjacentParentRecord::from(AdjacentParentRecordRaw::from_bytes(&raw.adjacents));
 
         let target = U256::from_little_endian(&raw.target);
-        let payload = raw.payload;
+        let payload = HashValue::new(raw.payload);
         let chain = raw.chain;
         let weight = U256::from_little_endian(&raw.weight);
         let height = u64::from_le_bytes(raw.height);
@@ -386,7 +387,7 @@ impl TryFrom<KadenaHeaderRaw> for KadenaHeader {
                     to: "KadenaHeader".into(),
                 })?;
         let nonce = raw.nonce;
-        let hash = raw.hash;
+        let hash = HashValue::new(raw.hash);
 
         Ok(Self {
             flags,
@@ -459,28 +460,14 @@ impl CompactHeaderRaw {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "kadena"))]
 mod test {
+    use crate::crypto::hash::HashValue;
     use crate::crypto::U256;
+    use crate::test_utils::{RAW_HEADER, RAW_HEADER_POW_HASH_HEX};
     use crate::types::header::chain::{KadenaHeader, KadenaHeaderRaw, RAW_HEADER_BYTES_LEN};
     use std::process::Stdio;
     use uint::hex;
-
-    // this binary data comes from this block header: https://explorer.chainweb.com/testnet/chain/0/block/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg
-    // Extracted using the p2p REST API:
-    // export NODE=api.chainweb.com
-    // export CHAINWEB_VERSION=mainnet01
-    // export CHAIN_ID=0
-    // export LIMIT=1
-    // export HEIGHT=5099342
-    // export HEADER_ENCODING=''
-    // curl -sk "https://${NODE}/chainweb/0.0/${CHAINWEB_VERSION}/chain/${CHAIN_ID}/header?limit=${LIMIT}&minheight=${HEIGHT}" ${HEADER_ENCODING}
-    const RAW_HEADER: &[u8; RAW_HEADER_BYTES_LEN] = b"AAAAAAAAAADD1nMoSCEGADwKaIUvrCBSw_x2E9gX8A6rfivaaLn1THmW84IVvdo0AwAFAAAA6ZwPwQh0J3kWxTtIHblGP-_lhfv6O93V5Z9X0MsAQxsKAAAAnzoFM2164175njvXT-WtFkI_EosVHYwQxCFBlsF3rzgPAAAAEACJMSvkDii6F6dO-_XPuKMMARIWp8zknQrNBVxRsjZidblKf3wbSh4GAAJhfP1BSX3rTDvx24QQAAAAAAAAAFd1EK_a_MHBiCdaexBxLz6cPvFtRYnF2ouOGtl9rB6NAAAAAKQEL9M9aOtZf2kBAAAAAAAAAAAAAAAAAAAAAAAAAAAATs9NAAAAAAAFAAAABjGCuEchBgADABULZ3D1rgPVKrDUtdRd5tLvtefzWK7MktQWIaH8OIm5WFPQ-cnv";
-    const RAW_HEADER_POW_HASH_HEX: &[u8; 64] =
-        b"00000000000000039633411e726c4e458f380cb662430ef4bca0f676060985c6";
-
-    const TESTNET_CHAIN_3_HEADERS_URL: &str =
-        "https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/3/header/";
 
     #[test]
     fn test_decode_binary_no_panic() {
@@ -494,15 +481,25 @@ mod test {
     }
 
     #[test]
+    fn test_bytes_conversion_header_raw() {
+        let header_raw = KadenaHeaderRaw::from_base64(RAW_HEADER).unwrap();
+        let bytes = header_raw.to_bytes();
+        let deserialized = KadenaHeaderRaw::from_bytes(&bytes).unwrap();
+        assert_eq!(header_raw, deserialized);
+    }
+
+    #[test]
     fn test_compute_pow_hash() {
         let header_raw = KadenaHeaderRaw::from_base64(RAW_HEADER).unwrap();
-        let actual = U256::from_little_endian(&header_raw.pow_hash().unwrap());
+        let actual =
+            U256::from_little_endian(&header_raw.pow_hash().map(|hash| hash.to_vec()).unwrap());
         let expected = U256::from_big_endian(&hex::decode(RAW_HEADER_POW_HASH_HEX).unwrap());
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_multiple_header_root_computing() {
+        use crate::test_utils::TESTNET_CHAIN_3_HEADERS_URL;
         use std::process::Command;
 
         let curl = Command::new("curl")
@@ -531,7 +528,7 @@ mod test {
                 let parsed_header = KadenaHeaderRaw::from_base64(header_bytes).unwrap();
                 let actual = parsed_header.header_root().unwrap();
                 let expected = parsed_header.hash();
-                assert_eq!(actual, expected.to_vec());
+                assert_eq!(actual, HashValue::new(*expected));
             }
         });
     }

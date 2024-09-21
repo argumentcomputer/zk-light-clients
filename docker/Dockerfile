@@ -11,8 +11,8 @@ RUN --mount=type=secret,id=github_token \
     git config --global url."https://$(cat /run/secrets/github_token)@github.com/".insteadOf ssh://git@github.com && \
     git config --global url."https://$(cat /run/secrets/github_token)@github.com".insteadOf https://github.com
 
-# Install rust nightly
-RUN rustup install nightly
+# Add x86_64-unknown-linux-gnu target
+RUN rustup target add x86_64-unknown-linux-gnu
 
 # Set context in /tmp
 WORKDIR /tmp
@@ -48,10 +48,12 @@ COPY ./$LIGHT_CLIENT .
 # Determine the package name based on the value of LIGHT_CLIENT
 RUN if [ "$LIGHT_CLIENT" = "aptos" ]; then \
         PACKAGE_NAME="proof-server"; \
+        RUSTFLAGS="-C target-cpu=x86-64-v4 --cfg tokio_unstable -C opt-level=3"; \
     else \
         PACKAGE_NAME="ethereum-lc"; \
+        RUSTFLAGS="-C target-cpu=x86-64-v4 -C opt-level=3"; \
     fi && \
-    RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native" cargo +nightly build --release --bins -p $PACKAGE_NAME
+    RUSTFLAGS="$RUSTFLAGS" cargo build --release --target x86_64-unknown-linux-gnu --bins -p $PACKAGE_NAME
 
 # Start a new stage from scratch
 FROM debian:stable-slim
@@ -65,7 +67,7 @@ RUN apt update && apt install -y openssl libssl-dev
 WORKDIR /app
 
 # Copy only the binaries from the builder stage
-COPY --from=builder /app/$LIGHT_CLIENT/target/release/client /app/$LIGHT_CLIENT/target/release/proof_server ./
+COPY --from=builder /app/$LIGHT_CLIENT/target/x86_64-unknown-linux-gnu/release/proof_server ./
 
 # Create group and user
 RUN groupadd execgroup && useradd -m -g execgroup execuser
