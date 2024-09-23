@@ -51,11 +51,15 @@ impl Spv {
     ///
     /// A boolean indicating if the proof is valid.
     pub fn verify(&self, expected_root: &HashValue) -> Result<bool, ValidationError> {
+        let x: &[u8] = &[0x0];
         // Hash subject for base leaf
         let mut current_hash = hash_data(
+            &[
+                x,
             &URL_SAFE_NO_PAD
                 .decode(self.subject().input().as_bytes())
-                .map_err(|err| ValidationError::InvalidBase64 { source: err.into() })?,
+                .map_err(|err| ValidationError::InvalidBase64 { source: err.into() })?
+            ].concat(),
         )
         .map_err(|err| ValidationError::HashError { source: err.into() })?;
 
