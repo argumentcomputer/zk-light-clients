@@ -5,8 +5,12 @@ use crate::crypto::error::CryptoError;
 use crate::crypto::hash::sha512::hash_inner;
 use crate::crypto::hash::HashValue;
 use crate::crypto::U256;
+use crate::types::adjacent::ADJACENT_PARENT_RAW_BYTES_LENGTH;
 use crate::types::error::{TypesError, ValidationError};
-use crate::types::header::chain::{KadenaHeaderRaw, RAW_HEADER_DECODED_BYTES_LENGTH};
+use crate::types::graph::{TWENTY_CHAIN_GRAPH, TWENTY_CHAIN_GRAPH_DEGREE};
+use crate::types::header::chain::{
+    KadenaHeaderRaw, CHAIN_BYTES_LENGTH, RAW_HEADER_DECODED_BYTES_LENGTH,
+};
 use crate::types::{U16_BYTES_LENGTH, U64_BYTES_LENGTH};
 use anyhow::Result;
 use getset::Getters;
@@ -222,6 +226,11 @@ impl ChainwebLayerHeader {
     /// # Returns
     ///
     /// The root of the headers in the layer.
+    ///
+    /// # Notes
+    ///
+    /// When the  chain graph degree changes along with the [`crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE`]
+    /// constant this method should be updated.
     pub fn header_root(&self) -> Result<HashValue, CryptoError> {
         let mut hashes = self
             .chain_headers()
@@ -288,6 +297,27 @@ impl ChainwebLayerHeader {
                             stored: HashValue::new(*parent_chain_header.hash()),
                         });
                     }
+                }
+
+                // Check that the adjacent record are for the correct chains
+                let mut adjacent_chain_records = Vec::with_capacity(TWENTY_CHAIN_GRAPH_DEGREE);
+                for i in 0..TWENTY_CHAIN_GRAPH_DEGREE {
+                    let start = U16_BYTES_LENGTH + i * ADJACENT_PARENT_RAW_BYTES_LENGTH;
+                    let end = start + CHAIN_BYTES_LENGTH;
+                    adjacent_chain_records.push(u32::from_le_bytes(chain_header.adjacents().get(start..end)
+                        .expect("Should be able to get adjacent chain value")
+                        .try_into()
+                        .expect("Should be able to convert adjacent chain value to fixed length array"))
+                    );
+                }
+                adjacent_chain_records.sort();
+
+                let chain = u32::from_le_bytes(*chain_header.chain()) as usize;
+                if adjacent_chain_records != TWENTY_CHAIN_GRAPH[chain] {
+                    return Err(ValidationError::InvalidAdjacentChainRecords {
+                        layer: layer_header.height as usize,
+                        chain,
+                    });
                 }
             }
 

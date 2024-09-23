@@ -10,7 +10,7 @@ use crate::merkle::{
     CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
 };
 use crate::types::adjacent::{
-    self, AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH, ADJACENT_PARENT_RAW_BYTES_LENGTH
+    AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH, ADJACENT_PARENT_RAW_BYTES_LENGTH
 };
 use crate::types::error::{TypesError, ValidationError};
 use crate::types::utils::extract_fixed_bytes;
@@ -21,7 +21,6 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use getset::Getters;
-use sha2::digest::consts::U16;
 
 /// Size in bytes of a Kadena header represented as a base64 string
 pub const RAW_HEADER_BYTES_LEN: usize = (RAW_HEADER_DECODED_BYTES_LENGTH * 4 + 2) / 3;
@@ -238,6 +237,11 @@ impl KadenaHeaderRaw {
     /// # Returns
     ///
     /// The root hash of the header.
+    ///
+    /// # Notes
+    ///
+    /// When the  chain graph degree changes along with the [`crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE`]
+    /// constant this method should be updated.
     pub fn header_root(&self) -> Result<HashValue, CryptoError> {
 
         let mut adjacent_hashes: Vec<[u8; 32]> = Vec::with_capacity(TWENTY_CHAIN_GRAPH_DEGREE);
