@@ -10,12 +10,13 @@ use crate::merkle::{
     CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
 };
 use crate::types::adjacent::{
-    AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH, ADJACENT_PARENT_RAW_BYTES_LENGTH
+    AdjacentParentRecord, AdjacentParentRecordRaw, ADJACENTS_RAW_BYTES_LENGTH,
+    ADJACENT_PARENT_RAW_BYTES_LENGTH,
 };
 use crate::types::error::{TypesError, ValidationError};
+use crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE;
 use crate::types::utils::extract_fixed_bytes;
 use crate::types::{U16_BYTES_LENGTH, U32_BYTES_LENGTH, U64_BYTES_LENGTH};
-use crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE;
 use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -243,16 +244,15 @@ impl KadenaHeaderRaw {
     /// When the  chain graph degree changes along with the [`crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE`]
     /// constant this method should be updated.
     pub fn header_root(&self) -> Result<HashValue, CryptoError> {
-
         let mut adjacent_hashes: Vec<[u8; 32]> = Vec::with_capacity(TWENTY_CHAIN_GRAPH_DEGREE);
         for i in 0..TWENTY_CHAIN_GRAPH_DEGREE {
-            let start = U16_BYTES_LENGTH
-                + i * ADJACENT_PARENT_RAW_BYTES_LENGTH
-                + CHAIN_BYTES_LENGTH;
+            let start =
+                U16_BYTES_LENGTH + i * ADJACENT_PARENT_RAW_BYTES_LENGTH + CHAIN_BYTES_LENGTH;
             let end = start + DIGEST_BYTES_LENGTH;
-            adjacent_hashes.push(self.adjacents[start..end]
-                .try_into()
-                .expect("Should be able to convert adjacent hash to fixed length array")
+            adjacent_hashes.push(
+                self.adjacents[start..end]
+                    .try_into()
+                    .expect("Should be able to convert adjacent hash to fixed length array"),
             );
         }
 

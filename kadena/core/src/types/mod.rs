@@ -1,9 +1,9 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod graph;
 pub mod adjacent;
 pub mod error;
+pub mod graph;
 pub mod header;
 pub mod utils;
 

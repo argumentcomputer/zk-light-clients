@@ -9,16 +9,14 @@ use crate::types::U16_BYTES_LENGTH;
 /// Size in bytes of the value for the adjacent parent. Contains the
 /// length of the adjacent parent record and the adjacent parent
 /// record itself.
-pub const ADJACENTS_RAW_BYTES_LENGTH: usize =
-    U16_BYTES_LENGTH + ADJACENT_RECORD_RAW_BYTES_LENGTH;
+pub const ADJACENTS_RAW_BYTES_LENGTH: usize = U16_BYTES_LENGTH + ADJACENT_RECORD_RAW_BYTES_LENGTH;
 
 /// Size in bytes of the adjacent parent record (without length prefix).
 pub const ADJACENT_RECORD_RAW_BYTES_LENGTH: usize =
     TWENTY_CHAIN_GRAPH_DEGREE * ADJACENT_PARENT_RAW_BYTES_LENGTH;
 
 /// Size in bytes of an entry in the the adjacent parent record.
-pub const ADJACENT_PARENT_RAW_BYTES_LENGTH: usize =
-    CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH;
+pub const ADJACENT_PARENT_RAW_BYTES_LENGTH: usize = CHAIN_BYTES_LENGTH + DIGEST_BYTES_LENGTH;
 
 /// Number of adjacent parents per block.
 pub const ADJACENT_RECORD_PER_BLOCK: usize = TWENTY_CHAIN_GRAPH_DEGREE;
