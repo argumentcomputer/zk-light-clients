@@ -11,11 +11,10 @@
 
 use crate::client::error::ClientError;
 use crate::client::utils::test_connection;
-use crate::types::chainweb::{BlockHeaderResponse, BlockPayloadResponse, SpvResponse};
+use crate::types::chainweb::{BlockHeaderResponse, SpvResponse};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use getset::Getters;
-use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::error::TypesError;
 use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
@@ -179,50 +178,16 @@ impl ChainwebClient {
         Ok(layer_headers)
     }
 
-    pub(crate) async fn get_block_payload(
-        &self,
-        chain: u32,
-        block_height: u64,
-        payload_hash: HashValue,
-    ) -> Result<BlockPayloadResponse, ClientError> {
-        // Format the endpoint for the call
-        let url = format!(
-            "{}/chainweb/{CHAINWEB_API_VERSION}/mainnet01/chain/{chain}/payload/{}/outputs",
-            self.chainweb_node_address,
-            payload_hash.to_base64_str()
-        );
-
-        // Send the HTTP request
-        let response = self
-            .inner
-            .get(&url)
-            .header(ACCEPT, "application/json")
-            .query(&[("height", block_height)])
-            .send()
-            .await
-            .map_err(|err| ClientError::Request {
-                endpoint: url.clone(),
-                source: Box::new(err),
-            })?;
-
-        if !response.status().is_success() {
-            return Err(ClientError::Request {
-                endpoint: url,
-                source: format!(
-                    "Request not successful, got HTTP code {}",
-                    response.status().as_str()
-                )
-                .into(),
-            });
-        }
-
-        // Deserialize the response
-        response.json().await.map_err(|err| ClientError::Request {
-            endpoint: url.clone(),
-            source: Box::new(err),
-        })
-    }
-
+    /// `get_spv` makes an HTTP request to the Chainweb Node API to get an SPV proof.
+    ///
+    /// # Arguments
+    ///
+    /// * `chain` - The chain to get the SPV proof for.
+    /// * `request_key` - The request key for the SPV proof.
+    ///
+    /// # Returns
+    ///
+    /// The SPV proof.
     pub(crate) async fn get_spv(
         &self,
         chain: u32,

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
 use clap::Parser;
 use kadena_lc::client::Client;
 use kadena_lc::proofs::ProvingMode;
@@ -58,16 +56,6 @@ async fn main() -> Result<()> {
         .get(kadena_headers.len() / 2)
         .unwrap()
         .clone();
-
-    // Fetch payload information for the target height of chain 0
-    let outputs = client
-        .get_block_payload(
-            0,
-            *target_block.height(),
-            HashValue::new(*target_block.chain_headers().get(0).unwrap().payload()),
-        )
-        .await?;
-
     // Fetch SPV proof for the target block height of chain 0
     // Fetching SPV for request key "Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M"
     // https://explorer.chainweb.com/mainnet/txdetail/Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M
@@ -79,64 +67,16 @@ async fn main() -> Result<()> {
         .await
         .unwrap();
 
-    // Verify the SPV proof against multiple hashes
-    println!("Transaction Hash");
-    println!(
-        "   {}",
-        spv.verify(
-            &HashValue::from_slice(
-                &URL_SAFE_NO_PAD
-                    .decode(outputs.transactions_hash().as_bytes())
-                    .unwrap()
-            )
-            .unwrap()
-        )
-        .unwrap()
-    );
-    println!("Outputs Hash");
-    println!(
-        "{}",
-        spv.verify(
-            &HashValue::from_slice(
-                &URL_SAFE_NO_PAD
-                    .decode(outputs.outputs_hash().as_bytes())
-                    .unwrap()
-            )
-            .unwrap()
-        )
-        .unwrap()
-    );
-    println!("Payload Hash");
-    println!(
-        "{}",
-        spv.verify(
-            &HashValue::from_slice(
-                &URL_SAFE_NO_PAD
-                    .decode(outputs.payload_hash().as_bytes())
-                    .unwrap()
-            )
-            .unwrap()
-        )
-        .unwrap()
-    );
+    println!("{:?}", spv.subject().input().as_bytes().len());
+
     println!("BlockHeader Hash");
     println!(
         "{}",
         spv.verify(&HashValue::new(
-            *target_block.chain_headers().get(0).unwrap().hash()
+            *target_block.chain_headers().first().unwrap().hash()
         ))
         .unwrap()
     );
-
-    /*let kadena_headers = client
-        .get_layer_block_headers(TARGET_BLOCK, BLOCK_WINDOW)
-        .await?;
-
-    let proof = client.prove_longest_chain(mode, kadena_headers).await?;
-
-    let valid = client.verify_longest_chain(proof).await?;
-
-    assert!(valid);*/
 
     Ok(())
 }

@@ -1,4 +1,4 @@
-use crate::crypto::hash::sha512::{hash_data, hash_inner};
+use crate::crypto::hash::sha512::{hash_inner, hash_leaf};
 use crate::crypto::hash::HashValue;
 use crate::merkle::proof::{MerkleProof, MERKLE_PROOF_BASE_BYTES_LENGTH};
 use crate::merkle::subject::{Subject, SUBJECT_BASE_BYTES_LENGTH};
@@ -51,15 +51,11 @@ impl Spv {
     ///
     /// A boolean indicating if the proof is valid.
     pub fn verify(&self, expected_root: &HashValue) -> Result<bool, ValidationError> {
-        let x: &[u8] = &[0x0];
         // Hash subject for base leaf
-        let mut current_hash = hash_data(
-            &[
-                x,
+        let mut current_hash = hash_leaf(
             &URL_SAFE_NO_PAD
                 .decode(self.subject().input().as_bytes())
-                .map_err(|err| ValidationError::InvalidBase64 { source: err.into() })?
-            ].concat(),
+                .map_err(|err| ValidationError::InvalidBase64 { source: err.into() })?,
         )
         .map_err(|err| ValidationError::HashError { source: err.into() })?;
 
@@ -168,7 +164,7 @@ mod test {
     use crate::merkle::proof::{MerkleProof, Steps, STEP_BYTES_LENGTH};
     use crate::merkle::spv::{Spv, SPV_BASE_BYTES_LENGTH};
     use crate::merkle::subject::Subject;
-    use crate::test_utils::{random_hash, random_string};
+    use crate::test_utils::{get_test_assets, random_hash, random_string};
 
     const SUBJECT_INPUT_LENGTH: usize = 45;
     const STEPS_COUNT: usize = 15;
@@ -199,5 +195,17 @@ mod test {
         let deserialized_spv = Spv::from_bytes(&bytes).unwrap();
 
         assert_eq!(spv, deserialized_spv);
+    }
+
+    #[test]
+    fn test_happy_path_spv() {
+        let test_assets = get_test_assets();
+
+        let is_expected_root = test_assets
+            .spv()
+            .verify(test_assets.expected_root())
+            .expect("Should be able to verify");
+
+        assert!(is_expected_root);
     }
 }

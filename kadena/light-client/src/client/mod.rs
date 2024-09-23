@@ -15,7 +15,6 @@ use crate::client::chainweb::ChainwebClient;
 use crate::client::error::ClientError;
 use crate::client::proof_server::ProofServerClient;
 use crate::proofs::{ProofType, ProvingMode};
-use crate::types::chainweb::BlockPayloadResponse;
 use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
@@ -118,18 +117,54 @@ impl Client {
         self.proof_server_client.verify_longest_chain(proof).await
     }
 
-    pub async fn get_block_payload(
+    /// Get the spv for the given chain and request key.
+    ///
+    /// # Arguments
+    ///
+    /// * `chain` - The chain to get the spv from.
+    /// * `request_key` - The request key to get the spv for.
+    ///
+    /// # Returns
+    ///
+    /// The spv.
+    pub async fn get_spv(&self, chain: u32, request_key: String) -> Result<Spv, ClientError> {
+        self.chainweb_client.get_spv(chain, request_key).await
+    }
+
+    /// Forwards a request to the proof server to prove a correct spv.
+    ///
+    /// # Arguments
+    ///
+    /// * `proving_mode` - The proving mode to use, either STARK or SNARK.
+    /// * `layer_block_headers` - The list of Chainweb layer block headers to prove.
+    /// * `spv` - The spv to prove.
+    /// * `expected_root` - The expected root hash.
+    ///
+    /// # Returns
+    ///
+    /// A proof for the spv.
+    pub async fn prove_spv(
         &self,
-        chain: u32,
-        block_height: u64,
-        payload_hash: HashValue,
-    ) -> Result<BlockPayloadResponse, ClientError> {
-        self.chainweb_client
-            .get_block_payload(chain, block_height, payload_hash)
+        proving_mode: ProvingMode,
+        layer_block_headers: Vec<ChainwebLayerHeader>,
+        spv: Spv,
+        expected_root: HashValue,
+    ) -> Result<ProofType, ClientError> {
+        self.proof_server_client
+            .prove_spv(proving_mode, layer_block_headers, spv, expected_root)
             .await
     }
 
-    pub async fn get_spv(&self, chain: u32, request_key: String) -> Result<Spv, ClientError> {
-        self.chainweb_client.get_spv(chain, request_key).await
+    /// Forwards a request to the proof server to verify a spv.
+    ///
+    /// # Arguments
+    ///
+    /// * `proof` - The proof to verify.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating whether the proof is valid.
+    pub async fn verify_spv(&self, proof: ProofType) -> Result<bool, ClientError> {
+        self.proof_server_client.verify_spv(proof).await
     }
 }

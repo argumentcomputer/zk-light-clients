@@ -3,23 +3,26 @@
 
 //! # SPV Prover module
 //!
-//! This module provides the prover implementation for the lSPV proof. The prover
+//! This module provides the prover implementation for the SPV proof. The prover
 //! is responsible for generating, executing, proving, and verifying proofs for the light client.
 
 use crate::proofs::error::ProverError;
 use crate::proofs::{ProofType, Prover, ProvingMode};
 use anyhow::Result;
-use getset::CopyGetters;
+use getset::Getters;
 use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::crypto::U256;
+use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::error::TypesError;
+use kadena_lc_core::types::header::chain::HASH_BYTES_LENGTH;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
+use kadena_lc_core::types::U64_BYTES_LENGTH;
 use kadena_programs::SPV_PROGRAM;
 use sphinx_sdk::{
     ProverClient, SphinxProvingKey, SphinxPublicValues, SphinxStdin, SphinxVerifyingKey,
 };
 
-/// The prover for the longest chain proof.
+/// The prover for the spv proof.
 pub struct SpvProver {
     client: ProverClient,
     keys: (SphinxProvingKey, SphinxVerifyingKey),
@@ -58,6 +61,8 @@ impl SpvProver {
 #[derive(Debug, Eq, PartialEq)]
 pub struct SpvIn {
     layer_block_headers: Vec<ChainwebLayerHeader>,
+    spv: Spv,
+    expected_root: HashValue,
 }
 
 impl SpvIn {
@@ -70,9 +75,15 @@ impl SpvIn {
     /// # Returns
     ///
     /// A new `SpvIn`.
-    pub const fn new(layer_block_headers: Vec<ChainwebLayerHeader>) -> Self {
+    pub const fn new(
+        layer_block_headers: Vec<ChainwebLayerHeader>,
+        spv: Spv,
+        expected_root: HashValue,
+    ) -> Self {
         Self {
             layer_block_headers,
+            spv,
+            expected_root,
         }
     }
 
@@ -84,9 +95,18 @@ impl SpvIn {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
 
-        bytes.extend_from_slice(&ChainwebLayerHeader::serialize_list(
-            &self.layer_block_headers,
-        ));
+        // Serialized list length and elements
+        let chainweb_layer_bytes = ChainwebLayerHeader::serialize_list(&self.layer_block_headers);
+        bytes.extend_from_slice(&(chainweb_layer_bytes.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(&chainweb_layer_bytes);
+
+        // Serialized spv length and bytes
+        let spv_bytes = self.spv.to_bytes();
+        bytes.extend_from_slice(&(spv_bytes.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(&spv_bytes);
+
+        // Fixed length
+        bytes.extend_from_slice(self.expected_root.as_ref());
 
         bytes
     }
@@ -100,20 +120,80 @@ impl SpvIn {
     /// # Returns
     ///
     /// A `Result` containing either the deserialized `SpvIn` struct or a `TypesError`.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, TypesError> {
+    pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, TypesError> {
+        let input_length = bytes.len();
+
+        if bytes.len() < U64_BYTES_LENGTH * 2 + HASH_BYTES_LENGTH {
+            return Err(TypesError::UnderLength {
+                structure: "SpvIn".to_string(),
+                actual: bytes.len(),
+                minimum: 32,
+            });
+        }
+
+        // Get list length
+        let list_length = u64::from_le_bytes(
+            bytes[0..U64_BYTES_LENGTH]
+                .try_into()
+                .expect("Should be able to extract 8 bytes for u64"),
+        ) as usize;
+        bytes = &bytes[U64_BYTES_LENGTH..];
+
+        if input_length < list_length + U64_BYTES_LENGTH * 2 + HASH_BYTES_LENGTH {
+            return Err(TypesError::UnderLength {
+                structure: "SpvIn".to_string(),
+                actual: bytes.len(),
+                minimum: list_length + U64_BYTES_LENGTH * 2 + HASH_BYTES_LENGTH,
+            });
+        }
+
+        // Get list
+        let layer_block_headers = ChainwebLayerHeader::deserialize_list(&bytes[0..list_length])?;
+        bytes = &bytes[list_length..];
+
+        // Get spv length
+        let spv_length = u64::from_le_bytes(
+            bytes[0..U64_BYTES_LENGTH]
+                .try_into()
+                .expect("Should be able to extract 8 bytes for u64"),
+        ) as usize;
+        bytes = &bytes[U64_BYTES_LENGTH..];
+
+        if input_length != list_length + spv_length + U64_BYTES_LENGTH * 2 + HASH_BYTES_LENGTH {
+            return Err(TypesError::InvalidLength {
+                structure: "SpvIn".to_string(),
+                actual: bytes.len(),
+                expected: list_length + spv_length + U64_BYTES_LENGTH * 2 + HASH_BYTES_LENGTH,
+            });
+        }
+
+        // Get spv
+        let spv = Spv::from_bytes(&bytes[0..spv_length])?;
+        bytes = &bytes[spv_length..];
+
+        // Get expected root
+        let expected_root = HashValue::new(
+            bytes[0..HASH_BYTES_LENGTH]
+                .try_into()
+                .expect("Should be able to extract 32 bytes for HashValue"),
+        );
+
         Ok(Self {
-            layer_block_headers: ChainwebLayerHeader::deserialize_list(bytes)?,
+            layer_block_headers,
+            spv,
+            expected_root,
         })
     }
 }
 
 /// The output for the spv proof.
-#[derive(Debug, Clone, Copy, CopyGetters)]
-#[getset(get_copy = "pub")]
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct SpvOut {
     first_layer_block_header_hash: HashValue,
     target_layer_block_header_hash: HashValue,
     confirmation_work: U256,
+    subject: Vec<u8>,
 }
 
 impl From<&mut SphinxPublicValues> for SpvOut {
@@ -121,11 +201,13 @@ impl From<&mut SphinxPublicValues> for SpvOut {
         let confirmation_work = U256::from_little_endian(&public_values.read::<[u8; 32]>());
         let first_layer_block_header_hash = HashValue::new(public_values.read::<[u8; 32]>());
         let target_layer_block_header_hash = HashValue::new(public_values.read::<[u8; 32]>());
+        let subject = public_values.read::<Vec<u8>>();
 
         Self {
             confirmation_work,
             first_layer_block_header_hash,
             target_layer_block_header_hash,
+            subject,
         }
     }
 }
@@ -141,6 +223,9 @@ impl Prover for SpvProver {
         stdin.write(&ChainwebLayerHeader::serialize_list(
             &inputs.layer_block_headers,
         ));
+        stdin.write(&inputs.spv.to_bytes());
+        stdin.write(&inputs.expected_root.to_vec());
+
         Ok(stdin)
     }
 
@@ -199,40 +284,46 @@ impl Prover for SpvProver {
 #[cfg(all(test, feature = "kadena"))]
 mod test {
     use super::*;
-    use kadena_lc_core::test_utils::get_layer_block_headers;
+    use kadena_lc_core::test_utils::get_test_assets;
 
     #[test]
     fn test_execute_spv() {
-        let headers = get_layer_block_headers();
+        let test_assets = get_test_assets();
 
         let prover = SpvProver::new();
 
-        let new_period_inputs = SpvIn {
-            layer_block_headers: headers.clone(),
+        let spv_inputs = SpvIn {
+            layer_block_headers: test_assets.layer_headers().clone(),
+            spv: test_assets.spv().clone(),
+            expected_root: *test_assets.expected_root(),
         };
 
-        let new_period_output = prover.execute(&new_period_inputs).unwrap();
+        let spv_out = prover.execute(&spv_inputs).unwrap();
 
         let confirmation_work = ChainwebLayerHeader::cumulative_produced_work(
-            headers[headers.len() / 2..headers.len() - 1].to_vec(),
+            test_assets.layer_headers()
+                [test_assets.layer_headers().len() / 2..test_assets.layer_headers().len() - 1]
+                .to_vec(),
         )
         .expect("Should be able to calculate cumulative work");
 
-        assert_eq!(new_period_output.confirmation_work, confirmation_work,);
+        assert_eq!(spv_out.confirmation_work, confirmation_work,);
         assert_eq!(
-            new_period_output.first_layer_block_header_hash,
-            headers
+            spv_out.first_layer_block_header_hash,
+            test_assets
+                .layer_headers()
                 .first()
                 .expect("Should have a first header")
                 .header_root()
                 .expect("Should have a header root"),
         );
         assert_eq!(
-            new_period_output.target_layer_block_header_hash,
-            headers[headers.len() / 2]
+            spv_out.target_layer_block_header_hash,
+            test_assets.layer_headers()[test_assets.layer_headers().len() / 2]
                 .header_root()
                 .expect("Should have a header root"),
         );
+        assert_eq!(test_assets.spv().subject().to_bytes(), spv_out.subject)
     }
 
     #[test]
@@ -240,12 +331,14 @@ mod test {
     fn test_prove_stark_spv() {
         use std::time::Instant;
 
-        let layer_block_headers = get_layer_block_headers();
+        let test_assets = get_test_assets();
 
         let prover = SpvProver::new();
 
         let new_period_inputs = SpvIn {
-            layer_block_headers,
+            layer_block_headers: test_assets.layer_headers().clone(),
+            spv: test_assets.spv().clone(),
+            expected_root: *test_assets.expected_root(),
         };
 
         println!("Starting STARK proving for spv...");
@@ -262,12 +355,14 @@ mod test {
     fn test_prove_snark_spv() {
         use std::time::Instant;
 
-        let layer_block_headers = get_layer_block_headers();
+        let test_assets = get_test_assets();
 
         let prover = SpvProver::new();
 
         let new_period_inputs = SpvIn {
-            layer_block_headers,
+            layer_block_headers: test_assets.layer_headers().clone(),
+            spv: test_assets.spv().clone(),
+            expected_root: *test_assets.expected_root(),
         };
 
         println!("Starting SNARK proving for spv...");

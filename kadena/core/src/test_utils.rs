@@ -1,13 +1,13 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::crypto::hash::HashValue;
+use crate::merkle::spv::Spv;
 use crate::types::header::chain::RAW_HEADER_BYTES_LEN;
 use crate::types::header::layer::ChainwebLayerHeader;
+use getset::Getters;
 use std::fs;
 use std::path::PathBuf;
-
-#[cfg(test)]
-use crate::crypto::hash::HashValue;
 
 // this binary data comes from this block header: https://explorer.chainweb.com/testnet/chain/0/block/PjTIbGWK6GnJosMRvBeN2Yoyue9zU2twuWCSYQ1IRRg
 // Extracted using the p2p REST API:
@@ -26,6 +26,7 @@ pub const TESTNET_CHAIN_3_HEADERS_URL: &str =
 
 pub const COMPACT_HEADER_PATH: &str = "../test-assets/compact.json";
 pub const CHAINWEB_LAYER_HEADERS_PATH: &str = "../test-assets/kadena_layer_headers.json";
+pub const SPV_PATH: &str = "../test-assets/spv.json";
 
 pub fn get_compact_headers_bytes() -> Vec<u8> {
     let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -43,6 +44,42 @@ pub fn get_layer_block_headers() -> Vec<ChainwebLayerHeader> {
     let bytes: Vec<u8> = serde_json::from_slice(&fs::read(test_asset_path).unwrap()).unwrap();
 
     ChainwebLayerHeader::deserialize_list(&bytes).unwrap()
+}
+
+pub fn get_spv() -> Spv {
+    let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let test_asset_path = root_path.join(SPV_PATH);
+
+    let bytes: Vec<u8> = serde_json::from_slice(&fs::read(test_asset_path).unwrap()).unwrap();
+
+    Spv::from_bytes(&bytes).unwrap()
+}
+
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
+pub struct TestAssets {
+    layer_headers: Vec<ChainwebLayerHeader>,
+    spv: Spv,
+    expected_root: HashValue,
+}
+
+pub fn get_test_assets() -> TestAssets {
+    let layer_heads = get_layer_block_headers();
+    let spv = get_spv();
+    let expected_root = HashValue::new(
+        *layer_heads[layer_heads.len() / 2]
+            .chain_headers()
+            .first()
+            .unwrap()
+            .hash(),
+    );
+
+    TestAssets {
+        layer_headers: layer_heads,
+        spv,
+        expected_root,
+    }
 }
 
 #[cfg(test)]

@@ -1,7 +1,6 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-use getset::Getters;
 use kadena_lc_core::merkle::proof::MerkleProof;
 use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::merkle::subject::Subject;
@@ -28,20 +27,6 @@ impl TryInto<Vec<KadenaHeaderRaw>> for BlockHeaderResponse {
             .map(|item| KadenaHeaderRaw::from_base64(&item.into_bytes()))
             .collect()
     }
-}
-
-/// Response received while querying block payload from a Chainweb
-/// node.
-#[derive(Clone, Debug, Deserialize, Getters)]
-#[serde(rename_all = "camelCase")]
-#[getset(get = "pub")]
-pub struct BlockPayloadResponse {
-    coinbase: String,
-    miner_data: String,
-    outputs_hash: String,
-    payload_hash: String,
-    transactions: Vec<Vec<String>>,
-    transactions_hash: String,
 }
 
 /// Response received while querying a SPV proof from a Chainweb
