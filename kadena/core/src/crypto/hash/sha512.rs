@@ -28,7 +28,7 @@ pub const fn tag_bytes(tag: u16) -> [u8; TAG_BYTES_LENGTH] {
 }
 
 /// Hash the given data using the SHA-512 hash function following the
-/// model of the Chainweb Merkle tree. To do so, it prepends the byte
+/// model of the Chainweb Merkle tree, along with a tag. To do so, it prepends the byte
 /// `0x0` to the data and a given tag.
 ///
 /// See [the `chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree).
@@ -42,8 +42,26 @@ pub const fn tag_bytes(tag: u16) -> [u8; TAG_BYTES_LENGTH] {
 ///
 /// The hash of the given data.
 pub fn hash_tagged_data(tag: u16, bytes: &[u8]) -> Result<HashValue, CryptoError> {
+    let input = [&tag_bytes(tag), bytes].concat();
+    hash_leaf(&input)
+}
+
+/// Hash the given data as a Merkle leaf using the SHA-512 hash function
+/// following the model of the Chainweb Merkle tree. To do so, it prepends the byte
+/// `0x0` to the data.
+///
+/// See [the `chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree).
+///
+/// # Arguments
+///
+/// * `bytes` - The data to hash.
+///
+/// # Returns
+///
+/// The hash of the given data.
+pub fn hash_leaf(bytes: &[u8]) -> Result<HashValue, CryptoError> {
     let x: &[u8] = &[0x0];
-    let input = [x, &tag_bytes(tag), bytes].concat();
+    let input = [x, bytes].concat();
     hash_data(&input)
 }
 

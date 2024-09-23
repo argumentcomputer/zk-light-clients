@@ -1,4 +1,5 @@
 use crate::proofs::longest_chain::LongestChainIn;
+use crate::proofs::spv::SpvIn;
 use crate::proofs::{ProofType, ProvingMode};
 use anyhow::{anyhow, Error};
 
@@ -8,6 +9,10 @@ pub enum Request {
     ProveLongestChain(Box<(ProvingMode, LongestChainIn)>),
     /// Request to verify the validity of a proof for the longest chain
     VerifyLongestChain(Box<ProofType>),
+    /// Request to prove a correct spv for Kadena
+    ProveSpv(Box<(ProvingMode, SpvIn)>),
+    /// Request to verify the validity of a proof for the spv
+    VerifySpv(Box<ProofType>),
 }
 
 impl Request {
@@ -29,6 +34,20 @@ impl Request {
             }
             Request::VerifyLongestChain(proof_type) => {
                 let mut bytes = vec![1];
+                bytes.extend_from_slice(&proof_type.to_bytes().map_err(|e| anyhow!(e))?);
+                Ok(bytes)
+            }
+            Request::ProveSpv(boxed) => {
+                let mut bytes = vec![2];
+
+                let (proving_mode, spv_in) = boxed.as_ref();
+
+                bytes.push(proving_mode.to_bytes());
+                bytes.extend_from_slice(&spv_in.to_bytes());
+                Ok(bytes)
+            }
+            Request::VerifySpv(proof_type) => {
+                let mut bytes = vec![3];
                 bytes.extend_from_slice(&proof_type.to_bytes().map_err(|e| anyhow!(e))?);
                 Ok(bytes)
             }
@@ -59,6 +78,17 @@ impl Request {
             1 => {
                 let proof_type = ProofType::from_bytes(&bytes[1..])?;
                 Ok(Request::VerifyLongestChain(Box::new(proof_type)))
+            }
+            2 => {
+                let proving_mode = ProvingMode::from_bytes(&bytes[1..2])?;
+
+                let spv_in = SpvIn::from_bytes(&bytes[2..])?;
+
+                Ok(Request::ProveSpv(Box::new((proving_mode, spv_in))))
+            }
+            3 => {
+                let proof_type = ProofType::from_bytes(&bytes[1..])?;
+                Ok(Request::VerifySpv(Box::new(proof_type)))
             }
             _ => Err(anyhow!("Invalid request")),
         }

@@ -15,6 +15,7 @@ use sphinx_sdk::{SphinxProofWithPublicValues, SphinxPublicValues, SphinxStdin};
 
 pub mod error;
 pub mod longest_chain;
+pub mod spv;
 
 /// The proving mode for the prover.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]

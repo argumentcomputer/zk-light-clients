@@ -5,6 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use kadena_lc::client::Client;
 use kadena_lc::proofs::ProvingMode;
+use kadena_lc_core::crypto::hash::HashValue;
 use std::env;
 use std::sync::Arc;
 
@@ -27,7 +28,7 @@ struct Cli {
 async fn main() -> Result<()> {
     // Get proving mode for the light client.
     let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
-    let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+    let _mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
 
     // Extract all addresses from the command.
     let Cli {
@@ -51,11 +52,31 @@ async fn main() -> Result<()> {
         .get_layer_block_headers(TARGET_BLOCK, BLOCK_WINDOW)
         .await?;
 
-    let proof = client.prove_longest_chain(mode, kadena_headers).await?;
+    let target_block = kadena_headers
+        .get(kadena_headers.len() / 2)
+        .unwrap()
+        .clone();
+    // Fetch SPV proof for the target block height of chain 0
+    // Fetching SPV for request key "Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M"
+    // https://explorer.chainweb.com/mainnet/txdetail/Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M
+    let spv = client
+        .get_spv(
+            0,
+            String::from("Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M"),
+        )
+        .await
+        .unwrap();
 
-    let valid = client.verify_longest_chain(proof).await?;
+    println!("{:?}", spv.subject().input().as_bytes().len());
 
-    assert!(valid);
+    println!("BlockHeader Hash");
+    println!(
+        "{}",
+        spv.verify(&HashValue::new(
+            *target_block.chain_headers().first().unwrap().hash()
+        ))
+        .unwrap()
+    );
 
     Ok(())
 }

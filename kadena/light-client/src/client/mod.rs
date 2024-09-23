@@ -15,6 +15,8 @@ use crate::client::chainweb::ChainwebClient;
 use crate::client::error::ClientError;
 use crate::client::proof_server::ProofServerClient;
 use crate::proofs::{ProofType, ProvingMode};
+use kadena_lc_core::crypto::hash::HashValue;
+use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 
 pub(crate) mod chainweb;
@@ -113,5 +115,56 @@ impl Client {
     /// A boolean indicating whether the proof is valid.
     pub async fn verify_longest_chain(&self, proof: ProofType) -> Result<bool, ClientError> {
         self.proof_server_client.verify_longest_chain(proof).await
+    }
+
+    /// Get the spv for the given chain and request key.
+    ///
+    /// # Arguments
+    ///
+    /// * `chain` - The chain to get the spv from.
+    /// * `request_key` - The request key to get the spv for.
+    ///
+    /// # Returns
+    ///
+    /// The spv.
+    pub async fn get_spv(&self, chain: u32, request_key: String) -> Result<Spv, ClientError> {
+        self.chainweb_client.get_spv(chain, request_key).await
+    }
+
+    /// Forwards a request to the proof server to prove a correct spv.
+    ///
+    /// # Arguments
+    ///
+    /// * `proving_mode` - The proving mode to use, either STARK or SNARK.
+    /// * `layer_block_headers` - The list of Chainweb layer block headers to prove.
+    /// * `spv` - The spv to prove.
+    /// * `expected_root` - The expected root hash.
+    ///
+    /// # Returns
+    ///
+    /// A proof for the spv.
+    pub async fn prove_spv(
+        &self,
+        proving_mode: ProvingMode,
+        layer_block_headers: Vec<ChainwebLayerHeader>,
+        spv: Spv,
+        expected_root: HashValue,
+    ) -> Result<ProofType, ClientError> {
+        self.proof_server_client
+            .prove_spv(proving_mode, layer_block_headers, spv, expected_root)
+            .await
+    }
+
+    /// Forwards a request to the proof server to verify a spv.
+    ///
+    /// # Arguments
+    ///
+    /// * `proof` - The proof to verify.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating whether the proof is valid.
+    pub async fn verify_spv(&self, proof: ProofType) -> Result<bool, ClientError> {
+        self.proof_server_client.verify_spv(proof).await
     }
 }

@@ -56,6 +56,11 @@ macro_rules! deserialization_error {
 /// Errors possible while validating data.
 #[derive(Debug, Error)]
 pub enum ValidationError {
+    #[error("Invalid base64 string, error while trying to decode it: {source}")]
+    InvalidBase64 {
+        #[source]
+        source: Box<dyn std::error::Error + Sync + Send>,
+    },
     #[error("Target for block was not reached: expected less or equal than {target} got {hash}")]
     TargetNotMet { target: String, hash: String },
     #[error("Error while trying to set chain block header: currently handling {size} chains, got chain {chain}"
@@ -94,6 +99,8 @@ pub enum ValidationError {
     },
     #[error("Missing parent hash in the chain block header list at index {index}")]
     MissingParentHeader { index: usize },
+    #[error("Invalid position value in Merkle Proof. Expected 0 or 1, got {value}")]
+    InvalidPosition { value: u8 },
     #[error("Error in adjacent parent chain records at layer height {layer}, chain {chain}")]
     InvalidAdjacentChainRecords { chain: usize, layer: usize },
 }

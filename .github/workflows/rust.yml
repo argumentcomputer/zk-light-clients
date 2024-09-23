@@ -237,7 +237,7 @@ jobs:
             TESTS="test_execute_inclusion test_execute_committee_change"
             FEATURES="--features ethereum"
           elif [[ "${{ matrix.package }}" == "kadena" ]]; then
-            TESTS="test_execute_committee_change"
+            TESTS="test_execute_spv test_execute_longest_chain"
             FEATURES="--features kadena"
           fi
           echo "TESTS=$TESTS" | tee -a $GITHUB_ENV

@@ -1,3 +1,7 @@
+pub mod proof;
+pub mod spv;
+pub mod subject;
+
 /// Tag associated to the chain ID value in the Merkle tree.
 ///
 /// See [the `chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree#chainweb-merkle-hash-function).
@@ -31,6 +35,11 @@ pub const CHAINWEB_VERSION_TAG: u16 = 0x0008;
 ///
 /// See [the `chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree#chainweb-merkle-hash-function).
 pub const HASH_TARGET_TAG: u16 = 0x0011;
+
+/// Tag associated to a transaction value in the Merkle tree.
+///
+/// See [the `chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree#chainweb-merkle-hash-function).
+pub const TRANSACTION_TAG: u16 = 0x0013;
 
 /// Tag associated to the epoch start value in the Merkle tree.
 ///

@@ -3,7 +3,7 @@
 
 //! # Longest Chain Prover module
 //!
-//! This module provides the prover implementation for the longest chain change proof. The prover
+//! This module provides the prover implementation for the longest chain proof. The prover
 //! is responsible for generating, executing, proving, and verifying proofs for the light client.
 
 use crate::proofs::error::ProverError;
@@ -48,13 +48,13 @@ impl LongestChainProver {
     ///
     /// # Returns
     ///
-    /// A `SphinxVerifyingKey` that can be used for verifying the committee-change proof.
+    /// A `SphinxVerifyingKey` that can be used for verifying the longest chain proof.
     pub const fn get_vk(&self) -> &SphinxVerifyingKey {
         &self.keys.1
     }
 }
 
-/// The input for the sync committee change proof.
+/// The input for the longest chain proof.
 #[derive(Debug, Eq, PartialEq)]
 pub struct LongestChainIn {
     layer_block_headers: Vec<ChainwebLayerHeader>,
@@ -69,7 +69,7 @@ impl LongestChainIn {
     ///
     /// # Returns
     ///
-    /// A new `CommitteeChangeIn`.
+    /// A new `LongestChainIn`.
     pub const fn new(layer_block_headers: Vec<ChainwebLayerHeader>) -> Self {
         Self {
             layer_block_headers,
@@ -107,16 +107,16 @@ impl LongestChainIn {
     }
 }
 
-/// The output for the sync committee change proof.
+/// The output for the longest chain proof.
 #[derive(Debug, Clone, Copy, CopyGetters)]
 #[getset(get_copy = "pub")]
-pub struct CommitteeChangeOut {
+pub struct LongestChainOut {
     first_layer_block_header_hash: HashValue,
     target_layer_block_header_hash: HashValue,
     confirmation_work: U256,
 }
 
-impl From<&mut SphinxPublicValues> for CommitteeChangeOut {
+impl From<&mut SphinxPublicValues> for LongestChainOut {
     fn from(public_values: &mut SphinxPublicValues) -> Self {
         let confirmation_work = U256::from_little_endian(&public_values.read::<[u8; 32]>());
         let first_layer_block_header_hash = HashValue::new(public_values.read::<[u8; 32]>());
@@ -134,7 +134,7 @@ impl Prover for LongestChainProver {
     const PROGRAM: &'static [u8] = LONGEST_CHAIN_PROGRAM;
     type Error = ProverError;
     type StdIn = LongestChainIn;
-    type StdOut = CommitteeChangeOut;
+    type StdOut = LongestChainOut;
 
     fn generate_sphinx_stdin(&self, inputs: &Self::StdIn) -> Result<SphinxStdin, Self::Error> {
         let mut stdin = SphinxStdin::new();
@@ -155,7 +155,7 @@ impl Prover for LongestChainProver {
             .run()
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
-        Ok(CommitteeChangeOut::from(&mut public_values))
+        Ok(LongestChainOut::from(&mut public_values))
     }
 
     fn prove(&self, inputs: &Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
@@ -202,25 +202,25 @@ mod test {
     use kadena_lc_core::test_utils::get_layer_block_headers;
 
     #[test]
-    fn test_execute_committee_change() {
+    fn test_execute_longest_chain() {
         let headers = get_layer_block_headers();
 
         let prover = LongestChainProver::new();
 
-        let new_period_inputs = LongestChainIn {
+        let longest_chain_in = LongestChainIn {
             layer_block_headers: headers.clone(),
         };
 
-        let new_period_output = prover.execute(&new_period_inputs).unwrap();
+        let longest_chain_out = prover.execute(&longest_chain_in).unwrap();
 
         let confirmation_work = ChainwebLayerHeader::cumulative_produced_work(
             headers[headers.len() / 2..headers.len() - 1].to_vec(),
         )
         .expect("Should be able to calculate cumulative work");
 
-        assert_eq!(new_period_output.confirmation_work, confirmation_work,);
+        assert_eq!(longest_chain_out.confirmation_work, confirmation_work,);
         assert_eq!(
-            new_period_output.first_layer_block_header_hash,
+            longest_chain_out.first_layer_block_header_hash,
             headers
                 .first()
                 .expect("Should have a first header")
@@ -228,7 +228,7 @@ mod test {
                 .expect("Should have a header root"),
         );
         assert_eq!(
-            new_period_output.target_layer_block_header_hash,
+            longest_chain_out.target_layer_block_header_hash,
             headers[headers.len() / 2]
                 .header_root()
                 .expect("Should have a header root"),
@@ -237,7 +237,7 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_prove_stark_committee_change() {
+    fn test_prove_stark_longest_chain() {
         use std::time::Instant;
 
         let layer_block_headers = get_layer_block_headers();
@@ -248,7 +248,7 @@ mod test {
             layer_block_headers,
         };
 
-        println!("Starting STARK proving for sync committee change...");
+        println!("Starting STARK proving for longest chain...");
         let start = Instant::now();
 
         let _ = prover
@@ -259,7 +259,7 @@ mod test {
 
     #[test]
     #[ignore = "This test is too slow for CI"]
-    fn test_prove_snark_committee_change() {
+    fn test_prove_snark_longest_chain() {
         use std::time::Instant;
 
         let layer_block_headers = get_layer_block_headers();
@@ -270,7 +270,7 @@ mod test {
             layer_block_headers,
         };
 
-        println!("Starting SNARK proving for sync committee change...");
+        println!("Starting SNARK proving for longest chain...");
         let start = Instant::now();
 
         let _ = prover
