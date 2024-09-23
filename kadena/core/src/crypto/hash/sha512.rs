@@ -48,7 +48,7 @@ pub fn hash_tagged_data(tag: u16, bytes: &[u8]) -> Result<HashValue, CryptoError
 
 /// Hash the given data as a Merkle leaf using the SHA-512 hash function
 /// following the model of the Chainweb Merkle tree. To do so, it prepends the byte
-/// `0x0` to the data and a given tag.
+/// `0x0` to the data.
 ///
 /// See [the `chainweb-node` wiki](https://github.com/kadena-io/chainweb-node/wiki/Chainweb-Merkle-Tree).
 ///
