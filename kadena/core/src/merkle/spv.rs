@@ -96,7 +96,7 @@ impl Spv {
         // Add algorithm
         bytes.extend_from_slice(algorithm_bytes);
 
-        // Add subject length
+        // Add subject
         bytes.extend_from_slice(&self.subject.to_bytes());
 
         // Add object
