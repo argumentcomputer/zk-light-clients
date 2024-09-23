@@ -94,4 +94,6 @@ pub enum ValidationError {
     },
     #[error("Missing parent hash in the chain block header list at index {index}")]
     MissingParentHeader { index: usize },
+    #[error("Error in adjacent parent chain records at layer height {layer}, chain {chain}")]
+    InvalidAdjacentChainRecords { chain: usize, layer: usize },
 }

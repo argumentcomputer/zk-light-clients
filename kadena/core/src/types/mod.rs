@@ -3,6 +3,7 @@
 
 pub mod adjacent;
 pub mod error;
+pub mod graph;
 pub mod header;
 pub mod utils;
 
