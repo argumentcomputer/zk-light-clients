@@ -15,6 +15,7 @@ use crate::client::chainweb::ChainwebClient;
 use crate::client::error::ClientError;
 use crate::client::proof_server::ProofServerClient;
 use crate::proofs::{ProofType, ProvingMode};
+use crate::types::chainweb::PayloadResponse;
 use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
@@ -166,5 +167,23 @@ impl Client {
     /// A boolean indicating whether the proof is valid.
     pub async fn verify_spv(&self, proof: ProofType) -> Result<bool, ClientError> {
         self.proof_server_client.verify_spv(proof).await
+    }
+
+    /// Get the payload for the given chain and payload hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `chain` - The chain to get the payload from.
+    /// * `payload_hash` - The payload hash to get the payload for.
+    ///
+    /// # Returns
+    ///
+    /// The payload.
+    pub async fn get_payload(
+        &self,
+        chain: u32,
+        payload_hash: HashValue,
+    ) -> Result<PayloadResponse, ClientError> {
+        self.chainweb_client.get_payload(chain, payload_hash).await
     }
 }
