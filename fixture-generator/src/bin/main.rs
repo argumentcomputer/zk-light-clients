@@ -12,6 +12,14 @@ use ethereum_lc::test_utils::{
     generate_committee_change_test_assets, generate_inclusion_test_assets,
 };
 
+use kadena_lc::proofs::longest_chain::{ LongestChainIn, LongestChainProver };
+use kadena_lc::proofs::spv::{ SpvIn, SpvProver };
+use kadena_lc::proofs::{ProofType as KadenaProofType, Prover as KadenaProver, ProvingMode as KadenaProvingMode};
+use kadena_lc::test_utils::{
+    get_layer_block_headers, get_test_assets,
+};
+
+
 /// Location for the Inclusion program of the Aptos Light Client.
 pub const APTOS_INCLUSION_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/inclusion-program");
@@ -20,14 +28,31 @@ pub const APTOS_INCLUSION_ELF: &[u8] =
 pub const APTOS_EPOCH_CHANGE_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/epoch-change-program");
 
+/// Location for the Longest-Chain program of the Kadena-Ethereum Light Client.
+pub const KADENA_LONGEST_CHAIN_ELF: &[u8] =
+    include_bytes!("../../../kadena/kadena-programs/artifacts/longest-chain-program");
+
+/// Location for the SPV program of the Kadena-Ethereum Light Client.
+pub const KADENA_SPV_ELF: &[u8] =
+    include_bytes!("../../../kadena/kadena-programs/artifacts/spv-program");
+
 /// Path to the directory where the Solidity fixtures for the Aptos Light Client are stored.
-pub const SOLIDITY_FIXTURE_PATH: &str = "../aptos/solidity/contracts/src/plonk_fixtures";
+pub const APTOS_SOLIDITY_FIXTURE_PATH: &str = "../aptos/solidity/contracts/src/plonk_fixtures";
+
+/// Path to the directory where the Solidity fixtures for the Aptos Light Client are stored.
+pub const KADENA_SOLIDITY_FIXTURE_PATH: &str = "../kadena/solidity/contracts/src/plonk_fixtures";
 
 /// Path to the directory where the Move fixtures for the Ethereum Light Client are stored.
 pub const MOVE_FIXTURE_PATH: &str = "../ethereum/move/sources/fixtures";
 
 /// Path to the directory where the Pact fixtures for the Ethereum Light Client are stored.
 pub const PACT_FIXTURE_PATH: &str = "../ethereum/pact/fixtures";
+
+/// Filename for the longest_chain fixture.
+pub const LONGEST_CHAIN_FIXTURE_FILENAME: &str = "longest_chain_fixture.json";
+
+/// Filename for the spv fixture.
+pub const SPV_FIXTURE_FILENAME: &str = "spv_fixture.json";
 
 /// Filename for the inclusion fixture.
 pub const INCLUSION_FIXTURE_FILENAME: &str = "inclusion_fixture.json";
@@ -49,6 +74,12 @@ pub const INCLUSION: &str = "inclusion";
 
 /// Supported programs for the fixtures.
 pub const EPOCH_CHANGE: &str = "epoch_change";
+
+/// Supported programs for the fixtures.
+pub const LONGEST_CHAIN: &str = "longest_chain";
+
+/// Supported programs for the fixtures.
+pub const SPV: &str = "spv";
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -152,7 +183,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify(&proof, &vk).unwrap();
 
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(APTOS_SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = BaseFixture {
@@ -255,7 +286,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify(&proof, &vk).unwrap();
 
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(APTOS_SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = BaseFixture {
@@ -349,6 +380,73 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
     };
 }
 
+fn generate_fixture_longest_chain() {
+    tracing::info!("Generating longest_chain fixture using Kadena program (for Solidity verification)");
+
+    let layer_block_headers = get_layer_block_headers();
+    let prover = LongestChainProver::new();
+    let input = LongestChainIn::new(layer_block_headers);
+
+    let proof = match prover.prove(&input, KadenaProvingMode::SNARK).unwrap() {
+        KadenaProofType::SNARK(inner_proof) => inner_proof,
+        _ => {
+            panic!("Unexpected proof")
+        }
+    };
+    prover.verify(&KadenaProofType::SNARK(proof.clone())).unwrap();
+
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(KADENA_SOLIDITY_FIXTURE_PATH);
+
+    // save fixture
+    let fixture = BaseFixture {
+        vkey: prover.get_vk().bytes32().to_string(),
+        public_values: proof.public_values.bytes().to_string(),
+        proof: raw_proof_bytes(&proof),
+    };
+
+    save_fixture(
+        &Fixture::Base(fixture),
+        &fixture_path,
+        LONGEST_CHAIN_FIXTURE_FILENAME,
+    );
+}
+
+fn generate_fixture_spv() {
+    tracing::info!("Generating spv fixture using Kadena program (for Solidity verification)");
+
+    let test_assets = get_test_assets();
+    let prover = SpvProver::new();
+    let input = SpvIn::new(
+        test_assets.layer_headers().clone(),
+        test_assets.spv().clone(),
+        *test_assets.expected_root(),
+    );
+
+    let proof = match prover.prove(&input, KadenaProvingMode::SNARK).unwrap() {
+        KadenaProofType::SNARK(inner_proof) => inner_proof,
+        _ => {
+            panic!("Unexpected proof")
+        }
+    };
+    prover.verify(&KadenaProofType::SNARK(proof.clone())).unwrap();
+
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(KADENA_SOLIDITY_FIXTURE_PATH);
+
+    // save fixture
+    let fixture = BaseFixture {
+        vkey: prover.get_vk().bytes32().to_string(),
+        public_values: proof.public_values.bytes().to_string(),
+        proof: raw_proof_bytes(&proof),
+    };
+
+    save_fixture(
+        &Fixture::Base(fixture),
+        &fixture_path,
+        SPV_FIXTURE_FILENAME,
+    );
+
+}
+
 fn main() {
     sphinx_sdk::utils::setup_logger();
     let args = ProveArgs::parse();
@@ -372,6 +470,18 @@ fn main() {
             }
             _ => panic!("Unsupported language. Use: ['solidity', 'move']"),
         },
-        _ => panic!("Unsupported program. Use: ['inclusion', 'epoch_change']"),
+        LONGEST_CHAIN => match args.language.as_str() {
+            SOLIDITY => {
+                generate_fixture_longest_chain();
+            }
+            _ => panic!("Unsupported language"),
+        },
+        SPV => match args.language.as_str() {
+            SOLIDITY => {
+                generate_fixture_spv();
+            }
+            _ => panic!("Unsupported language"),
+        },
+        _ => panic!("Unsupported program. Use: ['inclusion', 'epoch_change', 'longest_chain', 'spv']"),
     }
 }
