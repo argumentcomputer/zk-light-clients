@@ -7,3 +7,6 @@
 [submodule "aptos/solidity/contracts/lib/sphinx-contracts"]
 	path = aptos/solidity/contracts/lib/sphinx-contracts
 	url = https://github.com/argumentcomputer/sphinx-contracts
+[submodule "kadena/solidity/contracts/lib/forge-std"]
+	path = kadena/solidity/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
