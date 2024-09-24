@@ -41,12 +41,14 @@ struct Cli {
 #[getset(get = "pub")]
 pub struct LightClientState {
     current_block_height: usize,
+    generate_spv: bool,
 }
 
 impl Default for LightClientState {
     fn default() -> Self {
         Self {
             current_block_height: CHECKPOINT_BLOCK_HEIGHT,
+            generate_spv: true,
         }
     }
 }
@@ -145,8 +147,6 @@ async fn main() -> Result<()> {
     loop {
         interval.tick().await;
 
-        is_spv_proof = !is_spv_proof;
-
         // Check no proof generation is going on now
         if longest_chain_semaphore.available_permits() > 0 && spv_semaphore.available_permits() > 0
         {
@@ -155,7 +155,9 @@ async fn main() -> Result<()> {
             let mode_clone = mode;
 
             // Handle case for longest chain proof
-            if !is_spv_proof {
+            if !lc_state_clone.generate_spv() {
+                info!("Commencing process for longest chain proving and verifying...");
+
                 let permit = longest_chain_semaphore.clone().acquire_owned().await?;
 
                 let res_layer_headers = client
@@ -173,6 +175,7 @@ async fn main() -> Result<()> {
                     drop(permit);
                     continue;
                 };
+                info!("Fetched layer block headers, sending task to prove longest chain");
 
                 // Spawn proving task for longest chain proof, and send it to the verifier task.
                 let task = tokio::spawn(async move {
@@ -189,6 +192,8 @@ async fn main() -> Result<()> {
                     .send(VerificationTask::LongestChain { task, permit })
                     .await?;
             } else {
+                info!("Commencing process for SPV proving and verifying...");
+
                 let permit = spv_semaphore.clone().acquire_owned().await?;
 
                 let res_layer_headers = client
@@ -218,6 +223,7 @@ async fn main() -> Result<()> {
                 // Block hash
                 let target_chain_block_hash = HashValue::new(*target_chain_block.hash());
 
+                info!("Fetching payload for target chain block...");
                 // Fetch payload for target block, arbitrarily fetching for the chain ID 0
                 let payload = client
                     .get_payload(0, HashValue::new(*target_chain_block.payload()))
@@ -226,9 +232,11 @@ async fn main() -> Result<()> {
                 // Arbitrarily get output for the first transaction
                 let request_key = payload.get_transaction_output_key(0)?;
 
+                info!("Fetching SPV for target chain block...");
                 // Get spv proof for the transaction output
                 let spv = client.get_spv(0, request_key).await?;
 
+                info!("Fetched SPV, sending task to prove longest chain");
                 // Spawn proving task for SPV proof, and send it to the verifier task.
                 let task = tokio::spawn(async move {
                     let spv_clone = spv.clone();
@@ -386,6 +394,7 @@ async fn verifier_task(
 
                                 let mut lock = lc_state.blocking_write();
                                 lock.current_block_height += BLOCK_WINDOW;
+                                lock.generate_spv = !lock.generate_spv;
 
                                 verifier_state.validated_layer_hash[rotating_index] =
                                     outputs.target_layer_block_header_hash();
@@ -459,6 +468,7 @@ async fn verifier_task(
 
                                 let mut lock = lc_state.blocking_write();
                                 lock.current_block_height += BLOCK_WINDOW;
+                                lock.generate_spv = !lock.generate_spv;
 
                                 verifier_state.validated_layer_hash[rotating_index] =
                                     *outputs.target_layer_block_header_hash();
