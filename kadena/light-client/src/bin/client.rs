@@ -3,6 +3,7 @@
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use getset::Getters;
 use kadena_lc::client::error::ClientError;
 use kadena_lc::client::Client;
 use kadena_lc::proofs::longest_chain::LongestChainOut;
@@ -11,7 +12,7 @@ use kadena_lc::proofs::{ProofType, ProvingMode};
 use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::crypto::U256;
 use kadena_lc_core::merkle::spv::Spv;
-use log::{error, info};
+use log::{debug, error, info};
 use std::env;
 use std::fmt::Display;
 use std::sync::Arc;
@@ -19,7 +20,7 @@ use std::time::Duration;
 use tokio::sync::{mpsc, OwnedSemaphorePermit, RwLock, Semaphore};
 use tokio::task::JoinHandle;
 
-pub const CHECKPOINT_BLOCK_HEIGHT: usize = 5156900;
+pub const CHECKPOINT_BLOCK_HEIGHT: usize = 5158073;
 pub const BLOCK_WINDOW: usize = 3;
 pub const VERIFIER_STORED_CHECKPOINT_COUNT: usize = 5;
 pub const CONFIRMATION_WORK_THRESHOLD: usize = 0;
@@ -36,7 +37,8 @@ struct Cli {
     proof_server_address: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct LightClientState {
     current_block_height: usize,
 }
@@ -100,7 +102,6 @@ async fn main() -> Result<()> {
     // Initialize the logger.
     env_logger::init();
 
-    let mode = Arc::new(mode);
     let proof_server_address = Arc::new(proof_server_address);
     let chainweb_node_address = Arc::new(chainweb_node_address);
 
@@ -112,7 +113,7 @@ async fn main() -> Result<()> {
     .await
     .expect("Failed to initialize light client");
 
-    let store = Arc::new(RwLock::new(lc_state));
+    let lc_state = Arc::new(RwLock::new(lc_state));
     let client = Arc::new(client);
 
     info!("Light client initialized successfully");
@@ -134,76 +135,126 @@ async fn main() -> Result<()> {
         task_receiver,
         verifier_state,
         client.clone(),
-        store.clone(),
+        lc_state.clone(),
     ));
-    /*
-    let client = Client::new(
-        chainweb_node_address.as_str(),
-        proof_server_address.as_str(),
-    );
 
-    let header = client.get_block_header(0, CHECKPOINT_BLOCK_HEIGHT).await?;
-    dbg!(header.decoded_height());
+    debug!("Start listening for Kadena data");
 
-    // Test verification for the longest chain
-    let kadena_headers = client
-        .get_layer_block_headers(CHECKPOINT_BLOCK_HEIGHT, BLOCK_WINDOW)
-        .await?;
+    let mut is_spv_proof = false;
 
-    let (first_hash, target_hash, verified_confirmation_work) =
-        ChainwebLayerHeader::verify(&kadena_headers)?;
+    loop {
+        interval.tick().await;
 
-    let confirmation_work = ChainwebLayerHeader::cumulative_produced_work(
-        kadena_headers[kadena_headers.len() / 2..kadena_headers.len() - 1].to_vec(),
-    )
-    .expect("Should be able to calculate cumulative work");
+        is_spv_proof = !is_spv_proof;
 
-    assert_eq!(confirmation_work, verified_confirmation_work,);
-    assert_eq!(
-        first_hash,
-        kadena_headers
-            .first()
-            .expect("Should have a first header")
-            .header_root()
-            .expect("Should have a header root"),
-    );
-    assert_eq!(
-        target_hash,
-        kadena_headers[kadena_headers.len() / 2]
-            .header_root()
-            .expect("Should have a header root"),
-    );
+        // Check no proof generation is going on now
+        if longest_chain_semaphore.available_permits() > 0 && spv_semaphore.available_permits() > 0
+        {
+            let lc_state_clone = lc_state.read().await.clone();
+            let client_clone = client.clone();
+            let mode_clone = mode;
 
-    let target_block = kadena_headers
-        .get(kadena_headers.len() / 2)
-        .unwrap()
-        .clone();
+            // Handle case for longest chain proof
+            if !is_spv_proof {
+                let permit = longest_chain_semaphore.clone().acquire_owned().await?;
 
-    let payload = client
-        .get_payload(
-            0,
-            HashValue::new(*target_block.chain_headers().first().unwrap().payload()),
-        )
-        .await
-        .unwrap();
+                let res_layer_headers = client
+                    .get_layer_block_headers(*lc_state_clone.current_block_height(), BLOCK_WINDOW)
+                    .await;
 
-    let request_key = payload.get_transaction_request_key(0)?;
+                // We don't want to fail the whole process. It might be because we do not have enough block on chain yet.
+                let Ok(layer_headers) = res_layer_headers else {
+                    error!(
+                        "Failed to get layer block headers for target block {} and window {BLOCK_WINDOW}: {}",
+                        *lc_state_clone.current_block_height(),
+                        res_layer_headers.expect_err("Should have an error")
+                    );
 
-    let spv = client.get_spv(0, request_key).await?;
+                    drop(permit);
+                    continue;
+                };
 
-    spv.verify(&HashValue::new(
-        *target_block
-            .chain_headers()
-            .first()
-            .expect("Should have a header root")
-            .hash(),
-    ))?;*/
+                // Spawn proving task for longest chain proof, and send it to the verifier task.
+                let task = tokio::spawn(async move {
+                    let proof = Box::pin(
+                        client_clone.prove_longest_chain(mode_clone, layer_headers.clone()),
+                    )
+                    .await?;
+                    info!("Proof of committee change generated successfully");
 
-    Ok(())
+                    Ok(proof)
+                });
+
+                task_sender
+                    .send(VerificationTask::LongestChain { task, permit })
+                    .await?;
+            } else {
+                let permit = spv_semaphore.clone().acquire_owned().await?;
+
+                let res_layer_headers = client
+                    .get_layer_block_headers(*lc_state_clone.current_block_height(), BLOCK_WINDOW)
+                    .await;
+
+                // We don't want to fail the whole process. It might be because we do not have enough block on chain yet.
+                let Ok(layer_headers) = res_layer_headers else {
+                    error!(
+                        "Failed to get layer block headers for target block {} and window {BLOCK_WINDOW}: {}",
+                        *lc_state_clone.current_block_height(),
+                        res_layer_headers.expect_err("Should have an error")
+                    );
+
+                    drop(permit);
+                    continue;
+                };
+
+                // Target chain block header for the SPV
+                let target_chain_block = layer_headers
+                    .get(layer_headers.len() / 2)
+                    .expect("Should have a target block")
+                    .chain_headers()
+                    .first()
+                    .expect("Layer block header should have a block header for chain ID 0");
+
+                // Block hash
+                let target_chain_block_hash = HashValue::new(*target_chain_block.hash());
+
+                // Fetch payload for target block, arbitrarily fetching for the chain ID 0
+                let payload = client
+                    .get_payload(0, HashValue::new(*target_chain_block.payload()))
+                    .await?;
+
+                // Arbitrarily get output for the first transaction
+                let request_key = payload.get_transaction_output_key(0)?;
+
+                // Get spv proof for the transaction output
+                let spv = client.get_spv(0, request_key).await?;
+
+                // Spawn proving task for SPV proof, and send it to the verifier task.
+                let task = tokio::spawn(async move {
+                    let spv_clone = spv.clone();
+
+                    let proof = Box::pin(client_clone.prove_spv(
+                        mode_clone,
+                        layer_headers,
+                        spv_clone,
+                        target_chain_block_hash,
+                    ))
+                    .await?;
+                    info!("Proof of committee change generated successfully");
+
+                    Ok((Box::new(spv), proof))
+                });
+
+                task_sender
+                    .send(VerificationTask::Spv { task, permit })
+                    .await?
+            }
+        }
+    }
 }
 
 async fn initialize_light_client(
-    proving_mode: Arc<ProvingMode>,
+    proving_mode: ProvingMode,
     chainweb_node_address: Arc<String>,
     proof_server_address: Arc<String>,
 ) -> Result<(Client, Box<LightClientState>, VerifierState)> {
@@ -221,7 +272,7 @@ async fn initialize_light_client(
     info!("Starting proving process for the longest chain");
 
     let proof = client
-        .prove_longest_chain(*proving_mode, layer_headers.clone())
+        .prove_longest_chain(proving_mode, layer_headers.clone())
         .await?;
 
     info!("Proof generated, verifying it...");
@@ -321,8 +372,8 @@ async fn verifier_task(
                                         "Base layer block header hash matches one known by the verifier"
                                     );
 
-                                if !outputs.confirmation_work()
-                                    >= verifier_state.confirmation_work_threshold
+                                if outputs.confirmation_work()
+                                    < verifier_state.confirmation_work_threshold
                                 {
                                     error!("Confirmation work is not greater than the cumulative work threshold");
                                     drop(permit);
@@ -333,7 +384,9 @@ async fn verifier_task(
                                         "Confirmation work is greater than the cumulative work threshold"
                                     );
 
-                                // TODO update client state to new block height
+                                let mut lock = lc_state.blocking_write();
+                                lock.current_block_height += BLOCK_WINDOW;
+
                                 verifier_state.validated_layer_hash[rotating_index] =
                                     outputs.target_layer_block_header_hash();
                                 rotating_index =
@@ -368,7 +421,7 @@ async fn verifier_task(
 
                                 if !verifier_state
                                     .validated_layer_hash
-                                    .contains(&outputs.first_layer_block_header_hash())
+                                    .contains(outputs.first_layer_block_header_hash())
                                 {
                                     error!("First layer block header hash is not known by the verifier");
                                     drop(permit);
@@ -379,8 +432,8 @@ async fn verifier_task(
                                         "Base layer block header hash matches one known by the verifier"
                                     );
 
-                                if !outputs.confirmation_work()
-                                    >= verifier_state.confirmation_work_threshold
+                                if outputs.confirmation_work()
+                                    < &verifier_state.confirmation_work_threshold
                                 {
                                     error!("Confirmation work is not greater than the cumulative work threshold");
                                     drop(permit);
@@ -404,7 +457,9 @@ async fn verifier_task(
                                 }
                                 info!("Hash of the subject is the same as the one in the proof");
 
-                                // TODO update client state to new block height
+                                let mut lock = lc_state.blocking_write();
+                                lock.current_block_height += BLOCK_WINDOW;
+
                                 verifier_state.validated_layer_hash[rotating_index] =
                                     *outputs.target_layer_block_header_hash();
                                 rotating_index = (rotating_index + 1) % 4;

@@ -49,7 +49,7 @@ pub fn main() {
     // Target block hash
     sphinx_zkvm::io::commit(target_layer_hash.as_ref());
 
-    // Subject bytes
+    // Subject hash bytes
     sphinx_zkvm::io::commit(
         &spv.subject()
             .hash_as_leaf()

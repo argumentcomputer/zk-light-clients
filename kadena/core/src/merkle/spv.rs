@@ -1,10 +1,9 @@
-use crate::crypto::hash::sha512::{hash_inner, hash_leaf};
+use crate::crypto::hash::sha512::hash_inner;
 use crate::crypto::hash::HashValue;
 use crate::merkle::proof::{MerkleProof, MERKLE_PROOF_BASE_BYTES_LENGTH};
 use crate::merkle::subject::{Subject, SUBJECT_BASE_BYTES_LENGTH};
 use crate::types::error::{TypesError, ValidationError};
 use crate::types::U32_BYTES_LENGTH;
-use base64::Engine;
 use getset::Getters;
 
 pub const SPV_BASE_BYTES_LENGTH: usize =

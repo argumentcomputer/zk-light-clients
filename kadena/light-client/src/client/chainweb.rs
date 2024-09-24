@@ -15,7 +15,7 @@ use crate::types::chainweb::{BlockHeaderResponse, PayloadResponse, SpvResponse};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use getset::Getters;
-use kadena_lc_core::crypto::hash::HashValue;
+use kadena_lc_core::crypto::hash::{HashValue, DIGEST_BYTES_LENGTH};
 use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::error::TypesError;
 use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
@@ -110,7 +110,11 @@ impl ChainwebClient {
         // Collect results as they complete.
         while let Some(res) = set.join_next().await {
             match res {
-                Ok(Ok(headers)) => {
+                Ok(Ok(mut headers)) => {
+                    if headers.len() > 1 + block_window * 2 {
+                        headers = filter_uncles_chain_headers(headers, 1 + block_window * 2)?;
+                    }
+
                     if headers.len() != 1 + block_window * 2 {
                         return Err(ClientError::Response {
                             endpoint: "get_layer_block_headers".to_string(),
@@ -422,4 +426,74 @@ pub(crate) async fn get_block_headers(
         endpoint: url.clone(),
         source: Box::new(err),
     })
+}
+
+/// Filter the uncles from the chain headers.
+///
+/// # Arguments
+///
+/// * `headers` - The headers to filter.
+/// * `expected_length` - The expected length of the headers.
+///
+/// # Returns
+///
+/// The filtered headers.
+fn filter_uncles_chain_headers(
+    headers: Vec<KadenaHeaderRaw>,
+    expected_length: usize,
+) -> Result<Vec<KadenaHeaderRaw>, ClientError> {
+    // If we already have the number of expected headers, return them
+    if headers.len() == expected_length {
+        return Ok(headers);
+    }
+
+    let mut filtered_headers = vec![];
+
+    let mut cursor = 0;
+    while filtered_headers.len() != expected_length && cursor < headers.len() - 1 {
+        if headers[cursor].height() != headers[cursor + 1].height() {
+            filtered_headers.push(headers[cursor]);
+
+            if cursor + 1 == headers.len() - 1 {
+                filtered_headers.push(headers[cursor + 1]);
+            }
+
+            cursor += 1;
+        } else {
+            let mut correct_hash: [u8; DIGEST_BYTES_LENGTH] = [0; DIGEST_BYTES_LENGTH];
+            let mut child_index = cursor + 2;
+
+            // Look for the children of the correct block
+            for j in cursor + 2..headers.len() {
+                if headers[j].decoded_height() == headers[cursor].decoded_height() + 1 {
+                    correct_hash = *headers[j].parent();
+                    child_index = j;
+                }
+            }
+
+            // Retrieve the correct block
+            for header in headers.iter().take(child_index).skip(cursor) {
+                if header.hash() == &correct_hash {
+                    filtered_headers.push(*header);
+                }
+            }
+
+            // Set cursor to the child
+            cursor = child_index;
+        }
+    }
+
+    if filtered_headers.len() != expected_length {
+        return Err(ClientError::Response {
+            endpoint: "get_layer_block_headers".to_string(),
+            source: format!(
+                "Received {} headers, tried to sanitize to {} but failed",
+                headers.len(),
+                expected_length
+            )
+            .into(),
+        });
+    }
+
+    Ok(filtered_headers)
 }

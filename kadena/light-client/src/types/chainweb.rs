@@ -16,8 +16,9 @@ const REQUEST_KEY_PROPERTY: &str = "reqKey";
 
 /// Response received while querying block headers from a Chainweb
 /// node.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Getters)]
 #[allow(dead_code)]
+#[getset(get = "pub")]
 pub struct BlockHeaderResponse {
     next: String,
     items: Vec<String>,
