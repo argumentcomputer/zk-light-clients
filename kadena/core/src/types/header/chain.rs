@@ -340,6 +340,15 @@ impl KadenaHeaderRaw {
 
         crate::crypto::hash::blake2::hash_data(&serialized)
     }
+
+    /// Computes the proof of work hash of the header.
+    ///
+    /// # Returns
+    ///
+    /// The proof of work hash of the header.
+    pub const fn decoded_height(&self) -> u64 {
+        u64::from_le_bytes(self.height)
+    }
 }
 
 /// Representation of a Kadena header with its properties as Rust types.

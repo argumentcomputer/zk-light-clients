@@ -50,5 +50,10 @@ pub fn main() {
     sphinx_zkvm::io::commit(target_layer_hash.as_ref());
 
     // Subject bytes
-    sphinx_zkvm::io::commit(&spv.subject().to_bytes());
+    sphinx_zkvm::io::commit(
+        &spv.subject()
+            .hash_as_leaf()
+            .expect("Failed to hash subject")
+            .as_ref(),
+    );
 }

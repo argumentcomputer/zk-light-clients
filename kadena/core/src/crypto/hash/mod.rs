@@ -96,3 +96,11 @@ impl AsRef<[u8; DIGEST_BYTES_LENGTH]> for HashValue {
         &self.hash
     }
 }
+
+impl Default for HashValue {
+    fn default() -> Self {
+        HashValue {
+            hash: [0; DIGEST_BYTES_LENGTH],
+        }
+    }
+}

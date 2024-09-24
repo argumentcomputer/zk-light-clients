@@ -98,7 +98,7 @@ impl ChainwebClient {
                 client,
                 address,
                 target_block,
-                block_window,
+                Some(block_window),
                 chain,
             ));
         }
@@ -311,6 +311,43 @@ impl ChainwebClient {
             source: Box::new(err),
         })
     }
+
+    /// `get_latest_block_header` makes an HTTP request to the Chainweb Node API
+    /// to get the latest block header for a particular chain.
+    ///
+    /// # Arguments
+    ///
+    /// * `chain` - The chain to get the latest block header for.
+    /// * `target_block` - The target block to get the headers for.
+    ///
+    /// # Returns
+    ///
+    /// The latest block header.
+    pub(crate) async fn get_block_header(
+        &self,
+        chain: u32,
+        target_block: usize,
+    ) -> Result<KadenaHeaderRaw, ClientError> {
+        let retrieved_headers = get_block_headers(
+            self.inner.clone(),
+            self.chainweb_node_address.clone(),
+            target_block,
+            None,
+            chain as usize,
+        )
+        .await?;
+
+        if retrieved_headers.len() != 1 {
+            return Err(ClientError::Response {
+                endpoint: "get_latest_block_header".to_string(),
+                source: format!("Expected 1 header, got {}", retrieved_headers.len()).into(),
+            });
+        }
+
+        Ok(*retrieved_headers
+            .first()
+            .expect("Should be able to access element 0 of slice"))
+    }
 }
 
 /// `get_block_headers` makes an HTTP request to the Chainweb Node API
@@ -333,7 +370,7 @@ pub(crate) async fn get_block_headers(
     client: Arc<Client>,
     chainweb_node_address: Arc<String>,
     target_block: usize,
-    block_window: usize,
+    block_window: Option<usize>,
     chain: usize,
 ) -> Result<Vec<KadenaHeaderRaw>, ClientError> {
     // Format the endpoint for the call
@@ -342,14 +379,20 @@ pub(crate) async fn get_block_headers(
         chainweb_node_address
     );
 
+    let query = if let Some(window) = block_window {
+        vec![
+            ("minheight", target_block - window),
+            ("maxheight", target_block + window),
+        ]
+    } else {
+        vec![("limit", 1), ("minheight", target_block)]
+    };
+
     // Send the HTTP request
     let response = client
         .get(&url)
         .header(ACCEPT, "application/json")
-        .query(&[
-            ("minheight", target_block - block_window),
-            ("maxheight", target_block + block_window),
-        ])
+        .query(&query)
         .send()
         .await
         .map_err(|err| ClientError::Request {
