@@ -77,7 +77,7 @@ pub struct PayloadResponse {
 }
 
 impl PayloadResponse {
-    /// Get the transaction output key for the given transaction index.
+    /// Get the transaction request key for the given transaction index.
     ///
     /// # Arguments
     ///
@@ -85,8 +85,8 @@ impl PayloadResponse {
     ///
     /// # Returns
     ///
-    /// The transaction output key.
-    pub fn get_transaction_output_key(&self, transaction_index: usize) -> Result<String> {
+    /// The transaction request key.
+    pub fn get_transaction_request_key(&self, transaction_index: usize) -> Result<String> {
         let output_bytes = URL_SAFE_NO_PAD
             .decode(
                 self.transactions()

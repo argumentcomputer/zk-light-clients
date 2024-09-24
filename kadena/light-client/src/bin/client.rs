@@ -91,7 +91,7 @@ async fn main() -> Result<()> {
         .await
         .unwrap();
 
-    let request_key = payload.get_transaction_output_key(0)?;
+    let request_key = payload.get_transaction_request_key(0)?;
 
     let spv = client.get_spv(0, request_key).await?;
 
