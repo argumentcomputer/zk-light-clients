@@ -62,7 +62,7 @@ impl TryInto<Spv> for SpvResponse {
     }
 }
 
-/// Response received while querying a  Payload from a Chainweb
+/// Response received while querying a Payload from a Chainweb
 /// node.
 #[derive(Clone, Debug, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
