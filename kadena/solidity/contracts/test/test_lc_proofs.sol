@@ -46,4 +46,9 @@ contract SolidityVerificationTest is Test {
         core.verifyProof(fixture.vkey, fixture.publicValues, fixture.proof);
         require(gasCost - gasleft() < 300000, "Too big gas cost");
     }
+
+    function testDebug() public {
+        SphinxProofFixture memory fixture = loadPlonkSpvFixture();
+        wrapper.verifySpvProof(fixture, bytes32(0x000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f));
+    }
 }
