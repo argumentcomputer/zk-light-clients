@@ -12,13 +12,12 @@ use ethereum_lc::test_utils::{
     generate_committee_change_test_assets, generate_inclusion_test_assets,
 };
 
-use kadena_lc::proofs::longest_chain::{ LongestChainIn, LongestChainProver };
-use kadena_lc::proofs::spv::{ SpvIn, SpvProver };
-use kadena_lc::proofs::{ProofType as KadenaProofType, Prover as KadenaProver, ProvingMode as KadenaProvingMode};
-use kadena_lc::test_utils::{
-    get_layer_block_headers, get_test_assets,
+use kadena_lc::proofs::longest_chain::{LongestChainIn, LongestChainProver};
+use kadena_lc::proofs::spv::{SpvIn, SpvProver};
+use kadena_lc::proofs::{
+    ProofType as KadenaProofType, Prover as KadenaProver, ProvingMode as KadenaProvingMode,
 };
-
+use kadena_lc::test_utils::{get_layer_block_headers, get_test_assets};
 
 /// Location for the Inclusion program of the Aptos Light Client.
 pub const APTOS_INCLUSION_ELF: &[u8] =
@@ -381,7 +380,9 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
 }
 
 fn generate_fixture_longest_chain() {
-    tracing::info!("Generating longest_chain fixture using Kadena program (for Solidity verification)");
+    tracing::info!(
+        "Generating longest_chain fixture using Kadena program (for Solidity verification)"
+    );
 
     let layer_block_headers = get_layer_block_headers();
     let prover = LongestChainProver::new();
@@ -393,7 +394,9 @@ fn generate_fixture_longest_chain() {
             panic!("Unexpected proof")
         }
     };
-    prover.verify(&KadenaProofType::SNARK(proof.clone())).unwrap();
+    prover
+        .verify(&KadenaProofType::SNARK(proof.clone()))
+        .unwrap();
 
     let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(KADENA_SOLIDITY_FIXTURE_PATH);
 
@@ -401,7 +404,7 @@ fn generate_fixture_longest_chain() {
     let fixture = BaseFixture {
         vkey: prover.get_vk().bytes32().to_string(),
         public_values: proof.public_values.bytes().to_string(),
-        proof: raw_proof_bytes(&proof),
+        proof: proof_bytes(&proof),
     };
 
     save_fixture(
@@ -428,7 +431,9 @@ fn generate_fixture_spv() {
             panic!("Unexpected proof")
         }
     };
-    prover.verify(&KadenaProofType::SNARK(proof.clone())).unwrap();
+    prover
+        .verify(&KadenaProofType::SNARK(proof.clone()))
+        .unwrap();
 
     let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(KADENA_SOLIDITY_FIXTURE_PATH);
 
@@ -436,15 +441,10 @@ fn generate_fixture_spv() {
     let fixture = BaseFixture {
         vkey: prover.get_vk().bytes32().to_string(),
         public_values: proof.public_values.bytes().to_string(),
-        proof: raw_proof_bytes(&proof),
+        proof: proof_bytes(&proof),
     };
 
-    save_fixture(
-        &Fixture::Base(fixture),
-        &fixture_path,
-        SPV_FIXTURE_FILENAME,
-    );
-
+    save_fixture(&Fixture::Base(fixture), &fixture_path, SPV_FIXTURE_FILENAME);
 }
 
 fn main() {
@@ -482,6 +482,8 @@ fn main() {
             }
             _ => panic!("Unsupported language"),
         },
-        _ => panic!("Unsupported program. Use: ['inclusion', 'epoch_change', 'longest_chain', 'spv']"),
+        _ => panic!(
+            "Unsupported program. Use: ['inclusion', 'epoch_change', 'longest_chain', 'spv']"
+        ),
     }
 }
