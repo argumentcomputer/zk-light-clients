@@ -49,6 +49,6 @@ contract SolidityVerificationTest is Test {
 
     function testDebug() public {
         SphinxProofFixture memory fixture = loadPlonkSpvFixture();
-        wrapper.verifySpvProof(fixture, bytes32(0x000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f));
+        wrapper.verifySpvProof(fixture, bytes32(0x256348dcc4564a102e6c913bf04b8dc6bc1e8325a8bbc71b49808a49bca7340a));
     }
 }
