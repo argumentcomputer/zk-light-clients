@@ -11,10 +11,11 @@
 
 use crate::client::error::ClientError;
 use crate::client::utils::test_connection;
-use crate::types::chainweb::{BlockHeaderResponse, SpvResponse};
+use crate::types::chainweb::{BlockHeaderResponse, PayloadResponse, SpvResponse};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use getset::Getters;
+use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::merkle::spv::Spv;
 use kadena_lc_core::types::error::TypesError;
 use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
@@ -256,6 +257,59 @@ impl ChainwebClient {
                 endpoint: url,
                 source: err.into(),
             })
+    }
+
+    /// `get_payload` makes an HTTP request to the Chainweb Node
+    /// API to get the payload for a particular hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `chain` - The chain to get the payload for.
+    /// * `payload_hash` - The hash of the payload to get.
+    ///
+    /// # Returns
+    ///
+    /// The payload.
+    pub(crate) async fn get_payload(
+        &self,
+        chain: u32,
+        payload_hash: HashValue,
+    ) -> Result<PayloadResponse, ClientError> {
+        // Format the endpoint for the call
+        let url = format!(
+            "{}/chainweb/{CHAINWEB_API_VERSION}/mainnet01/chain/{chain}/payload/{}/outputs",
+            self.chainweb_node_address,
+            URL_SAFE_NO_PAD.encode(payload_hash.as_ref())
+        );
+
+        // Send the HTTP request
+        let response = self
+            .inner
+            .get(&url)
+            .header(ACCEPT, "application/json")
+            .send()
+            .await
+            .map_err(|err| ClientError::Request {
+                endpoint: url.clone(),
+                source: Box::new(err),
+            })?;
+
+        if !response.status().is_success() {
+            return Err(ClientError::Request {
+                endpoint: url,
+                source: format!(
+                    "Request not successful, got HTTP code {}",
+                    response.status().as_str()
+                )
+                .into(),
+            });
+        }
+
+        // Deserialize the response
+        response.json().await.map_err(|err| ClientError::Request {
+            endpoint: url.clone(),
+            source: Box::new(err),
+        })
     }
 }
 

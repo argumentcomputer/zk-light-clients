@@ -6,6 +6,7 @@ use clap::Parser;
 use kadena_lc::client::Client;
 use kadena_lc::proofs::ProvingMode;
 use kadena_lc_core::crypto::hash::HashValue;
+use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 use std::env;
 use std::sync::Arc;
 
@@ -48,35 +49,59 @@ async fn main() -> Result<()> {
         proof_server_address.as_str(),
     );
 
+    // Test verification for the longest chain
     let kadena_headers = client
         .get_layer_block_headers(TARGET_BLOCK, BLOCK_WINDOW)
         .await?;
+
+    let (first_hash, target_hash, verified_confirmation_work) =
+        ChainwebLayerHeader::verify(&kadena_headers)?;
+
+    let confirmation_work = ChainwebLayerHeader::cumulative_produced_work(
+        kadena_headers[kadena_headers.len() / 2..kadena_headers.len() - 1].to_vec(),
+    )
+    .expect("Should be able to calculate cumulative work");
+
+    assert_eq!(confirmation_work, verified_confirmation_work,);
+    assert_eq!(
+        first_hash,
+        kadena_headers
+            .first()
+            .expect("Should have a first header")
+            .header_root()
+            .expect("Should have a header root"),
+    );
+    assert_eq!(
+        target_hash,
+        kadena_headers[kadena_headers.len() / 2]
+            .header_root()
+            .expect("Should have a header root"),
+    );
 
     let target_block = kadena_headers
         .get(kadena_headers.len() / 2)
         .unwrap()
         .clone();
-    // Fetch SPV proof for the target block height of chain 0
-    // Fetching SPV for request key "Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M"
-    // https://explorer.chainweb.com/mainnet/txdetail/Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M
-    let spv = client
-        .get_spv(
+
+    let payload = client
+        .get_payload(
             0,
-            String::from("Xe7GN8pA4paS-vF0L4EOTkcBj_K4u72D6xdKg7E724M"),
+            HashValue::new(*target_block.chain_headers().first().unwrap().payload()),
         )
         .await
         .unwrap();
 
-    println!("{:?}", spv.subject().input().as_bytes().len());
+    let request_key = payload.get_transaction_request_key(0)?;
 
-    println!("BlockHeader Hash");
-    println!(
-        "{}",
-        spv.verify(&HashValue::new(
-            *target_block.chain_headers().first().unwrap().hash()
-        ))
-        .unwrap()
-    );
+    let spv = client.get_spv(0, request_key).await?;
+
+    spv.verify(&HashValue::new(
+        *target_block
+            .chain_headers()
+            .first()
+            .expect("Should have a header root")
+            .hash(),
+    ))?;
 
     Ok(())
 }
