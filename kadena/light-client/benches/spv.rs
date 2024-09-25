@@ -2,7 +2,7 @@ use kadena_lc::proofs::spv::{SpvIn, SpvProver};
 use kadena_lc::proofs::{Prover, ProvingMode};
 use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::merkle::spv::Spv;
-use kadena_lc_core::test_utils::{get_layer_block_headers, get_test_assets};
+use kadena_lc_core::test_utils::get_test_assets;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 use serde::Serialize;
 use std::env;
@@ -21,7 +21,7 @@ impl BenchmarkAssets {
 
         Self {
             prover: SpvProver::new(),
-            layer_headers: test_assets.layer_headers().to_vec(),
+            layer_headers: test_assets.layer_headers().clone(),
             spv: test_assets.spv().clone(),
             expected_root: *test_assets.expected_root(),
         }
