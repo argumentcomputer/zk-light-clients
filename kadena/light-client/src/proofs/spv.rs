@@ -284,6 +284,7 @@ impl Prover for SpvProver {
 #[cfg(all(test, feature = "kadena"))]
 mod test {
     use super::*;
+    use kadena_lc_core::merkle::subject::Subject;
     use kadena_lc_core::test_utils::get_test_assets;
 
     #[test]
