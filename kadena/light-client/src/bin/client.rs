@@ -142,8 +142,6 @@ async fn main() -> Result<()> {
 
     debug!("Start listening for Kadena data");
 
-    let mut is_spv_proof = false;
-
     loop {
         interval.tick().await;
 
@@ -230,7 +228,7 @@ async fn main() -> Result<()> {
                     .await?;
 
                 // Arbitrarily get output for the first transaction
-                let request_key = payload.get_transaction_output_key(0)?;
+                let request_key = payload.get_transaction_request_key(0)?;
 
                 info!("Fetching SPV for target chain block...");
                 // Get spv proof for the transaction output
