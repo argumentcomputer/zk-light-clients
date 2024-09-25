@@ -9,7 +9,7 @@ benchmark:
 	RECONSTRUCT_COMMITMENTS=false \
 	cargo bench --features kadena --bench $$bench
 
-BENCH ?= committee_change
+BENCH ?= longest_chain
 
 bench-ci:
 	cargo bench --features kadena --bench $(BENCH)
