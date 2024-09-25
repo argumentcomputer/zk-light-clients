@@ -168,4 +168,80 @@ contract SolidityVerificationTest is Test {
         wrapper.verifyLongestChainProof(fixture);
     }
 
+    function testSuccessfulLongestChainVerificationForkCase() public {
+        SphinxProofFixture memory fixture = loadPlonkLongestChainFixture();
+        bytes memory confirmation_work = new bytes(32);
+        uint256 offset = 0;
+        uint256 i = 0;
+        for (i = 0; i < 32; i++) {
+            confirmation_work[i] = fixture.publicValues[i + offset];
+        }
+
+        wrapper.set_confirmation_work_threshold(uint256(bytes32(confirmation_work)));
+
+        bytes memory head_checkpoint = new bytes(32);
+        offset = 32;
+        for (i = 0; i < 32; i++) {
+            head_checkpoint[i] = fixture.publicValues[i + offset];
+        }
+
+        wrapper.set_head_checkpoint(bytes32(head_checkpoint));
+
+        wrapper.verifyLongestChainProofForkCase(fixture);
+
+        // check state rotation
+        bytes memory tail_checkpoint = new bytes(32);
+        offset = 64;
+        for (i = 0; i < 32; i++) {
+            tail_checkpoint[i] = fixture.publicValues[i + offset];
+        }
+
+        bytes32[] memory checkpoints = wrapper.get_current_checkpoints();
+        require(checkpoints[0] == bytes32(head_checkpoint));
+        require(checkpoints[1] == 0x0000000000000000000000000000000000000000000000000000000000000002);
+        require(checkpoints[2] == 0x0000000000000000000000000000000000000000000000000000000000000003);
+        require(checkpoints[3] == 0x0000000000000000000000000000000000000000000000000000000000000004);
+        require(checkpoints[4] == bytes32(tail_checkpoint));
+    }
+
+    function testSuccessfulSpvVerificationForkCase() public {
+        SphinxProofFixture memory fixture = loadPlonkSpvFixture();
+        bytes memory confirmation_work = new bytes(32);
+        uint256 offset = 0;
+        uint256 i = 0;
+        for (i = 0; i < 32; i++) {
+            confirmation_work[i] = fixture.publicValues[i + offset];
+        }
+
+        wrapper.set_confirmation_work_threshold(uint256(bytes32(confirmation_work)));
+
+        bytes memory head_checkpoint = new bytes(32);
+        offset = 32;
+        for (i = 0; i < 32; i++) {
+            head_checkpoint[i] = fixture.publicValues[i + offset];
+        }
+
+        wrapper.set_head_checkpoint(bytes32(head_checkpoint));
+
+        offset = 96;
+        bytes memory subject_hash = new bytes(32);
+        for (i = 0; i < 32; i++) {
+            subject_hash[i] = fixture.publicValues[i + offset];
+        }
+        wrapper.verifySpvProofForkCase(fixture, bytes32(subject_hash));
+
+        // check state rotation
+        bytes memory tail_checkpoint = new bytes(32);
+        offset = 64;
+        for (i = 0; i < 32; i++) {
+            tail_checkpoint[i] = fixture.publicValues[i + offset];
+        }
+
+        bytes32[] memory checkpoints = wrapper.get_current_checkpoints();
+        require(checkpoints[0] == bytes32(head_checkpoint));
+        require(checkpoints[1] == 0x0000000000000000000000000000000000000000000000000000000000000002);
+        require(checkpoints[2] == 0x0000000000000000000000000000000000000000000000000000000000000003);
+        require(checkpoints[3] == 0x0000000000000000000000000000000000000000000000000000000000000004);
+        require(checkpoints[4] == bytes32(tail_checkpoint));
+    }
 }

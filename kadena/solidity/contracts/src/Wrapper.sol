@@ -17,7 +17,6 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
     error ErrorConfirmationWorkIsSmallerThanThreshold();
     error ErrorUnexpectedLayerHash();
 
-
     // state
     bytes32[] checkpoints;
     uint256 confirmation_work_threshold;
@@ -49,11 +48,15 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         checkpoints[4] = new_checkpoint;
     }
 
+    function set_tail_checkpoint(bytes32 new_checkpoint) public onlyOwner {
+        checkpoints[4] = new_checkpoint;
+    }
+
     function get_current_checkpoints() public view returns (bytes32[] memory) {
         return checkpoints;
     }
 
-    function executeCommonProofProcessingLogic(SphinxProofFixture memory fixture) public {
+    function executeCommonProofProcessingLogic(SphinxProofFixture memory fixture, bool is_fork) public {
         uint256 offset = 0;
         uint256 i = 0;
 
@@ -86,7 +89,11 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
             revert ErrorUnexpectedLayerHash();
         }
 
-        rotate_checkpoints(bytes32(target_layer_hash));
+        if (is_fork) {
+            set_tail_checkpoint(bytes32(target_layer_hash));
+        } else {
+            rotate_checkpoints(bytes32(target_layer_hash));
+        }
     }
 
     function verifyLongestChainProof(SphinxProofFixture memory fixture) public {
@@ -94,7 +101,7 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
             revert ErrorUnexpectedLongestChainFixture();
         }
 
-        executeCommonProofProcessingLogic(fixture);
+        executeCommonProofProcessingLogic(fixture, false);
 
         console.log("All checks have been passed. State has been updated");
     }
@@ -104,7 +111,41 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
             revert ErrorUnexpectedSpvFixture();
         }
 
-        executeCommonProofProcessingLogic(fixture);
+        executeCommonProofProcessingLogic(fixture, false);
+
+        // starting from 96 after confirmation_work, first_layer_hash, target_layer_hash (32 + 32 + 32)
+        uint256 offset = 96;
+        uint256 i = 0;
+        bytes memory subject_hash = new bytes(32);
+        for (i = 0; i < 32; i++) {
+            subject_hash[i] = fixture.publicValues[i + offset];
+        }
+
+        if (bytes32(subject_hash) != user_submitted_spv_subject_hash) {
+            revert ErrorUnexpectedSpvSubjectHash();
+        }
+
+        console.log("All checks have been passed. State has been updated");
+    }
+
+    function verifyLongestChainProofForkCase(SphinxProofFixture memory fixture) public {
+        if (fixture.publicValues.length != 32 + 32 + 32) {
+            revert ErrorUnexpectedLongestChainFixture();
+        }
+
+        executeCommonProofProcessingLogic(fixture, true);
+
+        console.log("All checks have been passed. State has been updated");
+    }
+
+    function verifySpvProofForkCase(SphinxProofFixture memory fixture, bytes32 user_submitted_spv_subject_hash)
+        public
+    {
+        if (fixture.publicValues.length != 32 + 32 + 32 + 32) {
+            revert ErrorUnexpectedSpvFixture();
+        }
+
+        executeCommonProofProcessingLogic(fixture, true);
 
         // starting from 96 after confirmation_work, first_layer_hash, target_layer_hash (32 + 32 + 32)
         uint256 offset = 96;
