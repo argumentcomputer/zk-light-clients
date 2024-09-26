@@ -21,6 +21,8 @@ jobs:
       packages: ${{ steps.get-packages.outputs.packages }}
       # List of changed light client packages, excluding `fixture-generator`
       lc-packages: ${{ steps.get-packages.outputs.lc-packages }}
+      solidity-packages: ${{ steps.get-packages.outputs.solidity-packages }}
+      move-packages: ${{ steps.get-packages.outputs.move-packages }}
       aptos: ${{ steps.filter.outputs.aptos }}
       ethereum: ${{ steps.filter.outputs.ethereum }}
       kadena: ${{ steps.filter.outputs.kadena }}
@@ -56,7 +58,6 @@ jobs:
             fi
           fi
           
-          echo "$SOLIDITY_PACKAGES"
           echo "packages=$PACKAGES" | tee -a "$GITHUB_OUTPUT"
           echo "lc-packages=$LC_PACKAGES" | tee -a "$GITHUB_OUTPUT"
           echo "solidity-packages=$SOLIDITY_PACKAGES" | tee -a "$GITHUB_OUTPUT"
@@ -136,8 +137,7 @@ jobs:
   solidity-unit-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
-    if: (${{ needs.changes.outputs.solidity-packages != '[]' && needs.changes.outputs.solidity-packages != '' }}) &&
-      (needs.changes.outputs.aptos == 'true' || needs.changes.outputs.kadena == 'true')
+    if: ${{ needs.changes.outputs.solidity-packages != '[]' && needs.changes.outputs.solidity-packages != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -175,12 +175,11 @@ jobs:
   move-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
-    if: (${{ needs.changes.outputs.move-packages != '[]' && needs.changes.outputs.move-packages != '' }}) &&
-        needs.changes.outputs.ethereum == 'true'
+    if: ${{ needs.changes.outputs.move-packages != '[]' && needs.changes.outputs.move-packages != '' }}
     strategy:
       fail-fast: false
       matrix:
-        # Parse JSON array containing names of all changed light client packages relevant to Solidity,
+        # Parse JSON array containing names of all changed light client packages relevant to Move,
         # e.g. ['ethereum'] if `aptos`, `ethereum` and `kadena` contain changes.
         package: ${{ fromJSON(needs.changes.outputs.move-packages) }}
     steps:
@@ -241,7 +240,7 @@ jobs:
       fail-fast: false
       matrix:
         # Parse JSON array containing names of all changed light client packages
-        # e.g. ['aptos', 'ethereum'] if both directories contain changes
+        # e.g. ['aptos', 'ethereum', 'kadena'] if all directories contain changes
         package: ${{ fromJSON(needs.changes.outputs.lc-packages) }}
     steps:
       - uses: actions/checkout@v4
