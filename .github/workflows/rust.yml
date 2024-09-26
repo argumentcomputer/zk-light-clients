@@ -55,6 +55,8 @@ jobs:
               PACKAGES=$(echo "$PACKAGES" | jq -c '. + ["fixture-generator"]')
             fi
           fi
+          
+          echo "$SOLIDITY_PACKAGES"
           echo "packages=$PACKAGES" | tee -a "$GITHUB_OUTPUT"
           echo "lc-packages=$LC_PACKAGES" | tee -a "$GITHUB_OUTPUT"
           echo "solidity-packages=$SOLIDITY_PACKAGES" | tee -a "$GITHUB_OUTPUT"
@@ -135,7 +137,7 @@ jobs:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
     if: (${{ needs.changes.outputs.solidity-packages != '[]' && needs.changes.outputs.solidity-packages != '' }}) &&
-        (needs.changes.outputs.aptos == 'true' || needs.changes.outputs.kadena == 'true')
+      (needs.changes.outputs.aptos == 'true' || needs.changes.outputs.kadena == 'true')
     strategy:
       fail-fast: false
       matrix:
