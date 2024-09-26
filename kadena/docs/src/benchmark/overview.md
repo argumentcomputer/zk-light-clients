@@ -17,26 +17,26 @@ The current results are based on a list of Layer Block headers of 7 elements.
 
 ### Longest chain
 
-Cycles:  **43 543 881**
+Cycles:  **43 554 106**
 
 SNARK time in milliseconds:
 
 ```json
 {
-  "proving_time": 1008628,
+  "proving_time": 790774,
   "verification_time": 4
 }
 ```
 
 ### SPV
 
-Cycles: **43 949 106**
+Cycles: **43 854 531**
 
 SNARK time in milliseconds:
 
 ```json
 {
-  "proving_time": 1015826,
-  "verification_time": 5
+  "proving_time": 874089,
+  "verification_time": 4
 }
 ```
