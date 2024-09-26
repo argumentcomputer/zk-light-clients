@@ -43,3 +43,11 @@ path = "src/bin/client.rs"
 [[bin]]
 name = "proof_server"
 path = "src/bin/proof_server.rs"
+
+[[bench]]
+name = "longest_chain"
+harness = false
+
+[[bench]]
+name = "spv"
+harness = false
