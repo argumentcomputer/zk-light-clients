@@ -44,6 +44,10 @@ jobs:
           PACKAGES=$(echo '${{ steps.filter.outputs.changes }}' | jq -c '.')
           # Remove `fixture-generator` if it exists, as we don't want to run tests or the cycle checker
           LC_PACKAGES=$(echo "$PACKAGES" | jq -c 'del(.[] | select(. == "fixture-generator"))')
+          # Remove `ethereum` if it exists, as we don't use it for Solidity tests
+          SOLIDITY_PACKAGES=$(echo "$LC_PACKAGES" | jq -c 'del(.[] | select(. == "ethereum"))')
+          # Remove `aptos` and `kadena` if they exist, as we don't use them for Move tests
+          MOVE_PACKAGES=$(echo "$LC_PACKAGES" | jq -c 'del(.[] | select(. == "aptos" or . == "kadena"))')
 
           # If any packages were changed, ensure we run clippy on `fixture-generator` as it imports all light clients
           if [ "$PACKAGES" != "[]" ]; then
@@ -53,6 +57,8 @@ jobs:
           fi
           echo "packages=$PACKAGES" | tee -a "$GITHUB_OUTPUT"
           echo "lc-packages=$LC_PACKAGES" | tee -a "$GITHUB_OUTPUT"
+          echo "solidity-packages=$SOLIDITY_PACKAGES" | tee -a "$GITHUB_OUTPUT"
+          echo "move-packages=$MOVE_PACKAGES" | tee -a "$GITHUB_OUTPUT"
 
   test:
     needs: changes
@@ -132,7 +138,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        directory: [ aptos, kadena ]
+        # Parse JSON array containing names of all changed light client packages relevant to Solidity,
+        # e.g. ['aptos', 'kadena'] if `aptos`, `ethereum` and `kadena` contain changes.
+        package: ${{ fromJSON(needs.changes.outputs.solidity-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -149,22 +157,28 @@ jobs:
       - name: Check formatting
         run: |
           forge fmt --check
-        working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/solidity/contracts/
       - name: Run Forge build
         run: |
           forge --version
           forge build
-        working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/solidity/contracts/
       - name: Run Forge tests
         run: |
           forge test
-        working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/solidity/contracts/
 
 
   move-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
     if: needs.changes.outputs.ethereum == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        # Parse JSON array containing names of all changed light client packages relevant to Solidity,
+        # e.g. ['ethereum'] if `aptos`, `ethereum` and `kadena` contain changes.
+        package: ${{ fromJSON(needs.changes.outputs.move-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -194,11 +208,11 @@ jobs:
           else
             echo "Balance is sufficient. No action needed."
           fi
-        working-directory: ${{ github.workspace }}/ethereum/move
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/move
       - name: Run unit tests
         run: |
           aptos move test --named-addresses plonk_verifier_addr=devnet
-        working-directory: ${{ github.workspace }}/ethereum/move
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/move
       - name: Test verifier contract
         run: |
           aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile testnet --seed $(openssl rand -hex 32) --assume-yes
@@ -213,7 +227,7 @@ jobs:
               exit 1
             fi
           done
-        working-directory: ${{ github.workspace }}/ethereum/move
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/move
 
   cycle-count-regression:
     needs: changes
