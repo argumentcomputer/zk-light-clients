@@ -132,12 +132,6 @@ jobs:
       fail-fast: false
       matrix:
         directory: [ aptos, kadena ]
-        include:
-          - directory: aptos
-            condition: needs.changes.outputs.aptos == 'true'
-          - directory: kadena
-            condition: needs.changes.outputs.kadena == 'true'
-    if: matrix.condition
     steps:
       - uses: actions/checkout@v4
         with:
@@ -148,22 +142,27 @@ jobs:
           submodules: recursive
           token: ${{ secrets.REPO_TOKEN }}
       - name: Install Foundry
+        if: ${{ matrix.directory == 'aptos' && needs.changes.outputs.aptos == 'true' || matrix.directory == 'kadena' && needs.changes.outputs.kadena == 'true' }}
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
       - name: Check formatting
+        if: ${{ matrix.directory == 'aptos' && needs.changes.outputs.aptos == 'true' || matrix.directory == 'kadena' && needs.changes.outputs.kadena == 'true' }}
         run: |
           forge fmt --check
         working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
       - name: Run Forge build
+        if: ${{ matrix.directory == 'aptos' && needs.changes.outputs.aptos == 'true' || matrix.directory == 'kadena' && needs.changes.outputs.kadena == 'true' }}
         run: |
           forge --version
           forge build
         working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
       - name: Run Forge tests
+        if: ${{ matrix.directory == 'aptos' && needs.changes.outputs.aptos == 'true' || matrix.directory == 'kadena' && needs.changes.outputs.kadena == 'true' }}
         run: |
           forge test
         working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
+
 
   move-tests:
     needs: changes
