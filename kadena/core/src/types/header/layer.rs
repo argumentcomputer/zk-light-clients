@@ -4,14 +4,14 @@
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::sha512::hash_inner;
 use crate::crypto::hash::HashValue;
-use crate::crypto::U256;
+use crate::crypto::{Rational, U256};
 use crate::types::adjacent::ADJACENT_PARENT_RAW_BYTES_LENGTH;
 use crate::types::error::{TypesError, ValidationError};
-use crate::types::graph::{TWENTY_CHAIN_GRAPH, TWENTY_CHAIN_GRAPH_DEGREE};
+use crate::types::graph::{CHAIN_GRAPH, GRAPH_DEGREE, GRAPH_ORDER};
 use crate::types::header::chain::{
     KadenaHeaderRaw, CHAIN_BYTES_LENGTH, RAW_HEADER_DECODED_BYTES_LENGTH,
 };
-use crate::types::{U16_BYTES_LENGTH, U64_BYTES_LENGTH};
+use crate::types::{U16_BYTES_LENGTH, U64_BYTES_LENGTH, WINDOW_WIDTH};
 use anyhow::Result;
 use getset::Getters;
 use std::cmp::Ordering;
@@ -229,7 +229,7 @@ impl ChainwebLayerHeader {
     ///
     /// # Notes
     ///
-    /// When the  chain graph degree changes along with the [`crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE`]
+    /// When the  chain graph degree changes along with the [`crate::types::graph::GRAPH_DEGREE`]
     /// constant this method should be updated.
     pub fn header_root(&self) -> Result<HashValue, CryptoError> {
         let mut hashes = self
@@ -284,7 +284,7 @@ impl ChainwebLayerHeader {
                     });
                 }
 
-                // Check that parent is right
+                // Check that parent is right and if needed the difficulty adjustment
                 if let Some(previous_layer) = list.get(i.wrapping_sub(1)) {
                     let parent_chain_header = previous_layer
                         .chain_headers()
@@ -297,11 +297,15 @@ impl ChainwebLayerHeader {
                             stored: HashValue::new(*parent_chain_header.hash()),
                         });
                     }
+
+                    if layer_header.height() % WINDOW_WIDTH == 0 {
+                        layer_header.verify_difficulty_adjustment(&list[i - 1])?
+                    }
                 }
 
                 // Check that the adjacent record are for the correct chains
-                let mut adjacent_chain_records = Vec::with_capacity(TWENTY_CHAIN_GRAPH_DEGREE);
-                for i in 0..TWENTY_CHAIN_GRAPH_DEGREE {
+                let mut adjacent_chain_records = Vec::with_capacity(GRAPH_DEGREE);
+                for i in 0..GRAPH_DEGREE {
                     let start = U16_BYTES_LENGTH + i * ADJACENT_PARENT_RAW_BYTES_LENGTH;
                     let end = start + CHAIN_BYTES_LENGTH;
                     adjacent_chain_records.push(u32::from_le_bytes(chain_header.adjacents().get(start..end)
@@ -313,7 +317,7 @@ impl ChainwebLayerHeader {
                 adjacent_chain_records.sort();
 
                 let chain = u32::from_le_bytes(*chain_header.chain()) as usize;
-                if adjacent_chain_records != TWENTY_CHAIN_GRAPH[chain] {
+                if adjacent_chain_records != CHAIN_GRAPH[chain] {
                     return Err(ValidationError::InvalidAdjacentChainRecords {
                         layer: layer_header.height as usize,
                         chain,
@@ -321,7 +325,8 @@ impl ChainwebLayerHeader {
                 }
             }
 
-            // Compute cumulative work
+            // Compute cumulative work, outisde of condition as it also
+            // ensures that the difficulty target is met
             let produced_work = layer_header.produced_work()?;
 
             if i > target_block_idx {
@@ -340,12 +345,63 @@ impl ChainwebLayerHeader {
 
         Ok((first_header_root, target_header_root, confirmation_work))
     }
+
+    /// Calculate the difficulty adjustment if the layer height is a new epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - The parent layer header.
+    ///
+    /// # Returns
+    ///
+    /// The difficulty adjustment.
+    ///
+    /// # Notes
+    ///
+    /// Based on [the Chainweb Wiki](https://github.com/kadena-io/chainweb-node/wiki/Block-Difficulty).
+    pub fn verify_difficulty_adjustment(&self, parent: &Self) -> Result<(), ValidationError> {
+        let adjusted_chain_hash_targets = parent
+            .chain_headers
+            .iter()
+            .zip(self.chain_headers.iter())
+            .map(|(parent, child)| child.target_adjustment(parent))
+            .collect::<Result<Vec<Rational>, ValidationError>>()?;
+
+        if adjusted_chain_hash_targets.len() != GRAPH_ORDER {
+            return Err(ValidationError::InvalidChainNumber {
+                expected: GRAPH_ORDER,
+                actual: adjusted_chain_hash_targets.len(),
+            });
+        }
+
+        for (chain_id, relations) in CHAIN_GRAPH.iter().enumerate() {
+            let adjusted_target_average = ((relations
+                .iter()
+                .map(|&adjacent_chain_id| adjusted_chain_hash_targets[adjacent_chain_id as usize])
+                .sum::<Rational>()
+                + adjusted_chain_hash_targets[chain_id])
+                / Rational::from(GRAPH_DEGREE as u64 + 1))
+            .floor();
+
+            let mut adjusted_hash_target: [u8; 32] = [0; 32];
+
+            adjusted_target_average.to_little_endian(&mut adjusted_hash_target);
+
+            if self.chain_headers[chain_id].target().to_vec() != adjusted_hash_target {
+                return Err(ValidationError::InvalidDifficultyAdjustment);
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(all(test, feature = "kadena"))]
 mod test {
     use super::*;
-    use crate::test_utils::{get_layer_block_headers, RAW_HEADER};
+    use crate::test_utils::{
+        get_epoch_change_layer_block_headers, get_layer_block_headers, RAW_HEADER,
+    };
 
     #[test]
     fn test_serde_chainweb_layer_header() {
@@ -376,6 +432,27 @@ mod test {
     #[test]
     fn test_verify_layer_block_header_list_no_panic() {
         let headers = get_layer_block_headers();
+
+        let (first_hash, target_hash, confirmation_work) =
+            ChainwebLayerHeader::verify(&headers).unwrap();
+
+        assert_eq!(first_hash, headers[0].header_root().unwrap());
+        assert_eq!(
+            target_hash,
+            headers[headers.len() / 2].header_root().unwrap()
+        );
+        assert_eq!(
+            confirmation_work,
+            ChainwebLayerHeader::cumulative_produced_work(
+                headers[headers.len() / 2..headers.len() - 1].to_vec()
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_verify_epoch_change_layer_block_header_list_no_panic() {
+        let headers = get_epoch_change_layer_block_headers();
 
         let (first_hash, target_hash, confirmation_work) =
             ChainwebLayerHeader::verify(&headers).unwrap();

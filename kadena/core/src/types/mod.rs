@@ -13,3 +13,7 @@ pub const U16_BYTES_LENGTH: usize = 2;
 pub const U32_BYTES_LENGTH: usize = 4;
 /// Size in bytes of a u64.
 pub const U64_BYTES_LENGTH: usize = 8;
+/// Target block time in micro seconds.
+pub const BLOCK_DELAY: u64 = 30_000_000;
+//. Number of blocks in an Epoch
+pub const WINDOW_WIDTH: u64 = 120;

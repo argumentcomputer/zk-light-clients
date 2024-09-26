@@ -13,14 +13,14 @@
 
 /// The degree of the chain graph. This the number of adjacent parents for
 /// each block header.
-pub const TWENTY_CHAIN_GRAPH_DEGREE: usize = 3;
-pub const TWENTY_CHAIN_GRAPH_ORDER: usize = 20;
+pub const GRAPH_DEGREE: usize = 3;
+pub const GRAPH_ORDER: usize = 20;
 
-pub type TwentyChainGraphType = [[u32; TWENTY_CHAIN_GRAPH_DEGREE]; TWENTY_CHAIN_GRAPH_ORDER];
+pub type TwentyChainGraphType = [[u32; GRAPH_DEGREE]; GRAPH_ORDER];
 
 /// The chain graph for the 20-chain network, sorted by chain ID, then
 /// from the lowest chain ID to the highest parent chain ID.
-pub const TWENTY_CHAIN_GRAPH: TwentyChainGraphType = [
+pub const CHAIN_GRAPH: TwentyChainGraphType = [
     [5, 10, 15],
     [6, 11, 16],
     [7, 12, 17],

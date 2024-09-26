@@ -4,7 +4,7 @@
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::sha512::{hash_inner, hash_tagged_data};
 use crate::crypto::hash::{HashValue, DIGEST_BYTES_LENGTH};
-use crate::crypto::{U256, U256_BYTES_LENGTH};
+use crate::crypto::{Rational, U256, U256_BYTES_LENGTH};
 use crate::merkle::{
     BLOCK_CREATION_TIME_TAG, BLOCK_HEIGHT_TAG, BLOCK_NONCE_TAG, BLOCK_WEIGHT_TAG,
     CHAINWEB_VERSION_TAG, CHAIN_ID_TAG, EPOCH_START_TIME_TAG, FEATURE_FLAGS_TAG, HASH_TARGET_TAG,
@@ -14,9 +14,11 @@ use crate::types::adjacent::{
     ADJACENT_PARENT_RAW_BYTES_LENGTH,
 };
 use crate::types::error::{TypesError, ValidationError};
-use crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE;
+use crate::types::graph::GRAPH_DEGREE;
 use crate::types::utils::extract_fixed_bytes;
-use crate::types::{U16_BYTES_LENGTH, U32_BYTES_LENGTH, U64_BYTES_LENGTH};
+use crate::types::{
+    BLOCK_DELAY, U16_BYTES_LENGTH, U32_BYTES_LENGTH, U64_BYTES_LENGTH, WINDOW_WIDTH,
+};
 use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -244,8 +246,8 @@ impl KadenaHeaderRaw {
     /// When the  chain graph degree changes along with the [`crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE`]
     /// constant this method should be updated.
     pub fn header_root(&self) -> Result<HashValue, CryptoError> {
-        let mut adjacent_hashes: Vec<[u8; 32]> = Vec::with_capacity(TWENTY_CHAIN_GRAPH_DEGREE);
-        for i in 0..TWENTY_CHAIN_GRAPH_DEGREE {
+        let mut adjacent_hashes: Vec<[u8; 32]> = Vec::with_capacity(GRAPH_DEGREE);
+        for i in 0..GRAPH_DEGREE {
             let start =
                 U16_BYTES_LENGTH + i * ADJACENT_PARENT_RAW_BYTES_LENGTH + CHAIN_BYTES_LENGTH;
             let end = start + DIGEST_BYTES_LENGTH;
@@ -348,6 +350,49 @@ impl KadenaHeaderRaw {
     /// The proof of work hash of the header.
     pub const fn decoded_height(&self) -> u64 {
         u64::from_le_bytes(self.height)
+    }
+
+    /// Calculate the adjusted target for a given chain on a new Epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - The parent header of the current header.
+    ///
+    /// # Returns
+    ///
+    /// The adjusted target for the new epoch.
+    ///
+    /// # Notes
+    ///
+    /// Based on [the Chainweb Wiki](https://github.com/kadena-io/chainweb-node/wiki/Block-Difficulty).
+    pub fn target_adjustment(&self, parent: &Self) -> Result<Rational, ValidationError> {
+        if u64::from_le_bytes(self.height) % WINDOW_WIDTH != 0 {
+            return Err(ValidationError::InvalidEpochStartHeight {
+                height: u64::from_le_bytes(self.height),
+                epoch_length: WINDOW_WIDTH,
+            });
+        }
+
+        if self.parent() != parent.hash() {
+            return Err(ValidationError::InvalidParentHash {
+                computed: HashValue::new(*self.parent()),
+                stored: HashValue::new(*parent.hash()),
+            });
+        }
+
+        // Previous epoch target
+        let parent_target = Rational::from(U256::from_little_endian(parent.target()));
+        // Previous epoch start time, timestamp in microseconds
+        let parent_epoch_start = Rational::from(u64::from_le_bytes(parent.epoch_start));
+        // Previous epoch end time, timestamp in microseconds
+        let parent_epoch_end = Rational::from(u64::from_le_bytes(parent.time));
+
+        // Calculate new target
+        let actual_duration = parent_epoch_end - parent_epoch_start;
+        let target_duration = Rational::from(WINDOW_WIDTH) * Rational::from(BLOCK_DELAY);
+        let quotient = (actual_duration / target_duration) * parent_target;
+
+        Ok(Rational::from(quotient.ceil().min(U256::max_value())))
     }
 
     /// Set the parent for the Kadena header.
