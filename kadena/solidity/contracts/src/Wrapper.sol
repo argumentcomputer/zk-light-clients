@@ -29,22 +29,27 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         confirmation_work_threshold = confirmation_work_threshold_;
     }
 
-    // FIXME: This function is only for testing purposes!!!
+    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
     function set_head_checkpoint(bytes32 zero_checkpoint) public onlyOwner {
         checkpoints[0] = zero_checkpoint;
     }
 
-    // FIXME: This function is only for testing purposes!!!
+    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
     function set_confirmation_work_threshold(uint256 threshold) public onlyOwner {
         confirmation_work_threshold = threshold;
     }
 
-    // FIXME: This function is only for testing purposes!!!
+    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
     function set_tail_checkpoint(bytes32 target_checkpoint) public onlyOwner {
         checkpoints[checkpoints.length - 1] = target_checkpoint;
     }
 
-    function rotate_checkpoints(bytes32 target_checkpoint) public onlyOwner {
+    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
+    function get_current_checkpoints() public view returns (bytes32[] memory) {
+        return checkpoints;
+    }
+
+    function rotate_checkpoints(bytes32 target_checkpoint) private onlyOwner {
         // drop hash from the tail, shift rest of hashes and write new checkpoint to the head
         uint256 index;
         for (index = 1; index < checkpoints.length; index++) {
@@ -62,11 +67,7 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         return false;
     }
 
-    function get_current_checkpoints() public view returns (bytes32[] memory) {
-        return checkpoints;
-    }
-
-    function executeCommonProofProcessingLogic(SphinxProofFixture memory fixture, bool is_fork) public {
+    function executeCommonProofProcessingLogic(SphinxProofFixture memory fixture, bool is_fork) private {
         uint256 offset = 0;
         uint256 i = 0;
 
@@ -102,15 +103,11 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         }
 
         // in case of fork, the first layer hash might correspond to arbitrary checkpoint,
-        if (is_fork) {
-            if (in_state(bytes32(first_layer_hash))) {
-                set_tail_checkpoint(bytes32(target_layer_hash));
-            } else {
-                revert ErrorUnexpectedLayerHash();
-            }
-        } else {
-            rotate_checkpoints(bytes32(target_layer_hash));
+        if (is_fork && !in_state(bytes32(first_layer_hash))) {
+            revert ErrorUnexpectedLayerHash();
         }
+
+        rotate_checkpoints(bytes32(target_layer_hash));
     }
 
     function verifyLongestChainProof(SphinxProofFixture memory fixture) public {
@@ -145,7 +142,6 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         console.log("All checks have been passed. State has been updated");
     }
 
-    /*
     function verifyLongestChainProofForkCase(SphinxProofFixture memory fixture) public {
         if (fixture.publicValues.length != 32 + 32 + 32) {
             revert ErrorUnexpectedLongestChainFixture();
@@ -178,5 +174,5 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         }
 
         console.log("All checks have been passed. State has been updated");
-    }*/
+    }
 }
