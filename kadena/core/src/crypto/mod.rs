@@ -38,7 +38,7 @@ impl U256 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Rational {
     pub numerator: U256,
     pub denominator: U256,
@@ -72,9 +72,11 @@ impl Div for Rational {
     type Output = Rational;
 
     fn div(self, rhs: Self) -> Self::Output {
-        if rhs.numerator == U256::zero() {
-            panic!("Tried to divide a rational by zero");
-        }
+        assert_ne!(
+            rhs.numerator,
+            U256::zero(),
+            "Tried to divide a rational by zero"
+        );
 
         Rational {
             numerator: self.numerator * rhs.denominator,
