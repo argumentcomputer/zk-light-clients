@@ -23,7 +23,7 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
 
     constructor(uint256 confirmation_work_threshold_, bytes32[] memory checkpoints_) {
         // Kadena's Chainweb protocol setting
-        require(checkpoints_.length == 5);
+        require(checkpoints_.length >= 5);
 
         checkpoints = checkpoints_;
         confirmation_work_threshold = confirmation_work_threshold_;
@@ -39,17 +39,27 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         confirmation_work_threshold = threshold;
     }
 
-    function rotate_checkpoints(bytes32 new_checkpoint) public onlyOwner {
-        // drop hash from [0] position, shift rest of hashes and write new checkpoint to the [4] position
-        checkpoints[0] = checkpoints[1];
-        checkpoints[1] = checkpoints[2];
-        checkpoints[2] = checkpoints[3];
-        checkpoints[3] = checkpoints[4];
-        checkpoints[4] = new_checkpoint;
+    // FIXME: This function is only for testing purposes!!!
+    function set_tail_checkpoint(bytes32 target_checkpoint) public onlyOwner {
+        checkpoints[checkpoints.length - 1] = target_checkpoint;
     }
 
-    function set_tail_checkpoint(bytes32 new_checkpoint) public onlyOwner {
-        checkpoints[4] = new_checkpoint;
+    function rotate_checkpoints(bytes32 target_checkpoint) public onlyOwner {
+        // drop hash from the tail, shift rest of hashes and write new checkpoint to the head
+        uint256 index;
+        for (index = 1; index < checkpoints.length; index++) {
+            checkpoints[checkpoints.length - index] = checkpoints[checkpoints.length - index - 1];
+        }
+        checkpoints[0] = target_checkpoint;
+    }
+
+    function in_state(bytes32 checkpoint) private view returns (bool) {
+        for (uint256 index = 0; index < checkpoints.length; index++) {
+            if (checkpoint == checkpoints[index]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function get_current_checkpoints() public view returns (bytes32[] memory) {
@@ -85,12 +95,19 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
             revert ErrorConfirmationWorkIsSmallerThanThreshold();
         }
 
-        if (bytes32(first_layer_hash) != checkpoints[0]) {
+        // in regular case, the first layer hash should correspond to the latest checkpoint,
+        // which is in the tail of the list
+        if (bytes32(first_layer_hash) != checkpoints[checkpoints.length - 1]) {
             revert ErrorUnexpectedLayerHash();
         }
 
+        // in case of fork, the first layer hash might correspond to arbitrary checkpoint,
         if (is_fork) {
-            set_tail_checkpoint(bytes32(target_layer_hash));
+            if (in_state(bytes32(first_layer_hash))) {
+                set_tail_checkpoint(bytes32(target_layer_hash));
+            } else {
+                revert ErrorUnexpectedLayerHash();
+            }
         } else {
             rotate_checkpoints(bytes32(target_layer_hash));
         }
@@ -128,6 +145,7 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         console.log("All checks have been passed. State has been updated");
     }
 
+    /*
     function verifyLongestChainProofForkCase(SphinxProofFixture memory fixture) public {
         if (fixture.publicValues.length != 32 + 32 + 32) {
             revert ErrorUnexpectedLongestChainFixture();
@@ -160,5 +178,5 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         }
 
         console.log("All checks have been passed. State has been updated");
-    }
+    }*/
 }
