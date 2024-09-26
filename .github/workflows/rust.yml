@@ -125,10 +125,19 @@ jobs:
         run: |
           find ${{ matrix.package }}/programs -type d -name "target" -prune -o -type f -name "Cargo.toml" -exec cargo deny --manifest-path {} check \;
 
-  aptos-solidity-unit-tests:
+  solidity-unit-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
-    if: needs.changes.outputs.aptos == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: [ aptos, kadena ]
+        include:
+          - directory: aptos
+            condition: needs.changes.outputs.aptos == 'true'
+          - directory: kadena
+            condition: needs.changes.outputs.kadena == 'true'
+    if: matrix.condition
     steps:
       - uses: actions/checkout@v4
         with:
@@ -145,47 +154,16 @@ jobs:
       - name: Check formatting
         run: |
           forge fmt --check
-        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
       - name: Run Forge build
         run: |
           forge --version
           forge build
-        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
       - name: Run Forge tests
         run: |
           forge test
-        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
-
-  kadena-solidity-unit-tests:
-    needs: changes
-    runs-on: buildjet-16vcpu-ubuntu-2204
-    if: needs.changes.outputs.kadena == 'true'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: argumentcomputer/ci-workflows
-      - uses: ./.github/actions/ci-env
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.REPO_TOKEN }}
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-      - name: Check formatting
-        run: |
-          forge fmt --check
-        working-directory: ${{ github.workspace }}/kadena/solidity/contracts/
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build
-        working-directory: ${{ github.workspace }}/kadena/solidity/contracts/
-      - name: Run Forge tests
-        run: |
-          forge test
-        working-directory: ${{ github.workspace }}/kadena/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.directory }}/solidity/contracts/
 
   move-tests:
     needs: changes
