@@ -82,7 +82,6 @@ pub fn get_test_assets() -> TestAssets {
     }
 }
 
-#[cfg(test)]
 pub fn random_hash() -> HashValue {
     use rand::Rng;
 
@@ -92,7 +91,6 @@ pub fn random_hash() -> HashValue {
     HashValue::new(arr)
 }
 
-#[cfg(test)]
 pub fn random_string(len: usize) -> String {
     use rand::Rng;
 

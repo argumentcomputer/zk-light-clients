@@ -340,6 +340,57 @@ impl KadenaHeaderRaw {
 
         crate::crypto::hash::blake2::hash_data(&serialized)
     }
+
+    /// Computes the proof of work hash of the header.
+    ///
+    /// # Returns
+    ///
+    /// The proof of work hash of the header.
+    pub const fn decoded_height(&self) -> u64 {
+        u64::from_le_bytes(self.height)
+    }
+
+    /// Set the parent for the Kadena header.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - The parent hash to set.
+    ///
+    /// # Notes
+    ///
+    /// This method is only for testing purposes.
+    #[cfg(feature = "kadena")]
+    pub fn set_parent(&mut self, parent: HashValue) {
+        self.parent = *parent.as_ref();
+    }
+
+    /// Set the hash value for the Kadena header.
+    ///
+    /// # Arguments
+    ///
+    /// * `hash` - The hash value to set.
+    ///
+    /// # Notes
+    ///
+    /// This method is only for testing purposes.
+    #[cfg(feature = "kadena")]
+    pub fn set_hash(&mut self, hash: HashValue) {
+        self.hash = *hash.as_ref();
+    }
+
+    /// Set the height for the Kadena header.
+    ///
+    /// # Arguments
+    ///
+    /// * `height` - The height to set.
+    ///
+    /// # Notes
+    ///
+    /// This method is only for testing purposes.
+    #[cfg(feature = "kadena")]
+    pub fn set_height(&mut self, height: u64) {
+        self.height = height.to_le_bytes();
+    }
 }
 
 /// Representation of a Kadena header with its properties as Rust types.

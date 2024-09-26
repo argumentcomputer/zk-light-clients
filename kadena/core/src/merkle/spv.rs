@@ -1,11 +1,9 @@
-use crate::crypto::hash::sha512::{hash_inner, hash_leaf};
+use crate::crypto::hash::sha512::hash_inner;
 use crate::crypto::hash::HashValue;
 use crate::merkle::proof::{MerkleProof, MERKLE_PROOF_BASE_BYTES_LENGTH};
 use crate::merkle::subject::{Subject, SUBJECT_BASE_BYTES_LENGTH};
 use crate::types::error::{TypesError, ValidationError};
 use crate::types::U32_BYTES_LENGTH;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
 use getset::Getters;
 
 pub const SPV_BASE_BYTES_LENGTH: usize =
@@ -52,12 +50,10 @@ impl Spv {
     /// A boolean indicating if the proof is valid.
     pub fn verify(&self, expected_root: &HashValue) -> Result<bool, ValidationError> {
         // Hash subject for base leaf
-        let mut current_hash = hash_leaf(
-            &URL_SAFE_NO_PAD
-                .decode(self.subject().input().as_bytes())
-                .map_err(|err| ValidationError::InvalidBase64 { source: err.into() })?,
-        )
-        .map_err(|err| ValidationError::HashError { source: err.into() })?;
+        let mut current_hash = self
+            .subject
+            .hash_as_leaf()
+            .map_err(|err| ValidationError::HashError { source: err.into() })?;
 
         // Process each step in the proof
         for step in self.object().steps().iter() {

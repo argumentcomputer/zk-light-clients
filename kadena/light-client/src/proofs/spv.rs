@@ -193,7 +193,7 @@ pub struct SpvOut {
     first_layer_block_header_hash: HashValue,
     target_layer_block_header_hash: HashValue,
     confirmation_work: U256,
-    subject: Vec<u8>,
+    subject_hash: HashValue,
 }
 
 impl From<&mut SphinxPublicValues> for SpvOut {
@@ -201,13 +201,13 @@ impl From<&mut SphinxPublicValues> for SpvOut {
         let confirmation_work = U256::from_little_endian(&public_values.read::<[u8; 32]>());
         let first_layer_block_header_hash = HashValue::new(public_values.read::<[u8; 32]>());
         let target_layer_block_header_hash = HashValue::new(public_values.read::<[u8; 32]>());
-        let subject = public_values.read::<Vec<u8>>();
+        let subject_hash = HashValue::new(public_values.read::<[u8; 32]>());
 
         Self {
             confirmation_work,
             first_layer_block_header_hash,
             target_layer_block_header_hash,
-            subject,
+            subject_hash,
         }
     }
 }
@@ -323,7 +323,14 @@ mod test {
                 .header_root()
                 .expect("Should have a header root"),
         );
-        assert_eq!(test_assets.spv().subject().to_bytes(), spv_out.subject)
+        assert_eq!(
+            test_assets
+                .spv()
+                .subject()
+                .hash_as_leaf()
+                .expect("Should be able to hash subject"),
+            spv_out.subject_hash
+        )
     }
 
     #[test]

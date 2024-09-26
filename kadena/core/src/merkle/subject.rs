@@ -1,5 +1,10 @@
+use crate::crypto::error::CryptoError;
+use crate::crypto::hash::sha512::hash_leaf;
+use crate::crypto::hash::HashValue;
 use crate::types::error::TypesError;
 use crate::types::U32_BYTES_LENGTH;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use getset::Getters;
 
 pub const SUBJECT_BASE_BYTES_LENGTH: usize = U32_BYTES_LENGTH;
@@ -85,6 +90,19 @@ impl Subject {
         })?;
 
         Ok(Self::new(input))
+    }
+
+    /// Hash the `Subject` as a leaf in a Merkle Tree.
+    ///
+    /// # Returns
+    ///
+    /// The hash of the `Subject` as a leaf.
+    pub fn hash_as_leaf(&self) -> Result<HashValue, CryptoError> {
+        hash_leaf(
+            &URL_SAFE_NO_PAD
+                .decode(self.input.as_bytes())
+                .map_err(|err| CryptoError::Base64Error { source: err.into() })?,
+        )
     }
 }
 
