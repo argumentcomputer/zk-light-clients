@@ -10,6 +10,9 @@ struct SphinxProofFixture {
     bytes32 vkey;
 }
 
+/// The current wrapper access control is pretty simple: only the owner can rotate checkpoints.
+/// Ideally, we should have a more sophisticated access control mechanism, leveraging
+/// the Access Control contract of Open Zeppelin: https://docs.openzeppelin.com/contracts/2.x/access-control.
 contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
     error ErrorUnexpectedLongestChainFixture();
     error ErrorUnexpectedSpvFixture();
@@ -21,32 +24,14 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
     bytes32[] checkpoints;
     uint256 confirmation_work_threshold;
 
+    event CheckpointRotated(bytes32 target_checkpoint);
+
     constructor(uint256 confirmation_work_threshold_, bytes32[] memory checkpoints_) {
         // Kadena's Chainweb protocol setting
         require(checkpoints_.length >= 5);
 
         checkpoints = checkpoints_;
         confirmation_work_threshold = confirmation_work_threshold_;
-    }
-
-    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
-    function set_head_checkpoint(bytes32 zero_checkpoint) public onlyOwner {
-        checkpoints[0] = zero_checkpoint;
-    }
-
-    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
-    function set_confirmation_work_threshold(uint256 threshold) public onlyOwner {
-        confirmation_work_threshold = threshold;
-    }
-
-    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
-    function set_tail_checkpoint(bytes32 target_checkpoint) public onlyOwner {
-        checkpoints[checkpoints.length - 1] = target_checkpoint;
-    }
-
-    // FIXME: This function is only for testing purposes!!! Needs to be removed in production
-    function get_current_checkpoints() public view returns (bytes32[] memory) {
-        return checkpoints;
     }
 
     function rotate_checkpoints(bytes32 target_checkpoint) private onlyOwner {
@@ -56,6 +41,8 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
             checkpoints[checkpoints.length - index] = checkpoints[checkpoints.length - index - 1];
         }
         checkpoints[0] = target_checkpoint;
+
+        emit CheckpointRotated(target_checkpoint);
     }
 
     function in_state(bytes32 checkpoint) private view returns (bool) {
@@ -110,56 +97,24 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
         rotate_checkpoints(bytes32(target_layer_hash));
     }
 
-    function verifyLongestChainProof(SphinxProofFixture memory fixture) public {
+    function verifyLongestChainProof(SphinxProofFixture memory fixture, bool is_fork) public {
         if (fixture.publicValues.length != 32 + 32 + 32) {
             revert ErrorUnexpectedLongestChainFixture();
         }
 
-        executeCommonProofProcessingLogic(fixture, false);
+        executeCommonProofProcessingLogic(fixture, is_fork);
 
         console.log("All checks have been passed. State has been updated");
     }
 
-    function verifySpvProof(SphinxProofFixture memory fixture, bytes32 user_submitted_spv_subject_hash) public {
-        if (fixture.publicValues.length != 32 + 32 + 32 + 32) {
-            revert ErrorUnexpectedSpvFixture();
-        }
-
-        executeCommonProofProcessingLogic(fixture, false);
-
-        // starting from 96 after confirmation_work, first_layer_hash, target_layer_hash (32 + 32 + 32)
-        uint256 offset = 96;
-        uint256 i = 0;
-        bytes memory subject_hash = new bytes(32);
-        for (i = 0; i < 32; i++) {
-            subject_hash[i] = fixture.publicValues[i + offset];
-        }
-
-        if (bytes32(subject_hash) != user_submitted_spv_subject_hash) {
-            revert ErrorUnexpectedSpvSubjectHash();
-        }
-
-        console.log("All checks have been passed. State has been updated");
-    }
-
-    function verifyLongestChainProofForkCase(SphinxProofFixture memory fixture) public {
-        if (fixture.publicValues.length != 32 + 32 + 32) {
-            revert ErrorUnexpectedLongestChainFixture();
-        }
-
-        executeCommonProofProcessingLogic(fixture, true);
-
-        console.log("All checks have been passed. State has been updated");
-    }
-
-    function verifySpvProofForkCase(SphinxProofFixture memory fixture, bytes32 user_submitted_spv_subject_hash)
+    function verifySpvProof(SphinxProofFixture memory fixture, bytes32 user_submitted_spv_subject_hash, bool is_fork)
         public
     {
         if (fixture.publicValues.length != 32 + 32 + 32 + 32) {
             revert ErrorUnexpectedSpvFixture();
         }
 
-        executeCommonProofProcessingLogic(fixture, true);
+        executeCommonProofProcessingLogic(fixture, is_fork);
 
         // starting from 96 after confirmation_work, first_layer_hash, target_layer_hash (32 + 32 + 32)
         uint256 offset = 96;

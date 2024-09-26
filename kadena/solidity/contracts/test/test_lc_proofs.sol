@@ -6,10 +6,32 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {Wrapper, SphinxProofFixture} from "../src/Wrapper.sol";
 import {SphinxVerifier} from "sphinx-contracts/SphinxVerifier.sol";
 
+contract WrapperTest is Wrapper {
+    constructor(uint256 confirmation_work_threshold, bytes32[] memory checkpoints)
+        Wrapper(confirmation_work_threshold, checkpoints)
+    {}
+
+    function set_head_checkpoint(bytes32 zero_checkpoint) public onlyOwner {
+        checkpoints[0] = zero_checkpoint;
+    }
+
+    function set_confirmation_work_threshold(uint256 threshold) public onlyOwner {
+        confirmation_work_threshold = threshold;
+    }
+
+    function set_tail_checkpoint(bytes32 target_checkpoint) public onlyOwner {
+        checkpoints[checkpoints.length - 1] = target_checkpoint;
+    }
+
+    function get_current_checkpoints() public view returns (bytes32[] memory) {
+        return checkpoints;
+    }
+}
+
 contract SolidityVerificationTest is Test {
     using stdJson for string;
 
-    Wrapper wrapper;
+    WrapperTest wrapper;
 
     function setUp() public {
         // initial state
@@ -22,7 +44,7 @@ contract SolidityVerificationTest is Test {
 
         uint256 confirmation_work_threshold = 0x596e6483a7e9188e289af6012de83766283712e3ad57bf03dd03000000000001;
 
-        wrapper = new Wrapper(confirmation_work_threshold, checkpoints);
+        wrapper = new WrapperTest(confirmation_work_threshold, checkpoints);
     }
 
     function loadPlonkLongestChainFixture() public view returns (SphinxProofFixture memory) {
@@ -76,7 +98,7 @@ contract SolidityVerificationTest is Test {
 
         wrapper.set_tail_checkpoint(bytes32(first_layer_hash));
 
-        wrapper.verifyLongestChainProof(fixture);
+        wrapper.verifyLongestChainProof(fixture, false);
 
         // check state rotation
         bytes memory target_layer_hash = new bytes(32);
@@ -117,7 +139,7 @@ contract SolidityVerificationTest is Test {
         for (i = 0; i < 32; i++) {
             subject_hash[i] = fixture.publicValues[i + offset];
         }
-        wrapper.verifySpvProof(fixture, bytes32(subject_hash));
+        wrapper.verifySpvProof(fixture, bytes32(subject_hash), false);
 
         // check state rotation
         bytes memory target_layer_hash = new bytes(32);
@@ -151,7 +173,7 @@ contract SolidityVerificationTest is Test {
         for (i = 0; i < 32; i++) {
             subject_hash[i] = fixture.publicValues[i + offset];
         }
-        wrapper.verifySpvProof(fixture, bytes32(subject_hash));
+        wrapper.verifySpvProof(fixture, bytes32(subject_hash), false);
     }
 
     function testFailSmallerConfirmationWorkThreshold2() public {
@@ -165,7 +187,7 @@ contract SolidityVerificationTest is Test {
 
         wrapper.set_tail_checkpoint(bytes32(first_layer_hash));
 
-        wrapper.verifyLongestChainProof(fixture);
+        wrapper.verifyLongestChainProof(fixture, false);
     }
 
     function testSuccessfulLongestChainVerificationForkCase() public {
@@ -187,7 +209,7 @@ contract SolidityVerificationTest is Test {
 
         wrapper.set_tail_checkpoint(bytes32(first_layer_hash));
 
-        wrapper.verifyLongestChainProofForkCase(fixture);
+        wrapper.verifyLongestChainProof(fixture, true);
 
         // check state rotation
         bytes memory target_layer_hash = new bytes(32);
@@ -228,7 +250,7 @@ contract SolidityVerificationTest is Test {
         for (i = 0; i < 32; i++) {
             subject_hash[i] = fixture.publicValues[i + offset];
         }
-        wrapper.verifySpvProofForkCase(fixture, bytes32(subject_hash));
+        wrapper.verifySpvProof(fixture, bytes32(subject_hash), true);
 
         // check state rotation
         bytes memory target_layer_hash = new bytes(32);
