@@ -1,0 +1,87 @@
+# Workflow to create a new release PR, with one of the following two scenarios:
+#
+# - Major release
+#   - Pushes a new `release/<tag-prefix>-v<version>` branch based on latest `major.minor` version, e.g. `release/aptos-v1.0`
+#   - Creates a new `release-pr-<tag-prefix>-v<version>` branch from the release, then bumps the version with the `version` input
+#   - Opens a release PR from `release-pr-<tag-prefix>-v<version>` to `release/<tag-prefix>-v<version>`
+# - Minor release
+#   - Pushes a new `release/<tag-prefix>-v<version>` branch based on the latest compatible major release
+#   - Creates a new `release-pr-<tag-prefix>-v<version` branch from the release, then bumps the version with the `version` input
+#   - Opens a release PR from `release-pr-<tag-prefix>-v<version` to `release/<tag-prefix>-v<version>`
+# - Patch release
+#   - Pushes a new `patch/<tag-prefix>-v<version>` branch based on `release/<tag-prefix>-v<version>`, then bumps the verision with the `version` input
+#   - Errors if the `release/<tag-prefix>-v<version>` branch doesn't exist
+#   - Opens a release PR from `patch/<tag-prefix>-v<version>` to `release/<tag-prefix>-v<version>`
+#
+# When the PR is merged, the caller can then trigger a release from `ci-workflows/actions/tag-release`
+# The PR branch can then be safely deleted, while the release branch should have a branch protection rule for historical preservation
+#
+# The `ci-workflows` release PR action can be found at https://github.com/argumentcomputer/ci-workflows/blob/main/.github/actions/release-pr/action.yml
+name: Create release PR
+on:
+  workflow_dispatch:
+    inputs:
+      light-client:
+        description: 'Light client to release'
+        type: choice
+        options:
+          - aptos
+          - ethereum
+          - kadena
+        required: true
+        default: 'aptos'
+      release-type:
+        description: 'Semver release type'
+        required: true
+        default: 'major'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+      version:
+        description: '`<major>.<minor>.<patch>` version, e.g. `1.0.0`'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git config
+        run: |
+          git config --global user.name "argument-ci[bot]"
+          git config --global user.email "argument-ci[bot]@users.noreply.github.com"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: argumentcomputer/ci-workflows
+          path: ci-workflows
+          ref: release-workflow
+      - name: Add `programs/` subcrates to release
+        run: |
+          if [[ "${{ inputs.light-client }}" == "aptos" ]]; then
+            MORE_CRATES="programs/inclusion,programs/epoch-change"
+          elif [[ "${{ inputs.light-client }}" == "ethereum" ]]; then
+            MORE_CRATES="programs/inclusion,programs/committee-change"
+          else
+            MORE_CRATES="programs/longest-chain"
+          fi
+
+          echo "MORE_CRATES=$MORE_CRATES" | tee -a $GITHUB_ENV
+      - uses: tibdex/github-app-token@v2
+        id: generate-token
+        with:
+          app_id: ${{ secrets.TOKEN_APP_ID }}
+          private_key: ${{ secrets.TOKEN_APP_PRIVATE_KEY }}
+      - name: Open release PR
+        uses: ./ci-workflows/.github/actions/release-pr
+        with:
+          tag-prefix: ${{ inputs.light-client }}
+          path: ${{ inputs.light-client }}
+          more-crates: ${{ env.MORE_CRATES }}
+          release-type: ${{ inputs.release-type }}
+          version: ${{ inputs.version }}
+          token: ${{ steps.generate-token.outputs.token }}
