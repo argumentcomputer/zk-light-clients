@@ -18,7 +18,6 @@ use crate::proofs::{ProofType, ProvingMode};
 use crate::types::chainweb::PayloadResponse;
 use kadena_lc_core::crypto::hash::HashValue;
 use kadena_lc_core::merkle::spv::Spv;
-use kadena_lc_core::types::header::chain::KadenaHeaderRaw;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 
 pub(crate) mod chainweb;
@@ -186,25 +185,5 @@ impl Client {
         payload_hash: HashValue,
     ) -> Result<PayloadResponse, ClientError> {
         self.chainweb_client.get_payload(chain, payload_hash).await
-    }
-
-    /// Get the latest block header for the given chain.
-    ///
-    /// # Arguments
-    ///
-    /// * `chain` - The chain to get the latest block header from.
-    /// * `target_block` - The target block height.
-    ///
-    /// # Returns
-    ///
-    /// The latest block header.
-    pub async fn get_block_header(
-        &self,
-        chain: u32,
-        target_block: usize,
-    ) -> Result<KadenaHeaderRaw, ClientError> {
-        self.chainweb_client
-            .get_block_header(chain, target_block)
-            .await
     }
 }
