@@ -84,4 +84,4 @@ jobs:
           more-crates: ${{ env.MORE_CRATES }}
           release-type: ${{ inputs.release-type }}
           version: ${{ inputs.version }}
-          token: ${{ secrets.REPO_TOKEN }}
+          token: ${{ steps.generate-token.outputs.token }}
