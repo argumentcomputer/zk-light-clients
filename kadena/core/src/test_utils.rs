@@ -26,6 +26,8 @@ pub const TESTNET_CHAIN_3_HEADERS_URL: &str =
 
 pub const COMPACT_HEADER_PATH: &str = "../test-assets/compact.json";
 pub const CHAINWEB_LAYER_HEADERS_PATH: &str = "../test-assets/kadena_layer_headers.json";
+pub const EPOCH_CHANGE_CHAINWEB_LAYER_HEADERS_PATH: &str =
+    "../test-assets/epoch_change_kadena_layer_headers.json";
 pub const SPV_PATH: &str = "../test-assets/spv.json";
 
 pub fn get_compact_headers_bytes() -> Vec<u8> {
@@ -40,6 +42,16 @@ pub fn get_layer_block_headers() -> Vec<ChainwebLayerHeader> {
     let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
     let test_asset_path = root_path.join(CHAINWEB_LAYER_HEADERS_PATH);
+
+    let bytes: Vec<u8> = serde_json::from_slice(&fs::read(test_asset_path).unwrap()).unwrap();
+
+    ChainwebLayerHeader::deserialize_list(&bytes).unwrap()
+}
+
+pub fn get_epoch_change_layer_block_headers() -> Vec<ChainwebLayerHeader> {
+    let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let test_asset_path = root_path.join(EPOCH_CHANGE_CHAINWEB_LAYER_HEADERS_PATH);
 
     let bytes: Vec<u8> = serde_json::from_slice(&fs::read(test_asset_path).unwrap()).unwrap();
 

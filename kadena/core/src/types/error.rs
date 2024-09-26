@@ -103,4 +103,10 @@ pub enum ValidationError {
     InvalidPosition { value: u8 },
     #[error("Error in adjacent parent chain records at layer height {layer}, chain {chain}")]
     InvalidAdjacentChainRecords { chain: usize, layer: usize },
+    #[error("Expected the block height to be a multiple of {epoch_length}, got {height}")]
+    InvalidEpochStartHeight { height: u64, epoch_length: u64 },
+    #[error("Invalid difficulty adjustment for a new epoch.")]
+    InvalidDifficultyAdjustment,
+    #[error("Invalid number of chain. Expected {expected}, got {actual} ")]
+    InvalidChainNumber { expected: usize, actual: usize },
 }
