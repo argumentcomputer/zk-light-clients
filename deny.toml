@@ -95,7 +95,9 @@ ignore = [
     # yaml_rust is unmaintained
     "RUSTSEC-2024-0320",
     # proc-macro-error is unmaintained
-    "RUSTSEC-2024-0370"
+    "RUSTSEC-2024-0370",
+    # atty is unmaintained
+    "RUSTSEC-2024-0375"
 ]
 
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
