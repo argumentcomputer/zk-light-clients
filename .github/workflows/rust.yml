@@ -134,7 +134,8 @@ jobs:
   solidity-unit-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
-    if: needs.changes.outputs.aptos == 'true' || needs.changes.outputs.kadena == 'true'
+    if: (${{ needs.changes.outputs.solidity-packages != '[]' && needs.changes.outputs.solidity-packages != '' }}) &&
+        (needs.changes.outputs.aptos == 'true' || needs.changes.outputs.kadena == 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -172,7 +173,8 @@ jobs:
   move-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
-    if: needs.changes.outputs.ethereum == 'true'
+    if: (${{ needs.changes.outputs.move-packages != '[]' && needs.changes.outputs.move-packages != '' }}) &&
+        needs.changes.outputs.ethereum == 'true'
     strategy:
       fail-fast: false
       matrix:
