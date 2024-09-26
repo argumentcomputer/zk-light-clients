@@ -97,7 +97,7 @@ contract Wrapper is SphinxPlonkVerifier, Ownable(msg.sender) {
 
         // in regular case, the first layer hash should correspond to the latest checkpoint,
         // which is in the tail of the list
-        if (bytes32(first_layer_hash) != checkpoints[checkpoints.length - 1]) {
+        if (bytes32(first_layer_hash) != checkpoints[checkpoints.length - 1] && !is_fork) {
             revert ErrorUnexpectedLayerHash();
         }
 
