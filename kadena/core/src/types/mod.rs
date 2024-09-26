@@ -17,4 +17,3 @@ pub const U64_BYTES_LENGTH: usize = 8;
 pub const BLOCK_DELAY: u64 = 30_000_000;
 //. Number of blocks in an Epoch
 pub const WINDOW_WIDTH: u64 = 120;
-pub const EPOCH_LENGTH: u64 = 120;

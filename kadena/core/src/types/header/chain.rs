@@ -17,7 +17,7 @@ use crate::types::error::{TypesError, ValidationError};
 use crate::types::graph::GRAPH_DEGREE;
 use crate::types::utils::extract_fixed_bytes;
 use crate::types::{
-    BLOCK_DELAY, EPOCH_LENGTH, U16_BYTES_LENGTH, U32_BYTES_LENGTH, U64_BYTES_LENGTH,
+    BLOCK_DELAY, U16_BYTES_LENGTH, U32_BYTES_LENGTH, U64_BYTES_LENGTH, WINDOW_WIDTH,
 };
 use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -352,11 +352,24 @@ impl KadenaHeaderRaw {
         u64::from_le_bytes(self.height)
     }
 
+    /// Calculate the adjusted target for a given chain on a new Epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - The parent header of the current header.
+    ///
+    /// # Returns
+    ///
+    /// The adjusted target for the new epoch.
+    ///
+    /// # Notes
+    ///
+    /// Based on [the Chainweb Wiki](https://github.com/kadena-io/chainweb-node/wiki/Block-Difficulty).
     pub fn target_adjustment(&self, parent: &Self) -> Result<Rational, ValidationError> {
-        if u64::from_le_bytes(self.height) % EPOCH_LENGTH != 0 {
+        if u64::from_le_bytes(self.height) % WINDOW_WIDTH != 0 {
             return Err(ValidationError::InvalidEpochStartHeight {
                 height: u64::from_le_bytes(self.height),
-                epoch_length: EPOCH_LENGTH,
+                epoch_length: WINDOW_WIDTH,
             });
         }
 
@@ -376,7 +389,7 @@ impl KadenaHeaderRaw {
 
         // Calculate new target
         let actual_duration = parent_epoch_end - parent_epoch_start;
-        let target_duration = Rational::from(EPOCH_LENGTH) * Rational::from(BLOCK_DELAY);
+        let target_duration = Rational::from(WINDOW_WIDTH) * Rational::from(BLOCK_DELAY);
         let quotient = (actual_duration / target_duration) * parent_target;
 
         Ok(Rational::from(quotient.ceil().min(U256::max_value())))

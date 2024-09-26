@@ -11,7 +11,7 @@ use crate::types::graph::{CHAIN_GRAPH, GRAPH_DEGREE, GRAPH_ORDER};
 use crate::types::header::chain::{
     KadenaHeaderRaw, CHAIN_BYTES_LENGTH, RAW_HEADER_DECODED_BYTES_LENGTH,
 };
-use crate::types::{EPOCH_LENGTH, U16_BYTES_LENGTH, U64_BYTES_LENGTH};
+use crate::types::{U16_BYTES_LENGTH, U64_BYTES_LENGTH, WINDOW_WIDTH};
 use anyhow::Result;
 use getset::Getters;
 use std::cmp::Ordering;
@@ -298,7 +298,7 @@ impl ChainwebLayerHeader {
                         });
                     }
 
-                    if layer_header.height() % EPOCH_LENGTH == 0 {
+                    if layer_header.height() % WINDOW_WIDTH == 0 {
                         layer_header.verify_difficulty_adjustment(&list[i - 1])?
                     }
                 }
@@ -346,6 +346,19 @@ impl ChainwebLayerHeader {
         Ok((first_header_root, target_header_root, confirmation_work))
     }
 
+    /// Calculate the difficulty adjustment if the layer height is a new epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - The parent layer header.
+    ///
+    /// # Returns
+    ///
+    /// The difficulty adjustment.
+    ///
+    /// # Notes
+    ///
+    /// Based on [the Chainweb Wiki](https://github.com/kadena-io/chainweb-node/wiki/Block-Difficulty).
     pub fn verify_difficulty_adjustment(&self, parent: &Self) -> Result<(), ValidationError> {
         let adjusted_chain_hash_targets = parent
             .chain_headers
