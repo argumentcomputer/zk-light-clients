@@ -15,20 +15,51 @@
 //!
 //! This benchmark aims to identify potential optimizations in the proving and verification process of epoch transitions
 //! within the Aptos blockchain.
+
+use anyhow::anyhow;
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
+use std::env;
 use std::hint::black_box;
 use std::time::Instant;
 
 struct ProvingAssets {
+    mode: ProvingMode,
     client: ProverClient,
     trusted_state: Vec<u8>,
     validator_verifier_hash: Vec<u8>,
     epoch_change_proof: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ProvingMode {
+    STARK,
+    SNARK,
+}
+
+impl From<ProvingMode> for String {
+    fn from(mode: ProvingMode) -> String {
+        match mode {
+            ProvingMode::STARK => "STARK".to_string(),
+            ProvingMode::SNARK => "SNARK".to_string(),
+        }
+    }
+}
+
+impl TryFrom<&str> for ProvingMode {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "STARK" => Ok(ProvingMode::STARK),
+            "SNARK" => Ok(ProvingMode::SNARK),
+            _ => Err(anyhow!("Invalid proving mode")),
+        }
+    }
 }
 
 const NBR_VALIDATORS: usize = 130;
@@ -36,7 +67,7 @@ const AVERAGE_SIGNERS_NBR: usize = 95;
 
 impl ProvingAssets {
     /// Constructs a new instance of `ProvingAssets` by setting up the necessary state and proofs for the benchmark.
-    fn new() -> Self {
+    fn new(mode: ProvingMode) -> Self {
         let mut aptos_wrapper = AptosWrapper::new(2, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
 
         let trusted_state = bcs::to_bytes(aptos_wrapper.trusted_state()).unwrap();
@@ -57,6 +88,7 @@ impl ProvingAssets {
         let client = ProverClient::new();
 
         Self {
+            mode,
             client,
             trusted_state,
             validator_verifier_hash,
@@ -73,7 +105,11 @@ impl ProvingAssets {
         stdin.write(&self.epoch_change_proof);
 
         let (pk, _) = self.client.setup(aptos_programs::EPOCH_CHANGE_PROGRAM);
-        self.client.prove(&pk, stdin).run().unwrap()
+
+        match self.mode {
+            ProvingMode::STARK => self.client.prove(&pk, stdin).run().unwrap(),
+            ProvingMode::SNARK => self.client.prove(&pk, stdin).plonk().run().unwrap(),
+        }
     }
 
     fn verify(&self, proof: &SphinxProofWithPublicValues) {
@@ -89,8 +125,11 @@ struct Timings {
 }
 
 fn main() {
+    let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
+    let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+
     // Initialize the proving assets and benchmark the proving process.
-    let proving_assets = ProvingAssets::new();
+    let proving_assets = ProvingAssets::new(mode);
 
     let start_proving = Instant::now();
     let mut epoch_change_proof = proving_assets.prove();

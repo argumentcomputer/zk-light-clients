@@ -1,8 +1,14 @@
 # Deploy the Proof Server
 
-We have two components to deploy for the Proof Server to work as intended. The primary and the secondary server.
-There is no particular order in which they should be deployed, but here we will deploy the secondary and then
-the primary.
+> **Note**
+>
+> We will deploy the server as through the execution of the bianry with `cargo` in this example.
+> It is also possible to deploy the proof server through its docker image. To do so, please
+> refer to [the dedicated documentation](https://github.com/argumentcomputer/zk-light-clients/tree/dev/docker).
+
+For the Proof Server, we have to take into account that generating a proof is a heavy operation. To avoid
+overloading the server, we can split the proof generation into two servers. The primary server will handle
+inclusion proofs, and the secondary server will handle epoch change proofs.
 
 For best results, the primary and secondary servers should be deployed to **different server instances**, so that
 proof generation can happen in parallel if necessary.
@@ -25,7 +31,7 @@ Make sure to finish the [initial configuration](./configuration.md) first.
         [target.'cfg(all())']
         rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native", "-C", "opt-level=3"]
         ```
-        
+
 > **Note**
 >
 > One can also set the `RUST_LOG` environment variable to `debug` to get more information

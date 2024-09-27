@@ -13,7 +13,7 @@ aptos-lc-core = { path = "../core", optional = true }
 aptos-programs = { path = "../aptos-programs" }
 
 # Sphinx crates
-sphinx-sdk = { workspace = true }
+sphinx-sdk = { workspace = true, features = ["plonk"] }
 
 #Others
 anyhow = { workspace = true }

@@ -35,10 +35,10 @@ Here are the standard config variables that are worth setting for any benchmark:
   This setting enables keeping the FFT's data and the entire Merkle Tree in memory without necessity to recompute them
   in every shard.
 
-- `SHARD_CHUNKING_MULTIPLIER=32` (for SNARK), `SHARD_CHUNKING_MULTIPLIER=1` (for STARK)
+- `SHARD_CHUNKING_MULTIPLIER=<32|64>` (for SNARK), `SHARD_CHUNKING_MULTIPLIER=1` (for STARK)
 
   This settings is usually selected depending on specific hardware where proving is executed. It is used to determine
-- how many shards get chunked per core on the CPU. For STARK
+   how many shards get chunked per core on the CPU.
 
 - `cargo bench --release <...>`
 
