@@ -23,7 +23,7 @@ use aptos_lc::inclusion::{
 };
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
-use aptos_lc_core::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
+use aptos_lc_core::types::ledger_info::{LedgerInfoWithSignatures};
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
