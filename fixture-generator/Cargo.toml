@@ -16,6 +16,7 @@ sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev
 sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 ethereum-lc = { path = "../ethereum/light-client",  features = ["ethereum"] }
 aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
+kadena-lc = { path = "../kadena/light-client", features = ["kadena"] }
 serde_json = { version = "1", features = ["alloc"] }
 serde = { version = "1.0.193", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }

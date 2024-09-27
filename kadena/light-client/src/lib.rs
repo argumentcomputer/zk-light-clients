@@ -4,6 +4,8 @@
 pub mod client;
 pub mod proofs;
 pub mod types;
+#[cfg(feature = "kadena")]
+pub use kadena_lc_core::test_utils;
 
 #[cfg(test)]
 mod tests {
