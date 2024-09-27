@@ -14,7 +14,8 @@ Benchmarks can be classified in two distinct categories:
 
 ## End-to-end
 
-- [e2e](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/e2e.rs): Benchmark that will
+- [e2e](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/e2e.rs): Benchmark that
+  will
   run a proof generation for both
   the [epoch change program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs)
   and
@@ -34,7 +35,8 @@ Benchmarks can be classified in two distinct categories:
 
 ## Internals
 
-- [sig](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/sig.rs): Benchmark that will
+- [sig](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/sig.rs): Benchmark that
+  will
   run a proof generation for
   the [signature verification program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/benchmarks/signature-verification/src/main.rs).
   This program mainly executes an aggregated signature verification for an aggregated signature and a set of public
@@ -65,6 +67,11 @@ Enter benchmark name: e2e
   ...
   
 ```
+
+> **Info**
+>
+> For the `epoch_change`, `inclusion`, and `sig` benchmarks, you can measure the
+> time to generate a SNARK proof by passing the `MODE="SNARK"` environment variable.
 
 **Manual**
 
