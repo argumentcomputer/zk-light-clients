@@ -4,17 +4,22 @@ Light clients can be seen as lightweight nodes that enable users to interact wit
 download the entire blockchain history. They **rely on full nodes to provide necessary data**, such as block headers,
 and use cryptographic proofs to verify transactions and maintain security.
 
+> **Info**
+>
+> In the current implementation of the Light Client, we consider the whole Chainweb protocol
+> as a single chain. This is a simplification that allows us to create the notion of
+> _layer blocks_ as blocks containing the block headers for all the chains in the network
+> at a given height.
+
+
 At the core of the LC there are two proofs:
 
-- Prove Sync Committee change on the Ethereum chain, which is effectively proving a transition from one set of
-  validators to another one.
-- Prove at any given point that an account is part of the Ethereum state to provide the bridging capabilities between
-  Ethereum and another blockchain.
+- Prove the current longest chain on top of the Chainweb Protocol to ensure that the light client is in sync with the
+  running chain.
+- Prove the verification for an SPV at the tip of the longest chain to bridge a state transition.
 
-This is implemented by two proofs, one for each statement. The light client needs to keep track of two hashes that
-uniquely identifies the latest known set of validators that it trusts and the one for the next period. The first
-program is responsible for updating those hashes, whereas the second program makes
-use of them to confirm the presence of a given account in the state.
+This is implemented by two proofs, one for each statement. The light client verifier
+needs to keep track of the latest verified layer block
 
 The first proof needs to be generated and submitted to the light client at least every
 54.6 hours to ensure that the light client's \\(N\\) internal state is kept up to date with the running chain.
