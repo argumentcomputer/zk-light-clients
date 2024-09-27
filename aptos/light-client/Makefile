@@ -5,11 +5,11 @@ benchmark:
 	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native -C opt-level=3" \
 	SHARD_SIZE=4194304 \
 	SHARD_BATCH_SIZE=0 \
-	SHARD_CHUNKING_MULTIPLIER=256 \
+	SHARD_CHUNKING_MULTIPLIER=64 \
 	RECONSTRUCT_COMMITMENTS=false \
 	cargo bench --features aptos --bench $$bench
 
-BENCH ?= e2e
+BENCH ?= epoch_change
 
 bench-ci:
 	cargo bench --features aptos --bench $(BENCH)
