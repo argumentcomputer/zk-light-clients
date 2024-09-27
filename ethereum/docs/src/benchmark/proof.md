@@ -10,10 +10,8 @@ following section.
 ## Sync committee change
 
 Benchmark that will run a proof generation for the sync committee change program. This program will execute a hash for
-the received
-`LightClientStore::current_sync_committee` to ensure that the signature is from the previous sync committee set, execute
-a
-`LightClientStore::process_light_client_update` and finally generate the hash for the new
+the received `LightClientStore::current_sync_committee` to ensure that the signature is from the previous sync 
+committee set, execute a `LightClientStore::process_light_client_update` and finally generate the hash for the new
 `LightClientStore::current_sync_committee`.
 
 On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for
@@ -42,11 +40,9 @@ For SNARKS:
 ## Storage inclusion
 
 Benchmark that will run a proof generation for the storage inclusion program. This program will execute a hash for the
-received
-`CompactStore::sync_committee` to ensure that the signature is from the current known sync committee set, execute a
-`CompactStore::validate_compact_update` to confirm that the received block information is one signed by the committee,
-and finally run an
-`EIP1186Proof::verify` against the state root of the finalized execution block header.
+received `CompactStore::sync_committee` to ensure that the signature is from the current known sync committee set, 
+execute a `CompactStore::validate_compact_update` to confirm that the received block information is one signed by the 
+committee, and finally run an `EIP1186Proof::verify` against the state root of the finalized execution block header.
 
 On our [production configuration](../run/overview.md), we currently get the following results for SNARK generation for
 this benchmark:
@@ -101,9 +97,8 @@ SHARD_BATCH_SIZE=0 cargo bench --bench execute -- <benchmark_name>
 
 ## Interpreting the results
 
-Before delving into the details, please take a look at
-the [cycle tracking documentation from SP1](https://succinctlabs.github.io/sp1/writing-programs/cycle-tracking.html) to
-get a rough sense of what the numbers mean.
+Before delving into the details, please take a look at the [cycle tracking documentation from SP1](https://succinctlabs.github.io/sp1/writing-programs/cycle-tracking.html)
+to get a rough sense of what the numbers mean.
 
 The benchmark will output a lot of information. The most important parts are the following:
 
