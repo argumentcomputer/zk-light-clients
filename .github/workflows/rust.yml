@@ -13,14 +13,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Detect changes in each light client crate
+  # Detect changes in each subcrate
   changes:
     runs-on: ubuntu-latest
     outputs:
-      # Expose matched filters as job 'packages' output variable
-      packages: ${{ steps.filter.outputs.changes }}
+      # List of changed packages, including `fixture-generator` if the light client packages were changed
+      packages: ${{ steps.get-packages.outputs.packages }}
+      # List of changed light client packages, excluding `fixture-generator`
+      lc-packages: ${{ steps.get-packages.outputs.lc-packages }}
+      solidity-packages: ${{ steps.get-packages.outputs.solidity-packages }}
+      move-packages: ${{ steps.get-packages.outputs.move-packages }}
       aptos: ${{ steps.filter.outputs.aptos }}
       ethereum: ${{ steps.filter.outputs.ethereum }}
+      kadena: ${{ steps.filter.outputs.kadena }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -31,27 +36,51 @@ jobs:
               - 'aptos/**'
             ethereum:
               - 'ethereum/**'
+            kadena:
+              - 'kadena/**'
+            fixture-generator:
+              - 'fixture-generator/**'
+      - name: Get list of changed packages
+        id: get-packages
+        run: |
+          PACKAGES=$(echo '${{ steps.filter.outputs.changes }}' | jq -c '.')
+          # Remove `fixture-generator` if it exists, as we don't want to run tests or the cycle checker
+          LC_PACKAGES=$(echo "$PACKAGES" | jq -c 'del(.[] | select(. == "fixture-generator"))')
+          # Remove `ethereum` if it exists, as we don't use it for Solidity tests
+          SOLIDITY_PACKAGES=$(echo "$LC_PACKAGES" | jq -c 'del(.[] | select(. == "ethereum"))')
+          # Remove `aptos` and `kadena` if they exist, as we don't use them for Move tests
+          MOVE_PACKAGES=$(echo "$LC_PACKAGES" | jq -c 'del(.[] | select(. == "aptos" or . == "kadena"))')
+
+          # If any packages were changed, ensure we run clippy on `fixture-generator` as it imports all light clients
+          if [ "$PACKAGES" != "[]" ]; then
+            if ! echo "$PACKAGES" | jq -e '.[] | select(. == "fixture-generator")' > /dev/null; then
+              PACKAGES=$(echo "$PACKAGES" | jq -c '. + ["fixture-generator"]')
+            fi
+          fi
+          
+          echo "packages=$PACKAGES" | tee -a "$GITHUB_OUTPUT"
+          echo "lc-packages=$LC_PACKAGES" | tee -a "$GITHUB_OUTPUT"
+          echo "solidity-packages=$SOLIDITY_PACKAGES" | tee -a "$GITHUB_OUTPUT"
+          echo "move-packages=$MOVE_PACKAGES" | tee -a "$GITHUB_OUTPUT"
 
   test:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
-      matrix:
-        # Parse JSON array containing names of all changed light client packages
-        # e.g. ['aptos', 'ethereum'] if both directories contain changes
-        package: ${{ fromJSON(needs.changes.outputs.packages) }}
       fail-fast: false
+      matrix:
+        # Parse JSON array containing names of all changed light client packages,
+        # e.g. ['aptos', 'ethereum', 'kadena'] if `aptos`, `ethereum` and `kadena` contain changes.
+        package: ${{ fromJSON(needs.changes.outputs.lc-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
       - name: Setup CI
         uses: ./.github/actions/setup
-        with:
-          pull_token: ${{ secrets.REPO_TOKEN }}
       # make sure benches don't bit-rot
       - name: build benches
         run: |
@@ -67,14 +96,16 @@ jobs:
     runs-on: buildjet-16vcpu-ubuntu-2204
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
+      fail-fast: false
       matrix:
-        # Parse JSON array containing names of all changed light client packages
-        # e.g. ['aptos', 'ethereum'] if both directories contain changes
+        # Parse JSON array containing names of all changed packages,
+        # e.g. ['aptos', 'ethereum', 'kadena', 'fixture-generator'] if `aptos`, `ethereum` and `kadena` contain changes.
+        # We always run 'fixture-generator' clippy tests if it or any light client was changed.
         package: ${{ fromJSON(needs.changes.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
         with:
@@ -82,8 +113,6 @@ jobs:
           token: ${{ secrets.REPO_TOKEN }}
       - name: Setup CI
         uses: ./.github/actions/setup
-        with:
-          pull_token: ${{ secrets.REPO_TOKEN }}
       # See '.cargo/config' for list of enabled/disabled clippy lints
       - name: rustfmt
         run: cargo fmt --all --check
@@ -92,6 +121,7 @@ jobs:
         run: cargo xclippy -D warnings
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
       - name: Doctests
+        if: ${{ matrix.package != 'fixture-generator'}}
         run: |
           cargo test --doc
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
@@ -100,17 +130,24 @@ jobs:
         run: |
           cargo deny --manifest-path ${{ matrix.package }}/Cargo.toml check
       - name: Cargo-deny check programs
+        if: ${{ matrix.package != 'fixture-generator'}}
         run: |
           find ${{ matrix.package }}/programs -type d -name "target" -prune -o -type f -name "Cargo.toml" -exec cargo deny --manifest-path {} check \;
 
   solidity-unit-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
-    if: needs.changes.outputs.aptos == 'true'
+    if: ${{ needs.changes.outputs.solidity-packages != '[]' && needs.changes.outputs.solidity-packages != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Parse JSON array containing names of all changed light client packages relevant to Solidity,
+        # e.g. ['aptos', 'kadena'] if `aptos`, `ethereum` and `kadena` contain changes.
+        package: ${{ fromJSON(needs.changes.outputs.solidity-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
         with:
@@ -123,25 +160,32 @@ jobs:
       - name: Check formatting
         run: |
           forge fmt --check
-        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/solidity/contracts/
       - name: Run Forge build
         run: |
           forge --version
           forge build
-        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/solidity/contracts/
       - name: Run Forge tests
         run: |
           forge test
-        working-directory: ${{ github.workspace }}/aptos/solidity/contracts/
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/solidity/contracts/
+
 
   move-tests:
     needs: changes
     runs-on: buildjet-16vcpu-ubuntu-2204
-    if: needs.changes.outputs.ethereum == 'true'
+    if: ${{ needs.changes.outputs.move-packages != '[]' && needs.changes.outputs.move-packages != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Parse JSON array containing names of all changed light client packages relevant to Move,
+        # e.g. ['ethereum'] if `aptos`, `ethereum` and `kadena` contain changes.
+        package: ${{ fromJSON(needs.changes.outputs.move-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
         with:
@@ -167,11 +211,11 @@ jobs:
           else
             echo "Balance is sufficient. No action needed."
           fi
-        working-directory: ${{ github.workspace }}/ethereum/move
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/move
       - name: Run unit tests
         run: |
           aptos move test --named-addresses plonk_verifier_addr=devnet
-        working-directory: ${{ github.workspace }}/ethereum/move
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/move
       - name: Test verifier contract
         run: |
           aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile testnet --seed $(openssl rand -hex 32) --assume-yes
@@ -186,37 +230,37 @@ jobs:
               exit 1
             fi
           done
-        working-directory: ${{ github.workspace }}/ethereum/move
+        working-directory: ${{ github.workspace }}/${{ matrix.package }}/move
 
   cycle-count-regression:
     needs: changes
     runs-on: warp-ubuntu-latest-x64-32x
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
+      fail-fast: false
       matrix:
         # Parse JSON array containing names of all changed light client packages
-        # e.g. ['aptos', 'ethereum'] if both directories contain changes
-        package: ${{ fromJSON(needs.changes.outputs.packages) }}
+        # e.g. ['aptos', 'ethereum', 'kadena'] if all directories contain changes
+        package: ${{ fromJSON(needs.changes.outputs.lc-packages) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
       - name: Setup CI
         uses: ./.github/actions/setup
-        with:
-          pull_token: ${{ secrets.REPO_TOKEN }}
       - name: Set env
         run: |
           if [[ "${{ matrix.package }}" == "aptos" ]]; then
-            # TODO: Remove hardcoded test names
             TESTS="test_execute_inclusion test_execute_epoch_change test_execute_sig"
             FEATURES="--features aptos"
           elif [[ "${{ matrix.package }}" == "ethereum" ]]; then
-            # TODO: Add execution tests
-            TESTS=""
-            FEATURES=""
+            TESTS="test_execute_inclusion test_execute_committee_change"
+            FEATURES="--features ethereum"
+          elif [[ "${{ matrix.package }}" == "kadena" ]]; then
+            TESTS="test_execute_spv test_execute_longest_chain"
+            FEATURES="--features kadena"
           fi
           echo "TESTS=$TESTS" | tee -a $GITHUB_ENV
           echo "FEATURES=$FEATURES" | tee -a $GITHUB_ENV

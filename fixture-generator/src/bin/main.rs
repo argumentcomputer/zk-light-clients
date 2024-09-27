@@ -11,7 +11,6 @@ use ethereum_lc::proofs::{ProofType, Prover, ProvingMode};
 use ethereum_lc::test_utils::{
     generate_committee_change_test_assets, generate_inclusion_test_assets,
 };
-
 /// Location for the Inclusion program of the Aptos Light Client.
 pub const APTOS_INCLUSION_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/inclusion-program");
@@ -21,7 +20,7 @@ pub const APTOS_EPOCH_CHANGE_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/epoch-change-program");
 
 /// Path to the directory where the Solidity fixtures for the Aptos Light Client are stored.
-pub const SOLIDITY_FIXTURE_PATH: &str = "../aptos/solidity/contracts/src/plonk_fixtures";
+pub const APTOS_SOLIDITY_FIXTURE_PATH: &str = "../aptos/solidity/contracts/src/plonk_fixtures";
 
 /// Path to the directory where the Move fixtures for the Ethereum Light Client are stored.
 pub const MOVE_FIXTURE_PATH: &str = "../ethereum/move/sources/fixtures";
@@ -152,7 +151,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify(&proof, &vk).unwrap();
 
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(APTOS_SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = BaseFixture {
@@ -255,7 +254,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify(&proof, &vk).unwrap();
 
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(APTOS_SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = BaseFixture {
@@ -372,6 +371,8 @@ fn main() {
             }
             _ => panic!("Unsupported language. Use: ['solidity', 'move']"),
         },
-        _ => panic!("Unsupported program. Use: ['inclusion', 'epoch_change']"),
+        _ => panic!(
+            "Unsupported program. Use: ['inclusion', 'epoch_change', 'longest_chain', 'spv']"
+        ),
     }
 }
