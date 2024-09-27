@@ -121,6 +121,7 @@ impl ProvingAssets {
         let client = ProverClient::new();
 
         Self {
+            mode,
             client,
             sparse_merkle_proof_assets,
             transaction_proof_assets,
