@@ -397,7 +397,7 @@ async fn forward_request(
     let client = reqwest::Client::new();
     info!("Sending secondary request");
     let res_bytes = client
-        .post(format!("http://{}/proof", snd_addr))
+        .post(format!("http://{}/epoch/proof", snd_addr))
         .body(secondary_request_bytes)
         .send()
         .await
