@@ -23,7 +23,7 @@ use aptos_lc::inclusion::{
 };
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
-use aptos_lc_core::types::ledger_info::LedgerInfo;
+use aptos_lc_core::types::ledger_info::{LedgerInfo, LedgerInfoWithSignatures};
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
@@ -208,7 +208,7 @@ fn main() {
 
         let block_hash: [u8; 32] = inclusion_proof.public_values.read();
         let lates_li = proving_assets.transaction_proof_assets.latest_li();
-        let expected_block_id = LedgerInfo::from_bytes(lates_li).unwrap().block_id();
+        let expected_block_id = LedgerInfoWithSignatures::from_bytes(lates_li).unwrap().ledger_info().block_id();
         assert_eq!(
             block_hash.to_vec(),
             expected_block_id.to_vec(),
