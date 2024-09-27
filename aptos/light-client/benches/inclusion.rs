@@ -17,6 +17,7 @@
 //!
 //! The benchmark aims to determine how state tree size impacts the efficiency of the proof generation and verification process.
 
+use std::env;
 use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
@@ -30,12 +31,14 @@ use sphinx_sdk::utils::setup_logger;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
 use std::hint::black_box;
 use std::time::Instant;
+use anyhow::anyhow;
 
 const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
 const NBR_VALIDATORS: usize = 130;
 const AVERAGE_SIGNERS_NBR: usize = 95;
 
 struct ProvingAssets {
+    mode: ProvingMode,
     client: ProverClient,
     sparse_merkle_proof_assets: SparseMerkleProofAssets,
     transaction_proof_assets: TransactionProofAssets,
@@ -44,9 +47,38 @@ struct ProvingAssets {
     state_checkpoint_hash: [u8; 32],
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ProvingMode {
+    STARK,
+    SNARK,
+}
+
+
+impl From<ProvingMode> for String {
+    fn from(mode: ProvingMode) -> String {
+        match mode {
+            ProvingMode::STARK => "STARK".to_string(),
+            ProvingMode::SNARK => "SNARK".to_string(),
+        }
+    }
+}
+
+impl TryFrom<&str> for ProvingMode {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+        match value {
+            "STARK" => Ok(ProvingMode::STARK),
+            "SNARK" => Ok(ProvingMode::SNARK),
+            _ => Err(anyhow!("Invalid proving mode")),
+        }
+    }
+}
+
+
 impl ProvingAssets {
     /// Constructs proving assets for a given number of leaves, preparing the account inclusion proof.
-    fn from_nbr_leaves(nbr_leaves: usize) -> Self {
+    fn from_nbr_leaves(mode: ProvingMode, nbr_leaves: usize) -> Self {
         let mut aptos_wrapper =
             AptosWrapper::new(nbr_leaves, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
         aptos_wrapper.generate_traffic().unwrap();
@@ -119,7 +151,11 @@ impl ProvingAssets {
         stdin.write(self.validator_verifier_assets.validator_verifier());
 
         let (pk, _) = self.client.setup(aptos_programs::INCLUSION_PROGRAM);
-        self.client.prove(&pk, stdin).run().unwrap()
+
+        match self.mode {
+            ProvingMode::STARK => self.client.prove(&pk, stdin).run().unwrap(),
+            ProvingMode::SNARK => self.client.prove(&pk, stdin).plonk().run().unwrap(),
+        }
     }
 
     fn verify(&self, proof: &SphinxProofWithPublicValues) {
@@ -137,7 +173,10 @@ struct Timings {
 
 fn main() {
     for nbr_leaves in NBR_LEAVES {
-        let proving_assets = ProvingAssets::from_nbr_leaves(nbr_leaves);
+        let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
+        let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+
+        let proving_assets = ProvingAssets::from_nbr_leaves(mode, nbr_leaves);
 
         let start_proving = Instant::now();
         let mut inclusion_proof = proving_assets.prove();
