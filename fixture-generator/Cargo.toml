@@ -15,7 +15,6 @@ path = "src/bin/main.rs"
 sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev", features = ["plonk"] }
 sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
-kadena-lc = { path = "../kadena/light-client", features = ["kadena"] }
 serde_json = { version = "1", features = ["alloc"] }
 serde = { version = "1.0.193", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
