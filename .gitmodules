@@ -6,4 +6,4 @@
 	url = https://github.com/openzeppelin/openzeppelin-contracts
 [submodule "aptos/solidity/contracts/lib/sphinx-contracts"]
 	path = aptos/solidity/contracts/lib/sphinx-contracts
-	url = https://github.com/lurk-lab/sphinx-contracts
+	url = https://github.com/argumentcomputer/sphinx-contracts

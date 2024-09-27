@@ -1,10 +1,10 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
-use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
+use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
 use std::hint::black_box;
 use std::time::Instant;
 
@@ -31,7 +31,7 @@ impl ProvingAssets {
         }
     }
 
-    fn prove(&self) -> SphinxProof {
+    fn prove(&self) -> SphinxProofWithPublicValues {
         let mut stdin = SphinxStdin::new();
 
         setup_logger();
@@ -41,10 +41,10 @@ impl ProvingAssets {
         let (pk, _) = self
             .client
             .setup(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM);
-        self.client.prove(&pk, stdin).unwrap()
+        self.client.prove(&pk, stdin).run().unwrap()
     }
 
-    fn verify(&self, proof: &SphinxProof) {
+    fn verify(&self, proof: &SphinxProofWithPublicValues) {
         let (_, vk) = self
             .client
             .setup(aptos_programs::bench::SIGNATURE_VERIFICATION_PROGRAM);

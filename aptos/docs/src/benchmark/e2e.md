@@ -10,7 +10,7 @@ the [`proof-server`](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos
 crate. It can be run with the following command:
 
 ```bash
-SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly-2024-05-31 bench --bench proof_server
+SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo bench --bench proof_server
 ```
 
 This benchmark will spawn the two servers locally and make two requests in sequence to them. This generates both proofs
@@ -54,7 +54,7 @@ For our [production configuration](../run/overview.md), we currently get the fol
 To enable SNARK proving, just pass the environment variable `SNARK=1` when running:
 
 ```bash
-SNARK=1 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo +nightly-2024-05-31 bench --bench proof_server
+SNARK=1 SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" PRIMARY_ADDR="127.0.0.1:8080" SECONDARY_ADDR="127.0.0.1:8081" cargo bench --bench proof_server
 ```
 
 For our [production configuration](../run/overview.md), we currently get the following results:

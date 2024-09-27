@@ -100,7 +100,7 @@ dependencies = [
 [[package]]
 name = "bls12_381"
 version = "0.8.0"
-source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#0d57d6ac0af6a464c4764809b5bf994d15920762"
+source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#2a96eccde19bf861b0d1707b61b2ab15e294b154"
 dependencies = [
  "cfg-if",
  "digest 0.9.0",
@@ -108,6 +108,7 @@ dependencies = [
  "group",
  "pairing",
  "rand_core",
+ "sphinx-precompiles",
  "subtle",
 ]
 
@@ -149,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = "committee-change-program"
-version = "1.0.2"
+version = "1.1.0"
 dependencies = [
  "ethereum-lc-core",
  "sphinx-zkvm",
@@ -337,7 +338,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc-core"
-version = "1.0.2"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bls12_381",
@@ -993,18 +994,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.204"
+version = "1.0.210"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc76f558e0cbb2a839d37354c575f1dc3fdc6546b5be373ba43d95f231bf7c12"
+checksum = "c8e3592472072e6e22e0a54d5904d9febf8508f65fb8552499a1abc7d1078c3a"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.204"
+version = "1.0.210"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0cd7e117be63d3c3678776753929474f3b04a43a080c744d6b0ae2a8c28e222"
+checksum = "243902eda00fad750862fc144cea25caca5e20d615af0a81bee94ca738f1df1f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1068,11 +1069,10 @@ dependencies = [
 [[package]]
 name = "sphinx-precompiles"
 version = "1.0.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#3103411f2782f0834d033e029119e07d9f2b129c"
 dependencies = [
  "anyhow",
  "bincode",
- "bls12_381",
  "cfg-if",
  "getrandom",
  "hybrid-array",
@@ -1083,12 +1083,14 @@ dependencies = [
 [[package]]
 name = "sphinx-zkvm"
 version = "1.0.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#3103411f2782f0834d033e029119e07d9f2b129c"
 dependencies = [
  "bincode",
  "cfg-if",
  "getrandom",
  "k256",
+ "lazy_static",
+ "libm",
  "once_cell",
  "rand",
  "sha2 0.10.8",

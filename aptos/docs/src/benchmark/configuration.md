@@ -30,13 +30,6 @@ Here are the standard config variables that are worth setting for any benchmark:
 
   This disables checkpointing making proving faster at the expense of higher memory usage
 
-- `cargo +nightly-2024-05-31`
-
-  This ensures you are on a nightly toolchain. Nightly allows usage of AVX512 instructions which is crucial for
-  performance. This is the same version set on `rust-toolchain.toml`. It's pinned
-  to a specific release (`v1.80.0-nightly`) to prevent unexpected issues caused
-  by newer Rust versions.
-
 - `cargo bench --release <...>`
 
   Make sure to always run in release mode with `--release`. Alternatively, specify the proper compiler options via
@@ -44,7 +37,7 @@ Here are the standard config variables that are worth setting for any benchmark:
 
 - `RUST_LOG=debug` _(optional)_
 
-  This prints out useful Sphinx metrics, such as cycle counts, iteration speed, proof size, etc.
+  This prints out useful Sphinx metrics, such as cycle counts, iteration speed, proof size, etc. NOTE: This may cause a significant performance degradation, and is only recommended for collecting metrics other than wall clock time.
 
 ## SNARK proofs
 

@@ -21,7 +21,7 @@ Here are the standard config variables that are worth setting for any benchmark:
     rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native", "-C", "opt-level=3"]
     ```
 
-- `SHARD_SIZE=4194304`
+- `SHARD_SIZE=4194304` (for SNARK), `SHARD_SIZE=1048576` (for STARK)
 
   The highest possible setting, giving the fewest shards. Because the compression phase dominates the timing of the
   SNARK proofs, we need as few shards as possible.
@@ -30,13 +30,15 @@ Here are the standard config variables that are worth setting for any benchmark:
 
   This disables checkpointing making proving faster at the expense of higher memory usage
 
-- `cargo +nightly-2024-05-31`
+- `RECONSTRUCT_COMMITMENTS=false`
 
-  This ensures you are on a nightly toolchain. Nightly allows usage of AVX512 instructions which is crucial for
-  performance.
-  This is the same version set on `rust-toolchain.toml`. It's pinned to a specific release (`v1.80.0-nightly`) to
-  prevent
-  unexpected issues caused by newer Rust versions.
+  This setting enables keeping the FFT's data and the entire Merkle Tree in memory without necessity to recompute them
+  in every shard.
+
+- `SHARD_CHUNKING_MULTIPLIER=<32|64>` (for SNARK), `SHARD_CHUNKING_MULTIPLIER=1` (for STARK)
+
+  This settings is usually selected depending on specific hardware where proving is executed. It is used to determine
+  how many shards get chunked per core on the CPU. For STARK
 
 - `cargo bench --release <...>`
 
@@ -45,12 +47,13 @@ Here are the standard config variables that are worth setting for any benchmark:
 
 - `RUST_LOG=debug` _(optional)_
 
-  This prints out useful Sphinx metrics, such as cycle counts, iteration speed, proof size, etc.
+  This prints out useful Sphinx metrics, such as cycle counts, iteration speed, proof size, etc. NOTE: This may cause a
+  significant performance degradation, and is only recommended for collecting metrics other than wall clock time.
 
 ## SNARK proofs
 
 When running any tests or benchmarks that makes Plonk proofs over BN254, the prover leverages some pre-built circuits
 artifacts. Those circuits artifacts are generated when we release new versions of Sphinx and are automatically
 downloaded on first use. The current address for downloading the artifacts can be found
-[here](https://github.com/lurk-lab/sphinx/blob/dev/prover/src/install.rs), but it should not be necessary to download
-them manually.
+[here](https://github.com/argumentcomputer/sphinx/blob/dev/prover/src/install.rs), but it should not be necessary to
+download them manually.

@@ -162,7 +162,7 @@ impl Prover for CommitteeChangeProver {
     type StdIn = CommitteeChangeIn;
     type StdOut = CommitteeChangeOut;
 
-    fn generate_sphinx_stdin(&self, inputs: Self::StdIn) -> Result<SphinxStdin, Self::Error> {
+    fn generate_sphinx_stdin(&self, inputs: &Self::StdIn) -> Result<SphinxStdin, Self::Error> {
         let mut stdin = SphinxStdin::new();
         stdin.write(
             &inputs
@@ -179,26 +179,28 @@ impl Prover for CommitteeChangeProver {
         Ok(stdin)
     }
 
-    fn execute(&self, inputs: Self::StdIn) -> Result<Self::StdOut, Self::Error> {
+    fn execute(&self, inputs: &Self::StdIn) -> Result<Self::StdOut, Self::Error> {
         sphinx_sdk::utils::setup_logger();
 
         let stdin = self.generate_sphinx_stdin(inputs)?;
 
         let (mut public_values, _) = self
             .client
-            .execute(Self::PROGRAM, &stdin)
+            .execute(Self::PROGRAM, stdin)
+            .run()
             .map_err(|err| ProverError::Execution { source: err.into() })?;
 
         Ok(CommitteeChangeOut::from(&mut public_values))
     }
 
-    fn prove(&self, inputs: Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
+    fn prove(&self, inputs: &Self::StdIn, mode: ProvingMode) -> Result<ProofType, Self::Error> {
         let stdin = self.generate_sphinx_stdin(inputs)?;
 
         match mode {
             ProvingMode::STARK => self
                 .client
                 .prove(&self.keys.0, stdin)
+                .run()
                 .map_err(|err| ProverError::Proving {
                     proof_type: mode.into(),
                     source: err.into(),
@@ -206,7 +208,9 @@ impl Prover for CommitteeChangeProver {
                 .map(ProofType::STARK),
             ProvingMode::SNARK => self
                 .client
-                .prove_plonk(&self.keys.0, stdin)
+                .prove(&self.keys.0, stdin)
+                .plonk()
+                .run()
                 .map_err(|err| ProverError::Proving {
                     proof_type: mode.into(),
                     source: err.into(),
@@ -225,7 +229,7 @@ impl Prover for CommitteeChangeProver {
                 .map_err(|err| ProverError::Verification { source: err.into() }),
             ProofType::SNARK(proof) => self
                 .client
-                .verify_plonk(proof, vk)
+                .verify(proof, vk)
                 .map_err(|err| ProverError::Verification { source: err.into() }),
         }
     }
@@ -253,7 +257,7 @@ mod test {
             update: test_assets.update_new_period.clone(),
         };
 
-        let new_period_output = prover.execute(new_period_inputs).unwrap();
+        let new_period_output = prover.execute(&new_period_inputs).unwrap();
 
         assert_eq!(
             &new_period_output.finalized_block_height,
@@ -313,7 +317,9 @@ mod test {
         println!("Starting STARK proving for sync committee change...");
         let start = Instant::now();
 
-        let _ = prover.prove(new_period_inputs, ProvingMode::STARK).unwrap();
+        let _ = prover
+            .prove(&new_period_inputs, ProvingMode::STARK)
+            .unwrap();
         println!("Proving took {:?}", start.elapsed());
     }
 
@@ -339,7 +345,9 @@ mod test {
         println!("Starting SNARK proving for sync committee change...");
         let start = Instant::now();
 
-        let _ = prover.prove(new_period_inputs, ProvingMode::SNARK).unwrap();
+        let _ = prover
+            .prove(&new_period_inputs, ProvingMode::SNARK)
+            .unwrap();
         println!("Proving took {:?}", start.elapsed());
     }
 }

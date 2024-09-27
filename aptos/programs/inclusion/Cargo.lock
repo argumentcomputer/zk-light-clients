@@ -89,7 +89,7 @@ dependencies = [
 [[package]]
 name = "bls12_381"
 version = "0.8.0"
-source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#0d57d6ac0af6a464c4764809b5bf994d15920762"
+source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#2a96eccde19bf861b0d1707b61b2ab15e294b154"
 dependencies = [
  "cfg-if",
  "digest 0.9.0",
@@ -97,6 +97,7 @@ dependencies = [
  "group",
  "pairing",
  "rand_core",
+ "sphinx-precompiles 1.0.0 (git+https://github.com/argumentcomputer/sphinx?branch=dev)",
  "subtle",
 ]
 
@@ -478,9 +479,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.203"
+version = "1.0.210"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7253ab4de971e72fb7be983802300c30b5a7f0c2e56fab8abfc6a214307c0094"
+checksum = "c8e3592472072e6e22e0a54d5904d9febf8508f65fb8552499a1abc7d1078c3a"
 dependencies = [
  "serde_derive",
 ]
@@ -496,9 +497,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.203"
+version = "1.0.210"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "500cbc0ebeb6f46627f50f3f5811ccf6bf00643be300b4c3eabc0ef55dc5b5ba"
+checksum = "243902eda00fad750862fc144cea25caca5e20d615af0a81bee94ca738f1df1f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -554,6 +555,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "sphinx-precompiles"
+version = "1.0.0"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#3103411f2782f0834d033e029119e07d9f2b129c"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "cfg-if",
+ "getrandom",
+ "hybrid-array",
+ "k256",
+ "serde",
+]
+
+[[package]]
 name = "sphinx-zkvm"
 version = "1.0.0"
 source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
@@ -565,7 +580,7 @@ dependencies = [
  "once_cell",
  "rand",
  "sha2 0.10.8",
- "sphinx-precompiles",
+ "sphinx-precompiles 1.0.0 (git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0)",
 ]
 
 [[package]]

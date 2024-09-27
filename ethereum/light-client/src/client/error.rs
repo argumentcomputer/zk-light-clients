@@ -18,4 +18,6 @@ pub enum ClientError {
         #[source]
         source: Box<dyn std::error::Error + Sync + Send>,
     },
+    #[error("Could not connect to the given address, {address}")]
+    Connection { address: String },
 }

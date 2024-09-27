@@ -12,15 +12,16 @@ name = "generate-fixture"
 path = "src/bin/main.rs"
 
 [dependencies]
-sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0", features = ["plonk"] }
-sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-ethereum-lc = { path = "../ethereum/light-client",  features = ["ethereum"] }
+sphinx-sdk = { git = "ssh://git@github.com/argumentcomputer/sphinx", branch = "dev", features = ["plonk"] }
+sphinx-prover = { git = "ssh://git@github.com/argumentcomputer/sphinx", branch = "dev" }
+ethereum-lc = { path = "../ethereum/light-client", features = ["ethereum"] }
 aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
 serde_json = { version = "1", features = ["alloc"] }
 serde = { version = "1.0.193", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
 tracing = "0.1.40"
 alloy-sol-types = "0.7.2"
+hex = "0.4.3"
 
 # Match the forks used by the aptos crates
 [patch.crates-io]

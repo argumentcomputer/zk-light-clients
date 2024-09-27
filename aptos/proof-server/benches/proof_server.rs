@@ -1,11 +1,11 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 use anyhow::anyhow;
 use bcs::from_bytes;
+use proof_server::error::ClientError;
 use proof_server::types::aptos::{AccountInclusionProofResponse, EpochChangeProofResponse};
-use proof_server::types::proof_server::{EpochChangeData, InclusionData, Request};
-use proof_server::utils::{read_bytes, write_bytes};
+use proof_server::types::proof_server::{EpochChangeData, InclusionData, ProvingMode, Request};
 use serde::Serialize;
 use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use std::env;
@@ -113,7 +113,6 @@ async fn start_primary_server(final_snark: bool) -> Result<Child, anyhow::Error>
 
     let process = Command::new("cargo")
         .args([
-            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
@@ -163,7 +162,6 @@ async fn start_secondary_server(final_snark: bool) -> Result<Child, anyhow::Erro
 
     let process = Command::new("cargo")
         .args([
-            "+nightly-2024-05-31",
             "run",
             "--release",
             "--bin",
@@ -203,9 +201,7 @@ async fn bench_proving_inclusion(final_snark: bool) -> Result<ProofData, anyhow:
     // Connect to primary server
     let primary_address =
         env::var("PRIMARY_ADDR").map_err(|_| anyhow::anyhow!("PRIMARY_ADDR not set"))?;
-    let mut tcp_stream = TcpStream::connect(primary_address)
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let client = reqwest::Client::new();
 
     // Read the binary file
     let mut file = File::open(ACCOUNT_INCLUSION_DATA_PATH).map_err(|e| anyhow!(e))?;
@@ -220,21 +216,35 @@ async fn bench_proving_inclusion(final_snark: bool) -> Result<ProofData, anyhow:
     let inclusion_data: InclusionData = account_inclusion_proof_response.into();
 
     // Send the InclusionData as a request payload to the primary server
-    let request_bytes = if final_snark {
-        bcs::to_bytes(&Request::SnarkProveInclusion(inclusion_data)).map_err(|e| anyhow!(e))?
+    let proving_type = if final_snark {
+        ProvingMode::SNARK
     } else {
-        bcs::to_bytes(&Request::ProveInclusion(inclusion_data)).map_err(|e| anyhow!(e))?
+        ProvingMode::STARK
     };
-
-    write_bytes(&mut tcp_stream, &request_bytes)
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let request_bytes = bcs::to_bytes(&Request::ProveInclusion(Box::new((
+        proving_type,
+        inclusion_data,
+    ))))
+    .map_err(|e| anyhow!(e))?;
 
     // Start measuring proving time
     let start = Instant::now();
 
-    // Measure the time taken to get a response and the size of the response payload
-    let response_bytes = read_bytes(&mut tcp_stream).await.map_err(|e| anyhow!(e))?;
+    let response = client
+        .post(format!("http://{primary_address}/inclusion/proof"))
+        .header("Accept", "application/octet-stream")
+        .body(request_bytes)
+        .send()
+        .await
+        .map_err(|err| ClientError::Request {
+            endpoint: primary_address,
+            source: err.into(),
+        })?;
+
+    let response_bytes = response
+        .bytes()
+        .await
+        .map_err(|err| ClientError::Internal { source: err.into() })?;
 
     Ok(ProofData {
         proving_time: start.elapsed().as_millis(),
@@ -246,9 +256,7 @@ async fn bench_proving_epoch_change(final_snark: bool) -> Result<ProofData, anyh
     // Connect to primary server
     let primary_address =
         env::var("PRIMARY_ADDR").map_err(|_| anyhow::anyhow!("PRIMARY_ADDR not set"))?;
-    let mut tcp_stream = TcpStream::connect(primary_address)
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let client = reqwest::Client::new();
 
     // Read the binary file
     let mut file = File::open(EPOCH_CHANGE_DATA_PATH).map_err(|e| anyhow!(e))?;
@@ -260,24 +268,38 @@ async fn bench_proving_epoch_change(final_snark: bool) -> Result<ProofData, anyh
         from_bytes(&buffer).map_err(|e| anyhow!(e))?;
 
     // Convert the EpochChangeProofResponse structure into an EpochChangeData structure
-    let inclusion_data: EpochChangeData = account_inclusion_proof_response.into();
+    let epoch_change_data: EpochChangeData = account_inclusion_proof_response.into();
 
     // Send the InclusionData as a request payload to the primary server
-    let request_bytes = if final_snark {
-        bcs::to_bytes(&Request::SnarkProveEpochChange(inclusion_data)).map_err(|e| anyhow!(e))?
+    let proving_type = if final_snark {
+        ProvingMode::SNARK
     } else {
-        bcs::to_bytes(&Request::ProveEpochChange(inclusion_data)).map_err(|e| anyhow!(e))?
+        ProvingMode::STARK
     };
-
-    write_bytes(&mut tcp_stream, &request_bytes)
-        .await
-        .map_err(|e| anyhow!(e))?;
+    let request_bytes = bcs::to_bytes(&Request::ProveEpochChange(Box::new((
+        proving_type,
+        epoch_change_data,
+    ))))
+    .map_err(|e| anyhow!(e))?;
 
     // Start measuring proving time
     let start = Instant::now();
 
-    // Measure the time taken to get a response and the size of the response payload
-    let response_bytes = read_bytes(&mut tcp_stream).await.map_err(|e| anyhow!(e))?;
+    let response = client
+        .post(format!("http://{primary_address}/epoch/proof"))
+        .header("Accept", "application/octet-stream")
+        .body(request_bytes)
+        .send()
+        .await
+        .map_err(|err| ClientError::Request {
+            endpoint: primary_address,
+            source: err.into(),
+        })?;
+
+    let response_bytes = response
+        .bytes()
+        .await
+        .map_err(|err| ClientError::Internal { source: err.into() })?;
 
     Ok(ProofData {
         proving_time: start.elapsed().as_millis(),

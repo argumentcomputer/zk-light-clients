@@ -92,7 +92,7 @@ fn main() {
     let start_proving = Instant::now();
     let proof = benchmark_assets
         .prover
-        .prove(inputs, mode)
+        .prove(&inputs, mode)
         .expect("Failed to prove committee change");
     let proving_time = start_proving.elapsed();
 

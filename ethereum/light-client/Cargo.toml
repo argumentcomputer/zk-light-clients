@@ -1,12 +1,14 @@
 [package]
 name = "ethereum-lc"
-version = "1.0.2"
+version = "1.1.0"
 edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+axum = { workspace = true }
+backoff = { workspace = true, features = ["tokio"] }
 clap = { workspace = true, features = ["derive"] }
 env_logger = { workspace = true }
 ethers-core = { workspace = true }
@@ -29,12 +31,8 @@ name = "client"
 path = "src/bin/client.rs"
 
 [[bin]]
-name = "server_primary"
-path = "src/bin/server_primary.rs"
-
-[[bin]]
-name = "server_secondary"
-path = "src/bin/server_secondary.rs"
+name = "proof_server"
+path = "src/bin/proof_server.rs"
 
 [[bench]]
 name = "committee_change"

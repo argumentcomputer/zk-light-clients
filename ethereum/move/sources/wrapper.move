@@ -1,13 +1,11 @@
 module plonk_verifier_addr::wrapper {
     use std::signer;
     use plonk_verifier_addr::plonk_verifier;
-    use std::vector;
-    use std::vector::{length, slice, push_back, reverse};
+    use std::vector::{length, slice, reverse};
     use plonk_verifier_addr::utilities::bytes_to_uint256;
     use std::string::utf8;
+    use plonk_verifier_addr::utilities;
 
-    const ERROR_LENGTH_VK: u64 = 4001;
-    const ERROR_LENGTH_PROOF: u64 = 4003;
     const ERROR_COMMITTEE_CHANGE: u64 = 4004;
     const ERROR_INCLUSION: u64 = 4005;
     const ERROR_COMMITTEE_CHANGE_UNEXPECTED_PUBLIC_VALUES: u64 = 4006;
@@ -27,9 +25,6 @@ module plonk_verifier_addr::wrapper {
     // one merkle tree key (8 bytes length prefix + at least 1 byte) |
     // one merkle tree value (8 bytes length prefix + at least 1 byte)
     const INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES: u64 = 118;
-
-    const VK_BYTES_SIZE: u64 = 32;
-    const PROOF_CHUNK_BYTE_SIZE: u64 = 32;
 
     const BLOCK_HEIGHT_BYTE_SIZE: u64 = 8;
     const COMMITTEE_HASH_BYTE_SIZE: u64 = 32;
@@ -89,21 +84,8 @@ module plonk_verifier_addr::wrapper {
     public fun committee_change_event_processing(a: &signer, vkey: vector<u8>, proof: vector<u8>, public_values: vector<u8>) acquires Hashes {
         // we know definitely the expected length of public values for committee change event
         assert!(length(&public_values) == COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES, ERROR_COMMITTEE_CHANGE_UNEXPECTED_PUBLIC_VALUES);
-        assert!(length(&vkey) == VK_BYTES_SIZE, ERROR_LENGTH_VK);
-        assert!(length(&proof) % PROOF_CHUNK_BYTE_SIZE == 0, ERROR_LENGTH_PROOF);
 
-        // convert vkey
-        let vkey: u256 = bytes_to_uint256(vkey);
-
-        // convert proof
-        let i = 0;
-        let n = length(&proof) / PROOF_CHUNK_BYTE_SIZE;
-        let proof_in = vector::empty<u256>();
-        while (i < n) {
-            let chunk = slice(&proof, i * PROOF_CHUNK_BYTE_SIZE, i * PROOF_CHUNK_BYTE_SIZE + PROOF_CHUNK_BYTE_SIZE);
-            push_back(&mut proof_in, bytes_to_uint256(chunk));
-            i = i + 1;
-        };
+        let (proof_in, vkey) = utilities::validate_fixture_data(proof, vkey);
 
         // execute core verification
         plonk_verifier::verify(proof_in, vkey, public_values);
@@ -139,21 +121,8 @@ module plonk_verifier_addr::wrapper {
     public fun inclusion_event_processing(a: &signer, vkey: vector<u8>, proof: vector<u8>, public_values: vector<u8>) acquires Hashes {
         // we know only minimal acceptable length of public values in inclusion event, when EIP1186 proof contains 1 key/value pair
         assert!(length(&public_values) >= INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES, ERROR_INCLUSION_UNEXPECTED_PUBLIC_VALUES);
-        assert!(length(&vkey) == VK_BYTES_SIZE, ERROR_LENGTH_VK);
-        assert!(length(&proof) % PROOF_CHUNK_BYTE_SIZE == 0, ERROR_LENGTH_PROOF);
 
-        // convert vkey
-        let vkey: u256 = bytes_to_uint256(vkey);
-
-        // convert proof
-        let i = 0;
-        let n = length(&proof) / VK_BYTES_SIZE;
-        let proof_in = vector::empty<u256>();
-        while (i < n) {
-            let chunk = slice(&proof, i * PROOF_CHUNK_BYTE_SIZE, i * PROOF_CHUNK_BYTE_SIZE + PROOF_CHUNK_BYTE_SIZE);
-            push_back(&mut proof_in, bytes_to_uint256(chunk));
-            i = i + 1;
-        };
+        let (proof_in, vkey) = utilities::validate_fixture_data(proof, vkey);
 
         // execute core verification
         plonk_verifier::verify(proof_in, vkey, public_values);
@@ -315,12 +284,11 @@ module plonk_verifier_addr::wrapper {
     const UpdatedSyncCommitteeHashH30: u256 = 0x85382a0c8b1b38485a3d816f31ab5b23a0eae94d86c90086cd4e7b6e8c5c4682;
     const NextSyncCommitteeHashH31: u256 = 0x5ebd1cf9ea54ce88af740aad4d7e95e742157209f36867ff5d7d490afa91c6bf;
 
-    const EpochChangeVk: vector<u8> = x"00bcfcc3dcbdc7f3c1eeb99dce85dd389dfe4896e94494f22740c3f56965ff78";
+    const EpochChangeVk: vector<u8> = x"00bb9c681c4466b62efe6f5198bd1e5453b2500ed947810581ab37f2580aa3b3";
     const EpochChangePublicValues: vector<u8> = x"e0e58f00000000005d32119aae2ee9f88867d5787af5c4df68884a4bf8fff525ff8c408e8f98805085382a0c8b1b38485a3d816f31ab5b23a0eae94d86c90086cd4e7b6e8c5c46825ebd1cf9ea54ce88af740aad4d7e95e742157209f36867ff5d7d490afa91c6bf";
-    const EpochChangeProof: vector<u8> = x"1c4d9239aa37ce4e46a51548849ee6f80ebbd5b7297d8ee219c7e243938fe3091b7eb59e14352e7375f9d26affef30bbc37307d50f4f13e6393b94dd926bcad50380a78c1ef216d777784e1fa2a4c0e53ffa09dd5f98e3adb8d613133f0c35c016711f4bd906b35d52bfb95a35a7333a1c166e04d0224cad8d464c73e98e440f0ee507235a17b7a742da7bd8af131eb6fd8ae08df9795c14987b370a916dc3c224903e09963046e687ca6d8f995619a50d6d840acc26c3ba55b005a5bd14db9a303c426cedc49c2da933ccd9f12817262c78db4b0b5c34003752f84b801c11950da266d3568e6765e35998c70d381b7f7c1e5a291795cbba76ba9d4dd99577882a686c3abfb1fde1e1ffb24ddfb248c9cb2ad38fdad6638f69752b5e854336c220db999f2f20766164559a1529d90d5feed42befc81933ae426b637b82d6a84d12677dcca6035905febe868c6d0f0761bb83cb581c1e19e97a412ccf513df53103b97bac07501414b2c388a550961a078ee93f1610324aa78389ce648d6ae5c307351c17e241b7990c44b8f98ad3be8097fd375a9a35812081ef74b455f7e9b217fe1b56f2b9d5d4952827b5e8975fcf9d135391314161acdfeaf14db9d98baf1778e9dadc6074119811041f9feaef0d935c89633570bc49550a7133745628382ed6dcb04b3041942209fc20b034f515400a4b7b8ce6c142ab22878ab4b033ec10492dd7eb8093816038fe5bfef120ae435ec4e2a1f149e1777a9faab436924e19c54b2619f2ac9bf6b1c89a9cfe30f9fe556450a12bf43a9d15d1b0e8dc38ee2b2df1b3d36c496dc42f0151ebddafc7414486d6112a8432f6a534d2dd20f3730c9522c33bb531c518309938898c2223fb697038fc85cf1b9c4369e83280fb3f1efde55d698a32e546f90565588a97f7694bbefd316b92152ddb1e7fb3c4c1872df421106581245876b6aea345633dbf7a727bf91797591f665e31c6e823aff325ad8db2fdc6182255ed4b79da91df21ce25d09291d0806da1f47470afa6e75123aa972bbd5fa473011fea66612c6165755bfd5a762ee32460789d9e402f789f2ee65a0e34a9a80bd906aa3fcb53d6ac6e22a0b16d3e5f4bfcea8f5310d687cb12ccf639a010e2a179274c3535888644ece752730dc63c5f2e5c680259b345650f2aa4e3d097b6e9850302be4ebfb71449a5fe76b69ed28f3276b1432504fbdf";
+    const EpochChangeProof: vector<u8> = x"a85584420cd57f98d0674405ad491ffa65d06aeb77212d72d62c5facc6cf57b618268fd8303165cebe8c85d03d7d359458c112e73acfb107c0499db598a748345271ce5b1e8a91c291a639bc8c8c2574bc4b0447554f1cfc1daf0697424e5dfc5f21c8a727d3f14a99d5d031e9e63bc79def7af0729f5607690fc1f33eb13b013d8169b4117fcb772971e207a4fb1cc079af410dab30850c7dbd096c7b474642c7d3d780173f7dbd23e6a0a0402eb0415bfc3f64f9d90eeb45c7381dbb7f8de06b3c68b92dfeecd6cb098ec40f92d947e66928f1cc21e3fe426c3035ffa8dc041d5f1d130253c1616afa7e3ac1100296d1b7e02ff9cb22d4b02d534026eebe79991bec212a7077be94366d313871a31722f491f2955736b97e57979719ba3817049b06861f799f5fd46bed9e6008356120928211c3112a3d6ad32b3689af4d13e80d6ca0198fdca28c2b521e6e37dadb2c630df1ae727b1b19b690e5b99325936bb59bf104f2e5309f6ca2b8727cee7f3ef19576441cce8b42f839a15b3a3316720068a22216cef664a28960dfc45b0a85ed7b79e4aa678e38518224996f765742c169dc17236d46bdb41040908a80698ce9209461f1856dd9e57f5cc2725e3c959ee65b11934e49b1265599d7c0c04a18b68add3b6b3d1601f22c89115cfb6f6fbb403f3035d1cbd896b352292fdf1d6d8020dfe1be76a8b14f4d681dc9b763a6e22aae05267b9f933fa39cbe36667aa9bcefbe0708fc129450d9bef3a4d45fb3a336a609c1b093745fbf870e4aad3ec234ebf4b0cf1238882e3dd0e7fa474f7f10f73f144e4f145a4a88dcb9a184fec77d3695b18a0eb2f556b5e520e736df0f9e01040dbaf528f9fd147fb238e4ec5c4d20381502bdfbc6bfc5de019988b5f4e77ca5200f180077271f1cbec6c6e0971470f6688e480d83c40c728b36e85e0c99b9ea22a893392c90edd356e6318ec8864b990a048cd107fd4e3b201a59921e4861f81d6f62c0e7c8245dba477f2494655fa215e47d8d01a22e35c4750b13104e547f19b1a26591015e9f1dc6db1ab1b60cf7e0eb54b56d351d5832d495bbdc41481c00d3330e0b302e49575282b792bf89ec39946c84d3a93f24cb35501433ce0b5208d7312934466a24a65d4d35d38aca861e835b139de86ba4283367783f9f99dc260c2def5fcb2d7e3423b6fe0cc4726eda51a0144e74f154f2c036a968a87685";
 
-    const InclusionVk: vector<u8> = x"00e326549ab661885dbefc3570c3f1f73aafc248b5f6119db8c08a3f9149c5eb";
+    const InclusionVk: vector<u8> = x"00ac8f803153fab4cd7291beb0eac498f4c7949f74e7786bd69a0578bc325927";
     const InclusionPublicValues: vector<u8> = x"e0fc9100000000000969ed235cf75d25800ea6845c2584af013c1f9617ad2de87202d7e9b93739c95c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f22002fe30a172d0a479f6add89c63b29dce29b6071b3c7e486b0fb4bc431f88501000000000000002000000000000000290decd9548b62a8ef0d3e6ac11e2d7b95a49e22ecf57fc6044b6f007ca2b2ba010000000000000080";
-    const InclusionProof: vector<u8> = x"0a55c90b03ae2afd44c45fcf2a4053fc34d3896e9da9ff20857a6880381ca9803034bcd8ef4fa1bc50d6ca8f44b6d9bf46e986cdb614389a59f6affb58b395e11f9d74a40e86539048719166ae9658a20b437699d336cc4add796a254673aad00dd1e8107842847b8c60ba58b104b24e86379071b20d895d0e5ae7f82d611bba0dce4b9239034f5c80b956bd9cc7d3a1fd29119168b1b4425a45b3e948ad03af194a1e83d7aef29152b8c253e6b6b7a1a347a6a194e0f94d81c612f111c6171318de02b6a8ed77fb0f3a61543f39244f39f8363dc02290da9a87dc21266b647b077f7d591a8bcd3c7519952a1ec570fbbd10a1502a639eddd97f67f57654a95c140d995a6ee72e1c85f8e755a5d47fb055f3b40d67cc7ac537fadcba739313b4219fae4b63a3279de675c236f4156682029f5963382fb9cb4d2e60bd4f3dee912aa6c2e03a2f078148fe78243307d8631f2fbeba70e0c75573d856bd3ae36b3b2c810c270993e4f42a2f5d173bd924e6694ced0c218d98c217b00aefc977e28b27dc053cf901dba318eca443cfeded204b21c8db2c8fdc90a5dccaf67ecaaef82966ebb2053f878f41806283a636d9bdbf7c58ca4a40b152443d836fdab5394908474c911fc2e846a20b93bc92f3d45ddbc020d38ba363a68dc6f72872bbb2db2aacc1454352e0667f9d540511b0d4ef177726f77df460217c2c06d4859c55481df5fa7e9c76429f1dd8520e72bfdd996897ad9b16cc8d5a1f5d875ea1d0414c161277b48777abcb4de44d7992c22967cf9e237af7c69a800bf5ac6774b009c71b9db958635e5de897e21bf941e1ff66bb04a229ed47213b8b2c859120cc3fab25caa4f317f111c7751c7f8c6d7c9a0c272e4a759e1ab3f2ba5882280fefa6df1b487cd6ef96faa8eb09683cb94879664495d72fc50042cc59e25a3660b1563700a87ecca8fec5372a886849965715d2a30027ddf9bdbf20c0051b0ad7008ff10ff7f0805a25f3fb10f9df86ec7463320f7b2d85d0be624d9281bbc4fd13fa5f28e6a90c517439ff444be5852a5005eb95c083a68aeccf6b236cfc40e9e5d0a51a3304b133ba4b6680e69912ba719747530acbd2f0d94bc34f4d8b555bb92446254e682daad529691d916a3c2a08248ac1fc6cfce8ad7ee354680b56d63dd1e22b3329a12c9845f66683e887bc220f4f180ff114b1f5322fd6d21e4d6c402312";
-
+    const InclusionProof: vector<u8> = x"a85584420325031b628d531025b0a9ed7a846346c5d0b28ca9903a48ddd8ae739c58f0dc21ef49a01ebc2ef95e1f3989f72e0832965a3b5a908fa5050c74d9162a2f605b13a0d682d5d301ce6e44c44f40025daeded008acc8fcc5178c611ec2b6fdfbb12496f32cd1f99fd80f28cb46ddf7909603b6dd223db93a9378bce7892b3afa171493a69320d2f383c4e505b48d9baac4e1824f03147ac6dd61bffc9154f3d8361d176a85fbe837e1c06cc3ac383b14292440a038663381b8421b853fa171012905ee8ef1eb7cd86afb19b9e4c5911f285965935565cacdc41880b63fb49290b028cd994696aeecedeeca036957bbb0fa3d5f0369774191b73b3078fb36cf348f0e4b3781a083576bbe5ca35644f4a0be66c445b798791423c74075584ad14abd2a1c80fdf84060b407ad6b2547b20bcfcdd5d66a6dff8a91f15785b8b76dff8b10d4da4463ce69cb27070ad711e7251179333474867518d332c10f9a92b37797002ba50aad3d2407f3abebd3c20096ad104f74ddb8bd1f93a7da0381cb91eb9515efa3ef61ebb693501f125966142b116ed314c377c71ddb44967c61ddd1efe21eceb027b6c9b0ca22fc2ea5966a81f9492788a1588c1f6293fcf0abe22c60482d1fe48f09c1381c4e6de67655f38dee93440ae12ae715eda424eb0976aad614288471895e4d73791f2aaa18756177583f963e711ae58c281cc664a84ec09508200025017b717d6a477f613757115b1b5588c7860a54c1ded466aa34d15727b70a4fbabdd03f3ceacec53c104fb141ac4de3c3c8cb012b90f27766fc18fa83e42e685f270199861d080c06e64ddcf0cd2f320d68a4aa8962bc52836ec61efba1183b52115b482af21e79a2fd813ffb60319a0525ff47ec5b80fa2b8116a606b319992cf0e85ef4fee9a7c242ef040583d7265b5b344df5a2032729529ca2738820589dc9b1d5228e840825c7818c187845a3ce9c39395848dcf544e997d9bfe51fe28ee664cf36f843628e87ac413386c0735a4f4fe6410ed4bd0533902890db161d1b45c98162b2a0fdfe30fc2cffb197cd0fbd27fcfdab4a0d710f3fd3eefd195aff571eead04df178ad290b9e25f856fdae12bb7b412ac6a79909e3dee17a08e2f61eec9ffa72cb508122c2c469ad1a1e0645b28a2456910da5e0a540e6c0252b6b23efea0055f623723a9f741f15309e7d9698a03a1daa4e87801daa284f";
 }

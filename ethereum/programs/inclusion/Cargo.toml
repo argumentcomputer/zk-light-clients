@@ -1,13 +1,13 @@
 [workspace]
 [package]
 name = "inclusion-program"
-version = "1.0.2"
+version = "1.1.0"
 edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
 ethereum-lc-core = { path = "../../core", package = "ethereum-lc-core", default-features = false }
-sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 
 [patch.crates-io]
 # Sphinx patch
