@@ -54,7 +54,7 @@ impl From<ProvingMode> for String {
 impl TryFrom<&str> for ProvingMode {
     type Error = anyhow::Error;
 
-    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "STARK" => Ok(ProvingMode::STARK),
             "SNARK" => Ok(ProvingMode::SNARK),

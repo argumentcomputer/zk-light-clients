@@ -66,7 +66,7 @@ impl From<ProvingMode> for String {
 impl TryFrom<&str> for ProvingMode {
     type Error = anyhow::Error;
 
-    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "STARK" => Ok(ProvingMode::STARK),
             "SNARK" => Ok(ProvingMode::SNARK),
@@ -173,10 +173,9 @@ struct Timings {
 }
 
 fn main() {
+    let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
+    let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
     for nbr_leaves in NBR_LEAVES {
-        let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
-        let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
-
         let proving_assets = ProvingAssets::from_nbr_leaves(mode, nbr_leaves);
 
         let start_proving = Instant::now();
