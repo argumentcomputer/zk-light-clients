@@ -13,8 +13,7 @@ pub const APTOS_EPOCH_CHANGE_ELF: &[u8] =
     include_bytes!("../../../aptos/aptos-programs/artifacts/epoch-change-program");
 
 /// Path to the directory where the Solidity fixtures for the Aptos Light Client are stored.
-pub const SOLIDITY_FIXTURE_PATH: &str =
-    "../aptos/solidity/contracts/src/plonk_fixtures";
+pub const SOLIDITY_FIXTURE_PATH: &str = "../aptos/solidity/contracts/src/plonk_fixtures";
 
 /// Filename for the inclusion fixture.
 pub const INCLUSION_FIXTURE_FILENAME: &str = "inclusion_fixture.json";
@@ -92,8 +91,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify(&proof, &vk).unwrap();
 
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = SolidityFixture {
@@ -127,8 +125,7 @@ fn generate_fixture_epoch_change_aptos_lc() {
     // just to check that proof is valid and verifiable
     prover.verify(&proof, &vk).unwrap();
 
-    let fixture_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SOLIDITY_FIXTURE_PATH);
 
     // save fixture
     let fixture = SolidityFixture {
