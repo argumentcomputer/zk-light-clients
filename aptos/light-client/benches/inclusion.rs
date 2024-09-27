@@ -17,21 +17,21 @@
 //!
 //! The benchmark aims to determine how state tree size impacts the efficiency of the proof generation and verification process.
 
-use std::env;
+use anyhow::anyhow;
 use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
-use aptos_lc_core::types::ledger_info::{LedgerInfoWithSignatures};
+use aptos_lc_core::types::ledger_info::LedgerInfoWithSignatures;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
+use std::env;
 use std::hint::black_box;
 use std::time::Instant;
-use anyhow::anyhow;
 
 const NBR_LEAVES: [usize; 5] = [32, 128, 2048, 8192, 32768];
 const NBR_VALIDATORS: usize = 130;
@@ -53,7 +53,6 @@ pub enum ProvingMode {
     SNARK,
 }
 
-
 impl From<ProvingMode> for String {
     fn from(mode: ProvingMode) -> String {
         match mode {
@@ -74,7 +73,6 @@ impl TryFrom<&str> for ProvingMode {
         }
     }
 }
-
 
 impl ProvingAssets {
     /// Constructs proving assets for a given number of leaves, preparing the account inclusion proof.
@@ -208,7 +206,10 @@ fn main() {
 
         let block_hash: [u8; 32] = inclusion_proof.public_values.read();
         let lates_li = proving_assets.transaction_proof_assets.latest_li();
-        let expected_block_id = LedgerInfoWithSignatures::from_bytes(lates_li).unwrap().ledger_info().block_id();
+        let expected_block_id = LedgerInfoWithSignatures::from_bytes(lates_li)
+            .unwrap()
+            .ledger_info()
+            .block_id();
         assert_eq!(
             block_hash.to_vec(),
             expected_block_id.to_vec(),

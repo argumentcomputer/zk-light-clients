@@ -1,14 +1,14 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-use std::env;
+use anyhow::anyhow;
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
+use std::env;
 use std::hint::black_box;
 use std::time::Instant;
-use anyhow::anyhow;
 
 const NBR_VALIDATORS: usize = 130;
 
@@ -18,13 +18,11 @@ struct ProvingAssets {
     ledger_info_with_signature: Vec<u8>,
 }
 
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ProvingMode {
     STARK,
     SNARK,
 }
-
 
 impl From<ProvingMode> for String {
     fn from(mode: ProvingMode) -> String {
@@ -46,7 +44,6 @@ impl TryFrom<&str> for ProvingMode {
         }
     }
 }
-
 
 impl ProvingAssets {
     fn new(mode: ProvingMode) -> Self {

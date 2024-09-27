@@ -16,16 +16,16 @@
 //! This benchmark aims to identify potential optimizations in the proving and verification process of epoch transitions
 //! within the Aptos blockchain.
 
-use std::env;
+use anyhow::anyhow;
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
+use std::env;
 use std::hint::black_box;
 use std::time::Instant;
-use anyhow::anyhow;
 
 struct ProvingAssets {
     mode: ProvingMode,
@@ -40,7 +40,6 @@ pub enum ProvingMode {
     STARK,
     SNARK,
 }
-
 
 impl From<ProvingMode> for String {
     fn from(mode: ProvingMode) -> String {
