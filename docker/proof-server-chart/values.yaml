@@ -8,7 +8,7 @@ deployment:
       rustMinStack: "16777216"
       shardSize: "4194304"
       shardBatchSize: "0"
-      shardChunkingMultiplier: "32"
+      shardChunkingMultiplier: "64"
       reconstructCommitments: "false"
 
     # Image that will be used for the deployment
