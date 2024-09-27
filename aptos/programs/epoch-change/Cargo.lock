@@ -10,7 +10,7 @@ checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 
 [[package]]
 name = "aptos-lc-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -225,7 +225,7 @@ dependencies = [
 
 [[package]]
 name = "epoch-change-program"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "aptos-lc-core",
  "sphinx-zkvm",
