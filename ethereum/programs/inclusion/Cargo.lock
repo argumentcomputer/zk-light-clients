@@ -108,7 +108,7 @@ dependencies = [
  "group",
  "pairing",
  "rand_core",
- "sphinx-precompiles 1.0.0 (git+https://github.com/argumentcomputer/sphinx?branch=dev)",
+ "sphinx-precompiles",
  "subtle",
 ]
 
@@ -1069,21 +1069,6 @@ dependencies = [
 [[package]]
 name = "sphinx-precompiles"
 version = "1.0.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
-dependencies = [
- "anyhow",
- "bincode",
- "bls12_381",
- "cfg-if",
- "getrandom",
- "hybrid-array",
- "k256",
- "serde",
-]
-
-[[package]]
-name = "sphinx-precompiles"
-version = "1.0.0"
 source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#3103411f2782f0834d033e029119e07d9f2b129c"
 dependencies = [
  "anyhow",
@@ -1098,16 +1083,18 @@ dependencies = [
 [[package]]
 name = "sphinx-zkvm"
 version = "1.0.0"
-source = "git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0#adc74bf2dedd8ded6e724e81e471ec5bdac3fcb4"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#3103411f2782f0834d033e029119e07d9f2b129c"
 dependencies = [
  "bincode",
  "cfg-if",
  "getrandom",
  "k256",
+ "lazy_static",
+ "libm",
  "once_cell",
  "rand",
  "sha2 0.10.8",
- "sphinx-precompiles 1.0.0 (git+ssh://git@github.com/lurk-lab/sphinx?tag=v1.0.0)",
+ "sphinx-precompiles",
 ]
 
 [[package]]
