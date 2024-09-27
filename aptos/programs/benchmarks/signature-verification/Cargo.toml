@@ -7,8 +7,8 @@ license = "BUSL-1.1"
 
 [dependencies]
 aptos-lc-core = { path = "../../../core", package = "aptos-lc-core", default-features = false }
-sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
+sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", branch = "dev" }
 
 [patch.crates-io]
 # Sphinx patch
