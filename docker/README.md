@@ -56,7 +56,7 @@ found in the [packages](https://github.com/orgs/argumentcomputer/packages?repo_n
 ```yaml
 services:
   server-primary:
-    image: ghcr.io/argumentcomputer/<aptos|ethereum>-proof-server:<tag>
+    image: ghcr.io/argumentcomputer/aptos-proof-server:<tag>
 ```
 
 #### Running the Docker Compose
@@ -64,7 +64,7 @@ services:
 You can start the proof server with the following command:
 
 ```bash
-docker compose -f docker/compose/docker-compose-proof-servers.yml -f docker/compose/docker-compose-<aptos|ethereum>.yml up
+docker compose -f docker/compose/docker-compose-proof-servers.yml -f docker/compose/docker-compose-aptos.yml up
 ```
 
 This command will start the containers as defined in the docker-compose.yml file. 

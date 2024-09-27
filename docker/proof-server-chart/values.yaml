@@ -8,12 +8,12 @@ deployment:
       rustMinStack: "16777216"
       shardSize: "4194304"
       shardBatchSize: "0"
-      shardChunkingMultiplier: "32"
+      shardChunkingMultiplier: "64"
       reconstructCommitments: "false"
 
     # Image that will be used for the deployment
     image:
-      repository: ghcr.io/argumentcomputer/ethereum-proof-server
+      repository: ghcr.io/argumentcomputer/aptos-proof-server
       tag: latest
 
     # Ensures that the image deployed is always at the latest version
