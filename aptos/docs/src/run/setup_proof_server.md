@@ -1,8 +1,14 @@
 # Deploy the Proof Server
 
-We have two components to deploy for the Proof Server to work as intended. The primary and the secondary server.
-There is no particular order in which they should be deployed, but here we will deploy the secondary and then
-the primary.
+> **Note**
+>
+> We will deploy the server as through the execution of the bianry with `cargo` in this example.
+> It is also possible to deploy the proof server through its docker image. To do so, please
+> refer to [the dedicated documentation](https://github.com/argumentcomputer/zk-light-clients/tree/dev/docker).
+
+For the Proof Server, we have to take into account that generating a proof is a heavy operation. To avoid
+overloading the server, we can split the proof generation into two servers. The primary server will handle
+inclusion proofs, and the secondary server will handle epoch change proofs.
 
 For best results, the primary and secondary servers should be deployed to **different server instances**, so that
 proof generation can happen in parallel if necessary.
@@ -25,8 +31,6 @@ Make sure to finish the [initial configuration](./configuration.md) first.
         [target.'cfg(all())']
         rustflags = ["--cfg", "tokio_unstable", "-C", "target-cpu=native", "-C", "opt-level=3"]
         ```
-        
-Make sure to launch the proof servers with `cargo +nightly-2024-05-31`.
 
 > **Note**
 >
@@ -38,9 +42,9 @@ Make sure to launch the proof servers with `cargo +nightly-2024-05-31`.
 Now that our deployment machine is properly configured, we can run the secondary server.
 
 ```bash
-git clone git@github.com:lurk-lab/zk-light-clients.git && \
+git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
-  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_secondary -- -a <NETWORK_ADDRESS>
+  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo run --release --bin proof_server -- --mode "single" -a <NETWORK_ADDRESS>
 ```
 
 ## Deploy the primary server
@@ -48,7 +52,7 @@ git clone git@github.com:lurk-lab/zk-light-clients.git && \
 Finally, once the primary server is configured in the same fashion, run it:
 
 ```bash
-git clone git@github.com:lurk-lab/zk-light-clients.git && \
+git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
-  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo +nightly-2024-05-31 run --release --bin server_primary -- -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
+  SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo run --release --bin proof_server -- --mode "split" -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```

@@ -14,29 +14,21 @@ Benchmarks can be classified in two distinct categories:
 
 ## End-to-end
 
-- [e2e](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/e2e.rs): Benchmark that will
-  run a proof generation for both
-  the [epoch change program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs)
-  and
-  the [inclusion program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
+- [e2e](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/e2e.rs): Benchmark that will run a proof generation for both the [epoch change program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs)
+  and the [inclusion program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
   The goal here is to test the complete flow for our light client and get cycle count and proving time for it. Note that
   each proof is handled sequentially, so running it might take some time.
-- [epoch_change](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/epoch_change.rs):
-  Benchmark that will run a proof generation
-  for [epoch change program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs).
+- [epoch_change](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/epoch_change.rs): Benchmark that will run a proof generation
+  for [epoch change program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/epoch-change/src/main.rs).
   This program will execute a hash for the received `ValidatorVerifier` to ensure that the signature is from the
   previous validator set, execute a `TrustedState::verify_and_ratchet_inner` and finally generate the hash for the
   verified `ValidatorVerifier`.
-- [inclusion](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/inclusion.rs):
-  Benchmark that will run a proof generation for
-  the [inclusion program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
+- [inclusion](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/inclusion.rs): Benchmark that will run a proof generation for the [inclusion program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs).
   It is meant to assess the cost of verifying a Merkle proof for a given leaf and a given root.
 
 ## Internals
 
-- [sig](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/light-client/benches/sig.rs): Benchmark that will
-  run a proof generation for
-  the [signature verification program](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/benchmarks/signature-verification/src/main.rs).
+- [sig](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/light-client/benches/sig.rs): Benchmark that will run a proof generation for the [signature verification program](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/benchmarks/signature-verification/src/main.rs).
   This program mainly executes an aggregated signature verification for an aggregated signature and a set of public
   keys.
 
@@ -66,12 +58,17 @@ Enter benchmark name: e2e
   
 ```
 
+> **Info**
+>
+> For the `epoch_change`, `inclusion`, and `sig` benchmarks, you can measure the
+> time to generate a SNARK proof by passing the `MODE="SNARK"` environment variable.
+
 **Manual**
 
 Run the following command:
 
 ```shell
-SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 bench --features aptos --bench execute -- <benchmark_name>
+SHARD_BATCH_SIZE=0 cargo bench --features aptos --bench execute -- <benchmark_name>
 ```
 
 ## Interpreting the results
@@ -137,7 +134,7 @@ To run the test efficiently, first install `nextest` following [its documentatio
 Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
-SHARD_BATCH_SIZE=0 cargo +nightly-2024-05-31 nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
+SHARD_BATCH_SIZE=0 cargo nextest run --verbose --release --profile ci --features aptos --package aptos-lc --no-capture
 ```
 
 > **Note**

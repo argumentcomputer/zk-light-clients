@@ -1,5 +1,5 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 //! # Block Info Module
 //!
@@ -14,7 +14,7 @@
 //! of the latest transaction, the timestamp when the block
 //! was proposed, and  optionally the state of the next epoch.
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0
 use crate::crypto::hash::{HashValue, HASH_LENGTH};
 use crate::serde_error;
 use crate::types::epoch_state::EpochState;

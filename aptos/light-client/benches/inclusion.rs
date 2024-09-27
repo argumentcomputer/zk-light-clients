@@ -1,5 +1,5 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 //! # Benchmark Test for Account Inclusion Proving and Verification
 //!
@@ -17,17 +17,19 @@
 //!
 //! The benchmark aims to determine how state tree size impacts the efficiency of the proof generation and verification process.
 
+use anyhow::anyhow;
 use aptos_lc::inclusion::{
     SparseMerkleProofAssets, TransactionProofAssets, ValidatorVerifierAssets,
 };
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use aptos_lc_core::crypto::hash::CryptoHash;
-use aptos_lc_core::types::ledger_info::LedgerInfo;
+use aptos_lc_core::types::ledger_info::LedgerInfoWithSignatures;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
 use sphinx_sdk::utils::setup_logger;
-use sphinx_sdk::{ProverClient, SphinxProof, SphinxStdin};
+use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
+use std::env;
 use std::hint::black_box;
 use std::time::Instant;
 
@@ -36,6 +38,7 @@ const NBR_VALIDATORS: usize = 130;
 const AVERAGE_SIGNERS_NBR: usize = 95;
 
 struct ProvingAssets {
+    mode: ProvingMode,
     client: ProverClient,
     sparse_merkle_proof_assets: SparseMerkleProofAssets,
     transaction_proof_assets: TransactionProofAssets,
@@ -44,9 +47,36 @@ struct ProvingAssets {
     state_checkpoint_hash: [u8; 32],
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ProvingMode {
+    STARK,
+    SNARK,
+}
+
+impl From<ProvingMode> for String {
+    fn from(mode: ProvingMode) -> String {
+        match mode {
+            ProvingMode::STARK => "STARK".to_string(),
+            ProvingMode::SNARK => "SNARK".to_string(),
+        }
+    }
+}
+
+impl TryFrom<&str> for ProvingMode {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "STARK" => Ok(ProvingMode::STARK),
+            "SNARK" => Ok(ProvingMode::SNARK),
+            _ => Err(anyhow!("Invalid proving mode")),
+        }
+    }
+}
+
 impl ProvingAssets {
     /// Constructs proving assets for a given number of leaves, preparing the account inclusion proof.
-    fn from_nbr_leaves(nbr_leaves: usize) -> Self {
+    fn from_nbr_leaves(mode: ProvingMode, nbr_leaves: usize) -> Self {
         let mut aptos_wrapper =
             AptosWrapper::new(nbr_leaves, NBR_VALIDATORS, AVERAGE_SIGNERS_NBR).unwrap();
         aptos_wrapper.generate_traffic().unwrap();
@@ -89,6 +119,7 @@ impl ProvingAssets {
         let client = ProverClient::new();
 
         Self {
+            mode,
             client,
             sparse_merkle_proof_assets,
             transaction_proof_assets,
@@ -99,7 +130,7 @@ impl ProvingAssets {
 
     /// Proves the account inclusion using the ProverClient.
     /// Evaluates the predicate P3 during the proving process.
-    fn prove(&self) -> SphinxProof {
+    fn prove(&self) -> SphinxProofWithPublicValues {
         let mut stdin = SphinxStdin::new();
 
         setup_logger();
@@ -119,10 +150,14 @@ impl ProvingAssets {
         stdin.write(self.validator_verifier_assets.validator_verifier());
 
         let (pk, _) = self.client.setup(aptos_programs::INCLUSION_PROGRAM);
-        self.client.prove(&pk, stdin).unwrap()
+
+        match self.mode {
+            ProvingMode::STARK => self.client.prove(&pk, stdin).run().unwrap(),
+            ProvingMode::SNARK => self.client.prove(&pk, stdin).plonk().run().unwrap(),
+        }
     }
 
-    fn verify(&self, proof: &SphinxProof) {
+    fn verify(&self, proof: &SphinxProofWithPublicValues) {
         let (_, vk) = self.client.setup(aptos_programs::INCLUSION_PROGRAM);
         self.client.verify(proof, &vk).expect("Verification failed");
     }
@@ -136,8 +171,10 @@ struct Timings {
 }
 
 fn main() {
+    let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
+    let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
     for nbr_leaves in NBR_LEAVES {
-        let proving_assets = ProvingAssets::from_nbr_leaves(nbr_leaves);
+        let proving_assets = ProvingAssets::from_nbr_leaves(mode, nbr_leaves);
 
         let start_proving = Instant::now();
         let mut inclusion_proof = proving_assets.prove();
@@ -169,7 +206,10 @@ fn main() {
 
         let block_hash: [u8; 32] = inclusion_proof.public_values.read();
         let lates_li = proving_assets.transaction_proof_assets.latest_li();
-        let expected_block_id = LedgerInfo::from_bytes(lates_li).unwrap().block_id();
+        let expected_block_id = LedgerInfoWithSignatures::from_bytes(lates_li)
+            .unwrap()
+            .ledger_info()
+            .block_id();
         assert_eq!(
             block_hash.to_vec(),
             expected_block_id.to_vec(),

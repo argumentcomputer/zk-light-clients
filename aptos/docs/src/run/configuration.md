@@ -8,10 +8,10 @@ Rust [here](https://www.rust-lang.org/tools/install) and for Golang [here](https
 Make sure to install **nightly** Rust, which is necessary for AVX-512 acceleration:
 
 ```bash
-rustup default nightly-2024-05-31
+rustup default nightly
 ```
 
-We pin the nightly Rust version to version `1.80.0-nightly (431db31d0 2024-05-28)` to prevent unknown future changes
+We pin the nightly Rust version in `rust-toolchain.toml` to prevent unknown future changes
 to nightly from interfering with the build process. In principle however, any recent nightly release of Rust should
 work.
 
@@ -20,7 +20,7 @@ Second, you need to install the `cargo-prove` binary.
 1. Install `cargo-prove` from Sphinx:
 
 ```bash
-git clone git@github.com:lurk-lab/sphinx.git && \
+git clone git@github.com:argumentcomputer/sphinx.git && \
     cd sphinx/cli && \
     cargo install --locked --path .
 ```

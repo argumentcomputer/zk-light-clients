@@ -15,7 +15,7 @@ building the `SparseMerkleProof`.
 
 ## Inclusion program IO
 
-[Program reference](https://github.com/lurk-lab/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs)
+[Program reference](https://github.com/argumentcomputer/zk-light-clients/blob/dev/aptos/programs/inclusion/src/main.rs)
 
 ### Inputs
 

@@ -1,7 +1,7 @@
-// Copyright (c) Yatima, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0
 use crate::crypto::hash::{hash_data, prefixed_sha3, CryptoHash, HashValue};
 use crate::crypto::sig::{AggregateSignature, BitVec, PublicKey, PUB_KEY_LEN};
 use crate::serde_error;
@@ -134,7 +134,7 @@ impl ValidatorVerifier {
     /// # Returns
     ///
     /// A new `ValidatorVerifier`.
-    pub fn new(validator_infos: Vec<ValidatorConsensusInfo>) -> Self {
+    pub const fn new(validator_infos: Vec<ValidatorConsensusInfo>) -> Self {
         Self { validator_infos }
     }
 

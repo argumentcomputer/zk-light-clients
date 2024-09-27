@@ -29,13 +29,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
       - name: Setup CI
         uses: ./.github/actions/setup
-        with:
-          pull_token: ${{ secrets.REPO_TOKEN }}
       - name: Generate ${{ matrix.language }} fixtures
         run: |
           cargo run --release -- --program ${{ matrix.fixture }} --language ${{ matrix.language }}

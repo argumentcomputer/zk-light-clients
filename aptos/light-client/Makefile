@@ -2,15 +2,14 @@
 
 benchmark:
 	@read -p "Enter benchmark name: " bench; \
-	RUST_LOG="debug" \
 	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native -C opt-level=3" \
+	SHARD_SIZE=4194304 \
 	SHARD_BATCH_SIZE=0 \
-	cargo +nightly-2024-05-31 bench --features aptos --bench $$bench
+	SHARD_CHUNKING_MULTIPLIER=64 \
+	RECONSTRUCT_COMMITMENTS=false \
+	cargo bench --features aptos --bench $$bench
 
-BENCH ?= e2e
+BENCH ?= epoch_change
 
 bench-ci:
-	RUST_LOG="info" \
-	RUSTFLAGS="--cfg tokio_unstable -C target-cpu=native -C opt-level=3" \
-	SHARD_BATCH_SIZE=0 \
-	cargo +nightly-2024-05-31 bench --features aptos --bench $(BENCH)
+	cargo bench --features aptos --bench $(BENCH)

@@ -3,7 +3,7 @@ version = "1.0.0"
 name = "fixture-generator"
 edition = "2021"
 license = "Apache-2.0"
-repository = "https://github.com/lurk-lab/zk-light-clients"
+repository = "https://github.com/argumentcomputer/zk-light-clients"
 
 resolver = "2"
 
@@ -12,14 +12,15 @@ name = "generate-fixture"
 path = "src/bin/main.rs"
 
 [dependencies]
-sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0", features = ["plonk"] }
-sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev", features = ["plonk"] }
+sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 aptos-lc = { path = "../aptos/light-client", features = ["aptos"] }
 serde_json = { version = "1", features = ["alloc"] }
 serde = { version = "1.0.193", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
 tracing = "0.1.40"
 alloy-sol-types = "0.7.2"
+hex = "0.4.3"
 
 # Match the forks used by the aptos crates
 [patch.crates-io]

@@ -1,0 +1,12 @@
+services:
+  server-primary:
+    image: ghcr.io/argumentcomputer/aptos-proof-server:latest
+    pull_policy: always
+    command: sh -c "/app/proof_server --mode \"single\" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}"
+    environment:
+      - RUST_LOG=debug
+      # Prevent stack overflow
+      - RUST_MIN_STACK=16777216
+    restart: always
+    ports:
+      - "${PRIMARY_PORT}:${PRIMARY_PORT}"

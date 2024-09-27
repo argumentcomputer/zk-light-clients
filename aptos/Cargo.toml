@@ -10,8 +10,8 @@ members = [
 
 [workspace.package]
 edition = "2021"
-license = "BUSL-1.1"
-repository = "https://github.com/lurk-lab/zk-light-clients"
+license = "Apache-2.0"
+repository = "https://github.com/argumentcomputer/zk-light-clients"
 
 [workspace.dependencies]
 anyhow = "1.0.79"
@@ -25,9 +25,11 @@ aptos-temppath = { git = "https://github.com/aptos-labs/aptos-core/", tag = "apt
 aptos-types = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.14.0" }
 aptos-vm = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.14.0" }
 aptos-vm-genesis = { git = "https://github.com/aptos-labs/aptos-core/", tag = "aptos-node-v1.14.0" }
+axum = "0.7.5"
+backoff = { version = "0.4.0", features = ["tokio"] }
 # From https://github.com/aptos-labs/aptos-core/blob/aptos-node-v1.14.0/Cargo.toml#L485
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
-bls12_381 = { git = "https://github.com/lurk-lab/bls12_381.git", branch = "zkvm" }
+bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "zkvm" }
 bytes = "1.5.0"
 chrono = "0.4.38"
 cfg-if = "1.0.0"
@@ -50,11 +52,11 @@ sha2 = "0.9"
 thiserror = "1.0.58"
 tiny-keccak = "2.0.2"
 url = "2.5.0"
-sphinx-derive = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-sphinx-sdk = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0", features = ["plonk"] }
-sphinx-zkvm = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-sphinx-helper = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
-sphinx-prover = { git = "ssh://git@github.com/lurk-lab/sphinx", tag = "v1.0.0" }
+sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev", features = ["plonk"] }
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
+sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
+sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 tokio = "1.37"
 tokio-stream = "0.1"
 alloy-sol-types = "0.7.2"

@@ -1,6 +1,6 @@
 [package]
 name = "proof-server"
-version = "1.0.1"
+version = "1.1.0"
 edition = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
@@ -12,12 +12,8 @@ name = "client"
 path = "src/bin/client.rs"
 
 [[bin]]
-name = "server_primary"
-path = "src/bin/server_primary.rs"
-
-[[bin]]
-name = "server_secondary"
-path = "src/bin/server_secondary.rs"
+name = "proof_server"
+path = "src/bin/proof_server.rs"
 
 [dependencies]
 # local
@@ -26,6 +22,8 @@ aptos-lc-core = { path = "../core" }
 
 # workspace
 anyhow = { workspace = true }
+axum = { workspace = true }
+backoff = { workspace = true, features = ["tokio"] }
 bcs = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }

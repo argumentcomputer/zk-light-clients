@@ -1,43 +1,59 @@
 # Runs benchmarks on self-hosted infra via `workflow_dispatch`
-# This trigger can be found at https://github.com/wormhole-foundation/example-zk-light-clients-internal/actions/workflows/bench.yml
+# This trigger can be found at https://github.com/argumentcomputer/zk-light-clients/actions/workflows/bench.yml
 #
-# The output can be found in the logs or in a comment on the latest commit. This can be viewed on GitHub at the bottom of the commit page.
-# See https://github.com/wormhole-foundation/example-zk-light-clients-internal/commit/3d06c3585e94fe027bf7dacf865106c259994c85#comments
-name: Manual benchmark
+# The benchmark report can be found in the logs and as a comment on the latest commit on `dev`.
+# The report can also be sent as a Zulip message to https://zulip.argument.xyz
+name: Light client benchmark
 on:
   workflow_dispatch:
     inputs:
-      # Name of the `aptos/light-client` benchmark to run
-      bench-name:
+      # Which light client to bench, e.g. `aptos`, `ethereum` or `kadena`
+      light-client:
+        description: 'Name of the light client to benchmark'
         type: string
         required: true
+      # Name of the `light-client` benchmark to run, e.g. `inclusion`
+      # Runs in the `light-client` directory, so it cannot benchmark `proof_server` or `programs`
+      bench-name:
+        description: 'Name of the benchmark to run'
+        type: string
+        required: true
+      # List of comma-separated env vars, e.g. `RUST_LOG=debug,SNARK=1`
+      # `RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3"` is set by default
+      env:
+        description: 'List of comma-separated environment variables'
+        type: string
+        required: false
       # Optionally send a message to the below Zulip streams
       # Defaults to false
       zulip:
+        description: 'Send the report to Zulip'
         type: boolean
         required: false
       # User(s) to whom to send a private DM (optional)
       # Comma-separated list of user ID integers, e.g. `11,12` (IDs can be found in user profiles)
       # If not specified, sends to a stream/topic pair instead
       private:
-        description: 'DM given user ID(s)'
+        description: 'Send DM to given user ID(s)'
         type: string
         required: false
       # Zulip stream in which to send the message (optional)
       # Ignored if `private` input is specified
       # Defaults to `light_client` stream
-      stream:
+      channel:
+        description: 'Send message to channel (default is `light-client`). Ignored if `private`'
         type: string
         required: false
       # Zulip topic in which to send the message (optional)
       # Ignored if `private` input is specified
       # Defaults to `chat`
       topic:
+        description: 'Send message to topic (default is `chat`). Ignored if `private`'
         type: string
         required: false
   schedule:
     # Bench report on Tuesdays at 11pm EST/12pm EDT
-    - cron:  '0 16 * * 4'
+    - cron: '0 16 * * 4'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -45,28 +61,37 @@ concurrency:
 
 jobs:
   benchmark:
-    name: Manual benchmark
-    runs-on: [self-hosted, bench, avx512]
-    env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+    name: Light client benchmark
+    runs-on: warp-custom-r7iz-metal-16xl
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
       - name: Setup CI
         uses: ./.github/actions/setup
-        with:
-          pull_token: ${{ secrets.REPO_TOKEN }}
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2024-05-31
       - name: Install extra deps
         run: |
           sudo apt-get update && sudo apt-get install -y python3-pip
           pip3 install jtbl
-      - name: Parse inputs
+      - name: Set env
+        run: |
+          # Default benchmark settings optimized for light clients, can be overwritten with `env` input
+          echo "RUSTFLAGS='-C target-cpu=native --cfg tokio_unstable -C opt-level=3'" | tee -a $GITHUB_ENV
+          echo "SHARD_SIZE=4194304" | tee -a $GITHUB_ENV
+          echo "SHARD_BATCH_SIZE=0" | tee -a $GITHUB_ENV
+          echo "RECONSTRUCT_COMMITMENTS=false" | tee -a $GITHUB_ENV
+          echo "SHARD_CHUNKING_MULTIPLIER=256" | tee -a $GITHUB_ENV
+          echo "SNARK=1" | tee -a $GITHUB_ENV
+
+          IFS=',' read -ra ENV_VARS <<< "${{ inputs.env }}"
+          for VAR in "${ENV_VARS[@]}"; do
+            VAR_NAME="${VAR%%=*}"
+            VAR_VALUE="${VAR#*=}"
+            echo "${VAR_NAME}=${VAR_VALUE}" | tee -a $GITHUB_ENV
+          done
+      - name: Parse Zulip inputs
         run: |
           if [[ "${{ inputs.zulip }}" == "true" ]]; then
             if [[ ! -z "${{ inputs.private }}" ]]; then
@@ -95,8 +120,8 @@ jobs:
         run: |
           make bench-ci BENCH=${{ inputs.bench-name }} 2>&1 | tee out.txt
 
-          grep 'cycles=' out.txt >> cycles.txt
-          grep 'proving_time' out.txt >> timings.txt
+          grep 'cycles=' out.txt > cycles.txt
+          grep 'proving_time' out.txt > timings.txt
 
           while IFS=$'\t' read -r f1 f2
           do
@@ -115,11 +140,11 @@ jobs:
           echo "report<<EOF" >> $GITHUB_OUTPUT
           cat summary.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/aptos/light-client
+        working-directory: ${{ github.workspace }}/${{ inputs.package }}/light-client
       - name: Write bench on commit comment
         uses: peter-evans/commit-comment@v3
         with:
-          body-path: ${{ github.workspace }}/aptos/light-client/summary.md
+          body-path: ${{ github.workspace }}/${{ inputs.package }}/light-client/summary.md
       - name: Send report to Zulip
         if: inputs.zulip
         uses: zulip/github-actions-zulip/send-message@v1

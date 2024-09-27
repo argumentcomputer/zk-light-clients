@@ -1,16 +1,7 @@
 name: Test setup
-inputs:
-  pull_token:
-    description: "Token to use for private repo access"
-    required: true
 runs:
   using: "composite"
   steps:
-    - name: Set up git private repo access
-      shell: bash
-      run: |
-        git config --global url."https://${{ inputs.pull_token }}@github.com/".insteadOf ssh://git@github.com
-        git config --global url."https://${{ inputs.pull_token }}@github.com".insteadOf https://github.com
     - name: Set env
       shell: bash
       run: |
@@ -20,9 +11,15 @@ runs:
       with:
         go-version: '1.22'
         cache-dependency-path: "**/go.sum"
-    - uses: dtolnay/rust-toolchain@master
+    # Assumes the `fixture-generator` Rust version is reasonably up to date with all of the light clients
+    - name: Get Rust toolchain version
+      shell: bash
+      run: |
+        echo "TOOLCHAIN_VERSION=$(grep -E '^channel\s*=' ./fixture-generator/rust-toolchain.toml | awk -F'"' '{ print $2 }')" | tee -a $GITHUB_ENV
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: nightly-2024-05-31
+        toolchain: ${{ env.TOOLCHAIN_VERSION }}
     - uses: Swatinem/rust-cache@v2
       with:
         workspaces: "aptos -> target"
@@ -34,7 +31,7 @@ runs:
 
         sudo apt-get install -y build-essential pkg-config libssl-dev libudev-dev cmake clang
 
-        git clone https://github.com/lurk-lab/sphinx.git
+        git clone https://github.com/argumentcomputer/sphinx.git
         cd sphinx/cli
         cargo install --locked --force --path .
 
