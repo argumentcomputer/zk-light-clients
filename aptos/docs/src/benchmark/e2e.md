@@ -53,7 +53,7 @@ For our [production configuration](../run/overview.md), we currently get the fol
 } 
 ```
 
-on `r7iz.metal-16xl` AWS EC2 instance. The sphinx's commit used
+on `r7iz.metal-32xl` AWS EC2 instance. The sphinx's commit used
 is: [d392acc](https://github.com/argumentcomputer/sphinx/commit/d392acca56fbaa0e4dd0b73cfab0414b4e321348)
 
 ## SNARK proofs
