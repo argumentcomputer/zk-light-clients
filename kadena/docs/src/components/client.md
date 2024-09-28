@@ -4,7 +4,7 @@ The client is the coordinator of the Light Client. It is responsible for orchest
 Proof Server and the Kadena nodes. In our current example implementation it can also serve as a drop-in replacement
 for what an on-chain verifier would be responsible for.
 
-The client also demonstrates how to request data from the Ethereum nodes endpoints, how to forward it to the proof servers
+The client also demonstrates how to request data from the Kadena nodes endpoints, how to forward it to the proof servers
 using the simple binary RPC protocol, example and how to parse the received responses from the server. See
 [the source](https://github.com/argumentcomputer/zk-light-clients/blob/dev/kadena/light-client/src/bin/client.rs)
 for more details.
