@@ -30,7 +30,7 @@ ENV PATH=$PATH:/usr/local/go/bin
 WORKDIR /app
 
 # Clone Sphinx
-RUN git clone https://github.com/lurk-lab/sphinx.git
+RUN git clone https://github.com/argumentcomputer/sphinx.git
 
 # Set context in sphinx/cli
 WORKDIR /app/sphinx/cli
