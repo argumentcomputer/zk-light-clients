@@ -1,3 +1,6 @@
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 use kadena_lc::proofs::longest_chain::{LongestChainIn, LongestChainProver};
 use kadena_lc::proofs::{Prover, ProvingMode};
 use kadena_lc_core::test_utils::get_layer_block_headers;

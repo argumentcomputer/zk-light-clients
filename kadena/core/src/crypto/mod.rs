@@ -38,6 +38,7 @@ impl U256 {
     }
 }
 
+/// Basic data structure representing a rational number.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Rational {
     pub numerator: U256,
@@ -45,6 +46,12 @@ pub struct Rational {
 }
 
 impl Rational {
+    /// Create a new `Rational` by dividing the numerator and
+    /// denominator by their greatest common divisor.
+    ///
+    /// # Returns
+    ///
+    /// A new `Rational`.
     fn simplify(self) -> Self {
         let gcd = self.numerator.gcd(&self.denominator);
         Rational {
@@ -53,6 +60,11 @@ impl Rational {
         }
     }
 
+    /// Calculate the ceiling of the rational number.
+    ///
+    /// # Returns
+    ///
+    /// The ceiling of the rational number.
     pub fn ceil(self) -> U256 {
         let (quotient, remainder) = self.numerator.div_mod(self.denominator);
         if remainder == U256::zero() {
@@ -62,6 +74,11 @@ impl Rational {
         }
     }
 
+    /// Calculate the floor of the rational number.
+    ///
+    /// # Returns
+    ///
+    /// The floor of the rational number.
     pub fn floor(self) -> U256 {
         let (quotient, _) = self.numerator.div_mod(self.denominator);
         quotient

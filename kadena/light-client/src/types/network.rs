@@ -1,8 +1,13 @@
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::proofs::longest_chain::LongestChainIn;
 use crate::proofs::spv::SpvIn;
 use crate::proofs::{ProofType, ProvingMode};
 use anyhow::{anyhow, Error};
 
+/// Data structure that serves as a payload to contact the proof
+/// server once serialized.
 #[derive(Debug)]
 pub enum Request {
     /// Request to prove the longest chain for Kadena.
