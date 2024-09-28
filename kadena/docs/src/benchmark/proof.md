@@ -112,8 +112,8 @@ The proving time is an output at the end of a benchmark in the shape of the foll
 
 ```json
 {
-  ratchet_proving_time: 100000,
-  merkle_proving_time: 100000
+  proving_time: 100000,
+  verifying_time: 100000
 }
 ```
 

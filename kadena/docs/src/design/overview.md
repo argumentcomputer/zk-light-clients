@@ -15,7 +15,7 @@ At the core of the LC there are two proofs:
 
 - Prove the current longest chain on top of the Chainweb Protocol to ensure that the light client is in sync with the
   running chain.
-- Prove the verification for an SPV at the tip of the longest chain to bridge a state transition.
+- Prove the verification for an SPV at the tip of the longest finalized chain to bridge a state transition.
 
 This is implemented by two proofs, one for each statement. The light client verifier
 needs to keep track of the most recent verified layer block headers to be able to

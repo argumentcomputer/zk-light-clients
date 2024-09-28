@@ -15,7 +15,7 @@ The client can either work with STARK or SNARK proofs. To configure this, the
 environment variable `MODE` can be set to either `STARK` or `SNARK`. The default is `STARK`.
 
 ```bash
-git clone git@github.com:argumentcomputer/zk-light-clients.git && \
+git clone https://github.com/argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/kadena && \
   MODE=SNARK RUST_LOG="debug" cargo run -p light-client --release --bin client -- -c <KADENA_NODE_URL> -p <PROOF_SERVER_ADDRESS>
 ```

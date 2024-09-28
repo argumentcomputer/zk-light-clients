@@ -26,7 +26,7 @@ section](../benchmark/configuration.md).
 Now that our deployment machine is properly configured, we can run the secondary server.
 
 ```bash
-git clone git@github.com:argumentcomputer/zk-light-clients.git && \
+git clone https://github.com/argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/kadena/light-client && \
   RECONSTRUCT_COMMITMENTS=false SHARD_BATCH_SIZE=0 SHARD_CHUNKING_MULTIPLIER=64 SHARD_SIZE=4194304 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo run --release --bin proof_server -- --mode "single" -a <NETWORK_ADDRESS>
 ```
@@ -36,7 +36,7 @@ git clone git@github.com:argumentcomputer/zk-light-clients.git && \
 Finally, once the primary server is configured in the same fashion, run it:
 
 ```bash
-git clone git@github.com:argumentcomputer/zk-light-clients.git && \
+git clone https://github.com/argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/kadena/light-client && \
   RECONSTRUCT_COMMITMENTS=false SHARD_BATCH_SIZE=0 SHARD_CHUNKING_MULTIPLIER=64 SHARD_SIZE=4194304 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo run --release --bin proof_server -- --mode "split" -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```

@@ -20,7 +20,7 @@ Second, you need to install the `cargo-prove` binary.
 1. Install `cargo-prove` from Sphinx:
 
 ```bash
-git clone git@github.com:argumentcomputer/sphinx.git && \
+git clone https://github.com/argumentcomputer/sphinx.git && \
     cd sphinx/cli && \
     cargo install --locked --path .
 ```
