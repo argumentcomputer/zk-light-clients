@@ -1,3 +1,6 @@
+// Copyright (c) Argument Computer Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::crypto::error::CryptoError;
 use crate::crypto::hash::sha512::hash_leaf;
 use crate::crypto::hash::HashValue;

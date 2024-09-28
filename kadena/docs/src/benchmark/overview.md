@@ -10,33 +10,3 @@ Due to the SNARK compression, the SNARK proofs take longer to generate and requi
 
 Currently, the Sphinx prover is **CPU-only**, and there is no GPU acceleration integrated yet. We are working on
 integrating future work for GPU acceleration as soon as we can to improve the overall proving time.
-
-## Current Results
-
-The current results are based on a list of Layer Block headers of 7 elements.
-
-### Longest chain
-
-Cycles:  **43 554 106**
-
-SNARK time in milliseconds:
-
-```json
-{
-  "proving_time": 790774,
-  "verification_time": 4
-}
-```
-
-### SPV
-
-Cycles: **43 854 531**
-
-SNARK time in milliseconds:
-
-```json
-{
-  "proving_time": 874089,
-  "verification_time": 4
-}
-```

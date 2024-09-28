@@ -1,5 +1,5 @@
 // Copyright (c) Argument Computer Corporation
-// SPDX-License-Identifier: APACHE-2.0
+// SPDX-License-Identifier: Apache-2.0
 
 use crate::crypto::hash::HashValue;
 use thiserror::Error;
