@@ -1430,7 +1430,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1453,7 +1453,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc-core"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bls12_381 0.8.0",
@@ -1475,7 +1475,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-programs"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "glob",
  "sphinx-helper",

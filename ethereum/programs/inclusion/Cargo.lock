@@ -100,7 +100,7 @@ dependencies = [
 [[package]]
 name = "bls12_381"
 version = "0.8.0"
-source = "git+https://github.com/argumentcomputer/bls12_381.git?branch=zkvm#132f6244b430c5c079d60691e0ed55fc9797be8e"
+source = "git+https://github.com/lurk-lab/bls12_381.git?branch=zkvm#2a96eccde19bf861b0d1707b61b2ab15e294b154"
 dependencies = [
  "cfg-if",
  "digest 0.9.0",
@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-lc-core"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bls12_381",
@@ -542,7 +542,7 @@ dependencies = [
 
 [[package]]
 name = "inclusion-program"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "ethereum-lc-core",
  "sphinx-zkvm",

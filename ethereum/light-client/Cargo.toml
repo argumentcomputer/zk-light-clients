@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-lc"
-version = "1.0.1"
+version = "1.1.0"
 edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
