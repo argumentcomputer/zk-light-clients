@@ -22,7 +22,7 @@ git clone git@github.com:argumentcomputer/zk-light-clients.git && \
 
 > **Info**
 > 
-> An example of a public Kadena node URL  for mainnet is `http://api.chainweb.com`.
+> An example of a public Kadena node URL for mainnet is `http://api.chainweb.com`.
 
 The client only needs to communicate with the primary proof server, since requests to the secondary server are automatically forwarded.
 

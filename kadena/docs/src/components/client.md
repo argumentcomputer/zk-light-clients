@@ -1,7 +1,7 @@
 # Client
 
 The client is the coordinator of the Light Client. It is responsible for orchestrating the communication between the
-Proof Server and the Ethereum nodes. In our current example implementation it can also serve as a drop-in replacement
+Proof Server and the Kadena nodes. In our current example implementation it can also serve as a drop-in replacement
 for what an on-chain verifier would be responsible for.
 
 The client also demonstrates how to request data from the Ethereum nodes endpoints, how to forward it to the proof servers

@@ -58,7 +58,7 @@ You will then be asked for the name of the benchmark you want to run. Just fill 
 
 ```shell
 $ make benchmark
-Enter benchmark name: committee_change
+Enter benchmark name: longest_chain
 
   ...
   
@@ -134,7 +134,7 @@ To run the test efficiently, first install
 `nextest` following [its documentation](https://nexte.st/book/installation). Ensure that you also have the previously described environment variables set, then run the following command:
 
 ```shell
-SHARD_BATCH_SIZE=0 cargo nextest run --verbose --release --profile ci --package ethereum-lc --no-capture --all-features
+SHARD_BATCH_SIZE=0 cargo nextest run --verbose --release --profile ci --package kadena-lc --no-capture --all-features
 ```
 
 > **Note**
