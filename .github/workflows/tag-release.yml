@@ -44,32 +44,6 @@ jobs:
         with:
           repository: argumentcomputer/ci-workflows
           path: ci-workflows
-      # TODO: Refine changelog categories
-      - name: Create changelog config
-        run: |
-          cat << 'EOF' > config.json
-          {
-            "template": "#{{CHANGELOG}}",
-            "categories": [
-              {
-                  "title": "## Feature",
-                  "labels": ["feat", "feature"]
-              },
-              {
-                  "title": "## Fix",
-                  "labels": ["fix", "bug"]
-              },
-              {
-                  "title": "## 🤖 CI",
-                  "labels": ["automated-issue", "ci"]
-              },
-              {
-                  "title": "## Other",
-                  "labels": []
-              }
-            ]
-          }
-          EOF
       - name: Get branch and version info
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -93,4 +67,4 @@ jobs:
           release-branch: ${{ env.RELEASE_BRANCH }}
           version: ${{ env.VERSION }}
           tag-prefix: ${{ env.LIGHT_CLIENT }}
-          changelog-config-file: ./config.json
+          changelog-config-file: ${{ github.workspace }}/.github/changelog-config.json
