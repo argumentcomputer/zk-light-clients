@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-programs"
-version = "1.1.0"
+version = "1.1.1"
 edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
