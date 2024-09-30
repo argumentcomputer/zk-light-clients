@@ -64,7 +64,7 @@ export the fixture file to the relevant place (`solidity/contracts/src/plonk_fix
 To run the `fixture-generator` for the inclusion program, execute the following command:
 
 ```bash
-RECONSTRUCT_COMMITMENTS=false SHARD_BATCH_SIZE=0 SHARD_CHUNKING_MULTIPLIER=64 SHARD_SIZE=4194304 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo run --release --bin generate-fixture -- --program <longest_chain|spv> --language solidity
+RECONSTRUCT_COMMITMENTS=false SHARD_BATCH_SIZE=0 SHARD_CHUNKING_MULTIPLIER=64 SHARD_SIZE=4194304 RUSTFLAGS="-C target-cpu=native -C opt-level=3 --cfg tokio_unstable" cargo run --release --bin generate-fixture -- --program <longest_chain|spv> --language solidity
 ```
 
 > **Tips**

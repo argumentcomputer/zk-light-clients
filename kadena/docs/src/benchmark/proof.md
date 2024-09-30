@@ -17,7 +17,7 @@ For SNARKS:
 
 ```json
 {
-  "proving_time": 790774,
+  "proving_time": 407394,
   "verification_time": 4
 }
 ```
@@ -34,7 +34,7 @@ For SNARKS:
 
 ```json
 {
-  "proving_time": 874089,
+  "proving_time": 406711,
   "verification_time": 4
 }
 ```
