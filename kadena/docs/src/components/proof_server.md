@@ -21,7 +21,12 @@ performed by the proof programs are directed towards cryptographic operations, s
 values.
 
 To accelerate those operations, we leverage some out-of-VM circuits called **pre-compiles** that are optimized for those
-specific operations.
+specific operations. The following pre-compiles are used in our codebase:
+
+- [blake2s](https://github.com/argumentcomputer/RustCrypto-hashes/tree/zkvm/blake2): A library for Blake2s hashing making use of
+  pre-compiles for the compression function. Used while calculating the PoW hash for the chain block headers.
+- [sha2](https://github.com/argumentcomputer/RustCrypto-hashes/tree/zkvm/sha2): A library for SHA-512 hashing making use of
+  pre-compiles for the compression function. Used to calculate the block header hashes.
 
 The code to be proven is written in Rust and then compiled to RISC-V binaries, stored in `kadena/kadena-programs/artifacts/`.
 We then use Sphinx to generate the proofs and verify them based on those binaries. The generated proofs can be STARKs, which

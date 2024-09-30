@@ -31,3 +31,11 @@ The first proof needs to be generated to ensure that the light client is in sync
 The second proof is generated and submitted when a proof about some on-chain value is required, for example when a
 deposit to some account needs to be validated. It has to be noted that it also ratchet the verifier 
 state closer to the longest chain state.
+
+The current Verifying Key Hashes which uniquely identify the specific RISC-V binaries for the proof programs, located in the
+[`kadena/kadena-programs/artifacts/`](https://github.com/argumentcomputer/zk-light-clients/tree/dev/kadena/kadena-programs/artifacts)
+directory are:
+* `longest_chain`: `0x00c9f93ac78c984785ef4cd5fac972ac36bc214c0f2d0f887903dd660eb1fc39`
+* `spv`: `0x008e034af6eda82af08a33ff3748c4085b9c9775d79abf10c6fc524ea17ac04f`
+
+These values are also present in and used by the [solidity fixtures](../benchmark/on_chain.md).
