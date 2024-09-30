@@ -9,3 +9,4 @@ resolver = "2"
 [dependencies]
 sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "dev" }
 sha2 = { git = "https://github.com/argumentcomputer/RustCrypto-hashes", branch = "zkvm" }
+blake2 = { git = "https://github.com/argumentcomputer/RustCrypto-hashes", branch = "zkvm" }

@@ -10,14 +10,14 @@ pub use kadena_lc_core::test_utils;
 #[cfg(test)]
 mod tests {
     use kadena_programs::bench::{BLOCK_HEADER_HASHING_PROGRAM, SHA512_256_PROGRAM};
-    use sha2::{Digest, Sha512Trunc256};
+    use sha2::{Digest, Sha512_256};
     use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};
 
     #[test]
     fn test_sha512_256_sphinx_program_execute() {
         fn test_inner(input: &[u8]) {
-            let hash = Sha512Trunc256::digest(input);
+            let hash = Sha512_256::digest(input);
             let mut expected = [0u8; 32];
             expected.copy_from_slice(&hash);
 
