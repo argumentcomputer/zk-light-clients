@@ -14,6 +14,7 @@
 #   - Opens a release PR from `patch/<tag-prefix>-v<version>` to `release/<tag-prefix>-v<version>`
 #
 # When the PR is merged, the caller can then trigger a release from `ci-workflows/actions/tag-release`
+# NOTE: To get a rich changelog based on each commit prefix, merge without squashing. Otherwise, the changelog will only show the release PR
 # The PR branch can then be safely deleted, while the release branch should have a branch protection rule for historical preservation
 #
 # The `ci-workflows` release PR action can be found at https://github.com/argumentcomputer/ci-workflows/blob/main/.github/actions/release-pr/action.yml
