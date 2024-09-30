@@ -44,7 +44,6 @@ jobs:
         with:
           repository: argumentcomputer/ci-workflows
           path: ci-workflows
-          ref: release-workflow
       - name: Get branch and version info
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
