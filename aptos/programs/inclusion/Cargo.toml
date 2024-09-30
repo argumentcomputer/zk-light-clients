@@ -1,6 +1,6 @@
 [workspace]
 [package]
-version = "1.1.0"
+version = "1.1.1"
 name = "inclusion-program"
 edition = "2021"
 license = "Apache-2.0"
