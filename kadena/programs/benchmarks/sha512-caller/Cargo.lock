@@ -42,6 +42,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake2"
+version = "0.10.6"
+source = "git+https://github.com/argumentcomputer/RustCrypto-hashes?branch=zkvm#03ff816e89b4f33915fbcf5f97a72f4cafb352a9"
+dependencies = [
+ "cfg-if",
+ "digest",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -216,9 +225,9 @@ dependencies = [
 
 [[package]]
 name = "hybrid-array"
-version = "0.2.0-rc.9"
+version = "0.2.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d306b679262030ad8813a82d4915fc04efff97776e4db7f8eb5137039d56400"
+checksum = "bae36f8710514b3e7aab028021733330de6e455e0352e19c6dd4513eecb7aa9a"
 dependencies = [
  "typenum",
 ]
@@ -257,9 +266,12 @@ checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
 name = "once_cell"
-version = "1.19.0"
+version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+checksum = "82881c4be219ab5faaf2ad5e5e5ecdff8c66bd7402ca3160975c93b24961afd1"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "pkcs8"
@@ -270,6 +282,12 @@ dependencies = [
  "der",
  "spki",
 ]
+
+[[package]]
+name = "portable-atomic"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc9c68a3f6da06753e9335d63e27f6b9754dd1920d941135b7ea8224f141adb2"
 
 [[package]]
 name = "ppv-lite86"
@@ -402,7 +420,7 @@ dependencies = [
 [[package]]
 name = "sha2"
 version = "0.10.8"
-source = "git+https://github.com/argumentcomputer/RustCrypto-hashes?branch=zkvm#68098f1b0e8e86792fc1121000beff6798f3466e"
+source = "git+https://github.com/argumentcomputer/RustCrypto-hashes?branch=zkvm#03ff816e89b4f33915fbcf5f97a72f4cafb352a9"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -413,6 +431,7 @@ dependencies = [
 name = "sha512-caller"
 version = "0.1.0"
 dependencies = [
+ "blake2",
  "sha2 0.10.8 (git+https://github.com/argumentcomputer/RustCrypto-hashes?branch=zkvm)",
  "sphinx-zkvm",
 ]
@@ -430,7 +449,7 @@ dependencies = [
 [[package]]
 name = "sphinx-precompiles"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#f51436fe14e6d029313546e8284cf6762f81f776"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#75d6e85d47e00fd921fefc94ce6c3725b15bd2c2"
 dependencies = [
  "anyhow",
  "bincode",
@@ -444,7 +463,7 @@ dependencies = [
 [[package]]
 name = "sphinx-zkvm"
 version = "1.0.0"
-source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#f51436fe14e6d029313546e8284cf6762f81f776"
+source = "git+https://github.com/argumentcomputer/sphinx?branch=dev#75d6e85d47e00fd921fefc94ce6c3725b15bd2c2"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -476,9 +495,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.77"
+version = "2.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f35bcdf61fd8e7be6caf75f429fdca8beb3ed76584befb503b1569faee373ed"
+checksum = "89132cd0bf050864e1d38dc3bbc07a0eb8e7530af26344d3d2bbbef83499f590"
 dependencies = [
  "proc-macro2",
  "quote",
