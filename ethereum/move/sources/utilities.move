@@ -27,7 +27,7 @@ module plonk_verifier_addr::utilities {
         let vkey: u256 = bytes_to_uint256(sphinx_vkey);
 
         // check hardcoded plonk verifier hash
-        let expected_version: u256 = 0xa8558442; // corresponds to v1.0.8-testnet artifacts
+        let expected_version: u256 = 0x7f8918df; // corresponds to v1.0.8.2-testnet artifacts
         let actual_version = slice(&sphinx_proof, 0, 4);
         let actual_version: u256 = bytes_to_uint256(actual_version);
         assert!(expected_version == actual_version, ERROR_SPHINX_PROOF_VERSION);
