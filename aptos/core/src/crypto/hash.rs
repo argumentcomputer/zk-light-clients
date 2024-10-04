@@ -18,6 +18,7 @@ use std::fmt;
 use tiny_keccak::{Hasher, Sha3};
 
 /// A prefix used in the Aptos codebase to begin the salt of every hashable structure.
+///
 /// For each structure the salt consists in this global prefix, concatenated
 /// with the specified serialization name of the struct.
 pub const HASH_PREFIX: &[u8] = b"APTOS::";
@@ -189,7 +190,7 @@ impl<'a> HashValueBitIterator<'a> {
     }
 }
 
-impl<'a> Iterator for HashValueBitIterator<'a> {
+impl Iterator for HashValueBitIterator<'_> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -201,7 +202,7 @@ impl<'a> Iterator for HashValueBitIterator<'a> {
     }
 }
 
-impl<'a> DoubleEndedIterator for HashValueBitIterator<'a> {
+impl DoubleEndedIterator for HashValueBitIterator<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }
