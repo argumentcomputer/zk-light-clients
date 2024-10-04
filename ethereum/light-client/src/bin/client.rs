@@ -155,6 +155,7 @@ async fn main() -> Result<()> {
 
     debug!("Start listening for Eth data");
 
+    #[allow(clippy::needless_return)]
     loop {
         interval.tick().await;
 
@@ -378,7 +379,6 @@ async fn initialize_light_client(
 /// * `initial_verifier_state` - The initial verifier state.
 /// * `client` - The client.
 /// * `store` - The store.
-
 async fn verifier_task(
     task_sender: Arc<mpsc::Sender<VerificationTask>>,
     mut task_receiver: mpsc::Receiver<VerificationTask>,

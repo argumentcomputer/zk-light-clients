@@ -128,7 +128,6 @@ impl TrustedState {
     ///
     /// A `Result` which is `Ok` if the ledger info with
     /// signatures is valid, and `Err` otherwise.
-
     fn verify(&self, ledger_info: &LedgerInfoWithSignatures) -> anyhow::Result<()> {
         match self {
             Self::EpochWaypoint(_waypoint) => {
