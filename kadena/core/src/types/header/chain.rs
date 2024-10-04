@@ -607,7 +607,9 @@ mod test {
             .arg(TESTNET_CHAIN_3_HEADERS_URL)
             .stdout(Stdio::piped())
             .spawn()
-            .expect("curl failure");
+            .expect("curl failure")
+            .wait()
+            .unwrap();
 
         let jq = Command::new("jq")
             .arg("-r")
@@ -615,7 +617,9 @@ mod test {
             .stdin(Stdio::from(curl.stdout.unwrap()))
             .stdout(Stdio::piped())
             .spawn()
-            .expect("jq failure");
+            .expect("jq failure")
+            .wait()
+            .unwrap();
 
         let output = jq.wait_with_output().unwrap();
         let output = String::from_utf8_lossy(&output.stdout);

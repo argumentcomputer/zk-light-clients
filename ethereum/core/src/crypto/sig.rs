@@ -87,7 +87,7 @@ impl TreeHash for PublicKey {
 
     fn tree_hash_root(&self) -> tree_hash::Hash256 {
         let values_per_chunk = tree_hash::BYTES_PER_CHUNK;
-        let minimum_chunk_count = (PUB_KEY_LEN + values_per_chunk - 1) / values_per_chunk;
+        let minimum_chunk_count = PUB_KEY_LEN.div_ceil(values_per_chunk);
         tree_hash::merkle_root(self.compressed_pubkey(), minimum_chunk_count)
     }
 }
