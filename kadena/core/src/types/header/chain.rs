@@ -566,7 +566,7 @@ mod test {
     use crate::crypto::U256;
     use crate::test_utils::{RAW_HEADER, RAW_HEADER_POW_HASH_HEX};
     use crate::types::header::chain::{KadenaHeader, KadenaHeaderRaw, RAW_HEADER_BYTES_LEN};
-    use std::process::Stdio;
+    use std::borrow::Cow;
     use uint::hex;
 
     #[test]
@@ -600,34 +600,50 @@ mod test {
     #[test]
     fn test_multiple_header_root_computing() {
         use crate::test_utils::TESTNET_CHAIN_3_HEADERS_URL;
-        use std::process::Command;
+        use std::process::{Command, Stdio};
 
+        // Start the `curl` process and capture its stdout
         let curl = Command::new("curl")
             .arg("-s")
             .arg(TESTNET_CHAIN_3_HEADERS_URL)
             .stdout(Stdio::piped())
             .spawn()
-            .expect("curl failure")
-            .wait()
-            .unwrap();
+            .expect("curl failure");
 
-        let jq = Command::new("jq")
-            .arg("-r")
-            .arg(".items")
-            .stdin(Stdio::from(curl.stdout.unwrap()))
-            .stdout(Stdio::piped())
-            .spawn()
-            .expect("jq failure")
-            .wait()
-            .unwrap();
+        let output = {
+            // Ensure that curl.stdout is captured
+            let curl_stdout = curl.stdout.expect("Failed to capture curl stdout");
 
-        let output = jq.wait_with_output().unwrap();
-        let output = String::from_utf8_lossy(&output.stdout);
+            // Start the `jq` process, using the output from `curl` as stdin
+            let jq = Command::new("jq")
+                .arg("-r")
+                .arg(".items")
+                .stdin(Stdio::from(curl_stdout))
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("jq failure");
+
+            // Wait for the `jq` process to finish and capture its output
+            let output = jq.wait_with_output().expect("jq wait failed");
+            // TODO: replace with from_utf8_lossy_owned when it stabilizes
+            if let Cow::Owned(string) = String::from_utf8_lossy(&output.stdout) {
+                string
+            } else {
+                // SAFETY: `String::from_utf8_lossy`'s contract ensures that if
+                // it returns a `Cow::Borrowed`, it is a valid UTF-8 string.
+                // Otherwise, it returns a new allocation of an owned `String`, with
+                // replacement characters for invalid sequences, which is returned
+                // above.
+                unsafe { String::from_utf8_unchecked(output.stdout) }
+            }
+        };
+
+        // Process the output of `jq`
         let raw_headers = output.split_whitespace();
         raw_headers.for_each(|header_str| {
             let header_str = header_str.replace([',', '[', ']', '\"'], "");
             let header_bytes = header_str.as_bytes();
-            // skip "garbage" in headers
+            // Skip "garbage" in headers
             if header_bytes.len() == RAW_HEADER_BYTES_LEN {
                 let parsed_header = KadenaHeaderRaw::from_base64(header_bytes).unwrap();
                 let actual = parsed_header.header_root().unwrap();
