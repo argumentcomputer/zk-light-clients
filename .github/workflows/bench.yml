@@ -215,11 +215,6 @@ jobs:
           echo "SHARD_CHUNKING_MULTIPLIER=32" | tee -a $GITHUB_ENV
           echo "SNARK=1" | tee -a $GITHUB_ENV
           echo "MODE=SNARK" | tee -a $GITHUB_ENV
-      - name: Set Zulip output
-        run: |
-          echo "TYPE=stream" | tee -a $GITHUB_ENV
-          echo "STREAM=light-client" | tee -a $GITHUB_ENV
-          echo "TOPIC=Benchmark reports" | tee -a $GITHUB_ENV
       - name: Run benchmarks
         id: run-benchmarks
         run: |
@@ -256,8 +251,7 @@ jobs:
           api-key: ${{ secrets.ZULIP_API_KEY }}
           email: "aineko-bot@zulip.lurk-lab.com"
           organization-url: "https://zulip.lurk-lab.com"
-          to: "${{ env.STREAM }}"
-          type: "${{ env.TYPE }}"
-          # Ignored if `type: private`
-          topic: "${{ env.TOPIC }}"
+          to: "light-client"
+          type: "stream"
+          topic: "Benchmark reports"
           content: "${{ steps.run-benchmarks.outputs.report }}"
