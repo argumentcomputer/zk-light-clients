@@ -117,8 +117,9 @@ jobs:
       - name: rustfmt
         run: cargo fmt --all --check
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
+      # The stable toolchain is used to run clippy so as to not hit nightly errors
       - name: cargo clippy
-        run: cargo xclippy -D warnings
+        run: cargo +stable xclippy -D warnings
         working-directory: ${{ github.workspace }}/${{ matrix.package }}
       - name: Doctests
         if: ${{ matrix.package != 'fixture-generator'}}
