@@ -11,7 +11,7 @@ In terms of Sphinx-specific changes that require special attention, here is a no
 AIR chips used for precompiles that are either not present in upstream SP1, or have had non-trivial changes:
 
 - `Blake2sRoundChip`: Chip for the Blake2s hash function compression, as specified in [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693).
-- `Sha512CompressChip`, `Sha512ExtendChip`:Chips for the SHA-512 hash function compression.
+- `Sha512CompressChip`, `Sha512ExtendChip`: Chips for the SHA-512 hash function compression.
 
 Notably, the Kadena light client does not use BLS12-381 related precompiles, such as field operations (`FieldAddChip`, `FieldSubChip`, `FieldMulChip`) or G1 decompression (`Bls12381G1DecompressChip`), neither does it use `Secp256k1DecompressChip`, a chip for decompressing K256 compressed points. Therefore, the light client’s proof does not depend on the correctness of these precompiles. 
 
