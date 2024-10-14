@@ -33,7 +33,7 @@
 //! proofs at the same time. In this case, the client will send both requests to the proof server, that
 //! is charged with parallelizing the proof generation, effectively reducing the time it takes to generate
 //! both proofs by two.
-
+#![allow(clippy::needless_return)]
 use anyhow::{anyhow, Result};
 use aptos_lc_core::crypto::hash::{CryptoHash, HashValue};
 use aptos_lc_core::types::trusted_state::TrustedState;

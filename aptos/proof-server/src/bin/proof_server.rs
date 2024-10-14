@@ -76,6 +76,7 @@ struct ServerState {
     active_requests: Arc<AtomicUsize>,
 }
 
+#[allow(clippy::needless_return)]
 #[tokio::main]
 async fn main() -> Result<()> {
     let Cli {
