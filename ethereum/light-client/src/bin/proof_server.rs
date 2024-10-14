@@ -55,6 +55,7 @@ struct ServerState {
     active_requests: Arc<AtomicUsize>,
 }
 
+#[allow(clippy::needless_return)]
 #[tokio::main]
 async fn main() -> Result<()> {
     let Cli {
@@ -96,7 +97,6 @@ async fn main() -> Result<()> {
 
     let listener = TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
-
     Ok(())
 }
 

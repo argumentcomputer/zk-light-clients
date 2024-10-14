@@ -1,5 +1,6 @@
 // Copyright (c) Argument Computer Corporation
 // SPDX-License-Identifier: Apache-2.0
+#![allow(clippy::needless_return)]
 
 use anyhow::Result;
 use clap::Parser;
@@ -155,7 +156,6 @@ async fn main() -> Result<()> {
 
     debug!("Start listening for Eth data");
 
-    #[allow(clippy::needless_return)]
     loop {
         interval.tick().await;
 
