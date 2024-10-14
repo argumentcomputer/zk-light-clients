@@ -39,7 +39,6 @@ struct ProofData {
 /// Those "default" values have been obtained empirically, e.g. by tuning Sphinx environment
 /// variables and running the bench on r7iz.metal-16xl AWS EC2 instance
 ///
-
 const ACCOUNT_INCLUSION_DATA_PATH: &str = "./benches/assets/account_inclusion_data.bcs";
 const EPOCH_CHANGE_DATA_PATH: &str = "./benches/assets/epoch_change_data.bcs";
 const DEFAULT_SNARK_SHARD_SIZE: &str = "4194304";
