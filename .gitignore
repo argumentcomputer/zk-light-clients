@@ -4,6 +4,7 @@ Cargo.lock
 
 # IDE config
 .idea
+.vscode
 
 # Secrets
 *secret*
