@@ -10,7 +10,7 @@ import {SphinxVerifier} from "sphinx-contracts/solidity/src/SphinxVerifier.sol";
 contract SolidityVerificationTest is Test {
     using stdJson for string;
 
-    // Values, taken from public values of the fixture: src/plonk_fixtures/epoch_change_fixture.json
+    // Values, taken from public values (two 32 byte chunks) of the fixture: src/plonk_fixtures/epoch_change_fixture.json
     uint256 private constant TestValidSignerHash = 0x205829098a4c0273312e8bc4fdbde28fc12abdc540c88bdd9abeef0a85d706ec;
     uint256 private constant TestUpdatedSignerHash = 0xc071f215064bfe6f1c24295135199ce6f6dec2974115fad50989e666915453ad;
 
