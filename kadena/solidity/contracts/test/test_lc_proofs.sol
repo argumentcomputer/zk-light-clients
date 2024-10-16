@@ -29,8 +29,9 @@ contract WrapperTest is Wrapper {
 }
 
 contract SolidityVerificationTest is Test {
-    // Value taken from src/plonk_fixtures/spv_fixture.json (first 32 bytes)
-    uint256 private constant TestConfirmationWorkFromFixture = 0x596e6483a7e9188e289af6012de83766283712e3ad57bf03dd03000000000000;
+    // Value taken from either spv or longest_chain fixtures located in src/plonk_fixtures/ (first 32 bytes)
+    uint256 private constant TestConfirmationWorkFromFixture =
+        0x596e6483a7e9188e289af6012de83766283712e3ad57bf03dd03000000000000;
 
     using stdJson for string;
 
