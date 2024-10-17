@@ -6,6 +6,7 @@ In order to install Aptos CLI, follow [this](https://aptos.dev/en/build/cli) ins
 
 ```
 cd ethereum/move
+aptos move compile --named-addresses plonk_verifier_addr=testnet
 aptos move test --named-addresses plonk_verifier_addr=testnet
 ```
 
@@ -19,7 +20,6 @@ To run Move script that executes verification code using JSON fixture (running o
 
 ```
 aptos move compile --named-addresses plonk_verifier_addr=testnet
-aptos move create-resource-account-and-publish-package --address-name plonk_verifier_addr --profile testnet --seed $(openssl rand -hex 32) --assume-yes
 aptos move run-script --compiled-script-path build/plonk-verifier/bytecode_scripts/run_verification.mv --json-file sources/fixtures/epoch_change_fixture.json --profile testnet --assume-yes
 ```
 
@@ -39,3 +39,12 @@ You should see tentatively following result if verification passed:
 }
 ```
 It is possible to run Move verification flow locally. This requires running Aptos node locally using Docker (see [this](https://aptos.dev/en/build/cli/running-a-local-network) tutorial for more details).
+
+### Updating Wrapper contract
+
+When Sphinx version is updated it is usually required to update and publish new correspondent version of
+the [plonk-core](https://github.com/argumentcomputer/sphinx-contracts/tree/main/move) dependency. Follow the [README](https://github.com/argumentcomputer/sphinx-contracts?tab=readme-ov-file#smart-contracts-for-sphinx)
+from the `sphinx-contracts` repository (if this is not done yet). Additionally, some updates are required in `move/sources/wrapper.move` source file,
+specifically new hardcoded values of the fixtures are required. Those values can be obtained in a convenient form while
+running [fixture-generator](https://github.com/argumentcomputer/zk-light-clients/tree/dev/fixture-generator) program, while
+replacing JSON fixtures in `move/sources/fixtures` path.

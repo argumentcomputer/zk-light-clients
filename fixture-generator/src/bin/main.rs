@@ -218,6 +218,8 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
 
     match remote {
         MOVE => {
+            let proof_hex_string = proof_bytes(&proof);
+
             // save fixture
             let fixture = MoveFixture {
                 type_args: [
@@ -238,10 +240,33 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
                     MoveArg {
                         // proof
                         type_: String::from("hex"),
-                        value: proof_bytes(&proof),
+                        value: proof_hex_string.clone(),
                     },
                 ],
             };
+
+            // To copy paste to Move contract upon Sphinx update:
+            println!("Copy paste to ethereum/move/sources/wrapper.move:");
+            println!();
+
+            println!("// From inclusion fixture");
+            println!(
+                "const ValidSignerSyncCommitteeHashInclusion: u256 = 0x{};",
+                &proof.public_values.bytes().to_string().as_str()[2 + 16..2 + 16 + 64]
+            );
+            println!(
+                "const InclusionVk: vector<u8> = x\"{}\";",
+                &prover.get_vk().bytes32().to_string().as_str()[2..]
+            );
+            println!(
+                "const InclusionPublicValues: vector<u8> = x\"{}\";",
+                &proof.public_values.bytes().to_string().as_str()[2..]
+            );
+            println!(
+                "const InclusionProof: vector<u8> = x\"{}\";",
+                &proof_hex_string.as_str()[2..]
+            );
+            println!();
 
             let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(MOVE_FIXTURE_PATH);
 
@@ -294,6 +319,24 @@ fn generate_fixture_epoch_change_aptos_lc() {
         proof: proof_bytes(&proof),
     };
 
+    let signer_hash_string =
+        proof.public_values.bytes().to_string().as_str()[2..2 + 64].to_string();
+    let updated_signer_hash_string =
+        proof.public_values.bytes().to_string().as_str()[2 + 64..2 + 64 * 2].to_string();
+
+    println!("Copy paste to aptos/solidity/contracts/test/test_lc_proof.sol (in case of the new Sphinx version):");
+    println!();
+    println!("// Values, taken from public values (two 32 byte chunks) of the fixture: src/plonk_fixtures/epoch_change_fixture.json");
+    println!(
+        "uint256 private constant TestValidSignerHash = 0x{};",
+        signer_hash_string
+    );
+    println!(
+        "uint256 private constant TestUpdatedSignerHash = 0x{};",
+        updated_signer_hash_string
+    );
+    println!();
+
     save_fixture(
         &Fixture::Base(fixture),
         &fixture_path,
@@ -327,6 +370,8 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
 
     match remote {
         MOVE => {
+            let proof_hex_string = proof_bytes(&proof);
+
             // save fixture
             let fixture = MoveFixture {
                 type_args: [
@@ -347,10 +392,42 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
                     MoveArg {
                         // proof
                         type_: String::from("hex"),
-                        value: proof_bytes(&proof),
+                        value: proof_hex_string.clone(),
                     },
                 ],
             };
+
+            // To copy paste to Move contract upon Sphinx update:
+            println!("Copy paste to ethereum/move/sources/wrapper.move (in case of the new Sphinx version):");
+            println!();
+            println!("// From epoch_change fixture");
+
+            println!(
+                "const SignerSyncCommitteeHashH29: u256 = 0x{};",
+                &proof.public_values.bytes().to_string().as_str()[2 + 16..2 + 16 + 64]
+            );
+            println!(
+                "const UpdatedSyncCommitteeHashH30: u256 = 0x{};",
+                &proof.public_values.bytes().to_string().as_str()[2 + 16 + 64..2 + 16 + 64 * 2]
+            );
+            println!(
+                "const NextSyncCommitteeHashH31: u256 = 0x{};",
+                &proof.public_values.bytes().to_string().as_str()[2 + 16 + 64 * 2..2 + 16 + 64 * 3]
+            );
+
+            println!(
+                "const EpochChangeVk: vector<u8> = x\"{}\";",
+                &prover.get_vk().bytes32().to_string().as_str()[2..]
+            );
+            println!(
+                "const EpochChangePublicValues: vector<u8> = x\"{}\";",
+                &proof.public_values.bytes().to_string().as_str()[2..]
+            );
+            println!(
+                "const EpochChangeProof: vector<u8> = x\"{}\";",
+                &proof_hex_string.as_str()[2..]
+            );
+            println!();
 
             let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(MOVE_FIXTURE_PATH);
 
@@ -407,6 +484,16 @@ fn generate_fixture_longest_chain() {
         proof: proof_bytes(&proof),
     };
 
+    let confirmation_work = proof.public_values.bytes().to_string().as_str()[2..2 + 64].to_string();
+    println!("Copy paste to kadena/solidity/contracts/test/test_lc_proof.sol (in case of the new Sphinx version):");
+    println!();
+    println!("// Value taken from either spv or longest_chain fixtures located in src/plonk_fixtures/ (first 32 bytes)");
+    println!(
+        "uint256 private constant TestConfirmationWorkFromFixture = 0x{};",
+        confirmation_work
+    );
+    println!();
+
     save_fixture(
         &Fixture::Base(fixture),
         &fixture_path,
@@ -443,6 +530,16 @@ fn generate_fixture_spv() {
         public_values: proof.public_values.bytes().to_string(),
         proof: proof_bytes(&proof),
     };
+
+    let confirmation_work = proof.public_values.bytes().to_string().as_str()[2..2 + 64].to_string();
+    println!("Copy paste to kadena/solidity/contracts/test/test_lc_proof.sol (in case of the new Sphinx version):");
+    println!();
+    println!("// Value taken from either spv or longest_chain fixtures located in src/plonk_fixtures/ (first 32 bytes)");
+    println!(
+        "uint256 private constant TestConfirmationWorkFromFixture = 0x{};",
+        confirmation_work
+    );
+    println!();
 
     save_fixture(&Fixture::Base(fixture), &fixture_path, SPV_FIXTURE_FILENAME);
 }

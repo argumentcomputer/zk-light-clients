@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {Wrapper, SphinxProofFixture} from "../src/Wrapper.sol";
-import {SphinxVerifier} from "sphinx-contracts/SphinxVerifier.sol";
+import {SphinxVerifier} from "sphinx-contracts/solidity/src/SphinxVerifier.sol";
 
 contract WrapperTest is Wrapper {
     constructor(uint256 confirmation_work_threshold, bytes32[] memory checkpoints)
@@ -29,6 +29,10 @@ contract WrapperTest is Wrapper {
 }
 
 contract SolidityVerificationTest is Test {
+    // Value taken from either spv or longest_chain fixtures located in src/plonk_fixtures/ (first 32 bytes)
+    uint256 private constant TestConfirmationWorkFromFixture =
+        0x596e6483a7e9188e289af6012de83766283712e3ad57bf03dd03000000000000;
+
     using stdJson for string;
 
     WrapperTest wrapper;
@@ -42,7 +46,8 @@ contract SolidityVerificationTest is Test {
         checkpoints[3] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000004);
         checkpoints[4] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000005);
 
-        uint256 confirmation_work_threshold = 0x596e6483a7e9188e289af6012de83766283712e3ad57bf03dd03000000000001;
+        // Confirmation work from fixtures must be smaller than the threshold, specified at deployment
+        uint256 confirmation_work_threshold = TestConfirmationWorkFromFixture + 1;
 
         wrapper = new WrapperTest(confirmation_work_threshold, checkpoints);
     }

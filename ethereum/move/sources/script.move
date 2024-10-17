@@ -1,6 +1,6 @@
 script {
-    use plonk_verifier_addr::plonk_verifier;
-    use plonk_verifier_addr::utilities::{validate_fixture_data};
+    use plonk_verifier_addr::plonk_verifier_core;
+    use plonk_verifier_addr::utilities_core::{validate_fixture_data};
     use std::vector::length;
 
     const ERROR_LENGTH_VK: u64 = 3001;
@@ -20,6 +20,6 @@ script {
 
         let (proof, vkey) = validate_fixture_data(proof_, vkey_);
 
-        plonk_verifier::verify(proof, vkey, public_values);
+        plonk_verifier_core::verify(proof, vkey, public_values);
     }
 }

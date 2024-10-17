@@ -1,10 +1,10 @@
 module plonk_verifier_addr::wrapper {
     use std::signer;
-    use plonk_verifier_addr::plonk_verifier;
+    use plonk_verifier_addr::plonk_verifier_core;
     use std::vector::{length, slice, reverse};
-    use plonk_verifier_addr::utilities::bytes_to_uint256;
+    use plonk_verifier_addr::utilities_core::bytes_to_uint256;
     use std::string::utf8;
-    use plonk_verifier_addr::utilities;
+    use plonk_verifier_addr::utilities_core;
 
     const ERROR_COMMITTEE_CHANGE: u64 = 4004;
     const ERROR_INCLUSION: u64 = 4005;
@@ -81,14 +81,22 @@ module plonk_verifier_addr::wrapper {
         exists<Hashes>(addr)
     }
 
-    public fun committee_change_event_processing(a: &signer, vkey: vector<u8>, proof: vector<u8>, public_values: vector<u8>) acquires Hashes {
+    public fun committee_change_event_processing(
+        a: &signer,
+        vkey: vector<u8>,
+        proof: vector<u8>,
+        public_values: vector<u8>
+    ) acquires Hashes {
         // we know definitely the expected length of public values for committee change event
-        assert!(length(&public_values) == COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES, ERROR_COMMITTEE_CHANGE_UNEXPECTED_PUBLIC_VALUES);
+        assert!(
+            length(&public_values) == COMMITTEE_CHANGE_PUBLIC_VALUES_LENGTH_BYTES,
+            ERROR_COMMITTEE_CHANGE_UNEXPECTED_PUBLIC_VALUES
+        );
 
-        let (proof_in, vkey) = utilities::validate_fixture_data(proof, vkey);
+        let (proof_in, vkey) = utilities_core::validate_fixture_data(proof, vkey);
 
         // execute core verification
-        plonk_verifier::verify(proof_in, vkey, public_values);
+        plonk_verifier_core::verify(proof_in, vkey, public_values);
 
         // post processing
         let offset = 0;
@@ -118,14 +126,22 @@ module plonk_verifier_addr::wrapper {
         }
     }
 
-    public fun inclusion_event_processing(a: &signer, vkey: vector<u8>, proof: vector<u8>, public_values: vector<u8>) acquires Hashes {
+    public fun inclusion_event_processing(
+        a: &signer,
+        vkey: vector<u8>,
+        proof: vector<u8>,
+        public_values: vector<u8>
+    ) acquires Hashes {
         // we know only minimal acceptable length of public values in inclusion event, when EIP1186 proof contains 1 key/value pair
-        assert!(length(&public_values) >= INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES, ERROR_INCLUSION_UNEXPECTED_PUBLIC_VALUES);
+        assert!(
+            length(&public_values) >= INCLUSION_PUBLIC_VALUES_MIN_LENGTH_BYTES,
+            ERROR_INCLUSION_UNEXPECTED_PUBLIC_VALUES
+        );
 
-        let (proof_in, vkey) = utilities::validate_fixture_data(proof, vkey);
+        let (proof_in, vkey) = utilities_core::validate_fixture_data(proof, vkey);
 
         // execute core verification
-        plonk_verifier::verify(proof_in, vkey, public_values);
+        plonk_verifier_core::verify(proof_in, vkey, public_values);
 
         // post processing
         let offset = 0;
@@ -223,8 +239,8 @@ module plonk_verifier_addr::wrapper {
 
         let (left, right) = delete(&a);
         // Committee change happened (since SignerSyncCommitteeHashH29 was in storage)
-        assert!(left == UpdatedSyncCommitteeHashH30,  1);
-        assert!(right == NextSyncCommitteeHashH31 , 2);
+        assert!(left == UpdatedSyncCommitteeHashH30, 1);
+        assert!(right == NextSyncCommitteeHashH31, 2);
     }
 
     #[test(a = @plonk_verifier_addr)]
@@ -235,8 +251,8 @@ module plonk_verifier_addr::wrapper {
 
         let (left, right) = delete(&a);
         // Committee change happened (since SignerSyncCommitteeHashH29 was in storage)
-        assert!(left == UpdatedSyncCommitteeHashH30,  1);
-        assert!(right == NextSyncCommitteeHashH31 , 2);
+        assert!(left == UpdatedSyncCommitteeHashH30, 1);
+        assert!(right == NextSyncCommitteeHashH31, 2);
     }
 
     #[test(a = @plonk_verifier_addr)]
@@ -279,16 +295,17 @@ module plonk_verifier_addr::wrapper {
     const InitialTestHash1: u256 = 0x1111111111111111111111111111111111111111111111111111111111111111;
     const InitialTestHash2: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
-    const ValidSignerSyncCommitteeHashInclusion: u256 = 0x0969ed235cf75d25800ea6845c2584af013c1f9617ad2de87202d7e9b93739c9;
+    // From epoch_change fixture
     const SignerSyncCommitteeHashH29: u256 = 0x5d32119aae2ee9f88867d5787af5c4df68884a4bf8fff525ff8c408e8f988050;
     const UpdatedSyncCommitteeHashH30: u256 = 0x85382a0c8b1b38485a3d816f31ab5b23a0eae94d86c90086cd4e7b6e8c5c4682;
     const NextSyncCommitteeHashH31: u256 = 0x5ebd1cf9ea54ce88af740aad4d7e95e742157209f36867ff5d7d490afa91c6bf;
-
     const EpochChangeVk: vector<u8> = x"00c55464e91190f7548e4355c11cc43c1187f73cb1547a37aba0e6a1760a11d0";
     const EpochChangePublicValues: vector<u8> = x"e0e58f00000000005d32119aae2ee9f88867d5787af5c4df68884a4bf8fff525ff8c408e8f98805085382a0c8b1b38485a3d816f31ab5b23a0eae94d86c90086cd4e7b6e8c5c46825ebd1cf9ea54ce88af740aad4d7e95e742157209f36867ff5d7d490afa91c6bf";
-    const EpochChangeProof: vector<u8> = x"7f8918df23025e88161c019ff27e04f984c221805a312ab50a40e4ffc095304dd274edf001cf919dce83c4565ed87bddcecd0de5efcff44832214c4428fc85db314f74cc116a37650a3c8ec2cddb3270a5a81b8a5c461c0b179ca462cc6407e2de6f911728f57555f4ec15b460bd62206c7c36aecee7c9ba7f87575fbcb15084418e69e821da7d5807075cadb6b29d4dadb11ca754e11d8abb7536465592e3b36a7fecfb230d478d78fb5406b560fd9f1fc6ba762c153442666f286c980fa809a752c51109c6fcdfe638c63fcaa208fff939ab00a867bb0dca33350a17444c55d8d3eab401bb5aa5200a28d2ac7c88e9201050ab6a671991761c91cdd4cecb5350c397b218e9eecf39ae24cbf930ef731a6e79f36480590bf6097412f715074412a815040b0ccbf8d9be6e12bcbb49bd6958061ce8a676d742ea61058f163ccfdba611620cc7e460a730db040b38ade6ae55b26e736c4dedcc3d87cd573338b31dd0fbad18d4f0438c93c5e7511465ea3388f5eea716bc99c4cedb7a8a34df0c8ad11cd917de63a7e7174d001ca63f6b9350ab6e5a5b269b12b541711a749f5dd635507701514400cad1b873716b92d3294dba99bc53cbb8f5336bc5666eb014f2fd63c31cd7d03ef4c8570db2f8f42d972ef9ae359c6ae216086237068cdb7788329f270e9fe5a5ea6e808c9662af69e30e76ce65f3ce8073efe405dbf0195ed610ff2b10b8c3eb43b08c018d5181e12cc1f1dff887a04a33c1d0cdc970dbfecfd97e842e2c13e50e5ea338689f2e7c8edf1a1e159f933f634ddfe9f0fe7c7068ec3e7e10d13b39a10369904e33b16d8c88d8b3f9928826ddb98ec62faf697b75ecb49b18d022ef11c3e32741c637f0bc430ae2ff1ad0010164d57f54351ab44e6f2c8604bf33da92855f19ae9b2d41d8da89d0dbc04da9c5201eedda6408785f3e65820a0ee6a5f48ab041147a1408328ee862c4cedd53f71864c78a6b46ba1e65ef8918a6b2b4823221568912f7267baaa5c5a48273f746ec9bae5afd02464871ea09246c30c4c93833da218b1f4b538c7c0226f79611bfca8b78f7431607512933241f50b8c7e58b44d5b5fb68820a470f2551a4d7395be1a4fb0cf787ddd68853db20aafbdff8092c44fcbb79aae0b53d8382cdf41806e55a3432b4e25ec0b9e3d01202c537f05c19dd05063e85b550f4b1d5f06af18b0ed190fead7fd7813788d5";
+    const EpochChangeProof: vector<u8> = x"7f8918df0301eab6bcabf49c2710a694a0cd215be9254bd774d54b6ec8fa8328525e5f5500f376ef87a1f736abcad7df13173e2f16f40a4fc382b4d847b5139cb85314792ce8edd0b1f61b1fff0f462261e452c03e2ae8de4c32a5b236c74847fcedef540c2cb2dc48b8598c6ec7f4a9a859cb2eb04a192771b57cfa4a1c470480d1faf012bc6bc7f4fd470fef2c41d7d831be5c3929bd0a2cc990d0498d0202624d2f0310f67be711829525766ba5bf26501ea299c6237c199066b95fd7239c538561c51ccb2ec4b2ab47d23333a891f917f3b1eae3b71dd87b9e9476498a1a5d41aab32d4b07a99c9ce3a42eb155ec0d419c3785f3393b4063e7888c59223ebeed84940f7aaa1d96b7415ff23b93af83934b460ebf651f9670560c2f9a7880daefce591526584e6950fcf7308923cb8217ab6442c46899bf6c87183283718be871213411ab2a8e4ac7b19552fb0ebe62970f54a426abcddd7d86e4d2768ce9eda3c942243891b5faa8cf8f38a075bac4f757b83549009bdc4434ac293ea7b3f4361aa90ad2d9830cb5e782efb157ee68ee0cac6cca3b938d2304da7b5aef0baff459562c8b23d4a79499b0a26a3304042212e14834774e891a1587be696838dadcddc6211daee2da80ca803b6911c9a8fb8b127400df3ee50b04a5c3a232784ae04aae040258000e77f9b6658b1c23724a881635c4b4b4d149b01820940d1eff9690ea11498998f965dede6ad1e169b0f1bcdf2aa2c05f98df5bf5270454a37d8621db1c61ae47bfef2e39732498d36577072434d8a8fecd20b997d0625788450ad3ae0e3737ceaa1ccd33f234b7eb184692f49be0779481fffef3dfc89293c85cfd630289c5b6fa639dc45b1eb45908caa996553ae40af0d17f6040306edc6cd3dc7312e300eb5498eea2ee12d7fb4c3571d3cce970335e8960479b5b542273a664f62c069a37d137340deea79f6ac988f5f27b34f7e2fc2bd1b632107aa4a14d2f5b0339b2fbb492fb569cc47b6244df5a4c50df506e3efce434f8fdaf4bd8d3207928b1b0bc5ab666e34eac14dd8cf061401487550c0f2afd285595c4e02c518db616a6a8f10e9210df423c9e0cbdeaf0155d1d001326592dd26e920d2e0f1479ca0c9b74114622d19aee57ed2e56a2c57a099105843c8fce2ae43d19f80c22494911089ea61cab1a4141b265013cf0a0688f311f2c235e5213dac7fb969a381ef4";
 
+    // From inclusion fixture
+    const ValidSignerSyncCommitteeHashInclusion: u256 = 0x0969ed235cf75d25800ea6845c2584af013c1f9617ad2de87202d7e9b93739c9;
     const InclusionVk: vector<u8> = x"00d6b0922b33f4a88cac7a71b76e025fa0dfb9b3a2e74e009bd511db5688bd3d";
     const InclusionPublicValues: vector<u8> = x"e0fc9100000000000969ed235cf75d25800ea6845c2584af013c1f9617ad2de87202d7e9b93739c95c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f22002fe30a172d0a479f6add89c63b29dce29b6071b3c7e486b0fb4bc431f88501000000000000002000000000000000290decd9548b62a8ef0d3e6ac11e2d7b95a49e22ecf57fc6044b6f007ca2b2ba010000000000000080";
-    const InclusionProof: vector<u8> = x"7f8918df24861767a7e453f220f9a2cec1a9c1ba67cb734c50fe292d8a8cbf475f4ecdd417e47908ac676f8310850863c5d558f7f4eec2c8ba1388cc944932a3cf5c371423246685f0aa842f789403288b02dc412a7430eb516b4e8a7e99b1193d32c04b0612df3654f74d051e3e9c24c7be8f34dd570fbf252919dd18243054d5f172550166587515cf6e2ca1292df05941e075f331b3746e60f89f185317007541fdd62c6fe406a14b736020653dcca451f63072f0425ca36dfc832021016821836b9d1c15b06039d70b291574e22c8a20bd7fbae0a72d1c57f092a1f03a26489adf7c234247c6fae957f1ab8e1975c6df1c959ed81a6fc53d523b7969312e5ca2e8d417ba62b8c5f641cec7d6b237ce9fe9f86ce149d31a6329446dce84a21a11cac12800635f363851471dafc379afaefe984351ffabc891a4db80cda0ad9f5cc69a2b5401747be4b3b86204e611f1213a68d41c55cb1e1770a8ab6c4992abec43d7180e0f1fa44c0a5377f6c0ad11120026e4edfbf7fd00084adedd9d88204578bd17c31c5af075458aa0e56d90190c0fc70c70a55ec4a4159baa6873e2fb61089710d52d1f5c8b4ef6121240eceb465540426ea03db93375958522ad6b0b67137d2e455d147a32298f2f46d6fac9ade31b4dc3484a41bfeb9b5c47f1b90b94b75719f77f014c99f7cc23f099cb3ed4d7d9711e30287ced98c4f94b6d9b036073db1c0ed6b8ed155efc8258b39baa46c9e11e480b22670c6da62388eb7af544fa6c18dfed0be8fda5d1e78fab2f7e75b7e1a0af71cff33303e4fe7a64d358cdc0460a81acc9430df6597682a020b2912aeca5bedf2c3e3104b154bd153f1e1da50a163dabc98c40027c88579514f54236520d4b40ede0214c04cfece063bb999a630874ec6b6dbf1a62658fb5e021462914f5371bda976a6af43e44c444039a772817df40bc7d03e0d476be417b10cb978b27f0fb1038ce5b602952eec70d9157f70ab0d26d6acb3a0b1047585dba494d8279e740efdfe7a042c6108bcc7baca7b91dfb390967cd9cb41e5302e1adfaf5bff0975a893df88a492c738b2bbea1c600209f9559f36d4ca29487ef7a1a6aeee4bb298e647bc30437f4600764001cfb92031d6f99499cbc8a55a3629abed1d232c35a6f362c23cc2724f74b98fa11300c2fe8a790c98d3cba19dd001c8d0f5cff70ae5fff32da4bc3f60600cde5388adf";
+    const InclusionProof: vector<u8> = x"7f8918df1f7ecf988279a5903ac9186fb441f8abf319dbc712ba375bd1350f6dd736c0ad26f4cdacce1b7ce64c04dc674cf60bb9eda8326fb54e944a6b98dac5a12d521c04156edcd07860aa0c7b240459141c19a368051977db8d513308f66127854b15167aa4584770ee7eb2f766d96517f3b141ecfe09bb5510bf707561bc47b8ecf41ac1d57ae6e6229d283c3bdf95e25f6b372f378b2ab1f948692d0411043993420f1a18502cb0df01d70f294a82fb6a884520c2e2ebe1f51161f0d5b46a6ab6a22d68d5a26eae9c2c3a3927420ebe5a5b9529860a3cd77c58cabb984b829203c806c0ae08e03d61ead010b2158da38b2313b9f52d257b29f3fd3cce9181439140071f3d100c2eacb14bf3d5929e0fa3622f2c0ece50e3c9095fd0d666e0ebab782bece4c9dd1146e717f38c16f323b656720205c79bd38ae8d6e0f0d00c042efa07cce994d9a484ee91c09f215c06fa149857fff143dcaeda634f770552e5a4c81975107909f7fe9a094f1d6d2e6dd1e9120874c82206d72b851c78d913121ef4006aeaad4699c3821523f6abfb7a8ff583307dec352b55b3d8d6181925002ff928c495ddf12f534ba4cb7e8f1240a7de18ec9b9ceff3131857176026bcb49b06109a66a659d4303674a21a364110de8561ebef7905982c4c791c0b1dac8234dc248eaacdc575b851a09f27b6f8753378a2545c90c113349476b0fb9b3677196928866f5d9ca003194f6ef3560e5a65c56050f899252b0b56cc43b074b35b07f80d8fcaaaecd2e7b3488671c9ce056335ac03cf1584308115f23594c9aee05c3b03553c766c492ed69b3bd874b1f2ece4fe79926cdbe69c1d07536c5aea7a081603cbfae18394e5ddc62be42f1d39c1abaade0bc16540b2ef07fb7bb5a36a417a12810f6188da9dab867f6f3795d252dc7ff240c889775f2b807aa121961b038a28bf1cbf5e98cdba898bc588e60d8639f5ab36e6bdab91287d1af0901cf611811782bc1e8d5fe824d1fc1075957de324ab9c84b11a9835630d63e9b10f0ce46a224be3538237a5d9725bef0ebc17ad2df709e150a1a40ce7de3bc980282d74071664e1222b21cba25edb7f70f3c5be309f702dbaa6fc2595c5141fae3dbd3d2f0181e63e6be01cf1912ae550a42229f16cc7b61784f45f47bddc991c13b4153d0562e4fc958aa71586d68cbcf6cfc2889b3fcd25854ff02b5446111d2f0624e4";
 }

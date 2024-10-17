@@ -597,6 +597,7 @@ mod test {
         assert_eq!(actual, expected);
     }
 
+    #[allow(clippy::zombie_processes)]
     #[test]
     fn test_multiple_header_root_computing() {
         use crate::test_utils::TESTNET_CHAIN_3_HEADERS_URL;

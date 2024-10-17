@@ -6,11 +6,6 @@ authors = []
 [addresses]
 plonk_verifier_addr = '_'
 
-[dev-addresses]
-
-[dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "mainnet"
-subdir = "aptos-move/framework/aptos-framework"
-
-[dev-dependencies]
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-framework"}
+plonk-core = { git = "https://github.com/argumentcomputer/sphinx-contracts.git", rev = "main", subdir = "move" }
