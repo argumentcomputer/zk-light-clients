@@ -4,6 +4,7 @@ Cargo.lock
 
 # IDE config
 .idea
+.vscode
 
 # Secrets
 *secret*
@@ -13,4 +14,7 @@ Cargo.lock
 # Contract assets
 ethereum/move/build/*
 ethereum/move/gas-profiling/*
-
+aptos/solidity/contracts/cache
+aptos/solidity/contracts/out
+kadena/solidity/contracts/cache
+kadena/solidity/contracts/out

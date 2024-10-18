@@ -10,7 +10,7 @@ folder.
 ### Updating Wrapper contract
 
 When Sphinx version is updated it is usually required to update and publish new correspondent version of
-the [sphinx-contracts/solidity](https://github.com/argumentcomputer/sphinx-contracts/tree/main/solidity) dependency.
+the [sphinx-contracts/solidity](https://github.com/argumentcomputer/sphinx-contracts/tree/main/solidity) dependency. 
 Follow the [README](https://github.com/argumentcomputer/sphinx-contracts?tab=readme-ov-file#smart-contracts-for-sphinx)
 from the `sphinx-contracts` repository (if this is not done yet). Additionally, some updates are required in `solidity/contracts/test/test_lc_proofs.t.sol` source file,
 specifically new hardcoded values from the fixtures are required. Those values can be obtained in a convenient form while
@@ -18,6 +18,6 @@ running [fixture-generator](https://github.com/argumentcomputer/zk-light-clients
 replacing JSON fixtures in `solidity/contracts/src/plonk_fixtures` path. Finally run:
 
 ```
-cd aptos/solidity/contracts
+cd kadena/solidity/contracts
 forge update
 ```

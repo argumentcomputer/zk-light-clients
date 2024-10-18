@@ -50,6 +50,7 @@ struct ServerState {
     spv_prover: Arc<SpvProver>,
 }
 
+#[allow(clippy::needless_return)]
 #[tokio::main]
 async fn main() -> Result<()> {
     let Cli {

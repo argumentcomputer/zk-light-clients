@@ -88,6 +88,7 @@ impl Display for &VerificationTask {
     }
 }
 
+#[allow(clippy::needless_return)]
 #[tokio::main]
 async fn main() -> Result<()> {
     // Get proving mode for the light client.
@@ -166,9 +167,9 @@ async fn main() -> Result<()> {
                 let Ok(layer_headers) = res_layer_headers else {
                     error!(
                         "Failed to get layer block headers for target block {} and window {BLOCK_WINDOW}: {}",
-                        *lc_state_clone.current_block_height(),
+                         *lc_state_clone.current_block_height(),
                         res_layer_headers.expect_err("Should have an error")
-                    );
+                     );
 
                     drop(permit);
                     continue;
@@ -201,10 +202,10 @@ async fn main() -> Result<()> {
                 // We don't want to fail the whole process. It might be because we do not have enough block on chain yet.
                 let Ok(layer_headers) = res_layer_headers else {
                     error!(
-                        "Failed to get layer block headers for target block {} and window {BLOCK_WINDOW}: {}",
+                       "Failed to get layer block headers for target block {} and window {BLOCK_WINDOW}: {}",
                         *lc_state_clone.current_block_height(),
-                        res_layer_headers.expect_err("Should have an error")
-                    );
+                       res_layer_headers.expect_err("Should have an error")
+                   );
 
                     drop(permit);
                     continue;
@@ -317,7 +318,6 @@ async fn initialize_light_client(
 /// * `initial_verifier_state` - The initial verifier state.
 /// * `client` - The client.
 /// * `store` - The store.
-
 async fn verifier_task(
     task_sender: Arc<mpsc::Sender<VerificationTask>>,
     mut task_receiver: mpsc::Receiver<VerificationTask>,

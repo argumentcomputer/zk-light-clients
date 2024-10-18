@@ -627,6 +627,7 @@ mod test {
         assert_eq!(chain_headers, filtered_list);
     }
 
+    #[allow(clippy::needless_return)]
     #[tokio::test]
     async fn test_get_layer_block_headers_uncle_last_height() {
         let layer_blocks = ChainwebClient::new(API_ENDPOINT)
