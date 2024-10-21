@@ -33,13 +33,13 @@ tokio = "1.39.2"
 tree_hash = "0.6"
 tree_hash_derive = "0.6"
 # Crypto dependencies
-bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "zkvm" }
+bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "update-sphinx" }
 # Sphinx dependencies
-sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
-sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44", features = ["plonk"] }
-sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
-sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
-sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
+sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48", features = ["plonk"] }
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
+sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
+sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
 
 [patch.crates-io]
 # Sphinx patch

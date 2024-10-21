@@ -10,16 +10,16 @@ use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 sphinx_zkvm::entrypoint!(main);
 
 pub fn main() {
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: read_inputs");
     }
     let layer_headers_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
     let spv_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
     let expected_root_bytes = sphinx_zkvm::io::read::<Vec<u8>>();
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: read_inputs");
     }
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-start: deserialize_inputs");
     }
     let layer_headers = ChainwebLayerHeader::deserialize_list(&layer_headers_bytes)
@@ -27,7 +27,7 @@ pub fn main() {
     let spv = Spv::from_bytes(&spv_bytes).expect("Failed to deserialize SPV proof");
     let expected_root =
         HashValue::from_slice(&expected_root_bytes).expect("Failed to deserialize expected root");
-    sphinx_zkvm::precompiles::unconstrained! {
+    sphinx_lib::unconstrained! {
                 println!("cycle-tracker-end: deserialize_inputs");
     }
 

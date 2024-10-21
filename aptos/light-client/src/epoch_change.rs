@@ -95,7 +95,7 @@ fn prove_epoch_change(
 mod test {
     use crate::epoch_change::setup_assets;
     use crate::error::LightClientError;
-    use sphinx_sdk::install::try_install_plonk_bn254_artifacts;
+    use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
     use sphinx_sdk::utils::setup_logger;
     use sphinx_sdk::{ProverClient, SphinxStdin};
 
@@ -180,7 +180,7 @@ mod test {
         let stdin = generate_stdin(trusted_state.as_slice(), &epoch_change_proof);
 
         // Install PLONK artifacts.
-        try_install_plonk_bn254_artifacts();
+        try_install_plonk_bn254_artifacts(false);
 
         let start = Instant::now();
         println!("Starting generation of prove_epoch_change proof...");

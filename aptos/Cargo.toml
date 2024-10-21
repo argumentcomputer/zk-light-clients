@@ -29,7 +29,7 @@ axum = "0.7.5"
 backoff = { version = "0.4.0", features = ["tokio"] }
 # From https://github.com/aptos-labs/aptos-core/blob/aptos-node-v1.14.0/Cargo.toml#L485
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
-bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "zkvm" }
+bls12_381 = { git = "https://github.com/argumentcomputer/bls12_381.git", branch = "update-sphinx" }
 bytes = "1.5.0"
 chrono = "0.4.38"
 cfg-if = "1.0.0"
@@ -52,11 +52,11 @@ sha2 = "0.9"
 thiserror = "1.0.58"
 tiny-keccak = "2.0.2"
 url = "2.5.0"
-sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
-sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44", features = ["plonk"] }
-sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
-sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
-sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_44" }
+sphinx-derive = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
+sphinx-sdk = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48", features = ["plonk"] }
+sphinx-zkvm = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
+sphinx-helper = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
+sphinx-prover = { git = "https://github.com/argumentcomputer/sphinx", branch = "forward_ports_48" }
 tokio = "1.37"
 tokio-stream = "0.1"
 alloy-sol-types = "0.7.2"
