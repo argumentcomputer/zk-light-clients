@@ -29,6 +29,7 @@ A guide on how to deploy the Kadena Light Client and run it.
 - [Configuration](./run/configuration.md)
 - [Launch the Proof Server](./run/setup_proof_server.md)
 - [Run the Client](./run/setup_client.md)
+- [Operate the bridge](./run/operate_bridge.md)
 
 # Benchmarks
 
