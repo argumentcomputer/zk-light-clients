@@ -30,6 +30,7 @@ A guide on how to deploy the Ethereum Light Client and run it.
 - [Connect to Ethereum](./run/eth_connection.md)
 - [Launch the Proof Server](./run/setup_proof_server.md)
 - [Run the Client](./run/setup_client.md)
+- [Operate the bridge](./run/operate_bridge.md)
 
 # Benchmarks
 
