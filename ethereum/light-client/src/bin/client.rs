@@ -31,10 +31,10 @@ pub const MAX_REQUEST_LIGHT_CLIENT_UPDATES: u8 = 128;
 /// From [the Uniswap v2 documentation](https://docs.uniswap.org/contracts/v2/reference/smart-contracts/v2-deployments).
 pub const UNISWAP_V2_ADDRESS: &str = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
 
-/// Storage key corresponding to [the `allPairs` mapping](https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Factory.sol#L11) in the Uniswap v2 contract.
-/// Calculated with `keccak256(abi.encodePacked(uint256(2)))`.
+/// Storage key corresponding to [the `allPairs` array length](https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Factory.sol#L11) in the Uniswap v2 contract.
+/// Calculated with `keccak256(abi.encode(uint256(3)))`.
 pub const ALL_PAIRS_STORAGE_KEY: &str =
-    "0x290decd9548b62a8ef0d3e6ac11e2d7b95a49e22ecf57fc6044b6f007ca2b2ba";
+    "0xc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b";
 
 /// The CLI for the light client.
 #[derive(Parser)]
