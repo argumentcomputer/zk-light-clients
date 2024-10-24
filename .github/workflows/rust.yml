@@ -65,7 +65,7 @@ jobs:
 
   test:
     needs: changes
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-latest-x64-16x
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       fail-fast: false
@@ -93,7 +93,7 @@ jobs:
 
   clippy:
     needs: changes
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-latest-x64-16x
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       fail-fast: false
@@ -137,7 +137,7 @@ jobs:
 
   solidity-unit-tests:
     needs: changes
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-latest-x64-16x
     if: ${{ needs.changes.outputs.solidity-packages != '[]' && needs.changes.outputs.solidity-packages != '' }}
     strategy:
       fail-fast: false
@@ -175,7 +175,7 @@ jobs:
 
   move-tests:
     needs: changes
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-latest-x64-16x
     if: ${{ needs.changes.outputs.move-packages != '[]' && needs.changes.outputs.move-packages != '' }}
     strategy:
       fail-fast: false
