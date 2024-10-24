@@ -1,0 +1,18 @@
+name: Lints
+
+on:
+  merge_group:
+  push:
+    branches:
+      - "dev"
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # Check documentation links aren't broken
+  link-checker:
+    uses: argumentcomputer/ci-workflows/.github/workflows/links-check.yml@main

@@ -1,0 +1,53 @@
+name: Deploy mdBook to GitHub Pages
+
+on:
+  # Always build & deploy on push to `dev`
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches: [dev]
+    # Only build if docs are changed
+    paths:
+      - "aptos/docs/**"
+      - "ethereum/docs/**"
+      - "kadena/docs/**"
+  merge_group:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@mdbook
+      - name: Build mdbook
+        run: |
+          for book in aptos ethereum kadena; do
+            echo "Creating ${book} mdbook"
+            mkdir -p public/${book}
+            cd ${book}/docs
+            mdbook build
+            cp -r book/* ${{ github.workspace }}/public/${book}
+            cd ${{ github.workspace }}
+          done
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: github.ref_name == 'dev' && github.event_name == 'push'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
