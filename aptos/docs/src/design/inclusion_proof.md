@@ -10,7 +10,7 @@ block commits.
 The inclusion program takes in an arbitrary Aptos `SparseMerkleProof`, so it can represent inclusion of any kind of state
 inside of the Aptos blockchain's state root. We have implemented a proof that checks that a given account key has a certain
 balance, but this can be adapted to different scenarios without changing the inclusion program. See the
-[Aptos PFN](../components/aptos_pfn.html) section of the documentation for more information on the code responsible for
+[Aptos PFN](../components/aptos_pfn.md) section of the documentation for more information on the code responsible for
 building the `SparseMerkleProof`.
 
 ## Inclusion program IO
