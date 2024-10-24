@@ -1,4 +1,4 @@
-# Release and Hotfix process
+# GitHub Release and Hotfix process
 
 This section is for internal usage. It documents the current release and hotfix process to ensure that anyone is able to
 run it.
