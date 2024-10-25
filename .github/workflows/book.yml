@@ -31,6 +31,54 @@ jobs:
             cp -r book/* ${{ github.workspace }}/public/${book}
             cd ${{ github.workspace }}
           done
+        working-directory: ${{ github.workspace }}
+      - name: Create base page
+        run: |
+          cat <<EOF > ./public/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>ZK Light Clients</title>
+            <style>
+              body {
+                display: flex;
+                justify-content: center;
+                align-items: baseline;
+                min-height: 100vh;
+                margin: 0;
+                font-family: sans-serif;
+                background-color: #f0f0f0;
+              }
+
+              h1 {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+              }
+
+              li {
+                font-size: 2rem;
+                margin: 0.5rem 0;
+              }
+            </style>
+          </head>
+
+          <body>
+            <main class="mdbook">
+              <h1>ZK Light Clients</h1>
+              <ul>
+                <li><a href="./aptos/">Aptos</a></li>
+                <li><a href="./ethereum/">Ethereum</a></li>
+                <li><a href="./kadena/">Kadena</a></li>
+              </ul>
+            </main>
+          </body>
+
+          </html>
+          EOF
+        working-directory: ${{ github.workspace }}
       - name: Upload build artifact
         uses: actions/upload-pages-artifact@v3
         with:
