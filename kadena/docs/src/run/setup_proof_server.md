@@ -40,3 +40,9 @@ git clone https://github.com/argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/kadena/light-client && \
   RECONSTRUCT_COMMITMENTS=false SHARD_BATCH_SIZE=0 SHARD_CHUNKING_MULTIPLIER=64 SHARD_SIZE=4194304 RUSTFLAGS="-C target-cpu=native -C opt-level=3" cargo run --release --bin proof_server -- --mode "split" -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```
+
+> **Note**
+>
+> Logging can be configured via `RUST_LOG` for Rust logging and `SP1_GO_LOG` for Go FFI logging.
+> For example: `RUST_LOG=debug SP1_GO_LOG=debug cargo run ...`
+> See the [configuration documentation](./configuration.md#logging-configuration) for more details.

@@ -56,3 +56,9 @@ git clone git@github.com:argumentcomputer/zk-light-clients.git && \
   cd zk-light-clients/aptos/proof-server && \
   SHARD_BATCH_SIZE=0 RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3" cargo run --release --bin proof_server -- --mode "split" -a <NETWORK_ADDESS> --snd-addr <SECONDARY_SERVER_ADDRESS>
 ```
+
+> **Note**
+>
+> Logging can be configured via `RUST_LOG` for Rust logging and `SP1_GO_LOG` for Go FFI logging.
+> For example: `RUST_LOG=debug SP1_GO_LOG=debug cargo run ...`
+> See the [configuration documentation](./configuration.md#logging-configuration) for more details.

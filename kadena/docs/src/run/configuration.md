@@ -41,3 +41,18 @@ sudo apt update && sudo apt-get install -y build-essential libssl-dev pkg-config
 ```
 
 For non-Ubuntu/non-Debian based distros, make sure to install the equivalent packages.
+
+## Logging Configuration
+
+The light client uses two logging systems:
+
+- Rust logging via `tokio-tracing`, configured through the `RUST_LOG` environment variable. See the [tracing documentation](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for detailed configuration options.
+- Go logging for FFI calls, configured through the `SP1_GO_LOG` environment variable.
+
+To set a global log level (e.g. warn), configure both variables:
+
+```bash
+RUST_LOG=warn SP1_GO_LOG=warn cargo run ...
+```
+
+Valid log levels are: error, warn, info, debug, trace

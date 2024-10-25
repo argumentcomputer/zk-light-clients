@@ -23,6 +23,21 @@ The workspace is divided into the following:
 - `aptos-programs`: A library that exposes the Sphinx programs used to generate proofs for our light client.*
 - `programs/*`: Actual implementations of the Sphinx programs.
 
+## Logging Configuration
+
+The light client uses two logging systems:
+
+- Rust logging via `tokio-tracing`, configured through the `RUST_LOG` environment variable. See the [tracing documentation](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for detailed configuration options.
+- Go logging for FFI calls, configured through the `SP1_GO_LOG` environment variable.
+
+To set a global log level (e.g. warn), configure both variables:
+
+```bash
+RUST_LOG=warn SP1_GO_LOG=warn cargo run ...
+```
+
+Valid log levels are: error, warn, info, debug, trace
+
 ## Development
 
 When developing, you might have to update the programs' implementation. The programs implementations are located in
