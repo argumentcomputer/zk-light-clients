@@ -10,9 +10,11 @@
 # It runs all light client benchmarks and sends them to Zulip
 name: Light client benchmark
 on:
+  push:
+    branches: ci-bench
   schedule:
     # Full report on Mondays at 9am EST/10am EDT
-    - cron: '0 14 * * 1'
+    - cron: '0 14 * * 4'
   workflow_dispatch:
     inputs:
       # Which light client to bench, e.g. `aptos`, `ethereum` or `kadena`
@@ -62,10 +64,7 @@ on:
         description: 'Send message to topic (default is `chat`). Ignored if `private` input is specified'
         type: string
         required: false
-  schedule:
-    # Bench report on Tuesdays at 11pm EST/12pm EDT
-    - cron: '0 16 * * 4'
-
+        
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
