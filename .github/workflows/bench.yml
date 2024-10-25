@@ -197,7 +197,7 @@ jobs:
           echo "SHARD_CHUNKING_MULTIPLIER=256" | tee -a $GITHUB_ENV
           echo "SNARK=1" | tee -a $GITHUB_ENV
 
-          IFS=',' read -ra ENV_VARS <<< "aptos"
+          IFS=',' read -ra ENV_VARS <<< "ethereum"
           for VAR in "${ENV_VARS[@]}"; do
             VAR_NAME="${VAR%%=*}"
             VAR_VALUE="${VAR#*=}"
@@ -210,7 +210,7 @@ jobs:
       - name: Run benchmarks
         id: run-benchmarks
         run: |
-          make bench-ci BENCH=epoch_change 2>&1 | tee out.txt
+          make bench-ci BENCH=inclusion 2>&1 | tee out.txt
 
           grep 'cycles=' out.txt > cycles.txt
           grep 'proving_time' out.txt > timings.txt
@@ -218,11 +218,11 @@ jobs:
           while IFS=$'\t' read -r f1 f2
           do
             num_cycles=$(echo "$f1" | grep -o 'cycles=[0-9]*' | awk -F'=' '{ print $2 }')
-            echo "$f2" | jq -c ". += {\"cycles\": $num_cycles}" >> summary.json
+            echo "$f2" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
           done < <(paste cycles.txt timings.txt)
 
-          echo "# Benchmark Results " | tee -a summary.md
-          echo "## Epoch Change Prove" | tee -a summary.md
+          echo "# Ethereum Benchmark Results " | tee -a summary.md
+          echo "## Inclusion Prove" | tee -a summary.md
           cat summary.json | jtbl -m | tee -a summary.md
           echo "" | tee -a summary.md
 
@@ -232,7 +232,7 @@ jobs:
           echo "report<<EOF" >> $GITHUB_OUTPUT
           cat summary.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/aptos/light-client
+        working-directory: ${{ github.workspace }}/ethereum/light-client
       #- name: Write bench on commit comment
       #  uses: peter-evans/commit-comment@v3
       #  with:
