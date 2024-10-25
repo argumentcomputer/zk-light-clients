@@ -1,12 +1,18 @@
-# Runs benchmarks on self-hosted infra via `workflow_dispatch`
-# This trigger can be found at https://github.com/argumentcomputer/zk-light-clients/actions/workflows/bench.yml
+# Runs benchmarks on self-hosted infra via `workflow_dispatch` and scheduled on Mondays at 9am EST
 #
+# `workflow_dispatch` trigger
+# The workflow can be run at https://github.com/argumentcomputer/zk-light-clients/actions/workflows/bench.yml
 # The benchmark report can be found in the logs and as a comment on the latest commit on `dev`.
 # The report can also be sent as a Zulip message to https://zulip.argument.xyz
+#
+# `schedule` trigger
+# The workflow runs every week on Monday at 9am EST
+# It runs all light client benchmarks and sends them to Zulip
 name: Light client benchmark
 on:
-  push: 
-    branches: ci-bench
+  schedule:
+    # Full report on Mondays at 9am EST/10am EDT
+    - cron:  '0 14 * * 1'
   workflow_dispatch:
     inputs:
       # Which light client to bench, e.g. `aptos`, `ethereum` or `kadena`
@@ -65,8 +71,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  benchmark:
-    name: Light client benchmark
+  benchmark-manual:
+    name: Light client benchmark (manual)
     if: github.event_name == 'workflow_dispatch'
     runs-on: warp-custom-r7iz-metal-32xl
     steps:
@@ -136,15 +142,26 @@ jobs:
           while IFS=$'\t' read -r f1 f2
           do
             num_cycles=$(echo "$f1" | grep -o 'cycles=[0-9]*' | awk -F'=' '{ print $2 }')
-            echo "$f2" | jq -c ". += {\"cycles\": $num_cycles}" >> summary.json
+            timings=$(echo "$f2" | jq '
+              to_entries |
+              map(
+                if .key == "proving_time" or .key == "verifying_time" then
+                  {key, value: (.value / 1000 | floor as $s | "\(($s / 60 | floor) | tostring)min\(($s % 60) | tostring)s")}
+                else
+                  .
+                end
+              ) |
+              from_entries
+            ')
+
+            echo "$timings" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
           done < <(paste cycles.txt timings.txt)
 
-          echo "# Benchmark Results " | tee -a summary.md
-          echo "## ${{ inputs.bench-name }} Prove" | tee -a summary.md
+          echo '# `${{ inputs.light-client }}` Benchmark Results' | tee -a summary.md
+          echo '## `${{ inputs.bench-name }}` Prove' | tee -a summary.md
           cat summary.json | jtbl -m | tee -a summary.md
           echo "" | tee -a summary.md
 
-          echo "Time unit = milliseconds" | tee -a summary.md
           echo "Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a summary.md
 
           echo "report<<EOF" >> $GITHUB_OUTPUT
@@ -168,9 +185,27 @@ jobs:
           topic: "${{ env.TOPIC }}"
           content: "${{ steps.run-benchmarks.outputs.report }}"
 
-  bench-test:
-    name: Light client benchmark test
-    runs-on: warp-custom-r7iz-metal-16xl
+  benchmark-scheduled:
+    name: Light client bench (scheduled)
+    if: github.event_name == 'schedule'
+    runs-on: warp-custom-r7iz-metal-32xl
+    strategy:
+      fail-fast: false
+      matrix:
+        light-client: [aptos, ethereum, kadena]
+        include:
+          - benchmark: inclusion
+            light-client: aptos
+          - benchmark: epoch_change
+            light-client: aptos
+          - benchmark: inclusion
+            light-client: ethereum
+          - benchmark: committee_change
+            light-client: ethereum
+          - benchmark: spv
+            light-client: kadena
+          - benchmark: longest_chain
+            light-client: kadena
     steps:
       - uses: actions/checkout@v4
         with:
@@ -203,14 +238,15 @@ jobs:
             VAR_VALUE="${VAR#*=}"
             echo "${VAR_NAME}=${VAR_VALUE}" | tee -a $GITHUB_ENV
           done
-      - name: Parse Zulip inputs
+      - name: Set env
         run: |
-          echo "TYPE=private" | tee -a $GITHUB_ENV
-          echo "STREAM=11" | tee -a $GITHUB_ENV
+          echo "TYPE=stream" | tee -a $GITHUB_ENV
+          echo "STREAM=light-client" | tee -a $GITHUB_ENV
+          echo "TOPIC=Benchmark Reports" | tee -a $GITHUB_ENV
       - name: Run benchmarks
         id: run-benchmarks
         run: |
-          make bench-ci BENCH=spv 2>&1 | tee out.txt
+          make bench-ci BENCH=${{ matrix.benchmark }} 2>&1 | tee out.txt
 
           grep 'cycles=' out.txt > cycles.txt
           grep 'proving_time' out.txt > timings.txt
@@ -218,25 +254,36 @@ jobs:
           while IFS=$'\t' read -r f1 f2
           do
             num_cycles=$(echo "$f1" | grep -o 'cycles=[0-9]*' | awk -F'=' '{ print $2 }')
-            echo "$f2" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
+            timings=$(echo "$f2" | jq '
+              to_entries |
+              map(
+                if .key == "proving_time" or .key == "verifying_time" then
+                  {key, value: (.value / 1000 | floor as $s | "\(($s / 60 | floor) | tostring)min\(($s % 60) | tostring)s")}
+                else
+                  .
+                end
+              ) |
+              from_entries
+            ')
+
+            echo "$timings" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
           done < <(paste cycles.txt timings.txt)
 
-          echo "# Kadena Benchmark Results " | tee -a summary.md
-          echo "## SPV Prove" | tee -a summary.md
+          echo '# `${{ matrix.light-client }}` Benchmark Results' | tee -a summary.md
+          echo '## `${{ matrix.benchmark }}` Prove' | tee -a summary.md
           cat summary.json | jtbl -m | tee -a summary.md
           echo "" | tee -a summary.md
 
-          echo "Time unit = milliseconds" | tee -a summary.md
           echo "Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a summary.md
 
           echo "report<<EOF" >> $GITHUB_OUTPUT
           cat summary.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/kadena/light-client
-      #- name: Write bench on commit comment
-      #  uses: peter-evans/commit-comment@v3
-      #  with:
-      #    body-path: ${{ github.workspace }}/${{ inputs.light-client }}/light-client/summary.md
+        working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
+      - name: Write bench on commit comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          body-path: ${{ github.workspace }}/${{ matrix.light-client }}/light-client/summary.md
       - name: Send report to Zulip
         uses: zulip/github-actions-zulip/send-message@v1
         with:
