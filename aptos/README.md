@@ -36,7 +36,7 @@ To set a global log level (e.g. warn), configure both variables:
 RUST_LOG=warn SP1_GO_LOG=warn cargo run ...
 ```
 
-Valid log levels are: error, warn, info, debug, trace
+Valid log levels are: error, warn, info, debug, trace, off
 
 ## Development
 
