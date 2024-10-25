@@ -210,7 +210,7 @@ jobs:
       - name: Run benchmarks
         id: run-benchmarks
         run: |
-          make bench-ci BENCH=inclusion 2>&1 | tee out.txt
+          make bench-ci BENCH=epoch_change 2>&1 | tee out.txt
 
           grep 'cycles=' out.txt > cycles.txt
           grep 'proving_time' out.txt > timings.txt
@@ -222,7 +222,7 @@ jobs:
           done < <(paste cycles.txt timings.txt)
 
           echo "# Benchmark Results " | tee -a summary.md
-          echo "## Inclusion Prove" | tee -a summary.md
+          echo "## Epoch Change Prove" | tee -a summary.md
           cat summary.json | jtbl -m | tee -a summary.md
           echo "" | tee -a summary.md
 
