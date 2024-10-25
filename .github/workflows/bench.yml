@@ -64,7 +64,7 @@ on:
         description: 'Send message to topic (default is `chat`). Ignored if `private` input is specified'
         type: string
         required: false
-        
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -301,7 +301,7 @@ jobs:
 
   bench-test:
     name: Light client benchmark test
-    runs-on: warp-custom-r7iz-metal-16xl
+    runs-on: warp-custom-r7iz-metal-32xl
     steps:
       - uses: actions/checkout@v4
         with:
