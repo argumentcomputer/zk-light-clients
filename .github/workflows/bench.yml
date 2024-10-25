@@ -12,7 +12,7 @@ name: Light client benchmark
 on:
   schedule:
     # Full report on Mondays at 9am EST/10am EDT
-    - cron:  '0 14 * * 1'
+    - cron: '0 14 * * 1'
   workflow_dispatch:
     inputs:
       # Which light client to bench, e.g. `aptos`, `ethereum` or `kadena`
@@ -29,7 +29,7 @@ on:
         description: 'Name of the benchmark to run'
         type: string
         required: true
-      # List of comma-separated env vars, e.g. `RUST_LOG=debug,SNARK=1`
+      # List of comma-separated env vars, e.g. `RUST_LOG=debug,MODE=SNARK`
       # `RUSTFLAGS="-C target-cpu=native --cfg tokio_unstable -C opt-level=3"` is set by default
       env:
         description: 'List of comma-separated environment variables'
@@ -98,8 +98,8 @@ jobs:
           echo "SHARD_SIZE=4194304" | tee -a $GITHUB_ENV
           echo "SHARD_BATCH_SIZE=0" | tee -a $GITHUB_ENV
           echo "RECONSTRUCT_COMMITMENTS=false" | tee -a $GITHUB_ENV
-          echo "SHARD_CHUNKING_MULTIPLIER=256" | tee -a $GITHUB_ENV
-          echo "SNARK=1" | tee -a $GITHUB_ENV
+          echo "SHARD_CHUNKING_MULTIPLIER=1" | tee -a $GITHUB_ENV
+          echo "MODE=SNARK" | tee -a $GITHUB_ENV
 
           IFS=',' read -ra ENV_VARS <<< "${{ inputs.env }}"
           for VAR in "${ENV_VARS[@]}"; do
@@ -194,7 +194,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        light-client: [aptos, ethereum, kadena]
+        light-client: [ aptos, ethereum, kadena ]
         include:
           - benchmark: inclusion
             light-client: aptos
@@ -231,8 +231,8 @@ jobs:
           echo "SHARD_SIZE=4194304" | tee -a $GITHUB_ENV
           echo "SHARD_BATCH_SIZE=0" | tee -a $GITHUB_ENV
           echo "RECONSTRUCT_COMMITMENTS=false" | tee -a $GITHUB_ENV
-          echo "SHARD_CHUNKING_MULTIPLIER=256" | tee -a $GITHUB_ENV
-          echo "SNARK=1" | tee -a $GITHUB_ENV
+          echo "SHARD_CHUNKING_MULTIPLIER=1" | tee -a $GITHUB_ENV
+          echo "MODE=SNARK" | tee -a $GITHUB_ENV
 
           IFS=',' read -ra ENV_VARS <<< "ethereum"
           for VAR in "${ENV_VARS[@]}"; do
