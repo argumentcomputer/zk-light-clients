@@ -27,6 +27,7 @@ use aptos_lc_core::types::ledger_info::LedgerInfoWithSignatures;
 use aptos_lc_core::types::trusted_state::TrustedState;
 use aptos_lc_core::types::validator::ValidatorVerifier;
 use serde::Serialize;
+use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use sphinx_sdk::utils::setup_logger;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
 use std::env;
@@ -173,6 +174,11 @@ struct Timings {
 fn main() {
     let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
     let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+
+    if mode == ProvingMode::SNARK {
+        let _ = try_install_plonk_bn254_artifacts(false);
+    }
+
     for nbr_leaves in NBR_LEAVES {
         let proving_assets = ProvingAssets::from_nbr_leaves(mode, nbr_leaves);
 

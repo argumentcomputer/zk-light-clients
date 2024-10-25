@@ -7,6 +7,7 @@ use ethereum_lc_core::types::bootstrap::Bootstrap;
 use ethereum_lc_core::types::store::LightClientStore;
 use ethereum_lc_core::types::update::Update;
 use serde::Serialize;
+use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use std::env::current_dir;
 use std::time::Instant;
 use std::{env, fs};
@@ -78,6 +79,10 @@ fn main() {
 
     let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
     let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+
+    if mode == ProvingMode::SNARK {
+        let _ = try_install_plonk_bn254_artifacts(false);
+    }
 
     // Instantiate BenchmarkAssets
     let mut benchmark_assets = BenchmarkAssets::generate();

@@ -6,6 +6,7 @@ use kadena_lc::proofs::{Prover, ProvingMode};
 use kadena_lc_core::test_utils::get_layer_block_headers;
 use kadena_lc_core::types::header::layer::ChainwebLayerHeader;
 use serde::Serialize;
+use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use std::env;
 use std::time::Instant;
 
@@ -36,6 +37,10 @@ fn main() {
 
     let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
     let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
+
+    if mode == ProvingMode::SNARK {
+        let _ = try_install_plonk_bn254_artifacts(false);
+    }
 
     let benchmark_assets = BenchmarkAssets::generate();
 

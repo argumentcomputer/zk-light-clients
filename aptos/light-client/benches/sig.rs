@@ -4,6 +4,7 @@
 use anyhow::anyhow;
 use aptos_lc_core::aptos_test_utils::wrapper::AptosWrapper;
 use serde::Serialize;
+use sphinx_sdk::artifacts::try_install_plonk_bn254_artifacts;
 use sphinx_sdk::utils::setup_logger;
 use sphinx_sdk::{ProverClient, SphinxProofWithPublicValues, SphinxStdin};
 use std::env;
@@ -98,6 +99,10 @@ fn main() {
     let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
 
     let proving_assets = ProvingAssets::new(mode);
+
+    if mode == ProvingMode::SNARK {
+        let _ = try_install_plonk_bn254_artifacts(false);
+    }
 
     let start_proving = Instant::now();
     let proof = proving_assets.prove();
