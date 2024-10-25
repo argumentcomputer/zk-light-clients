@@ -1,0 +1,101 @@
+name: Deploy mdBook to GitHub Pages
+
+on:
+  # Always build & deploy on push to `dev`
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches: [dev]
+    # Only build if docs are changed
+    paths:
+      - "aptos/docs/**"
+      - "ethereum/docs/**"
+      - "kadena/docs/**"
+  merge_group:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@mdbook
+      - name: Build mdbook
+        run: |
+          for book in aptos ethereum kadena; do
+            echo "Creating ${book} mdbook"
+            mkdir -p public/${book}
+            cd ${book}/docs
+            mdbook build
+            cp -r book/* ${{ github.workspace }}/public/${book}
+            cd ${{ github.workspace }}
+          done
+        working-directory: ${{ github.workspace }}
+      - name: Create base page
+        run: |
+          cat <<EOF > ./public/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>ZK Light Clients</title>
+            <style>
+              body {
+                display: flex;
+                justify-content: center;
+                align-items: baseline;
+                min-height: 100vh;
+                margin: 0;
+                font-family: sans-serif;
+                background-color: #f0f0f0;
+              }
+
+              h1 {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+              }
+
+              li {
+                font-size: 2rem;
+                margin: 0.5rem 0;
+              }
+            </style>
+          </head>
+
+          <body>
+            <main class="mdbook">
+              <h1>ZK Light Clients</h1>
+              <ul>
+                <li><a href="./aptos/">Aptos</a></li>
+                <li><a href="./ethereum/">Ethereum</a></li>
+                <li><a href="./kadena/">Kadena</a></li>
+              </ul>
+            </main>
+          </body>
+
+          </html>
+          EOF
+        working-directory: ${{ github.workspace }}
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: github.ref_name == 'dev' && github.event_name == 'push'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -2,10 +2,6 @@
 
 To ease the execution and deployment of our Light Client implementation, we provide a set of Docker configuration file that helps to build and run the necessary components.
 
-> Note: The following indications are meant to run the Light Client
-> using [docker compose](https://docs.docker.com/compose/).
-> A set of instructions exists for k8s in [its dedicated README](k8s/README.md).
-
 ## Notice
 
 ⚠️ The following commands should be run in the context of the root of the repository.

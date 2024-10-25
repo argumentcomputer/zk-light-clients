@@ -9,7 +9,7 @@
 #   - Creates a new `release-pr-<tag-prefix>-v<version` branch from the release, then bumps the version with the `version` input
 #   - Opens a release PR from `release-pr-<tag-prefix>-v<version` to `release/<tag-prefix>-v<version>`
 # - Patch release
-#   - Pushes a new `patch/<tag-prefix>-v<version>` branch based on `release/<tag-prefix>-v<version>`, then bumps the verision with the `version` input
+#   - Pushes a new `patch/<tag-prefix>-v<version>` branch based on `release/<tag-prefix>-v<version>`, then bumps the version with the `version` input
 #   - Errors if the `release/<tag-prefix>-v<version>` branch doesn't exist
 #   - Opens a release PR from `patch/<tag-prefix>-v<version>` to `release/<tag-prefix>-v<version>`
 #

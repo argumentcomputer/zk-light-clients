@@ -2,7 +2,9 @@
 
 This is a light client for the Aptos blockchain. It is written in Rust and lives in the workspace defined in this directory. In this README we will go over a few details that need to be known before hopping into development.
 
-For a more detailed overview of the Light Client and its components, and how to run and benchmark it, you can refer to the mdBook. To read it run:
+For a more detailed overview of the Light Client and its components, and how to run and benchmark it, you can refer to the mdBook at https://argumentcomputer.github.io/zk-light-clients/aptos
+
+It can also be run locally with:
 
 ```bash
 cd docs && \
