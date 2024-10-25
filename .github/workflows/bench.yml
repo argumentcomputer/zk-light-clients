@@ -132,10 +132,12 @@ jobs:
             echo "TOPIC=$TOPIC" | tee -a $GITHUB_ENV
           fi
       - name: Run benchmarks
-        id: run-benchmarks
         run: |
           make bench-ci BENCH=${{ inputs.bench-name }} 2>&1 | tee out.txt
-
+        working-directory: ${{ github.workspace }}/${{ inputs.light-client }}/light-client
+      - name: Create report
+        id: run-benchmarks
+        run: |
           grep 'cycles=' out.txt > cycles.txt
           grep 'proving_time' out.txt > timings.txt
 
@@ -238,16 +240,18 @@ jobs:
             VAR_VALUE="${VAR#*=}"
             echo "${VAR_NAME}=${VAR_VALUE}" | tee -a $GITHUB_ENV
           done
-      - name: Set env
+      - name: Set Zulip env
         run: |
           echo "TYPE=stream" | tee -a $GITHUB_ENV
           echo "STREAM=light-client" | tee -a $GITHUB_ENV
           echo "TOPIC=Benchmark Reports" | tee -a $GITHUB_ENV
       - name: Run benchmarks
-        id: run-benchmarks
         run: |
           make bench-ci BENCH=${{ matrix.benchmark }} 2>&1 | tee out.txt
-
+        working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
+      - name: Create report
+        id: run-benchmarks
+        run: |
           grep 'cycles=' out.txt > cycles.txt
           grep 'proving_time' out.txt > timings.txt
 

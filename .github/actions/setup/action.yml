@@ -26,6 +26,7 @@ runs:
         workspaces: |
           aptos -> target
           ethereum -> target
+          kadena -> target
     - uses: taiki-e/install-action@nextest
     - name: Install deps
       shell: bash
