@@ -38,6 +38,8 @@ struct BenchResults {
 }
 
 fn main() {
+    sphinx_sdk::utils::setup_logger();
+
     let mode_str: String = env::var("MODE").unwrap_or_else(|_| "STARK".into());
     let mode = ProvingMode::try_from(mode_str.as_str()).expect("MODE should be STARK or SNARK");
 
