@@ -10,10 +10,8 @@
 # It runs all light client benchmarks and sends them to Zulip
 name: Light client benchmark
 on:
-  push:
-    branches: ci-bench
   schedule:
-    # Full report on Mondays at 9am EST/10am EDT
+    # Full report on Thursday, 2pm UTC
     - cron: '0 14 * * 4'
   workflow_dispatch:
     inputs:
