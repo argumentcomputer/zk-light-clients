@@ -187,7 +187,7 @@ fn generate_fixture_inclusion_aptos_lc() {
     // save fixture
     let fixture = BaseFixture {
         vkey: vk.bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: proof_bytes(&proof),
     };
 
@@ -235,7 +235,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
                     MoveArg {
                         // public values
                         type_: String::from("hex"),
-                        value: proof.public_values.bytes().to_string(),
+                        value: proof.public_values.raw().to_string(),
                     },
                     MoveArg {
                         // proof
@@ -252,7 +252,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
             println!("// From inclusion fixture");
             println!(
                 "const ValidSignerSyncCommitteeHashInclusion: u256 = 0x{};",
-                &proof.public_values.bytes().to_string().as_str()[2 + 16..2 + 16 + 64]
+                &proof.public_values.raw().to_string().as_str()[2 + 16..2 + 16 + 64]
             );
             println!(
                 "const InclusionVk: vector<u8> = x\"{}\";",
@@ -260,7 +260,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
             );
             println!(
                 "const InclusionPublicValues: vector<u8> = x\"{}\";",
-                &proof.public_values.bytes().to_string().as_str()[2..]
+                &proof.public_values.raw().to_string().as_str()[2..]
             );
             println!(
                 "const InclusionProof: vector<u8> = x\"{}\";",
@@ -279,7 +279,7 @@ fn generate_fixture_inclusion_ethereum_lc(remote: &str) {
         PACT => {
             let fixture = BaseFixture {
                 vkey: prover.get_vk().bytes32().to_string(),
-                public_values: proof.public_values.bytes().to_string(),
+                public_values: proof.public_values.raw().to_string(),
                 proof: raw_proof_bytes(&proof),
             };
 
@@ -315,14 +315,13 @@ fn generate_fixture_epoch_change_aptos_lc() {
     // save fixture
     let fixture = BaseFixture {
         vkey: vk.bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: proof_bytes(&proof),
     };
 
-    let signer_hash_string =
-        proof.public_values.bytes().to_string().as_str()[2..2 + 64].to_string();
+    let signer_hash_string = proof.public_values.raw().to_string().as_str()[2..2 + 64].to_string();
     let updated_signer_hash_string =
-        proof.public_values.bytes().to_string().as_str()[2 + 64..2 + 64 * 2].to_string();
+        proof.public_values.raw().to_string().as_str()[2 + 64..2 + 64 * 2].to_string();
 
     println!("Copy paste to aptos/solidity/contracts/test/test_lc_proof.sol (in case of the new Sphinx version):");
     println!();
@@ -387,7 +386,7 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
                     MoveArg {
                         // public values
                         type_: String::from("hex"),
-                        value: proof.public_values.bytes().to_string(),
+                        value: proof.public_values.raw().to_string(),
                     },
                     MoveArg {
                         // proof
@@ -404,15 +403,15 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
 
             println!(
                 "const SignerSyncCommitteeHashH29: u256 = 0x{};",
-                &proof.public_values.bytes().to_string().as_str()[2 + 16..2 + 16 + 64]
+                &proof.public_values.raw().to_string().as_str()[2 + 16..2 + 16 + 64]
             );
             println!(
                 "const UpdatedSyncCommitteeHashH30: u256 = 0x{};",
-                &proof.public_values.bytes().to_string().as_str()[2 + 16 + 64..2 + 16 + 64 * 2]
+                &proof.public_values.raw().to_string().as_str()[2 + 16 + 64..2 + 16 + 64 * 2]
             );
             println!(
                 "const NextSyncCommitteeHashH31: u256 = 0x{};",
-                &proof.public_values.bytes().to_string().as_str()[2 + 16 + 64 * 2..2 + 16 + 64 * 3]
+                &proof.public_values.raw().to_string().as_str()[2 + 16 + 64 * 2..2 + 16 + 64 * 3]
             );
 
             println!(
@@ -421,7 +420,7 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
             );
             println!(
                 "const EpochChangePublicValues: vector<u8> = x\"{}\";",
-                &proof.public_values.bytes().to_string().as_str()[2..]
+                &proof.public_values.raw().to_string().as_str()[2..]
             );
             println!(
                 "const EpochChangeProof: vector<u8> = x\"{}\";",
@@ -440,7 +439,7 @@ fn generate_fixture_epoch_change_ethereum_lc(remote: &str) {
         PACT => {
             let fixture = BaseFixture {
                 vkey: prover.get_vk().bytes32().to_string(),
-                public_values: proof.public_values.bytes().to_string(),
+                public_values: proof.public_values.raw().to_string(),
                 proof: raw_proof_bytes(&proof),
             };
 
@@ -480,11 +479,11 @@ fn generate_fixture_longest_chain() {
     // save fixture
     let fixture = BaseFixture {
         vkey: prover.get_vk().bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: proof_bytes(&proof),
     };
 
-    let confirmation_work = proof.public_values.bytes().to_string().as_str()[2..2 + 64].to_string();
+    let confirmation_work = proof.public_values.raw().to_string().as_str()[2..2 + 64].to_string();
     println!("Copy paste to kadena/solidity/contracts/test/test_lc_proof.sol (in case of the new Sphinx version):");
     println!();
     println!("// Value taken from either spv or longest_chain fixtures located in src/plonk_fixtures/ (first 32 bytes)");
@@ -527,11 +526,11 @@ fn generate_fixture_spv() {
     // save fixture
     let fixture = BaseFixture {
         vkey: prover.get_vk().bytes32().to_string(),
-        public_values: proof.public_values.bytes().to_string(),
+        public_values: proof.public_values.raw().to_string(),
         proof: proof_bytes(&proof),
     };
 
-    let confirmation_work = proof.public_values.bytes().to_string().as_str()[2..2 + 64].to_string();
+    let confirmation_work = proof.public_values.raw().to_string().as_str()[2..2 + 64].to_string();
     println!("Copy paste to kadena/solidity/contracts/test/test_lc_proof.sol (in case of the new Sphinx version):");
     println!();
     println!("// Value taken from either spv or longest_chain fixtures located in src/plonk_fixtures/ (first 32 bytes)");
