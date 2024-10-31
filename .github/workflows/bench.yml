@@ -10,6 +10,9 @@
 # It runs all light client benchmarks and sends them to Zulip
 name: Light client benchmark
 on:
+  push:
+    branches:
+      - "ci-bench"
   schedule:
     # Full report on Thursday, 2pm UTC
     - cron: '0 14 * * 4'
@@ -181,6 +184,66 @@ jobs:
           echo "TYPE=stream" | tee -a $GITHUB_ENV
           echo "STREAM=light-client" | tee -a $GITHUB_ENV
           echo "TOPIC=Benchmark Reports" | tee -a $GITHUB_ENV
+      - name: Run benchmark and create report
+        id: run-benchmark
+        uses: ./.github/actions/bench
+        with:
+          light-client: ${{ matrix.light-client }}
+          benchmark: ${{ matrix.benchmark }}
+      - name: Send report to Zulip
+        uses: zulip/github-actions-zulip/send-message@v1
+        with:
+          api-key: ${{ secrets.ZULIP_API_KEY }}
+          email: "aineko-bot@zulip.lurk-lab.com"
+          organization-url: "https://zulip.argument.xyz"
+          to: "${{ env.STREAM }}"
+          type: "${{ env.TYPE }}"
+          # Ignored if `type: private`
+          topic: "${{ env.TOPIC }}"
+          content: "${{ steps.run-benchmark.outputs.report }}"
+
+
+  benchmark-test:
+    name: LC bench (test)
+    runs-on: warp-custom-r7iz-metal-32xl
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - light-client: aptos
+            benchmark: inclusion
+          - light-client: aptos
+            benchmark: epoch_change
+          - light-client: ethereum
+            benchmark: inclusion
+          - light-client: ethereum
+            benchmark: committee_change
+          - light-client: kadena
+            benchmark: spv
+          - light-client: kadena
+            benchmark: longest_chain
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: argumentcomputer/ci-workflows
+      - uses: ./.github/actions/ci-env
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./.github/actions/setup
+      - name: Set env
+        run: |
+          # Default benchmark settings optimized for light clients, can be overwritten with `env` input
+          echo "RUSTFLAGS=-C target-cpu=native --cfg tokio_unstable -C opt-level=3" | tee -a $GITHUB_ENV
+          echo "SHARD_SIZE=4194304" | tee -a $GITHUB_ENV
+          echo "SHARD_BATCH_SIZE=0" | tee -a $GITHUB_ENV
+          echo "RECONSTRUCT_COMMITMENTS=false" | tee -a $GITHUB_ENV
+          echo "SHARD_CHUNKING_MULTIPLIER=1" | tee -a $GITHUB_ENV
+          echo "MODE=SNARK" | tee -a $GITHUB_ENV
+      - name: Set Zulip env
+        run: |
+          echo "TYPE=private" | tee -a $GITHUB_ENV
+          echo "STREAM=11" | tee -a $GITHUB_ENV
+          echo "TOPIC=" | tee -a $GITHUB_ENV
       - name: Run benchmark and create report
         id: run-benchmark
         uses: ./.github/actions/bench
