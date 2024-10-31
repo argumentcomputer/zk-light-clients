@@ -79,7 +79,7 @@ runs:
       run: |
         COMMIT=$(git rev-parse HEAD)
         ID=${{ steps.commit-comment.outputs.comment-id }}
-        echo "[Commit comment](https://github.com/${{ github.repository }}/commit/$COMMIT#commit-comment-$ID)" | tee -a summary.md
+        echo "[Commit comment](https://github.com/${{ github.repository }}/commit/$COMMIT#commitcomment-$ID)" | tee -a summary.md
 
         echo "report<<EOF" >> $GITHUB_OUTPUT
         cat summary.md >> $GITHUB_OUTPUT
