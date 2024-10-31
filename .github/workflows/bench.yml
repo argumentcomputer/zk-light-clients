@@ -1,4 +1,4 @@
-# Runs benchmarks on self-hosted infra via `workflow_dispatch` and scheduled on Mondays at 9am EST
+# Runs benchmarks on self-hosted infra via `workflow_dispatch` and scheduled on Thursdays at 2pm UTC
 #
 # `workflow_dispatch` trigger
 # The workflow can be run at https://github.com/argumentcomputer/zk-light-clients/actions/workflows/bench.yml
@@ -6,7 +6,7 @@
 # The report can also be sent as a Zulip message to https://zulip.argument.xyz
 #
 # `schedule` trigger
-# The workflow runs every week on Monday at 9am EST
+# The workflow runs every week on Thursday at 2pm UTC
 # It runs all light client benchmarks and sends them to Zulip
 name: Light client benchmark
 on:
@@ -69,7 +69,7 @@ concurrency:
 
 jobs:
   benchmark-manual:
-    name: Light client benchmark (manual)
+    name: LC bench (manual)
     if: github.event_name == 'workflow_dispatch'
     runs-on: warp-custom-r7iz-metal-32xl
     steps:
@@ -144,8 +144,10 @@ jobs:
             timings=$(echo "$f2" | jq '
               to_entries |
               map(
-                if .key == "proving_time" or .key == "verifying_time" then
+                if .key == "proving_time" then
                   {key, value: (.value / 1000 | floor as $s | "\(($s / 60 | floor) | tostring)min\(($s % 60) | tostring)s")}
+                elif .key == "verifying_time" then
+                  {key, value: ((.value / 1000 * 1000 | floor) / 1000 | tostring + "s")}
                 else
                   .
                 end
@@ -185,26 +187,25 @@ jobs:
           content: "${{ steps.run-benchmarks.outputs.report }}"
 
   benchmark-scheduled:
-    name: Light client bench (scheduled)
+    name: LC bench (scheduled)
     if: github.event_name == 'schedule'
     runs-on: warp-custom-r7iz-metal-32xl
     strategy:
       fail-fast: false
       matrix:
-        light-client: [ aptos, ethereum, kadena ]
         include:
-          - benchmark: inclusion
-            light-client: aptos
-          - benchmark: epoch_change
-            light-client: aptos
-          - benchmark: inclusion
-            light-client: ethereum
-          - benchmark: committee_change
-            light-client: ethereum
-          - benchmark: spv
-            light-client: kadena
-          - benchmark: longest_chain
-            light-client: kadena
+          - light-client: aptos
+            benchmark: inclusion
+          - light-client: aptos
+            benchmark: epoch_change
+          - light-client: ethereum
+            benchmark: inclusion
+          - light-client: ethereum
+            benchmark: committee_change
+          - light-client: kadena
+            benchmark: spv
+          - light-client: kadena
+            benchmark: longest_chain
     steps:
       - uses: actions/checkout@v4
         with:
@@ -228,7 +229,8 @@ jobs:
           echo "SHARD_SIZE=4194304" | tee -a $GITHUB_ENV
           echo "SHARD_BATCH_SIZE=0" | tee -a $GITHUB_ENV
           echo "RECONSTRUCT_COMMITMENTS=false" | tee -a $GITHUB_ENV
-          echo "SHARD_CHUNKING_MULTIPLIER=1" | tee -a $GITHUB_ENV
+          echo "SHARD_CHUNKING_MULTIPLIER=1" | tee -a
+ $GITHUB_ENV
           echo "MODE=SNARK" | tee -a $GITHUB_ENV
 
           IFS=',' read -ra ENV_VARS <<< "ethereum"
@@ -247,7 +249,6 @@ jobs:
           make bench-ci BENCH=${{ matrix.benchmark }} 2>&1 | tee out.txt
         working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
       - name: Create report
-        id: run-benchmarks
         run: |
           grep 'cycles=' out.txt > cycles.txt
           grep 'proving_time' out.txt > timings.txt
@@ -258,8 +259,10 @@ jobs:
             timings=$(echo "$f2" | jq '
               to_entries |
               map(
-                if .key == "proving_time" or .key == "verifying_time" then
+                if .key == "proving_time" then
                   {key, value: (.value / 1000 | floor as $s | "\(($s / 60 | floor) | tostring)min\(($s % 60) | tostring)s")}
+                elif .key == "verifying_time" then
+                  {key, value: ((.value / 1000 * 1000 | floor) / 1000 | tostring + "s")}
                 else
                   .
                 end
@@ -270,21 +273,32 @@ jobs:
             echo "$timings" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
           done < <(paste cycles.txt timings.txt)
 
+          COMMIT_SHORT=$(git rev-parse --short HEAD)
+
           echo '# `${{ matrix.light-client }}` Benchmark Results' | tee -a summary.md
-          echo '## `${{ matrix.benchmark }}` Prove' | tee -a summary.md
+          echo 'Commit: `$COMMIT_SHORT`' | tee -a summary.md
+          echo '## `${{ matrix.benchmark }}` Proof' | tee -a summary.md
           cat summary.json | jtbl -m | tee -a summary.md
           echo "" | tee -a summary.md
 
           echo "Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a summary.md
+        working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
+      - name: Write bench on commit comment
+        uses: peter-evans/commit-comment@v3
+        id: commit-comment
+        with:
+          body-path: ${{ github.workspace }}/${{ matrix.light-client }}/light-client/summary.md
+      - name: Prep report for Zulip
+        id: prep-report
+        run: |
+          COMMIT=$(git rev-parse HEAD)
+          ID=${{ steps.commit-comment.outputs.id }}
+          echo "Commit comment: https://github.com/${{ github.repository }}/commit/$COMMIT#commit-comment-$ID" | tee -a summary.md
 
           echo "report<<EOF" >> $GITHUB_OUTPUT
           cat summary.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
         working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
-      - name: Write bench on commit comment
-        uses: peter-evans/commit-comment@v3
-        with:
-          body-path: ${{ github.workspace }}/${{ matrix.light-client }}/light-client/summary.md
       - name: Send report to Zulip
         uses: zulip/github-actions-zulip/send-message@v1
         with:
@@ -295,4 +309,4 @@ jobs:
           type: "${{ env.TYPE }}"
           # Ignored if `type: private`
           topic: "${{ env.TOPIC }}"
-          content: "${{ steps.run-benchmarks.outputs.report }}"
+          content: "${{ steps.prep-report.outputs.report }}"

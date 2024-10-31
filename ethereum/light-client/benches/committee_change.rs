@@ -71,7 +71,7 @@ impl BenchmarkAssets {
 #[derive(Debug, Clone, Serialize)]
 struct BenchResults {
     proving_time: u128,
-    verification_time: u128,
+    verifying_time: u128,
 }
 
 fn main() {
@@ -114,7 +114,7 @@ fn main() {
     // Print results
     let results = BenchResults {
         proving_time: proving_time.as_millis(),
-        verification_time: verifying_time.as_millis(),
+        verifying_time: verifying_time.as_millis(),
     };
 
     let json_output = serde_json::to_string(&results).unwrap();
