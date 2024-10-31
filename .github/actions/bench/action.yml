@@ -1,0 +1,87 @@
+name: Run a light client benchmark
+
+description: Run benchmark and output a Markdown report
+
+inputs:
+  light-client:
+    description: 'Light client to benchmark'
+    required: true
+  benchmark:
+    description: 'Benchmark to run'
+    required: true
+
+outputs:
+  report:
+    description: "Markdown report"
+    value: ${{ steps.prep-report.outputs.report }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install jtbl
+      shell: bash
+      run: |
+        sudo apt-get update && sudo apt-get install -y python3-pip
+        pip3 --version
+        pip3 install --break-system-packages jtbl
+        echo 'PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
+        source ~/.profile
+        which jtbl
+    - name: Run benchmarks
+      shell: bash
+      run: |
+        make bench-ci BENCH=${{ inputs.benchmark }} 2>&1 | tee out.txt
+      working-directory: ${{ github.workspace }}/${{ inputs.light-client }}/light-client
+    - name: Create report
+      shell: bash
+      run: |
+        grep 'cycles=' out.txt > cycles.txt
+        grep 'proving_time' out.txt > timings.txt
+
+        while IFS=$'\t' read -r f1 f2
+        do
+          num_cycles=$(echo "$f1" | grep -o 'cycles=[0-9]*' | awk -F'=' '{ print $2 }')
+          timings=$(echo "$f2" | jq '
+            to_entries |
+            map(
+              if .key == "proving_time" then
+                {key, value: (.value / 1000 | floor as $s | "\(($s / 60 | floor) | tostring)min\(($s % 60) | tostring)s")}
+              elif .key == "verifying_time" then
+                {key, value: ((.value / 1000 * 1000 | floor) / 1000 | tostring + "s")}
+              else
+                .
+              end
+            ) |
+            from_entries
+          ')
+
+          echo "$timings" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
+        done < <(paste cycles.txt timings.txt)
+
+        COMMIT_SHORT=$(git rev-parse --short HEAD)
+
+        echo '# `${{ inputs.light-client }}` Benchmark Results' | tee -a summary.md
+        echo "Commit: \`$COMMIT_SHORT\`" | tee -a summary.md
+        echo '## `${{ inputs.benchmark }}` Proof' | tee -a summary.md
+        cat summary.json | jtbl -m | tee -a summary.md
+        echo "" | tee -a summary.md
+
+        echo "[Workflow URL](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" | tee -a summary.md
+      working-directory: ${{ github.workspace }}/${{ inputs.light-client }}/light-client
+    - name: Write bench on commit comment
+      uses: peter-evans/commit-comment@v3
+      id: commit-comment
+      with:
+        body-path: ${{ github.workspace }}/${{ inputs.light-client }}/light-client/summary.md
+    - name: Prep report for Zulip
+      id: prep-report
+      shell: bash
+      run: |
+        COMMIT=$(git rev-parse HEAD)
+        ID=${{ steps.commit-comment.outputs.comment-id }}
+        echo "[Commit comment](https://github.com/${{ github.repository }}/commit/$COMMIT#commit-comment-$ID)" | tee -a summary.md
+
+        echo "report<<EOF" >> $GITHUB_OUTPUT
+        cat summary.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+      working-directory: ${{ github.workspace }}/${{ inputs.light-client }}/light-client

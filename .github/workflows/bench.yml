@@ -80,14 +80,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup CI
         uses: ./.github/actions/setup
-      - name: Install extra deps
-        run: |
-          sudo apt-get update && sudo apt-get install -y python3-pip
-          pip3 --version
-          pip3 install --break-system-packages jtbl
-          echo 'PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
-          source ~/.profile
-          which jtbl
       - name: Set env
         run: |
           # Default benchmark settings optimized for light clients, can be overwritten with `env` input
@@ -128,51 +120,12 @@ jobs:
             echo "STREAM=$STREAM" | tee -a $GITHUB_ENV
             echo "TOPIC=$TOPIC" | tee -a $GITHUB_ENV
           fi
-      - name: Run benchmarks
-        run: |
-          make bench-ci BENCH=${{ inputs.bench-name }} 2>&1 | tee out.txt
-        working-directory: ${{ github.workspace }}/${{ inputs.light-client }}/light-client
-      - name: Create report
-        id: run-benchmarks
-        run: |
-          grep 'cycles=' out.txt > cycles.txt
-          grep 'proving_time' out.txt > timings.txt
-
-          while IFS=$'\t' read -r f1 f2
-          do
-            num_cycles=$(echo "$f1" | grep -o 'cycles=[0-9]*' | awk -F'=' '{ print $2 }')
-            timings=$(echo "$f2" | jq '
-              to_entries |
-              map(
-                if .key == "proving_time" then
-                  {key, value: (.value / 1000 | floor as $s | "\(($s / 60 | floor) | tostring)min\(($s % 60) | tostring)s")}
-                elif .key == "verifying_time" then
-                  {key, value: ((.value / 1000 * 1000 | floor) / 1000 | tostring + "s")}
-                else
-                  .
-                end
-              ) |
-              from_entries
-            ')
-
-            echo "$timings" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
-          done < <(paste cycles.txt timings.txt)
-
-          echo '# `${{ inputs.light-client }}` Benchmark Results' | tee -a summary.md
-          echo '## `${{ inputs.bench-name }}` Prove' | tee -a summary.md
-          cat summary.json | jtbl -m | tee -a summary.md
-          echo "" | tee -a summary.md
-
-          echo "Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a summary.md
-
-          echo "report<<EOF" >> $GITHUB_OUTPUT
-          cat summary.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/${{ inputs.light-client }}/light-client
-      - name: Write bench on commit comment
-        uses: peter-evans/commit-comment@v3
+      - name: Run benchmark and create report
+        id: run-benchmark
+        uses: ./.github/actions/bench
         with:
-          body-path: ${{ github.workspace }}/${{ inputs.light-client }}/light-client/summary.md
+          light-client: ${{ inputs.light-client }}
+          benchmark: ${{ inputs.bench-name }}
       - name: Send report to Zulip
         if: inputs.zulip
         uses: zulip/github-actions-zulip/send-message@v1
@@ -184,7 +137,7 @@ jobs:
           type: "${{ env.TYPE }}"
           # Ignored if `type: private`
           topic: "${{ env.TOPIC }}"
-          content: "${{ steps.run-benchmarks.outputs.report }}"
+          content: "${{ steps.run-benchmark.outputs.report }}"
 
   benchmark-scheduled:
     name: LC bench (scheduled)
@@ -214,14 +167,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup CI
         uses: ./.github/actions/setup
-      - name: Install extra deps
-        run: |
-          sudo apt-get update && sudo apt-get install -y python3-pip
-          pip3 --version
-          pip3 install --break-system-packages jtbl
-          echo 'PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
-          source ~/.profile
-          which jtbl
       - name: Set env
         run: |
           # Default benchmark settings optimized for light clients, can be overwritten with `env` input
@@ -229,76 +174,19 @@ jobs:
           echo "SHARD_SIZE=4194304" | tee -a $GITHUB_ENV
           echo "SHARD_BATCH_SIZE=0" | tee -a $GITHUB_ENV
           echo "RECONSTRUCT_COMMITMENTS=false" | tee -a $GITHUB_ENV
-          echo "SHARD_CHUNKING_MULTIPLIER=1" | tee -a
- $GITHUB_ENV
+          echo "SHARD_CHUNKING_MULTIPLIER=1" | tee -a $GITHUB_ENV
           echo "MODE=SNARK" | tee -a $GITHUB_ENV
-
-          IFS=',' read -ra ENV_VARS <<< "ethereum"
-          for VAR in "${ENV_VARS[@]}"; do
-            VAR_NAME="${VAR%%=*}"
-            VAR_VALUE="${VAR#*=}"
-            echo "${VAR_NAME}=${VAR_VALUE}" | tee -a $GITHUB_ENV
-          done
       - name: Set Zulip env
         run: |
           echo "TYPE=stream" | tee -a $GITHUB_ENV
           echo "STREAM=light-client" | tee -a $GITHUB_ENV
           echo "TOPIC=Benchmark Reports" | tee -a $GITHUB_ENV
-      - name: Run benchmarks
-        run: |
-          make bench-ci BENCH=${{ matrix.benchmark }} 2>&1 | tee out.txt
-        working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
-      - name: Create report
-        run: |
-          grep 'cycles=' out.txt > cycles.txt
-          grep 'proving_time' out.txt > timings.txt
-
-          while IFS=$'\t' read -r f1 f2
-          do
-            num_cycles=$(echo "$f1" | grep -o 'cycles=[0-9]*' | awk -F'=' '{ print $2 }')
-            timings=$(echo "$f2" | jq '
-              to_entries |
-              map(
-                if .key == "proving_time" then
-                  {key, value: (.value / 1000 | floor as $s | "\(($s / 60 | floor) | tostring)min\(($s % 60) | tostring)s")}
-                elif .key == "verifying_time" then
-                  {key, value: ((.value / 1000 * 1000 | floor) / 1000 | tostring + "s")}
-                else
-                  .
-                end
-              ) |
-              from_entries
-            ')
-
-            echo "$timings" | jq -c --argjson cycles "$num_cycles" '. += {cycles: $cycles}' >> summary.json
-          done < <(paste cycles.txt timings.txt)
-
-          COMMIT_SHORT=$(git rev-parse --short HEAD)
-
-          echo '# `${{ matrix.light-client }}` Benchmark Results' | tee -a summary.md
-          echo 'Commit: `$COMMIT_SHORT`' | tee -a summary.md
-          echo '## `${{ matrix.benchmark }}` Proof' | tee -a summary.md
-          cat summary.json | jtbl -m | tee -a summary.md
-          echo "" | tee -a summary.md
-
-          echo "Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a summary.md
-        working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
-      - name: Write bench on commit comment
-        uses: peter-evans/commit-comment@v3
-        id: commit-comment
+      - name: Run benchmark and create report
+        id: run-benchmark
+        uses: ./.github/actions/bench
         with:
-          body-path: ${{ github.workspace }}/${{ matrix.light-client }}/light-client/summary.md
-      - name: Prep report for Zulip
-        id: prep-report
-        run: |
-          COMMIT=$(git rev-parse HEAD)
-          ID=${{ steps.commit-comment.outputs.id }}
-          echo "Commit comment: https://github.com/${{ github.repository }}/commit/$COMMIT#commit-comment-$ID" | tee -a summary.md
-
-          echo "report<<EOF" >> $GITHUB_OUTPUT
-          cat summary.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/${{ matrix.light-client }}/light-client
+          light-client: ${{ matrix.light-client }}
+          benchmark: ${{ matrix.benchmark }}
       - name: Send report to Zulip
         uses: zulip/github-actions-zulip/send-message@v1
         with:
@@ -309,4 +197,4 @@ jobs:
           type: "${{ env.TYPE }}"
           # Ignored if `type: private`
           topic: "${{ env.TOPIC }}"
-          content: "${{ steps.prep-report.outputs.report }}"
+          content: "${{ steps.run-benchmark.outputs.report }}"
