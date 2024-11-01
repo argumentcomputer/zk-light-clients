@@ -344,3 +344,46 @@ jobs:
         with:
           update_existing: true
           filename: .github/BENCH_CYCLE_REGRESSION.md
+
+  check-job-results:
+    if: always()
+    # Modify to remove required status checks, or override manually via force merge or removing the required check in branch protection rules
+    needs: [ changes, test, clippy, solidity-unit-tests, move-tests, cycle-count-regression ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        id: check-results
+        run: |
+          # Create an associative array of job results
+          declare -A job_results=(
+            ["changes"]="${{ needs.changes.result }}"
+            ["test"]="${{ needs.test.result }}"
+            ["clippy"]="${{ needs.clippy.result }}"
+            ["solidity-unit-tests"]="${{ needs.solidity-unit-tests.result }}"
+            ["move-tests"]="${{ needs.move-tests.result }}"
+            ["cycle-count-regression"]="${{ needs.cycle-count-regression.result }}"
+          )
+
+          # Iterate through the jobs and get their results
+          failed_count=0
+          for job in "${!job_results[@]}"; do
+            RESULT=${job_results[$job]}
+            if [[ "$RESULT" == "failure" ]]; then
+              failed_count=$((failed_count + 1))
+            fi
+
+            echo "$job result: $RESULT"
+          done
+
+          if [ "$failed_count" -gt 0 ]; then
+            echo "Some jobs failed"
+            echo "result=failure" | tee -a $GITHUB_OUTPUT
+          else
+            echo "All jobs succeeded or were skipped"
+            echo "result=success" | tee -a $GITHUB_OUTPUT
+          fi
+      - name: Error on job failure
+        run: |
+          if [[ "${{ steps.check-results.outputs.result }}" == "failure" ]]; then
+            exit 1
+          fi
