@@ -347,7 +347,9 @@ jobs:
 
   check-job-results:
     if: always()
-    # Modify to remove required status checks, or override manually via force merge or removing the required check in branch protection rules
+    # Modify to remove required status checks as needed
+    # If there is a breaking change, override manually via force merge or temporarily remove
+    # `check-job-results` altogether as a required check in branch protection rules
     needs: [ changes, test, clippy, solidity-unit-tests, move-tests, cycle-count-regression ]
     runs-on: ubuntu-latest
     steps:
