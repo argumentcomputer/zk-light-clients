@@ -50,14 +50,14 @@ on:
         required: false
       # Zulip stream in which to send the message (optional)
       # Ignored if `private` input is specified
-      # Defaults to `light_client` stream
+      # Defaults to `light-client` stream
       channel:
         description: 'Send message to channel (default is `light-client`). Ignored if `private` input is specified'
         type: string
         required: false
       # Zulip topic in which to send the message (optional)
       # Ignored if `private` input is specified
-      # Defaults to `chat`
+      # Defaults to `Benchmark Reports`
       topic:
         description: 'Send message to topic (default is `chat`). Ignored if `private` input is specified'
         type: string
@@ -108,12 +108,12 @@ jobs:
               if [[ ! -z "${{ inputs.stream }}" ]]; then
                 STREAM="${{ inputs.stream }}"
               elif [[ -z "$STREAM" ]]; then
-                STREAM="light_client"
+                STREAM="light-client"
               fi
               if [[ ! -z "${{ inputs.topic }}" ]]; then
                 TOPIC="${{ inputs.topic }}"
               elif [[ -z "$TOPIC" ]]; then
-                TOPIC="chat"
+                TOPIC="Benchmark Reports"
               fi
             fi
             echo "TYPE=$TYPE" | tee -a $GITHUB_ENV

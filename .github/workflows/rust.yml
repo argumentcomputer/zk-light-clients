@@ -2,9 +2,6 @@ name: Rust
 
 on:
   merge_group:
-  push:
-    branches:
-      - "dev"
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
@@ -251,6 +248,12 @@ jobs:
         uses: ./.github/actions/setup
       - name: Set env
         run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_REF=${{ github.base_ref }}
+          elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            BASE_REF=${{ github.event.merge_group.base_ref }}
+          fi
+
           if [[ "${{ matrix.package }}" == "aptos" ]]; then
             TESTS="test_execute_inclusion test_execute_epoch_change test_execute_sig"
             FEATURES="--features aptos"
@@ -261,6 +264,8 @@ jobs:
             TESTS="test_execute_spv test_execute_longest_chain"
             FEATURES="--features kadena"
           fi
+
+          echo "BASE_REF=$BASE_REF" | tee -a $GITHUB_ENV
           echo "TESTS=$TESTS" | tee -a $GITHUB_ENV
           echo "FEATURES=$FEATURES" | tee -a $GITHUB_ENV
       - name: Get cycle counts for PR
@@ -282,7 +287,7 @@ jobs:
           RUST_LOG: debug
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.base_ref }}
+          ref: ${{ env.BASE_REF }}
       - name: Get cycle counts for base branch
         id: regression-check
         run: |
@@ -331,7 +336,7 @@ jobs:
 
             ${{ env.WORKFLOW_URL }}
       - uses: JasonEtco/create-an-issue@v2
-        if: steps.regression-check.outputs.regression == 'true' && github.event_name == 'push'
+        if: steps.regression-check.outputs.regression == 'true' && github.event_name == 'merge_group'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKFLOW_URL: ${{ env.WORKFLOW_URL }}
