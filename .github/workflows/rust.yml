@@ -63,12 +63,12 @@ jobs:
   test:
     needs: changes
     runs-on: warp-ubuntu-latest-x64-16x
-    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
+    if: ${{ needs.changes.outputs.lc-packages != '[]' && needs.changes.outputs.lc-packages != '' }}
     strategy:
       fail-fast: false
       matrix:
         # Parse JSON array containing names of all changed light client packages,
-        # e.g. ['aptos', 'ethereum', 'kadena'] if `aptos`, `ethereum` and `kadena` contain changes.
+        # e.g. ['aptos', 'ethereum', 'kadena'] if `aptos`, `ethereum`, `kadena`, and `fixture-generator` contain changes.
         package: ${{ fromJSON(needs.changes.outputs.lc-packages) }}
     steps:
       - uses: actions/checkout@v4
@@ -231,7 +231,7 @@ jobs:
   cycle-count-regression:
     needs: changes
     runs-on: warp-ubuntu-latest-x64-32x
-    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
+    if: ${{ needs.changes.outputs.lc-packages != '[]' && needs.changes.outputs.lc-packages != '' }}
     strategy:
       fail-fast: false
       matrix:
