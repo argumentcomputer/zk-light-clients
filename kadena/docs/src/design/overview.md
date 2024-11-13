@@ -35,7 +35,7 @@ state closer to the longest chain state.
 The current Verifying Key Hashes which uniquely identify the specific RISC-V binaries for the proof programs, located in the
 [`kadena/kadena-programs/artifacts/`](https://github.com/argumentcomputer/zk-light-clients/tree/dev/kadena/kadena-programs/artifacts)
 directory are:
-* `longest_chain`: `0x00c9f93ac78c984785ef4cd5fac972ac36bc214c0f2d0f887903dd660eb1fc39`
-* `spv`: `0x008e034af6eda82af08a33ff3748c4085b9c9775d79abf10c6fc524ea17ac04f`
+* `longest_chain`: `0x00b35a3df67c07d7095db4e5744a9f3f93b6c7526c5b380b1d380b1cf5f5f4a8`
+* `spv`: `0x0056c9dcde9d2c9465f5f310944248f4fa9b7797158165598f35a80f3d3a8411`
 
 These values are also present in and used by the [solidity fixtures](../benchmark/on_chain.md).

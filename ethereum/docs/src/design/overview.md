@@ -27,7 +27,7 @@ binaries for the proof programs, located in the
 [`ethereum/ethereum-programs/artifacts/`](https://github.com/argumentcomputer/zk-light-clients/tree/dev/ethereum/ethereum-programs/artifacts)
 directory are:
 
-* `epoch_change`: `0x0016ada2465cce37e1908bf462fec9c82d3f6f090965345d8f785f6d11f65826`
-* `inclusion`: `0x006166fe4b4cad8e89f01bdaea9f54bd7476302ec74d45492058172a01342cea`
+* `epoch_change`: `0x00de53d6fe5e4e43f950fbc1f6b2c0f9c172097ad7263ab913241267b29d03f2`
+* `inclusion`: `0x00deddfe90263f93c03e88dc9c33603f3ea0493b2af5da7e37d515794958bbb7`
 
 These values are also present in and used by the [move fixtures](../benchmark/on_chain.md).

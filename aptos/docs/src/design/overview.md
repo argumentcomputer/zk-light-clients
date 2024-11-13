@@ -26,7 +26,7 @@ to some account needs to be validated.
 The current Verifying Key Hashes which uniquely identify the specific RISC-V binaries for the proof programs, located in the
 [`aptos/aptos-programs/artifacts/`](https://github.com/argumentcomputer/zk-light-clients/tree/dev/aptos/aptos-programs/artifacts)
 directory are:
-* `epoch_change`: `0x00eea0650222f7e5bb6a2fe57c0e0e504d1df8b3d848d5116174a8703d228c94`
-* `inclusion`: `0x00336c570224c00161ca7b3c275c24f3968aa09086c31d09d98691bce109f4f6`
+* `epoch_change`: `0x00749738cdd87d0179d124a1c20f0cb28de2355faf4b00c5f994b3bfa0cfdf48`
+* `inclusion`: `0x0011762f50a83396c88be6119d62ef89e5f87bd504dd66537697a05f3c3c1fa7`
 
 These values are also present in and used by the [solidity fixtures](../benchmark/on_chain.md).
