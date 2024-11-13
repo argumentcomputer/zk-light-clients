@@ -97,7 +97,11 @@ ignore = [
     # proc-macro-error is unmaintained
     "RUSTSEC-2024-0370",
     # atty is unmaintained
-    "RUSTSEC-2024-0375"
+    "RUSTSEC-2024-0375",
+    # instant is unmaintained
+    "RUSTSEC-2024-0384",
+    # derivative`is unmaintained
+    "RUSTSEC-2024-0388"
 ]
 
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
