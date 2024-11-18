@@ -14,12 +14,13 @@ on:
   workflow_dispatch:
     inputs:
       light-client:
-        description: 'aptos or ethereum'
+        description: 'aptos, ethereum or kadena'
         type: choice
         required: true
         options:
           - aptos
           - ethereum
+          - kadena
       version:
         description: "Image version"
         required: true

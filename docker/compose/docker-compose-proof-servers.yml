@@ -1,5 +1,5 @@
 services:
-  server-primary:
+  proof-server:
     image: ghcr.io/argumentcomputer/ethereum-proof-server:latest
     pull_policy: always
     command: sh -c "/app/proof_server --mode \"single\" --addr ${PRIMARY_ADDR}:${PRIMARY_PORT}"

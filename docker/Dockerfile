@@ -49,6 +49,9 @@ COPY ./$LIGHT_CLIENT .
 RUN if [ "$LIGHT_CLIENT" = "aptos" ]; then \
         PACKAGE_NAME="proof-server"; \
         RUSTFLAGS="-C target-cpu=x86-64-v4 --cfg tokio_unstable -C opt-level=3"; \
+    elif [ "$LIGHT_CLIENT" = "kadena" ]; then \
+        PACKAGE_NAME="kadena-lc"; \
+        RUSTFLAGS="-C target-cpu=x86-64-v4 -C opt-level=3"; \
     else \
         PACKAGE_NAME="ethereum-lc"; \
         RUSTFLAGS="-C target-cpu=x86-64-v4 -C opt-level=3"; \

@@ -1,6 +1,7 @@
 # Light Client container configuration
 
-To ease the execution and deployment of our Light Client implementation, we provide a set of Docker configuration file that helps to build and run the necessary components.
+To ease the deployment of our proof servers, we provide a set of Docker configuration file that helps to build and run 
+them.
 
 ## Notice
 
@@ -21,6 +22,9 @@ in the repository. The images can be found under [the packages listed for the re
 > Note: For more information about the proof server feel free to refer to the 
 > documentation  of the specific Light Client.
 
+The `Dockerfile` specifically targets an Linux machine with `avx512_ifma` and `avx512_vbmi2`
+support. Make sure that you run the container on such machine.
+
 ## Run the Proof Servers images
 
 We have two ways to run the proof server images, either via [`docker compose`](https://docs.docker.com/compose/)
@@ -29,12 +33,15 @@ or via a dedicated [Helm chart for Kubernetes](https://helm.sh/).
 ### Docker Compose
 
 The `docker/compose` directory contains the necessary files to run the proof 
-servers and the client using Docker Compose. It is only needed to set the environment variables
+servers using Docker Compose. It is only needed to set the environment variables
 and change the image to the desired one to run the project.
+
+
 
 #### Setting up the Environment Variables
 
-The project uses environment variables to configure the proof servers and the client. These variables are defined in a .env file located in the
+The project uses environment variables to configure the proof server. These variables are defined in a `.env` file 
+located in the
 `docker/compose` directory. An example .env file is provided as
 `.example.env`. Some environment variables are common to all Light Clients and others are specific to one implementation.
 
@@ -42,6 +49,13 @@ The project uses environment variables to configure the proof servers and the cl
 
 - `PRIMARY_ADDR`: The address of the primary server (e.g., `0.0.0.0`).
 - `PRIMARY_PORT`: The port number for the primary server (e.g., `6379`).
+
+> **Note**
+> 
+> There are also some specific environment variables that are used by the proof servers.
+> These variables are meant to optimize the time taken to generate proofs for each 
+> Light Client. Make sure that you refer to the `benchmark/configuration.md` file
+> of the Light Client you want to deploy a proof server for.
 
 #### Set the desired image
 
@@ -52,7 +66,7 @@ found in the [packages](https://github.com/orgs/argumentcomputer/packages?repo_n
 ```yaml
 services:
   server-primary:
-    image: ghcr.io/argumentcomputer/<aptos|ethereum>-proof-server:<tag>
+    image: ghcr.io/argumentcomputer/<aptos|ethereum|kadena>-proof-server:<tag>
 ```
 
 #### Running the Docker Compose
@@ -60,16 +74,16 @@ services:
 You can start the proof server with the following command:
 
 ```bash
-docker compose -f docker/compose/docker-compose-proof-servers.yml -f docker/compose/docker-compose-<aptos|ethereum>.yml up
+docker compose -f docker/compose/docker-compose-proof-servers.yml up
 ```
 
-This command will start the containers as defined in the docker-compose.yml file. 
-The proof servers and the client will start running, and you can interact with 
-them as defined in the project documentation.
+This command will start the container as defined in the docker-compose.yml file. 
+The proof server will start running, and you can interact with 
+it as defined in the project documentation.
 
 ### Helm Chart
 
-To deploy the proof servers and the client using Kubernetes, we provide a Helm chart in the `proof-server-chart`
+To deploy the proof servers using Kubernetes, we provide a Helm chart in the `proof-server-chart`
 directory. The pre-requisite to run the Helm chart is to have a Kubernetes cluster running.
 To help get one running we have a dedicated `eksctl` configuration file in the `k8s` directory.
 It leverages [`AWS EKS`](https://aws.amazon.com/eks/) to create a cluster that we can leverage to deploy the Helm chart.
