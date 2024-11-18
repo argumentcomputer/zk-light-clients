@@ -7,7 +7,7 @@ on-chain, and represents the end-to-end time it takes to generate a proof that c
 Due to the SNARK compression, the SNARK proofs take longer to generate and require more resources.
 
 The worst case latency (described [here](../design/edge_cases.md)) can be evaluated by running the end-to-end benchmark
-for each of the two proofs, and looking at the maximum of the time it took to genereate each proof.
+for each of the two proofs, and looking at the maximum of the time it took to generate each proof.
 
 The numbers we've measured using our [production configuration](../run/overview.md) are further detailed in the 
 [E2E Benchmarks](./e2e.md) section. They are included below as well for reference:

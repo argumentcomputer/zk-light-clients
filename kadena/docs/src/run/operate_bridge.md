@@ -105,7 +105,7 @@ for different use cases.
 > The following documentation will be for SNARK proofs, as they are the only
 > proofs that can be verified on our home chains.
 
-The core data to be passed to any verification contrtact are the following:
+The core data to be passed to any verification contract are the following:
 - Verifying key: A unique key represented as 32 bytes, related to the program that is meant to be verified
 - Public values: Serialized public values of the proof
 - Proof: The serialized proof to be verified

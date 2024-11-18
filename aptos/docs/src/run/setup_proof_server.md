@@ -2,7 +2,7 @@
 
 > **Note**
 >
-> We will deploy the server as through the execution of the bianry with `cargo` in this example.
+> We will deploy the server as through the execution of the binary with `cargo` in this example.
 > It is also possible to deploy the proof server through its docker image. To do so, please
 > refer to [the dedicated documentation](https://github.com/argumentcomputer/zk-light-clients/tree/dev/docker).
 

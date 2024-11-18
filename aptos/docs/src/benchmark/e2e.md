@@ -83,7 +83,7 @@ For our [production configuration](../run/overview.md), we currently get the fol
 on `r7iz.metal-16xl` AWS EC2 instance. The sphinx's commit used
 is: [d392acc](https://github.com/argumentcomputer/sphinx/commit/d392acca56fbaa0e4dd0b73cfab0414b4e321348)
 
-## Looking for optimal Sphinx parametrs
+## Looking for optimal Sphinx parameters
 
 Sometimes it is possible to get some boost in performance on a specific benchmarking machine tuning
 `SHARD_CHUNKING_MULTIPLIER` variable. It's optimal value depends on the number of CPU cores

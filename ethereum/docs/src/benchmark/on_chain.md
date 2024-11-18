@@ -88,7 +88,7 @@ It is possible to run Move verification flow locally. This requires running Apto
 
 ## Fixture generation
 
-If you wish to run the Move script with custom fixtures, you can regeenrate them by running the
+If you wish to run the Move script with custom fixtures, you can regenerate them by running the
 `fixture-generator` Rust program. This program will run the end-to-end proving (either epoch-change or inclusion) and
 export the fixture file to the relevant place (`ethereum/move/sources/fixtures`).
 
