@@ -7,7 +7,8 @@
 > refer to [the dedicated documentation](https://github.com/argumentcomputer/zk-light-clients/tree/dev/docker).
 
 For the Proof Server, we have to take into account that generating a proof is a heavy operation. To avoid
-overloading the server, we can split the proof generation into two servers. The primary server will handle
+overloading the server in this tutorial, we will demonstrate how to use `split` mode for the proof server,
+effectively sharing the proof generation workload into two servers. The primary server will handle
 inclusion proofs, and the secondary server will handle epoch change proofs.
 
 For best results, the primary and secondary servers should be deployed to **different server instances**, so that

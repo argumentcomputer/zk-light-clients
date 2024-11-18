@@ -42,6 +42,30 @@ be verified cheaply on-chain.
 The server is a layer added on top of the proving service that makes it available to external users. It is a simple
 TCP server that is open to incoming connections on a port specified at runtime.
 
+
+The prover can be ran with two specific mode, either `single` or `split`.
+
+`single`  means that only one instance of the prover will be handling all the proof generation.
+As the resource consumption for proof generation is quite high, it means that
+only one types of proof will be generated at any given time. In the context of the
+Aptos light client, it means that at the start of an epoch, the client will have to wait
+for the proof of the Epoch Change to be finalized before resuming the production
+of the inclusion proofs.
+
+`split` means that two instances of the prover will be running, one for each proof type.
+In such a scenario, the latency created by the `single` mode is avoided, but the resource
+to be allocated to the prover have to be doubled. The interaction between each proof server
+is done through HTTP as a client does with a prover.
+
+> **Info**
+>
+> In our [Kubernetes configuration](https://github.com/argumentcomputer/zk-light-clients/tree/dev/docker)
+> the proof server is ran using `single` mode and the load balancing is handled by
+> K8S itself.
+
+The messages sent over HTTP are defined
+in [`proof-server/src/types/proof_server.rs`](https://github.com/argumentcomputer/zk-light-clients/blob/dev/ethereum/light-client/src/types/network.rs).
+
 The server is divided in two, with one main entrypoint. This allows us to handle the worst-case scenario of having to
 generate both proofs in parallel, since each server handles one proof at a time. It is possible to generate and verify
 both STARK core proofs and SNARK proofs.

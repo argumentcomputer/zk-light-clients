@@ -1,5 +1,10 @@
 # Security considerations
 
+## Codebase
+
+Please note that the current code for the programs is not audited and should not be used in production.
+The code is provided as a reference implementation and should be used at the users risks.
+
 ## Sphinx
 
 The [Sphinx](https://github.com/argumentcomputer/sphinx) prover is a fork of [SP1](https://github.com/succinctlabs/sp1)

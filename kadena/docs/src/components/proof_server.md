@@ -39,11 +39,16 @@ The server is a layer added on top of the proving service that makes it availabl
 REST server that is open to incoming connections on a port specified at runtime.
 
 The server have two possible mode of operation:
-- _Single_: The deployed server will handle all incoming proving and verifying requests.
-- _Split_: The deployed server will handle only part of the requests, and will forward the rest to another server.
+- `single`: The deployed server will handle all incoming proving and verifying requests.
+- `split`: The deployed server will handle only part of the requests, and will forward the rest to another server.
 
 It is possible to generate and verify both STARK core proofs and SNARK proofs.
 
-The RPC protocol used by the servers is a very simple bytes protocol passing serialized messages back and forth.
+> **Note**
+> 
+> As a light client for PoW chains only requires one proof, the SPV one, it is safe to only run
+> the server in `single` mode.
+
+The HTTP protocol used by the servers is a very simple bytes protocol passing serialized messages back and forth.
+The available endpoints are documented in the section about [the operation of the bridge](../run/operate_bridge.md).
 The messages are defined in [`light-client/src/types/network.rs`](https://github.com/argumentcomputer/zk-light-clients/blob/dev/kadena/light-client/src/types/network.rs).
-See also the documentation on the [client](./client.md).
