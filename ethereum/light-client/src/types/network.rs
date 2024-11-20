@@ -20,7 +20,7 @@ impl Request {
     ///
     /// # Returns
     ///
-    /// A Vec<u8> representing the enum.
+    /// A `Vec<u8>` representing the enum.
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         match self {
             Request::ProveCommitteeChange(boxed) => {

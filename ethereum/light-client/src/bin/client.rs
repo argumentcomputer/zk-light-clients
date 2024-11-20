@@ -41,13 +41,13 @@ pub const ALL_PAIRS_STORAGE_KEY: &str =
 struct Cli {
     /// The address of the checkpoint service provider.
     ///
-    /// See https://eth-clients.github.io/checkpoint-sync-endpoints
+    /// See <https://eth-clients.github.io/checkpoint-sync-endpoints>
     #[arg(short, long)]
     checkpoint_provider_address: String,
 
     /// The address for the beacon node API.
     ///
-    /// It is recommended to use https://www.lightclientdata.org
+    /// It is recommended to use <https://www.lightclientdata.org>
     #[arg(short, long)]
     beacon_node_address: String,
 

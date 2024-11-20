@@ -243,7 +243,7 @@ impl KadenaHeaderRaw {
     ///
     /// # Notes
     ///
-    /// When the  chain graph degree changes along with the [`crate::types::graph::TWENTY_CHAIN_GRAPH_DEGREE`]
+    /// When the  chain graph degree changes along with the [`crate::types::graph::CHAIN_GRAPH`]
     /// constant this method should be updated.
     pub fn header_root(&self) -> Result<HashValue, CryptoError> {
         let mut adjacent_hashes: Vec<[u8; 32]> = Vec::with_capacity(GRAPH_DEGREE);
